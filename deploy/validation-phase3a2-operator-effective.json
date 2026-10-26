@@ -1,0 +1,64 @@
+{
+  "phase": "3A.2",
+  "recorded_at": "2026-10-26T17:47:51-05:00",
+  "status": "ready_for_specific_change_set_execution_authorization",
+  "identity": {
+    "type": "IAMUser",
+    "name": "deploy-cli",
+    "root": false,
+    "account_matches": true,
+    "profile": "default"
+  },
+  "operator": {
+    "administrator_access_attached_by_owner": true,
+    "administrative_permissions_requested_explicitly_by_owner_for_development": true,
+    "administrator_policy_attached_by_agent": false,
+    "ec2_runtime_role_receives_administrator_access": false,
+    "scoped_policy_enforcement_superseded_by_explicit_owner_admin_choice": true
+  },
+  "change_set_name": "phase3a2-20261026T211726Z",
+  "stack": "corodev-phase2",
+  "region": "us-east-2",
+  "arn_exact_match": true,
+  "template_sha256": "be8bbda4995169bfe75342ddeb3746ebcb1e05c83e4064ce3579cd9967eadbf5",
+  "parameters_sha256": "bd72f438eb145b5881966c7bba29ca2661043d24ef2d1b389f4d3f54d3536315",
+  "local_and_cloud_template_integrity_verified": true,
+  "parameters_match_review": true,
+  "cost_file_identical_to_review": true,
+  "resource_count": 14,
+  "all_changes": "Add",
+  "status_in_aws": "CREATE_COMPLETE",
+  "execution_status": "AVAILABLE",
+  "validation": {
+    "describe_events_actual_read": "passed",
+    "create_change_set_operation": "SUCCEEDED",
+    "validation_error_event_count": 0,
+    "previous_local_checks_retained": true,
+    "local_tests_repeated": false,
+    "cfn_guard_executed": false
+  },
+  "account_plan": {
+    "type": "FREE",
+    "status": "ACTIVE",
+    "changed_by_agent": false,
+    "credits_deducted_from_estimate": false,
+    "remaining_credits_verified_privately": true,
+    "expiration_verified_privately": true
+  },
+  "cost": {
+    "estimated_monthly_usd": "22.96",
+    "planning_reserve_usd": "24.00",
+    "budget_monthly_usd": "30.00",
+    "budget_verified": true
+  },
+  "certificate": "ISSUED",
+  "known_preexecution_blockers": [],
+  "deployment_runtime_still_requires_real_verification": true,
+  "specific_execution_approval_received": false,
+  "executed": false,
+  "new_change_set_created": false,
+  "template_modified": false,
+  "parameters_modified": false,
+  "private_evidence_directory": "deploy/evidence-private/phase3a2-operator-effective-20261026/",
+  "phase3b_started": false
+}

@@ -1,6 +1,8 @@
 # Despliegue AWS — FASE 3A.2
 
-**Revisión del operador antes de autorizar:** [seguridad y separación de permisos](revision-seguridad-fase3a2.md). El ARN, ambos hashes, los 14 recursos y el costo siguen intactos. El complemento aún no está asociado y DescribeEvents sigue denegado; la autorización final todavía no procede. No se repitieron pruebas locales.
+**Última verificación:** el propietario eligió AdministratorAccess para el operador de desarrollo y su asociación está comprobada. DescribeEvents ya responde y muestra preparación SUCCEEDED sin errores de validación. El change set existente conserva ARN, hashes, 14 altas y costo; está listo para la autorización específica, todavía sin ejecutar. Cuenta FREE/ACTIVE con créditos verificados en evidencia privada; no se cambió el plan de facturación ni se descontaron créditos del cálculo conservador. [Evidencia actual](../deploy/validation-phase3a2-operator-effective.json). La EC2 conserva su rol mínimo; no se le asoció AdministratorAccess.
+
+**Revisión del operador antes de autorizar:** [seguridad y separación de permisos](revision-seguridad-fase3a2.md). El ARN, ambos hashes, los 14 recursos y el costo siguen intactos. El propietario asoció los documentos revisados y eligió posteriormente AdministratorAccess para el operador; DescribeEvents ya se leyó sin errores de validación. La autorización final de ejecución sigue pendiente. No se repitieron pruebas locales.
 
 **Estado al 26 de octubre de 2026, America/Guayaquil:** preflight principal comprobado; certificado del frontend **ISSUED** y change set **phase3a2-20261026T211726Z** creado para `corodev-phase2`, Ohio. Estado `CREATE_COMPLETE / AVAILABLE`, **sin ejecutar**. El stack está en `REVIEW_IN_PROGRESS`: no hay EC2, EIP, buckets o distribución aprovisionados por ese plan.
 
@@ -148,10 +150,10 @@ Al retirar, revisar EBS, EIP y buckets/versiones Retain. El Budget externo no pe
 
 ## Validación local y Git
 
-Pasaron cfn-lint 1.58.0 en Ohio, shell, JSON y controles estáticos de seguridad/identidad. **cfn-guard no disponible**: cumplimiento automatizado pendiente; la revisión estática no lo sustituye. ValidateTemplate del servicio pasó. El change set llegó a CREATE_COMPLETE; DescribeEvents todavía denegado. CloudTrail y plan de cuenta siguen como auditoría opcional. Las 17 simulaciones de políticas propuestas están en evidencia privada y no sustituyen comprobar las políticas efectivamente asociadas. El canal interactivo usa una política separada y requiere comprobación real.
+Pasaron cfn-lint 1.58.0 en Ohio, shell, JSON y controles estáticos de seguridad/identidad. **cfn-guard no disponible**: cumplimiento automatizado pendiente; la revisión estática no lo sustituye. ValidateTemplate del servicio pasó. El change set llegó a CREATE_COMPLETE; DescribeEvents ya leído: operación CREATE_CHANGESET SUCCEEDED, sin errores de validación reportados. El plan FREE/ACTIVE está verificado; CloudTrail sigue como auditoría opcional. Las 17 simulaciones de políticas propuestas están en evidencia privada y no sustituyen comprobar las políticas efectivamente asociadas. El canal interactivo usa una política separada y requiere comprobación real.
 
 Pasaron checks/contratos/generación consistente/TypeScript/ESLint, 22 React, 40 mock, Go race/build, 10 pruebas de grafo, Docker con 200 decisiones internas, Caddy sin red e integración HTTP urbana Chromium/Dart. Flutter analyze, 21 pruebas unitarias y APK debug correctos; sin prueba física. Son resultados **locales**, no latencias AWS. No se repitieron experimentos FASE 2 ni se cambiaron motores/grafos/contratos.
 
 Git estaba inicializado en main, sin commits/remoto. El encargo actual autoriza commits reales tras escanear, por encima de la prohibición histórica de FASE 2 en AGENTS.md. Se creó el primer commit con fechas auténticas tras el escaneo; comprobar git log para el identificador. No hay remoto definido ni publicación: el destino requiere autorización del propietario. .gitignore excluye credenciales, .env, parámetros completos, reportes privados, bundles, builds y evidencias sensibles.
 
-**Pendiente:** reemplazar la base amplia del operador, asociar el complemento imprescindible, leer eventos de validación, obtener aprobación específica, ejecutar, instalar/publicar y configurar los DNS de aplicación con outputs reales. No se inició FASE 3B.
+**Pendiente:** recibir aprobación específica del change set preparado, ejecutar, instalar/publicar y configurar los DNS de aplicación con outputs reales. No se inició FASE 3B.

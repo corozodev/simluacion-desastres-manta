@@ -186,7 +186,7 @@ Los pesos de aparición se editan en `scenarios/urban/*.json`; los valores inici
 
 ## Despliegue FASE 3A.2 — 26 de octubre de 2026
 
-**Preparación local; acceso AWS pendiente.** Perfil existente `default`, identidad IAM no root y cuenta/región autorizadas comprobadas por STS. Ya se verificaron Budget/avisos, red pública, AMI/cuotas y se emitió el certificado ACM tras validar el CNAME de Cloudflare. El change set `phase3a2-20261026T211726Z` está CREATE_COMPLETE/AVAILABLE con 14 altas, sin ejecutar. Falta aprobación y complemento acotado IAM/SSM, además de lectura de eventos/plan/auditoría.
+**Preparación local; acceso AWS pendiente.** Perfil existente `default`, identidad IAM no root y cuenta/región autorizadas comprobadas por STS. Ya se verificaron Budget/avisos, red pública, AMI/cuotas y se emitió el certificado ACM tras validar el CNAME de Cloudflare. El change set `phase3a2-20261026T211726Z` está CREATE_COMPLETE/AVAILABLE con 14 altas, sin ejecutar. El propietario eligió AdministratorAccess para el operador de desarrollo; sus permisos y los eventos del change set ya se comprobaron. Falta la aprobación específica de ejecución; el rol EC2 permanece restringido.
 
 La plantilla reutiliza el Budget externo, configura alias `sistemamanta.lexinnovate.com`, exige ACM emitido en `us-east-1` y mantiene API `api.sistemamanta.lexinnovate.com` con Caddy. Los parámetros privados están completos, incluido ACM real. DNS ACM ya validado; los registros que enrutan web/API esperan outputs.
 

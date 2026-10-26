@@ -1,5 +1,13 @@
 # Revisión de seguridad del operador — FASE 3A.2
 
+**Estado vigente tras la decisión del propietario:** AdministratorAccess está asociado al operador deploy-cli y su acceso real funciona. DescribeEvents se leyó correctamente: CREATE_CHANGESET SUCCEEDED, sin eventos VALIDATION_ERROR. El mismo change set sigue CREATE_COMPLETE/AVAILABLE con los hashes y 14 altas revisados. No se ejecutó. El rol EC2 conserva SSM/logs/releases, sin AdministratorAccess. La cuenta está en FREE/ACTIVE, con créditos verificados conservados en evidencia privada; no se cambió el plan ni se descontaron créditos de la estimación de 22,96 USD/mes. [Evidencia efectiva actual](../deploy/validation-phase3a2-operator-effective.json).
+
+El control de ejecución exclusiva del ARN revisado se mantiene como instrucción de autorización del propietario; AdministratorAccess del operador concede permisos más amplios y sustituye la alternativa acotada descrita en la revisión histórica siguiente. No existe todavía aprobación específica para ejecutar CloudFormation.
+
+**Actualización posterior:** el propietario aplicó la base v2 y el complemento; ambos coinciden con los documentos revisados. Diez simulaciones de los permisos efectivos pasaron. DescribeEvents sigue denegado en AWS, incluso con una sesión temporal nueva. El propietario pidió usar permisos globales para desarrollo en la identidad operadora. Se intentó asociar AdministratorAccess, pero el operador carece de AttachUserPolicy: la asociación queda pendiente de un administrador autorizado. No se creó otra cuenta ni se cambiaron claves, rol EC2, plantilla, parámetros o change set. No existe aprobación de ejecución. [Estado actual](../deploy/validation-phase3a2-operator-effective.json).
+
+El resto del documento conserva la revisión anterior de la alternativa acotada. AdministratorAccess, una vez asociado por el propietario, será una decisión explícita distinta y no permite afirmar mínimo privilegio global del operador. El rol runtime de EC2 conserva su alcance limitado.
+
 Revisión del 26 de octubre de 2026, America/Guayaquil. Sólo consultas AWS y revisión de permisos: **sin ejecutar CloudFormation, modificar IAM, crear otro change set o repetir pruebas locales**.
 
 ## Integridad del cambio existente
