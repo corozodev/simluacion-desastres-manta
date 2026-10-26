@@ -4,7 +4,7 @@ Consulta del **26 de octubre de 2026**, America/Guayaquil. Región: **us-east-2 
 
 El reintento con permisos nuevos comprobó el **Budget mensual real de 30 USD**, HEALTHY y sin filtros de cuenta. Tiene avisos ACTUAL al 85%/100% y FORECASTED al 100%, con un destinatario EMAIL por aviso. No se cambiaron ni duplicaron. Direcciones y respuestas completas se conservan privadas.
 
-**Gasto acumulado observado por AWS Budgets: 0,00 USD**, consultado el 26 de octubre de 2026. Es un dato de cuenta con posible retraso, excluye créditos/reembolsos y no demuestra una factura final ni atribución exclusiva al proyecto. No se aprovisionó infraestructura. La estimación usa catálogos públicos oficiales descargados; no se consultó Cost Explorer.
+**Gasto acumulado observado por AWS Budgets: 0,00 USD**, consultado el 26 de octubre de 2026. Es un dato de cuenta con posible retraso, excluye créditos/reembolsos y no demuestra una factura final ni atribución exclusiva al proyecto. Sólo se solicitó el certificado ACM público no exportable y se preparó metadata del change set; no se aprovisionó la infraestructura facturable. La estimación usa catálogos públicos oficiales descargados; no se consultó Cost Explorer.
 
 ## Supuestos y cálculo reproducible
 

@@ -1,21 +1,35 @@
 # Despliegue AWS — FASE 3A.2
 
-**Reintento del 26 de octubre de 2026, America/Guayaquil:** los nuevos permisos permiten comprobar EC2, VPC, S3, IAM, logs y el Budget. Perfil existente `default`, identidad IAM `deploy-cli`, cuenta autorizada y región `us-east-2`; no root ni cambios de credenciales.
+**Estado al 26 de octubre de 2026, America/Guayaquil:** preflight principal comprobado; certificado del frontend **ISSUED** y change set **phase3a2-20261026T211726Z** creado para `corodev-phase2`, Ohio. Estado `CREATE_COMPLETE / AVAILABLE`, **sin ejecutar**. El stack está en `REVIEW_IN_PROGRESS`: no hay EC2, EIP, buckets o distribución aprovisionados por ese plan.
 
-**Budget real verificado:** mensual de 30 USD, COST, HEALTHY, cobertura de cuenta sin filtros y gasto acumulado informado de **0,00 USD**. Avisos de gasto real al 85% y 100%, y previsto al 100%; cada uno tiene un destinatario EMAIL comprobado. Direcciones privadas; no se confirmó entrega de correo ni se generó una captura ficticia. El dato puede llegar con retraso y excluye créditos/reembolsos.
+El Budget mensual real de **30 USD** está HEALTHY, con avisos reales al 85%/100% y previsto al 100%, cada uno con email configurado. Informa **0,00 USD** acumulados con posible retraso, sin créditos/reembolsos. No se duplicó ni modificó.
 
-Verificados VPC pública existente, subred en `us-east-2a`, ruta activa a Internet Gateway, DNS de VPC/DHCP, NACL y AMI AL2023 x86_64 disponible de Amazon. `t3.small` se ofrece en la zona. No hay EC2, EIP o buckets existentes en el inventario consultado. Se completaron los parámetros privados de red/AMI/Budget, sin crear recursos.
+Verificados identidad IAM no root/cuenta autorizada, perfil `default`, VPC/subred pública en `us-east-2a`, ruta IGW, DNS/DHCP, NACL, AMI Amazon Linux 2023 x86_64 y cuotas: ocho vCPU estándar y cinco EIP; se planean dos vCPU y una EIP. Se conserva la AMI kernel 6.1 ya verificada; el parámetro público actual también se consultó y apunta a kernel 6.18. La imagen Docker sigue siendo linux/amd64.
 
-**Persisten denegaciones de CloudFormation, ACM, CloudFront, cuotas, plan de cuenta y CloudTrail.** No existe change set ni despliegue. DNS de Cloudflare sigue pendiente por indicación del propietario. Se dejó un [complemento de permisos de preparación](../deploy/prepare-changeset-policy.example.json), sin ejecución o mutaciones IAM, y una copia con la cuenta real solo en evidencia privada. La AMI se verificó por EC2 pese al permiso SSM ausente.
+No había certificado reutilizable. Se solicitó ACM público **no exportable** en us-east-1 y el propietario añadió el CNAME; DNS y validación SUCCESS comprobados, certificado emitido. Los registros que enrutan frontend/API esperan los outputs de la infraestructura.
 
-## Evidencias y acceso pendiente
+La simulación real de permisos detectó faltantes para `iam:PutRolePolicy/DeleteRolePolicy` en el rol exacto y para operar SSM sin SSH. Se preparó el [complemento acotado](../deploy/execute-changeset-policy.example.json); copia completa con cuenta/stack en `deploy/evidence-private/phase3a2-final-preflight-20261026/execute-changeset-policy.json`. No se aplicó desde el agente. También faltan lecturas de eventos detallados, plan y auditoría. **No ejecutar hasta aprobación expresa y verificación de estos permisos/eventos.**
 
-- [Último reintento AWS](../deploy/validation-phase3a2-retry.json), [estado consolidado](../deploy/validation-phase3a.json), [preflight de esta fase](../deploy/validation-phase3a2-preflight.json) y [validación local](../deploy/validation-phase3a2-local.json).
-- Respuestas/errores del reintento: `deploy/evidence-private/phase3a2-retry-20261026/`, privado y excluido de Git. No contienen credenciales.
+## Cambio específico pendiente de aprobación
+
+- Nombre: `phase3a2-20261026T211726Z`; stack `corodev-phase2`; región `us-east-2`.
+- Resultado AWS: **14 Add, cero Modify/Remove/reemplazos**. [Lista y evidencia](../deploy/validation-phase3a2-changeset.json).
+- Incluye EC2 t3.small, raíz gp3 20 GB cifrada, EIP, grupo exclusivo, dos buckets privados/políticas, logs/alarma y CloudFront/OAC/función SPA.
+- IAM global: rol y perfil `deploy-cli-ec2-corodev-phase2`, `CAPABILITY_NAMED_IAM`; rol con SSM y permisos internos sólo de logs/releases.
+- Red: entrada pública TCP80/443 y egreso TCP80/443. Sin SSH22 o Go8080 públicos.
+- ACM frontend en us-east-1, emitido y sin exportación; IAM y CloudFront/OAC/función globales. Cómputo, discos, EIP, S3 y logs en Ohio.
+- Estimación **22,96 USD/mes**, reserva de planificación 24 USD, sin descuentos/impuestos. Budget existente 30 USD; no es un corte automático.
+
+La revisión con ARN completo y hashes está en `deploy/evidence-private/phase3a2-final-preflight-20261026/change-set-review.md`. Ese documento y el complemento IAM/SSM son revisables antes de autorizar. No ejecutar otro change set ni cambiar plantilla/parámetros bajo esta aprobación.
+
+## Evidencias y permisos pendientes
+
+- [Change set real y certificado](../deploy/validation-phase3a2-changeset.json), [reintento anterior](../deploy/validation-phase3a2-retry.json), [estado consolidado](../deploy/validation-phase3a.json), [preflight de esta fase](../deploy/validation-phase3a2-preflight.json) y [validación local](../deploy/validation-phase3a2-local.json).
+- Respuestas/errores actuales: `deploy/evidence-private/phase3a2-final-preflight-20261026/`, privado y excluido de Git. No contienen credenciales.
 - [Plantilla de política de lectura para preflight](../deploy/preflight-readonly-policy.example.json), con marcador de cuenta, revisable y **no aplicada**. Un administrador autorizado debe revisarla para el usuario existente o adaptar la inspección a un rol temporal.
 - [Explicación de los permisos](aws-preflight-permisos.md). Los permisos de preparar/ejecutar el change set se revisarán por separado, con los recursos reales. No usar AdministratorAccess para resolver este bloqueo.
 
-Cuotas modernas, plan de cuenta, inventario CloudFormation/CloudFront, certificados y CloudTrail siguen **sin verificar**. Los atributos EC2 informan límite de cinco EIP, pero no sustituyen la consulta de cuotas vCPU. Un AccessDenied no demuestra ausencia de recursos. Las evidencias anteriores se conservan como historia.
+Cuotas, inventario CloudFormation/CloudFront y certificado ya comprobados. El plan de cuenta, CloudTrail y los eventos detallados de validación siguen sin acceso; no se afirma auditabilidad o validación de esa capa. Las evidencias anteriores se conservan como historia.
 
 ## Infraestructura existente adaptada
 
@@ -32,11 +46,11 @@ Se reutilizan `deploy/aws/stack.yaml`, Docker, Caddy y scripts de release/rollou
 | `WebBucket` / `WebBucketPolicy` | S3 privado cifrado/versionado y lectura exclusiva por OAC/distribución |
 | `WebOriginAccess` / `SPARoutes` / `WebDistribution` | OAC, rutas SPA, alias CloudFront y TLS mínimo 1.2 |
 
-Son **14 recursos declarados** con Budget nuevo desactivado; EBS es parte de Backend. Es una previsión local, **no un change set AWS**. No se crean VPC, NAT Gateway, balanceador ni zona DNS.
+Son **14 recursos declarados** con Budget nuevo desactivado; EBS es parte de Backend. La lista coincide con el **change set real creado**, todavía sin ejecutar. No se crean VPC, NAT Gateway, balanceador ni zona DNS.
 
 `CreateProjectBudget=false` mantiene el Budget fuera de CloudFormation. `ExistingBudgetName` procede de una comprobación real; no se importa ni modifica. El modo alternativo que crea Budget queda para otros entornos, requiere aprobación y no garantiza precedencia del Budget respecto al consumo. No usarlo en este despliegue.
 
-El grupo de seguridad comienza restringido en el ejemplo. El change set público deberá mostrar **TCP 80/443 desde 0.0.0.0/0**, solicitado para Caddy/ACME; 22 y 8080 seguirán cerrados. Egreso TCP 80/443 para paquetes, SSM, logs y ACME. Go publica 8080 en loopback/red Docker. IMDS hop limit uno impide acceso desde el contenedor Go; el driver de logs utiliza el rol desde el host.
+El grupo de seguridad comienza restringido en el ejemplo. El change set creado muestra **TCP 80/443 desde 0.0.0.0/0**, solicitado para Caddy/ACME; 22 y 8080 seguirán cerrados. Egreso TCP 80/443 para paquetes, SSM, logs y ACME. Go publica 8080 en loopback/red Docker. IMDS hop limit uno impide acceso desde el contenedor Go; el driver de logs utiliza el rol desde el host.
 
 ## Dominios, DNS y certificados
 
@@ -46,13 +60,13 @@ DNS público observado: `lexinnovate.com` usa **Cloudflare**, servidores `kaylei
 | --- | --- | --- |
 | Frontend | CNAME sistemamanta.lexinnovate.com | Output real WebCloudFrontDomain |
 | API | A api.sistemamanta.lexinnovate.com | Output real BackendIPv4 |
-| Validación ACM | CNAME devuelto por ACM | DomainValidationOptions[].ResourceRecord real |
+| Validación ACM, completada | CNAME _18414b2fbc926162e72dc758bc022bf9.sistemamanta.lexinnovate.com | _7fe3626cee5c306831112ca94dc4d567.wzccmgtwzk.acm-validations.aws |
 
-No existen destinos exactos todavía: faltan outputs y una respuesta ACM accesible. No inventar IP, hostname o token DNS. No tocar otros registros ni añadir AAAA sin ruta IPv6 comprobada.
+El CNAME ACM ya está creado y verificado; conservarlo para renovación. Sus datos están en [DNS de validación](../deploy/dns-validation-phase3a2.json). Los destinos de aplicación todavía dependen de outputs; no inventar IP/hostname ni añadir AAAA sin ruta IPv6 comprobada.
 
 Buscar primero ACM en **us-east-1**: certificado ISSUED, vigente y SAN exacto o wildcard válido para el frontend. `*.lexinnovate.com` puede cubrirlo, pero no `api.sistemamanta.lexinnovate.com`. Caddy obtiene un certificado independiente para API. [Requisitos de CloudFront](https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/cnames-and-https-requirements.html).
 
-Si no existe certificado reutilizable, usar la [solicitud preparada](../deploy/aws/certificate-request.example.json), pública, DNS y Export=DISABLED. No se ha solicitado uno aquí por falta de permisos. Ejecutar sin tags, en us-east-1, entregar el CNAME exacto de ACM y esperar ISSUED antes del change set final. La falta del CNAME de validación impide emitirlo aunque el resto del DNS se deje para después.
+La [solicitud preparada](../deploy/aws/certificate-request.example.json) ya se ejecutó, sin tags, pública/DNS/Export=DISABLED. El certificado exacto está ISSUED y cargado en los parámetros privados del change set. Es independiente del HTTPS que Caddy emitirá para la API.
 
 CloudFront, función/OAC e IAM son globales. ACM CloudFront y endpoints globales Budgets/Price List utilizan us-east-1. EC2, EBS, EIP, S3 y CloudWatch permanecen en Ohio.
 
@@ -77,9 +91,9 @@ Consultar SSM público `/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-d
 
 ## Change set y aprobación obligatoria
 
-**Red, Budget y AMI ya están verificados; faltan permisos y certificado para preparar el change set final.** Los parámetros conservan marcadores visibles. Estimación base **22,96 USD/mes**, reserva de 24 USD; t3.medium alcanzaría 38,15 USD. Ver [costos y supuestos](costos.md).
+**Change set preparado y certificado emitido.** Los parámetros privados ya están completos; faltan aprobación específica y permisos acotados para ejecución/instalación y lectura de validaciones. Estimación base **22,96 USD/mes**, reserva de 24 USD; t3.medium alcanzaría 38,15 USD. Ver [costos y supuestos](costos.md).
 
-La copia `deploy/aws/parameters.production.json`, modo 600 y excluida de Git, ya tiene la VPC, subred, AMI, Budget y TCP 80/443 públicos previstos. El ARN ACM mantiene un marcador visible; no ejecutar así. Revisar si existe `corodev-phase2` y elegir CREATE/UPDATE según su estado; no eliminar/recrear para evitar errores.
+La copia `deploy/aws/parameters.production.json`, modo 600 y excluida de Git, ya tiene la VPC, subred, AMI, Budget y TCP 80/443 públicos previstos. El ARN ACM real está completado. El stack `corodev-phase2` ya existe en REVIEW_IN_PROGRESS con el cambio CREATE preparado; reutilizar ese plan. No borrar el stack ni recrearlo para saltar controles.
 
 ```sh
 # CHANGE_SET_TYPE corresponde al estado real; nombre phase3a2-* para el suplemento IAM.
@@ -87,12 +101,12 @@ La copia `deploy/aws/parameters.production.json`, modo 600 y excluida de Git, ya
 aws cloudformation create-change-set --region "$AWS_REGION" \
   --stack-name corodev-phase2 --change-set-name "$CHANGE_SET_NAME" \
   --change-set-type "$CHANGE_SET_TYPE" --template-body file://deploy/aws/stack.yaml \
-  --parameters file://deploy/aws/parameters.production.json --capabilities CAPABILITY_IAM
+  --parameters file://deploy/aws/parameters.production.json --capabilities CAPABILITY_NAMED_IAM
 aws cloudformation describe-change-set --region "$AWS_REGION" \
   --stack-name corodev-phase2 --change-set-name "$CHANGE_SET_NAME"
 ```
 
-Son comandos preparados, **no ejecutados**. Crear el change set no aprovisiona sus recursos. Obtener resultados de validación del servicio cuando estén disponibles.
+La creación y descripción del change set **ya se ejecutaron**; no repetirlas sin necesidad. Crear el change set no aprovisiona los 14 recursos. DescribeEvents aún fue denegado: obtener esos resultados antes de ejecutar, una vez añadido el complemento de permisos.
 
 Antes de execute-change-set, mostrar **ARN específico**, Add/Modify/Remove/reemplazos, recursos, costos, rol/perfil IAM, reglas de red y recursos globales/us-east-1. Solicitar aprobación expresa para **ese change set**. El encargo y la decisión de preparar archivos no son aprobación anticipada.
 
@@ -132,10 +146,10 @@ Al retirar, revisar EBS, EIP y buckets/versiones Retain. El Budget externo no pe
 
 ## Validación local y Git
 
-Pasaron cfn-lint 1.58.0 en Ohio, shell, JSON y controles estáticos de seguridad/identidad. **cfn-guard no disponible**: cumplimiento automatizado pendiente; la revisión estática no lo sustituye. ValidateTemplate del servicio fue denegado. CloudTrail y auditabilidad de cuenta sin verificar por falta de permisos.
+Pasaron cfn-lint 1.58.0 en Ohio, shell, JSON y controles estáticos de seguridad/identidad. **cfn-guard no disponible**: cumplimiento automatizado pendiente; la revisión estática no lo sustituye. ValidateTemplate del servicio pasó. El change set llegó a CREATE_COMPLETE; DescribeEvents todavía denegado. CloudTrail y plan de cuenta sin verificar por falta de permisos. Las simulaciones IAM/SSM están en evidencia privada; OpenDataChannel requiere comprobación real, mientras Run Command pasó por simulación.
 
 Pasaron checks/contratos/generación consistente/TypeScript/ESLint, 22 React, 40 mock, Go race/build, 10 pruebas de grafo, Docker con 200 decisiones internas, Caddy sin red e integración HTTP urbana Chromium/Dart. Flutter analyze, 21 pruebas unitarias y APK debug correctos; sin prueba física. Son resultados **locales**, no latencias AWS. No se repitieron experimentos FASE 2 ni se cambiaron motores/grafos/contratos.
 
 Git estaba inicializado en main, sin commits/remoto. El encargo actual autoriza commits reales tras escanear, por encima de la prohibición histórica de FASE 2 en AGENTS.md. Se creó el primer commit con fechas auténticas tras el escaneo; comprobar git log para el identificador. No hay remoto definido ni publicación: el destino requiere autorización del propietario. .gitignore excluye credenciales, .env, parámetros completos, reportes privados, bundles, builds y evidencias sensibles.
 
-**Pendiente:** habilitar acceso, completar preflight, resolver ACM/DNS con valores efectivos, crear change set y obtener aprobación específica. No se inició FASE 3B.
+**Pendiente:** asociar el complemento acotado, leer eventos/plan/auditoría, obtener aprobación específica, ejecutar, instalar/publicar y configurar los DNS de aplicación con outputs reales. No se inició FASE 3B.

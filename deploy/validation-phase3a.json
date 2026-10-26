@@ -1,9 +1,9 @@
 {
   "phase": "3A.2",
-  "recorded_at": "2026-10-26T15:55:50-05:00",
+  "recorded_at": "2026-10-26T16:26:20-05:00",
   "timezone": "America/Guayaquil",
-  "status": "partial_preflight_complete_additional_permissions_and_dns_pending",
-  "reason": "Owner resumed after adding policies; Budget, alerts, public network and AL2023 verified. Additional CloudFormation/ACM/CloudFront and quota/plan permissions plus DNS remain pending.",
+  "status": "change_set_prepared_awaiting_specific_approval_and_runtime_permissions",
+  "reason": "Preflight advanced: quotas/template pass; frontend certificate issued; exact named-IAM change set prepared. Specific approval and scoped IAM/SSM/event permissions still required.",
   "previous_phase3a_record": {
     "phase": "3A",
     "status": "paused_by_owner",
@@ -61,7 +61,10 @@
     ],
     "phase3b_started": false
   },
-  "aws_resources_created": [],
+  "aws_resources_created": [
+    "ACM non-exportable public certificate in us-east-1",
+    "CloudFormation REVIEW_IN_PROGRESS metadata and unexecuted change set"
+  ],
   "aws_deployed": false,
   "aws_budget_created": false,
   "aws_access": {
@@ -73,7 +76,7 @@
     "credentials_or_profiles_modified": false,
     "profile": "default",
     "region": "us-east-2",
-    "preflight_permissions_available": "partial"
+    "preflight_permissions_available": "sufficient_to_prepare; runtime_inline_ssm_and_event_reads_missing"
   },
   "budget": {
     "verified": true,
@@ -123,11 +126,107 @@
     "observed_spend_source": "AWS Budgets, account scope; may lag"
   },
   "change_set": {
-    "created": false,
+    "name": "phase3a2-20261026T211726Z",
+    "stack": "corodev-phase2",
+    "region": "us-east-2",
+    "type": "CREATE",
+    "status": "CREATE_COMPLETE",
+    "execution_status": "AVAILABLE",
+    "capabilities": [
+      "CAPABILITY_NAMED_IAM"
+    ],
+    "template_sha256": "be8bbda4995169bfe75342ddeb3746ebcb1e05c83e4064ce3579cd9967eadbf5",
+    "parameters_sha256": "bd72f438eb145b5881966c7bba29ca2661043d24ef2d1b389f4d3f54d3536315",
+    "resource_count": 14,
+    "resources": [
+      {
+        "Action": "Add",
+        "LogicalResourceId": "ArtifactBucketPolicy",
+        "ResourceType": "AWS::S3::BucketPolicy",
+        "Replacement": null
+      },
+      {
+        "Action": "Add",
+        "LogicalResourceId": "ArtifactBucket",
+        "ResourceType": "AWS::S3::Bucket",
+        "Replacement": null
+      },
+      {
+        "Action": "Add",
+        "LogicalResourceId": "BackendAddress",
+        "ResourceType": "AWS::EC2::EIP",
+        "Replacement": null
+      },
+      {
+        "Action": "Add",
+        "LogicalResourceId": "BackendLogs",
+        "ResourceType": "AWS::Logs::LogGroup",
+        "Replacement": null
+      },
+      {
+        "Action": "Add",
+        "LogicalResourceId": "BackendProfile",
+        "ResourceType": "AWS::IAM::InstanceProfile",
+        "Replacement": null
+      },
+      {
+        "Action": "Add",
+        "LogicalResourceId": "BackendRole",
+        "ResourceType": "AWS::IAM::Role",
+        "Replacement": null
+      },
+      {
+        "Action": "Add",
+        "LogicalResourceId": "BackendSecurityGroup",
+        "ResourceType": "AWS::EC2::SecurityGroup",
+        "Replacement": null
+      },
+      {
+        "Action": "Add",
+        "LogicalResourceId": "Backend",
+        "ResourceType": "AWS::EC2::Instance",
+        "Replacement": null
+      },
+      {
+        "Action": "Add",
+        "LogicalResourceId": "CPUAlarm",
+        "ResourceType": "AWS::CloudWatch::Alarm",
+        "Replacement": null
+      },
+      {
+        "Action": "Add",
+        "LogicalResourceId": "SPARoutes",
+        "ResourceType": "AWS::CloudFront::Function",
+        "Replacement": null
+      },
+      {
+        "Action": "Add",
+        "LogicalResourceId": "WebBucketPolicy",
+        "ResourceType": "AWS::S3::BucketPolicy",
+        "Replacement": null
+      },
+      {
+        "Action": "Add",
+        "LogicalResourceId": "WebBucket",
+        "ResourceType": "AWS::S3::Bucket",
+        "Replacement": null
+      },
+      {
+        "Action": "Add",
+        "LogicalResourceId": "WebDistribution",
+        "ResourceType": "AWS::CloudFront::Distribution",
+        "Replacement": null
+      },
+      {
+        "Action": "Add",
+        "LogicalResourceId": "WebOriginAccess",
+        "ResourceType": "AWS::CloudFront::OriginAccessControl",
+        "Replacement": null
+      }
+    ],
     "executed": false,
-    "arn": null,
-    "reason": "Budget, VPC, subnet and AMI verified; CloudFormation/ACM/CloudFront and quota/plan reads still denied. DNS pending.",
-    "specific_execution_approval_received": false
+    "specific_execution_approval_received": false,
+    "full_arn_receipt_private": "deploy/evidence-private/phase3a2-final-preflight-20261026/change_set_create.json"
   },
   "evidence_phase3a2": [
     "deploy/validation-phase3a2-preflight.json",
@@ -135,13 +234,14 @@
     "deploy/cost-estimate-phase3a2.json"
   ],
   "pending": [
-    "Attach reviewed supplemental preparation permissions",
-    "Verify account quotas/plan and ACM/CloudFront/CloudFormation inventory",
-    "Request/reuse frontend certificate; validate DNS in Cloudflare",
-    "Create actual change set and obtain specific execution approval",
-    "Grant scoped deployment permissions after approval and deploy",
-    "Verify public TLS/API/browser/CloudWatch and external latency",
-    "Define authorized Git remote before publication"
+    "Owner approval for this exact change set and its costs/network/IAM",
+    "Owner attaches scoped runtime/validation permission supplement",
+    "Read detailed CloudFormation validation events and account/audit state",
+    "Execute approved change set only after prerequisites pass",
+    "Install backend/release/secret/Caddy and publish frontend",
+    "Provide actual Cloudflare application DNS records after stack outputs",
+    "Verify public HTTPS/endpoints/browser/latencies/CloudWatch",
+    "Authorize Git remote and authentic Budget screenshot if required"
   ],
   "phase3b_started": false,
   "local_artifacts": {
@@ -173,6 +273,21 @@
     "published": false,
     "secret_scan_result": "no_confirmed_findings_in_269_candidates_including_compressed_osm"
   },
-  "previous_status": "prepared_locally_aws_access_deferred_by_owner",
-  "latest_retry_evidence": "deploy/validation-phase3a2-retry.json"
+  "previous_status": "partial_preflight_complete_additional_permissions_and_dns_pending",
+  "latest_retry_evidence": "deploy/validation-phase3a2-retry.json",
+  "latest_evidence": "deploy/validation-phase3a2-changeset.json",
+  "certificate": {
+    "resource_created": true,
+    "region": "us-east-1",
+    "domain": "sistemamanta.lexinnovate.com",
+    "status": "ISSUED",
+    "export": "DISABLED",
+    "dns_validation": "SUCCESS",
+    "dns_record": "deploy/dns-validation-phase3a2.json",
+    "not_before": "2026-10-25T19:00:00-05:00",
+    "not_after": "2027-05-11T18:59:59-05:00",
+    "reused_by_cloudfront_after_approved_execution": true,
+    "backend_caddy_certificate_independent": true
+  },
+  "aws_billable_infrastructure_created": []
 }

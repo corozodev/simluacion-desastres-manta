@@ -121,7 +121,10 @@ Resources:
             Condition: {Bool: {'aws:SecureTransport': false}}
   BackendRole:
     Type: AWS::IAM::Role
+    # The operator can manage/pass only deploy-cli-ec2-* roles. Keep this prefix
+    # and require CAPABILITY_NAMED_IAM; review replacement before changing names.
     Properties:
+      RoleName: !Sub 'deploy-cli-ec2-${AWS::StackName}'
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement: [{Effect: Allow, Principal: {Service: ec2.amazonaws.com}, Action: 'sts:AssumeRole'}]
@@ -139,7 +142,10 @@ Resources:
                 Resource: !Sub '${ArtifactBucket.Arn}/releases/*'
   BackendProfile:
     Type: AWS::IAM::InstanceProfile
-    Properties: {Roles: [!Ref BackendRole]}
+    # Match the operator's permitted profile prefix; retain the same stack name.
+    Properties:
+      InstanceProfileName: !Sub 'deploy-cli-ec2-${AWS::StackName}'
+      Roles: [!Ref BackendRole]
   BackendSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     # Dedicated to Backend only. Public TCP 80/443 requires owner approval;

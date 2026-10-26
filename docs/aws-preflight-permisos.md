@@ -1,5 +1,17 @@
 # Permisos para reanudar el preflight
 
+## Change set creado y permisos finales
+
+CF/ACM/CloudFront/cuotas y parámetro público ya responden. El certificado del frontend está ISSUED tras validar el CNAME; el change set real está creado y sin ejecutar. Se adaptaron los nombres de rol/perfil a `deploy-cli-ec2-corodev-phase2` para respetar la restricción de prefijo que configuró el propietario.
+
+La simulación AWS detectó que faltan `iam:PutRolePolicy` y `iam:DeleteRolePolicy` sólo para ese rol, y permisos SSM para instalar/administrar el backend sin SSH. El [complemento final](../deploy/execute-changeset-policy.example.json) conserva los límites de tags Project=CoroDev/Name=corodev-phase2-backend, documentos exactos y sesiones propias. Incluye lecturas de eventos del stack/change set, plan y auditoría; no se aplicó desde el agente. La copia lista está en `deploy/evidence-private/phase3a2-final-preflight-20261026/execute-changeset-policy.json`, modo 600.
+
+**Asociar como política administrada separada tras revisión/autorización:** el documento compacto supera el límite agregado de 2048 caracteres inline de un usuario. El ejemplo público exige cuenta y UUID del stack; la copia privada ya tiene ambos. Adjuntarlo no ejecuta CloudFormation. El cambio facturable sigue requiriendo aprobación de su ARN específico.
+
+Simulaciones: los objetivos correctos permiten inline/SSM y los tags, roles, documentos o sesiones ajenos se deniegan. OpenDataChannel devolvió implicitDeny en simulador pese al patrón restringido del ejemplo oficial; requiere verificación real y no se amplió a Resource *. Run Command sí pasó por simulación. CloudWatch tagging y perfil IAM ya están permitidos; no se pidieron de nuevo. UpdateAssumeRolePolicy no se necesita para esta creación inicial.
+
+## Evidencia de las revisiones anteriores
+
 ## Reintento con permisos nuevos
 
 Ya funcionan EC2/VPC, S3, IAM de lectura, logs y Budget. Verificados el Budget de 30 USD (gasto informado 0,00 USD), sus tres avisos/email, red pública y AMI AL2023 x86_64. Siguen denegados CloudFormation, ACM, CloudFront, servicequotas, plan de cuenta, CloudTrail y SSM público. La consulta SSM no bloquea la AMI porque se comprobó por EC2.

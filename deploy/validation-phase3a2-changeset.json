@@ -1,0 +1,244 @@
+{
+  "phase": "3A.2",
+  "recorded_at": "2026-10-26T16:26:20-05:00",
+  "timezone": "America/Guayaquil",
+  "status": "change_set_prepared_awaiting_specific_approval_and_runtime_permissions",
+  "profile": "default",
+  "region": "us-east-2",
+  "authorized_account_matches": true,
+  "identity_type": "IAMUser",
+  "is_root": false,
+  "budget": {
+    "verified": true,
+    "monthly_usd": "30.00",
+    "health": "HEALTHY",
+    "actual_spend_usd": "0.00",
+    "spend_scope": "account budget; lag possible; credits/refunds excluded",
+    "alerts_actual_percent": [
+      85,
+      100
+    ],
+    "alerts_forecasted_percent": [
+      100
+    ],
+    "all_alerts_have_email_subscriber": true,
+    "delivery_confirmed_by_owner": false,
+    "duplicate_created": false,
+    "authentic_screenshot_available": false
+  },
+  "network": {
+    "verified": true,
+    "existing_public_subnet_az": "us-east-2a",
+    "active_igw_route": true,
+    "dns_enabled": true,
+    "nacl_compatible": true,
+    "new_dedicated_security_group": true,
+    "ingress_tcp_ports": [
+      80,
+      443
+    ],
+    "ingress_ipv4_cidr": "0.0.0.0/0",
+    "public_ssh": false,
+    "public_go_8080": false
+  },
+  "quotas": {
+    "standard_on_demand_vcpus": 8,
+    "planned_vcpus": 2,
+    "eip_limit": 5,
+    "existing_eips": 0,
+    "planned_eips": 1,
+    "account_plan_verified": false
+  },
+  "backend": {
+    "instance_type": "t3.small",
+    "image_architecture_verified": "linux/amd64",
+    "ami_architecture_verified": "x86_64",
+    "ami_verified": true,
+    "ami_kernel": "6.1",
+    "root_ebs_gb": 20,
+    "root_ebs_type": "gp3",
+    "root_ebs_encrypted": true,
+    "cpu_credits": "standard",
+    "log_retention_days": 7
+  },
+  "certificate": {
+    "resource_created": true,
+    "region": "us-east-1",
+    "domain": "sistemamanta.lexinnovate.com",
+    "status": "ISSUED",
+    "export": "DISABLED",
+    "dns_validation": "SUCCESS",
+    "dns_record": "deploy/dns-validation-phase3a2.json",
+    "not_before": "2026-10-25T19:00:00-05:00",
+    "not_after": "2027-05-11T18:59:59-05:00",
+    "reused_by_cloudfront_after_approved_execution": true,
+    "backend_caddy_certificate_independent": true
+  },
+  "dns": {
+    "provider": "Cloudflare",
+    "acm_cname_verified_publicly": true,
+    "frontend_application_record_pending_stack_output": true,
+    "api_application_record_pending_stack_output": true
+  },
+  "change_set": {
+    "name": "phase3a2-20261026T211726Z",
+    "stack": "corodev-phase2",
+    "region": "us-east-2",
+    "type": "CREATE",
+    "status": "CREATE_COMPLETE",
+    "execution_status": "AVAILABLE",
+    "capabilities": [
+      "CAPABILITY_NAMED_IAM"
+    ],
+    "template_sha256": "be8bbda4995169bfe75342ddeb3746ebcb1e05c83e4064ce3579cd9967eadbf5",
+    "parameters_sha256": "bd72f438eb145b5881966c7bba29ca2661043d24ef2d1b389f4d3f54d3536315",
+    "resource_count": 14,
+    "resources": [
+      {
+        "Action": "Add",
+        "LogicalResourceId": "ArtifactBucketPolicy",
+        "ResourceType": "AWS::S3::BucketPolicy",
+        "Replacement": null
+      },
+      {
+        "Action": "Add",
+        "LogicalResourceId": "ArtifactBucket",
+        "ResourceType": "AWS::S3::Bucket",
+        "Replacement": null
+      },
+      {
+        "Action": "Add",
+        "LogicalResourceId": "BackendAddress",
+        "ResourceType": "AWS::EC2::EIP",
+        "Replacement": null
+      },
+      {
+        "Action": "Add",
+        "LogicalResourceId": "BackendLogs",
+        "ResourceType": "AWS::Logs::LogGroup",
+        "Replacement": null
+      },
+      {
+        "Action": "Add",
+        "LogicalResourceId": "BackendProfile",
+        "ResourceType": "AWS::IAM::InstanceProfile",
+        "Replacement": null
+      },
+      {
+        "Action": "Add",
+        "LogicalResourceId": "BackendRole",
+        "ResourceType": "AWS::IAM::Role",
+        "Replacement": null
+      },
+      {
+        "Action": "Add",
+        "LogicalResourceId": "BackendSecurityGroup",
+        "ResourceType": "AWS::EC2::SecurityGroup",
+        "Replacement": null
+      },
+      {
+        "Action": "Add",
+        "LogicalResourceId": "Backend",
+        "ResourceType": "AWS::EC2::Instance",
+        "Replacement": null
+      },
+      {
+        "Action": "Add",
+        "LogicalResourceId": "CPUAlarm",
+        "ResourceType": "AWS::CloudWatch::Alarm",
+        "Replacement": null
+      },
+      {
+        "Action": "Add",
+        "LogicalResourceId": "SPARoutes",
+        "ResourceType": "AWS::CloudFront::Function",
+        "Replacement": null
+      },
+      {
+        "Action": "Add",
+        "LogicalResourceId": "WebBucketPolicy",
+        "ResourceType": "AWS::S3::BucketPolicy",
+        "Replacement": null
+      },
+      {
+        "Action": "Add",
+        "LogicalResourceId": "WebBucket",
+        "ResourceType": "AWS::S3::Bucket",
+        "Replacement": null
+      },
+      {
+        "Action": "Add",
+        "LogicalResourceId": "WebDistribution",
+        "ResourceType": "AWS::CloudFront::Distribution",
+        "Replacement": null
+      },
+      {
+        "Action": "Add",
+        "LogicalResourceId": "WebOriginAccess",
+        "ResourceType": "AWS::CloudFront::OriginAccessControl",
+        "Replacement": null
+      }
+    ],
+    "executed": false,
+    "specific_execution_approval_received": false,
+    "full_arn_receipt_private": "deploy/evidence-private/phase3a2-final-preflight-20261026/change_set_create.json"
+  },
+  "iam": {
+    "role_name": "deploy-cli-ec2-corodev-phase2",
+    "instance_profile_name": "deploy-cli-ec2-corodev-phase2",
+    "host_managed_policy": "AmazonSSMManagedInstanceCore",
+    "host_inline_scope": "logs in backend group; s3:GetObject in releases/* only",
+    "operator_inline_actions_missing": [
+      "iam:PutRolePolicy",
+      "iam:DeleteRolePolicy"
+    ],
+    "operator_runtime_ssm_permissions_missing": true,
+    "supplement_public_example": "deploy/execute-changeset-policy.example.json",
+    "supplement_private_ready": "deploy/evidence-private/phase3a2-final-preflight-20261026/execute-changeset-policy.json",
+    "supplement_applied_by_agent": false,
+    "supplement_simulation": "correct targets allowed; wrong tags/role/doc/session denied; OpenDataChannel real-service verification pending"
+  },
+  "validation": {
+    "cfn_lint": "passed; existing 1.58.0; us-east-2",
+    "aws_validate_template": "passed",
+    "change_set_creation": "passed",
+    "describe_events": "access_denied; detailed predeployment events must be read after permission granted",
+    "cfn_guard": "unavailable; automated compliance not run",
+    "cloudtrail_recording": "not verified; read denied",
+    "local_app_tests": "previous phase3a2 local evidence; no algorithm/graph/contract changes this turn"
+  },
+  "cost": {
+    "monthly_estimated_usd": "22.96",
+    "monthly_planning_reserve_usd": "24.00",
+    "details": "deploy/cost-estimate-phase3a2.json",
+    "new_budget": false,
+    "nat_or_load_balancer": false
+  },
+  "global_or_outside_ohio": [
+    "ACM public certificate in us-east-1",
+    "CloudFront distribution, function and OAC global",
+    "IAM role and instance profile global"
+  ],
+  "aws_billable_infrastructure_created": [],
+  "aws_metadata_prepared": [
+    "ACM certificate ISSUED, non-exportable",
+    "CloudFormation stack REVIEW_IN_PROGRESS and unexecuted change set"
+  ],
+  "public_urls_verified": [],
+  "external_aws_latency": null,
+  "cloudwatch_logs_verified": false,
+  "otel_found": false,
+  "git_remote": null,
+  "published_repository": false,
+  "pending": [
+    "Owner approval for this exact change set and its costs/network/IAM",
+    "Owner attaches scoped runtime/validation permission supplement",
+    "Read detailed CloudFormation validation events and account/audit state",
+    "Execute approved change set only after prerequisites pass",
+    "Install backend/release/secret/Caddy and publish frontend",
+    "Provide actual Cloudflare application DNS records after stack outputs",
+    "Verify public HTTPS/endpoints/browser/latencies/CloudWatch",
+    "Authorize Git remote and authentic Budget screenshot if required"
+  ],
+  "phase3b_started": false
+}

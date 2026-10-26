@@ -1,0 +1,141 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "CorodevBackendInlinePolicy",
+      "Effect": "Allow",
+      "Action": [
+        "iam:PutRolePolicy",
+        "iam:DeleteRolePolicy"
+      ],
+      "Resource": "arn:aws:iam::REPLACE_WITH_AUTHORIZED_ACCOUNT_ID:role/deploy-cli-ec2-corodev-phase2"
+    },
+    {
+      "Sid": "CorodevNodeSessionAndCommands",
+      "Effect": "Allow",
+      "Action": [
+        "ssm:StartSession",
+        "ssm:SendCommand"
+      ],
+      "Resource": "arn:aws:ec2:us-east-2:REPLACE_WITH_AUTHORIZED_ACCOUNT_ID:instance/*",
+      "Condition": {
+        "StringEquals": {
+          "aws:RequestedRegion": "us-east-2",
+          "ssm:resourceTag/Project": "CoroDev",
+          "ssm:resourceTag/Name": "corodev-phase2-backend"
+        }
+      }
+    },
+    {
+      "Sid": "DefaultShellSessionDocument",
+      "Effect": "Allow",
+      "Action": [
+        "ssm:StartSession"
+      ],
+      "Resource": "arn:aws:ssm:us-east-2:REPLACE_WITH_AUTHORIZED_ACCOUNT_ID:document/SSM-SessionManagerRunShell",
+      "Condition": {
+        "StringEquals": {
+          "aws:RequestedRegion": "us-east-2"
+        }
+      }
+    },
+    {
+      "Sid": "DeploymentShellCommandDocument",
+      "Effect": "Allow",
+      "Action": [
+        "ssm:SendCommand"
+      ],
+      "Resource": "arn:aws:ssm:us-east-2::document/AWS-RunShellScript",
+      "Condition": {
+        "StringEquals": {
+          "aws:RequestedRegion": "us-east-2"
+        }
+      }
+    },
+    {
+      "Sid": "OwnIamUserSessions",
+      "Effect": "Allow",
+      "Action": [
+        "ssmmessages:OpenDataChannel",
+        "ssm:ResumeSession",
+        "ssm:TerminateSession"
+      ],
+      "Resource": "arn:aws:ssm:us-east-2:REPLACE_WITH_AUTHORIZED_ACCOUNT_ID:session/${aws:username}-*",
+      "Condition": {
+        "StringEquals": {
+          "aws:RequestedRegion": "us-east-2"
+        }
+      }
+    },
+    {
+      "Sid": "DeploymentCommandResults",
+      "Effect": "Allow",
+      "Action": [
+        "ssm:DescribeInstanceInformation",
+        "ssm:GetCommandInvocation"
+      ],
+      "Resource": "*",
+      "Condition": {
+        "StringEquals": {
+          "aws:RequestedRegion": "us-east-2"
+        }
+      }
+    },
+    {
+      "Sid": "CorodevChangeSetValidationEvents",
+      "Effect": "Allow",
+      "Action": [
+        "cloudformation:DescribeEvents"
+      ],
+      "Resource": [
+        "arn:aws:cloudformation:us-east-2:REPLACE_WITH_AUTHORIZED_ACCOUNT_ID:stack/corodev-phase2/REPLACE_WITH_STACK_UUID",
+        "arn:aws:cloudformation:us-east-2:REPLACE_WITH_AUTHORIZED_ACCOUNT_ID:changeSet/phase3a2-*/*"
+      ],
+      "Condition": {
+        "StringEquals": {
+          "aws:RequestedRegion": "us-east-2"
+        }
+      }
+    },
+    {
+      "Sid": "AccountPlanPreflightRead",
+      "Effect": "Allow",
+      "Action": [
+        "freetier:GetAccountPlanState"
+      ],
+      "Resource": "*",
+      "Condition": {
+        "StringEquals": {
+          "aws:RequestedRegion": "us-east-1"
+        }
+      }
+    },
+    {
+      "Sid": "OhioAuditInventory",
+      "Effect": "Allow",
+      "Action": [
+        "cloudtrail:DescribeTrails"
+      ],
+      "Resource": "*",
+      "Condition": {
+        "StringEquals": {
+          "aws:RequestedRegion": "us-east-2"
+        }
+      }
+    },
+    {
+      "Sid": "OhioAuditConfigurationRead",
+      "Effect": "Allow",
+      "Action": [
+        "cloudtrail:GetTrailStatus",
+        "cloudtrail:GetEventSelectors"
+      ],
+      "Resource": "arn:aws:cloudtrail:us-east-2:REPLACE_WITH_AUTHORIZED_ACCOUNT_ID:trail/*",
+      "Condition": {
+        "StringEquals": {
+          "aws:RequestedRegion": "us-east-2"
+        }
+      }
+    }
+  ]
+}

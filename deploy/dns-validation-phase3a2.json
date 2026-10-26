@@ -1,0 +1,12 @@
+{
+  "provider": "Cloudflare",
+  "zone": "lexinnovate.com",
+  "purpose": "ACM frontend ownership validation; does not route the application",
+  "type": "CNAME",
+  "name": "_18414b2fbc926162e72dc758bc022bf9.sistemamanta.lexinnovate.com",
+  "value": "_7fe3626cee5c306831112ca94dc4d567.wzccmgtwzk.acm-validations.aws",
+  "proxied": false,
+  "ttl": "Auto",
+  "frontend_route_pending_stack_output": true,
+  "api_route_pending_stack_output": true
+}
