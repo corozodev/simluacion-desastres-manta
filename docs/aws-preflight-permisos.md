@@ -1,5 +1,17 @@
 # Permisos para reanudar el preflight
 
+## Reintento con permisos nuevos
+
+Ya funcionan EC2/VPC, S3, IAM de lectura, logs y Budget. Verificados el Budget de 30 USD (gasto informado 0,00 USD), sus tres avisos/email, red pública y AMI AL2023 x86_64. Siguen denegados CloudFormation, ACM, CloudFront, servicequotas, plan de cuenta, CloudTrail y SSM público. La consulta SSM no bloquea la AMI porque se comprobó por EC2.
+
+El [suplemento de preparación](../deploy/prepare-changeset-policy.example.json) tiene copia con cuenta real en `deploy/evidence-private/phase3a2-retry-20261026/prepare-changeset-policy.json`, modo 600 y fuera de Git. Revisar y asociar con un administrador autorizado; no se aplicó desde aquí. El ejemplo público requiere sustituir el marcador de cuenta.
+
+Permite listar/validar CloudFormation y preparar change sets `phase3a2-*` para `corodev-phase2` en Ohio, **sin RoleARN ni tags**. Incluye lectura de certificados/distribuciones/cuotas/plan/auditoría y una solicitud ACM pública, sin tags, DNS y no exportable para el frontend exacto en Virginia. [Condiciones oficiales ACM](https://docs.aws.amazon.com/acm/latest/userguide/acm-conditions.html). No permite ejecutar el change set ni modificar IAM.
+
+La ejecución aprobada necesitará después permisos de CloudFormation, IAM para el rol/perfil concreto y PassRole restringido, CloudFront/OAC/Function y alarma CloudWatch, incluyendo operaciones de recuperación. Se revisarán contra el change set real; no se pide AdministratorAccess ni se reemplazan los permisos actuales. No se solicitó certificado ni se creó change set por falta de acceso.
+
+## Primera revisión y política de lectura
+
 El 26 de octubre de 2026 STS confirmó una identidad IAM de la cuenta autorizada; las consultas de infraestructura fueron denegadas por falta de un Allow en las políticas de identidad. El propietario eligió preparar archivos y dejar el acceso pendiente. No se aplicó ninguna política ni se pidió una nueva Access Key.
 
 La [plantilla de política de lectura](../deploy/preflight-readonly-policy.example.json) es una propuesta para revisión de un administrador autorizado. Las acciones se comprobaron en la [referencia oficial programática de autorización](https://docs.aws.amazon.com/service-authorization/latest/reference/service-reference.html) y errores reales. No deriva permisos de los algoritmos de la aplicación. No contiene ExecuteChangeSet, RunInstances, PassRole, AttachPolicy ni creación de recursos. Preparar el change set requerirá después `cloudformation:CreateChangeSet` sobre el stack concreto; esta política no lo concede.

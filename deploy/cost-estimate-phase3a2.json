@@ -150,10 +150,10 @@
   "monthly_total_rounded_usd": "22.96",
   "recommended_small_usage_allowance_usd": "24.00",
   "reported_budget_usd": "30.00",
-  "budget_verified": false,
+  "budget_verified": true,
   "estimated_headroom_if_no_other_account_spend_usd": "7.04",
   "t3_medium_monthly_estimate_usd": "38.15",
-  "observed_spend_usd": null,
+  "observed_spend_usd": "0.00",
   "notes": [
     "Low traffic planning estimate; not a spending cap or observed charge.",
     "CloudFront PriceClass_100 with US delivery rates; audience location and usage affect bill.",
@@ -161,5 +161,8 @@
     "API egress uses planning allowance; account-specific effective rate not verified.",
     "No paid Cost Explorer query made.",
     "Taxes, support, domain registration, excess traffic and retained versions excluded."
-  ]
+  ],
+  "observed_spend_source": "AWS Budgets CalculatedSpend.ActualSpend; account scope, not project attribution",
+  "observed_spend_at": "2026-10-26T15:55:50-05:00",
+  "observed_spend_excludes_credits_and_refunds": true
 }

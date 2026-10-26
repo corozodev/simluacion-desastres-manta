@@ -1,0 +1,10 @@
+{
+  "DomainName": "sistemamanta.lexinnovate.com",
+  "ValidationMethod": "DNS",
+  "IdempotencyToken": "corodevfrontend20261026",
+  "KeyAlgorithm": "RSA_2048",
+  "Options": {
+    "CertificateTransparencyLoggingPreference": "ENABLED",
+    "Export": "DISABLED"
+  }
+}

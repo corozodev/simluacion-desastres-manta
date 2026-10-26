@@ -1,0 +1,316 @@
+{
+  "phase": "3A.2",
+  "recorded_at": "2026-10-26T15:55:50-05:00",
+  "timezone": "America/Guayaquil",
+  "status": "partial_preflight_complete_additional_permissions_and_dns_pending",
+  "profile": "default",
+  "region": "us-east-2",
+  "identity": {
+    "type": "IAMUser",
+    "user_name": "deploy-cli",
+    "authorized_account_matches": true,
+    "is_root": false
+  },
+  "budget": {
+    "verified": true,
+    "monthly_usd": "30.00",
+    "unit": "USD",
+    "type": "COST",
+    "time_unit": "MONTHLY",
+    "health": "HEALTHY",
+    "scope": "account; no cost filters",
+    "observed_actual_spend_usd": "0.00",
+    "observed_at": "2026-10-26T15:55:50-05:00",
+    "billing_value_may_lag": true,
+    "credits_and_refunds_included": false,
+    "alerts": [
+      {
+        "type": "ACTUAL",
+        "threshold_percent": 100.0,
+        "state": "OK",
+        "subscriber_count": 1,
+        "email_subscriber_count": 1
+      },
+      {
+        "type": "ACTUAL",
+        "threshold_percent": 85.0,
+        "state": "OK",
+        "subscriber_count": 1,
+        "email_subscriber_count": 1
+      },
+      {
+        "type": "FORECASTED",
+        "threshold_percent": 100.0,
+        "state": "OK",
+        "subscriber_count": 1,
+        "email_subscriber_count": 1
+      }
+    ],
+    "recipients_verified": true,
+    "delivery_confirmed_by_owner": false,
+    "duplicate_created": false,
+    "screenshot_available": false
+  },
+  "network": {
+    "existing_default_vpc_available": true,
+    "selected_public_subnet_az": "us-east-2a",
+    "subnet_available": true,
+    "public_ipv4_on_launch": true,
+    "active_default_route_to_attached_igw": true,
+    "vpc_dns_support": true,
+    "vpc_dns_hostnames": true,
+    "dhcp_amazon_provided_dns": true,
+    "nacl_allows_ingress_egress": true,
+    "existing_security_group_reused": false,
+    "dedicated_security_group_planned": true,
+    "existing_ec2_instances": 0,
+    "existing_elastic_ips": 0,
+    "existing_s3_buckets": 0,
+    "new_resources_created": false
+  },
+  "ami": {
+    "verified": true,
+    "source": "EC2 DescribeImages --owners amazon; SSM parameter access still denied",
+    "name": "al2023-ami-2023.12.20261026.1-kernel-6.1-x86_64",
+    "architecture": "x86_64",
+    "state": "available",
+    "root_device_type": "ebs",
+    "virtualization_type": "hvm",
+    "instance_type_available_in_selected_az": "t3.small",
+    "image_platform": "linux/amd64"
+  },
+  "checks": [
+    {
+      "check": "account_attributes",
+      "exit_code": 0,
+      "result": "passed"
+    },
+    {
+      "check": "account_plan",
+      "exit_code": 254,
+      "result": "access_denied"
+    },
+    {
+      "check": "addresses",
+      "exit_code": 0,
+      "result": "passed"
+    },
+    {
+      "check": "ami_images",
+      "exit_code": 0,
+      "result": "passed"
+    },
+    {
+      "check": "ami_parameter",
+      "exit_code": 254,
+      "result": "access_denied"
+    },
+    {
+      "check": "ami_selected",
+      "exit_code": 0,
+      "result": "passed"
+    },
+    {
+      "check": "buckets",
+      "exit_code": 0,
+      "result": "passed"
+    },
+    {
+      "check": "budget_details",
+      "exit_code": 0,
+      "result": "passed"
+    },
+    {
+      "check": "budget_notifications",
+      "exit_code": 0,
+      "result": "passed"
+    },
+    {
+      "check": "budgets",
+      "exit_code": 0,
+      "result": "passed"
+    },
+    {
+      "check": "certificates",
+      "exit_code": 254,
+      "result": "access_denied"
+    },
+    {
+      "check": "distributions",
+      "exit_code": 254,
+      "result": "access_denied"
+    },
+    {
+      "check": "eip_quota",
+      "exit_code": 254,
+      "result": "access_denied"
+    },
+    {
+      "check": "iam_attached",
+      "exit_code": 0,
+      "result": "passed"
+    },
+    {
+      "check": "iam_groups",
+      "exit_code": 0,
+      "result": "passed"
+    },
+    {
+      "check": "iam_inline",
+      "exit_code": 0,
+      "result": "passed"
+    },
+    {
+      "check": "iam_user",
+      "exit_code": 0,
+      "result": "passed"
+    },
+    {
+      "check": "identity",
+      "exit_code": 0,
+      "result": "passed"
+    },
+    {
+      "check": "instance_offerings",
+      "exit_code": 0,
+      "result": "passed"
+    },
+    {
+      "check": "instance_offerings_selected",
+      "exit_code": 0,
+      "result": "passed"
+    },
+    {
+      "check": "instance_types",
+      "exit_code": 0,
+      "result": "passed"
+    },
+    {
+      "check": "instances",
+      "exit_code": 0,
+      "result": "passed"
+    },
+    {
+      "check": "internet_gateways",
+      "exit_code": 0,
+      "result": "passed"
+    },
+    {
+      "check": "log_groups",
+      "exit_code": 0,
+      "result": "passed"
+    },
+    {
+      "check": "network_acls",
+      "exit_code": 0,
+      "result": "passed"
+    },
+    {
+      "check": "routes",
+      "exit_code": 0,
+      "result": "passed"
+    },
+    {
+      "check": "security_groups",
+      "exit_code": 0,
+      "result": "passed"
+    },
+    {
+      "check": "stack_specific",
+      "exit_code": 254,
+      "result": "access_denied"
+    },
+    {
+      "check": "stacks",
+      "exit_code": 254,
+      "result": "access_denied"
+    },
+    {
+      "check": "subnets",
+      "exit_code": 0,
+      "result": "passed"
+    },
+    {
+      "check": "subscribers_actual_100",
+      "exit_code": 0,
+      "result": "passed"
+    },
+    {
+      "check": "subscribers_actual_85",
+      "exit_code": 0,
+      "result": "passed"
+    },
+    {
+      "check": "subscribers_forecasted_100",
+      "exit_code": 0,
+      "result": "passed"
+    },
+    {
+      "check": "template_validation",
+      "exit_code": 254,
+      "result": "access_denied"
+    },
+    {
+      "check": "trails",
+      "exit_code": 254,
+      "result": "access_denied"
+    },
+    {
+      "check": "vcpu_quota",
+      "exit_code": 254,
+      "result": "access_denied"
+    },
+    {
+      "check": "vpc_dhcp",
+      "exit_code": 0,
+      "result": "passed"
+    },
+    {
+      "check": "vpc_dns_hostnames",
+      "exit_code": 0,
+      "result": "passed"
+    },
+    {
+      "check": "vpc_dns_support",
+      "exit_code": 0,
+      "result": "passed"
+    },
+    {
+      "check": "vpcs",
+      "exit_code": 0,
+      "result": "passed"
+    },
+    {
+      "check": "zones",
+      "exit_code": 254,
+      "result": "access_denied"
+    }
+  ],
+  "remaining": {
+    "cloudformation_permissions": false,
+    "acm_permissions": false,
+    "cloudfront_permissions": false,
+    "service_quota_api_verified": false,
+    "account_plan_verified": false,
+    "cloudtrail_recording_verified": false,
+    "frontend_dns_configured": false,
+    "api_dns_configured": false,
+    "issued_frontend_certificate_verified": false
+  },
+  "change_set": {
+    "created": false,
+    "executed": false,
+    "specific_execution_approval_received": false
+  },
+  "prepared_files": {
+    "private_parameters": "deploy/aws/parameters.production.json",
+    "parameters_have_pending_certificate_marker": true,
+    "certificate_request": "deploy/aws/certificate-request.example.json",
+    "permission_example": "deploy/prepare-changeset-policy.example.json",
+    "account_specific_permission_policy": "deploy/evidence-private/phase3a2-retry-20261026/prepare-changeset-policy.json"
+  },
+  "aws_resources_created": [],
+  "paid_api_calls_made": false,
+  "private_evidence_directory": "deploy/evidence-private/phase3a2-retry-20261026/",
+  "phase3b_started": false
+}

@@ -1,17 +1,21 @@
 # Despliegue AWS — FASE 3A.2
 
-**Estado al 26 de octubre de 2026, America/Guayaquil:** preparación local completada; acceso AWS pendiente por decisión del propietario tras comprobar errores IAM. STS autentica con el perfil existente `default`, usuario IAM `deploy-cli`, cuenta coincidente con la autorizada y región configurada `us-east-2`. No es root. No existe perfil `corodev`; no se modificaron perfiles ni credenciales.
+**Reintento del 26 de octubre de 2026, America/Guayaquil:** los nuevos permisos permiten comprobar EC2, VPC, S3, IAM, logs y el Budget. Perfil existente `default`, identidad IAM `deploy-cli`, cuenta autorizada y región `us-east-2`; no root ni cambios de credenciales.
 
-AWS denegó las 26 consultas iniciales de inventario, Budget, IAM, cuotas y certificados, además de `cloudformation:ValidateTemplate` y `pricing:GetProducts`. La causa informada es ausencia de una política de identidad que permita esas acciones. **No se creó un change set ni infraestructura; no hay despliegue, HTTPS público o latencias externas comprobados.** STS no demuestra permisos de aprovisionamiento.
+**Budget real verificado:** mensual de 30 USD, COST, HEALTHY, cobertura de cuenta sin filtros y gasto acumulado informado de **0,00 USD**. Avisos de gasto real al 85% y 100%, y previsto al 100%; cada uno tiene un destinatario EMAIL comprobado. Direcciones privadas; no se confirmó entrega de correo ni se generó una captura ficticia. El dato puede llegar con retraso y excluye créditos/reembolsos.
+
+Verificados VPC pública existente, subred en `us-east-2a`, ruta activa a Internet Gateway, DNS de VPC/DHCP, NACL y AMI AL2023 x86_64 disponible de Amazon. `t3.small` se ofrece en la zona. No hay EC2, EIP o buckets existentes en el inventario consultado. Se completaron los parámetros privados de red/AMI/Budget, sin crear recursos.
+
+**Persisten denegaciones de CloudFormation, ACM, CloudFront, cuotas, plan de cuenta y CloudTrail.** No existe change set ni despliegue. DNS de Cloudflare sigue pendiente por indicación del propietario. Se dejó un [complemento de permisos de preparación](../deploy/prepare-changeset-policy.example.json), sin ejecución o mutaciones IAM, y una copia con la cuenta real solo en evidencia privada. La AMI se verificó por EC2 pese al permiso SSM ausente.
 
 ## Evidencias y acceso pendiente
 
-- [Estado consolidado](../deploy/validation-phase3a.json), [preflight de esta fase](../deploy/validation-phase3a2-preflight.json) y [validación local](../deploy/validation-phase3a2-local.json).
-- Respuestas/errores completos: `deploy/evidence-private/phase3a2/`, privado y excluido de Git. No contienen credenciales.
+- [Último reintento AWS](../deploy/validation-phase3a2-retry.json), [estado consolidado](../deploy/validation-phase3a.json), [preflight de esta fase](../deploy/validation-phase3a2-preflight.json) y [validación local](../deploy/validation-phase3a2-local.json).
+- Respuestas/errores del reintento: `deploy/evidence-private/phase3a2-retry-20261026/`, privado y excluido de Git. No contienen credenciales.
 - [Plantilla de política de lectura para preflight](../deploy/preflight-readonly-policy.example.json), con marcador de cuenta, revisable y **no aplicada**. Un administrador autorizado debe revisarla para el usuario existente o adaptar la inspección a un rol temporal.
 - [Explicación de los permisos](aws-preflight-permisos.md). Los permisos de preparar/ejecutar el change set se revisarán por separado, con los recursos reales. No usar AdministratorAccess para resolver este bloqueo.
 
-VPC, subred, rutas, NACL, grupos, cuotas, estado/plan de cuenta, AMI AL2023, recursos reutilizables, certificados y Budget siguen **sin verificar**. Un AccessDenied no demuestra que no existan. Los resultados de FASE 2/3A anteriores se conservan como evidencia histórica.
+Cuotas modernas, plan de cuenta, inventario CloudFormation/CloudFront, certificados y CloudTrail siguen **sin verificar**. Los atributos EC2 informan límite de cinco EIP, pero no sustituyen la consulta de cuotas vCPU. Un AccessDenied no demuestra ausencia de recursos. Las evidencias anteriores se conservan como historia.
 
 ## Infraestructura existente adaptada
 
@@ -48,7 +52,7 @@ No existen destinos exactos todavía: faltan outputs y una respuesta ACM accesib
 
 Buscar primero ACM en **us-east-1**: certificado ISSUED, vigente y SAN exacto o wildcard válido para el frontend. `*.lexinnovate.com` puede cubrirlo, pero no `api.sistemamanta.lexinnovate.com`. Caddy obtiene un certificado independiente para API. [Requisitos de CloudFront](https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/cnames-and-https-requirements.html).
 
-Si no existe certificado reutilizable, preparar solicitud pública sin exportación y validación DNS para el frontend. No se ha solicitado uno aquí. Tras autorizar y realizar la solicitud, entregar el CNAME exacto de ACM y esperar ISSUED antes del change set final.
+Si no existe certificado reutilizable, usar la [solicitud preparada](../deploy/aws/certificate-request.example.json), pública, DNS y Export=DISABLED. No se ha solicitado uno aquí por falta de permisos. Ejecutar sin tags, en us-east-1, entregar el CNAME exacto de ACM y esperar ISSUED antes del change set final. La falta del CNAME de validación impide emitirlo aunque el resto del DNS se deje para después.
 
 CloudFront, función/OAC e IAM son globales. ACM CloudFront y endpoints globales Budgets/Price List utilizan us-east-1. EC2, EBS, EIP, S3 y CloudWatch permanecen en Ohio.
 
@@ -73,12 +77,13 @@ Consultar SSM público `/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-d
 
 ## Change set y aprobación obligatoria
 
-**No se puede preparar un change set real hasta verificar red, Budget, AMI, certificado y permisos.** Los parámetros conservan marcadores visibles. Estimación base **22,96 USD/mes**, reserva de 24 USD; t3.medium alcanzaría 38,15 USD. Ver [costos y supuestos](costos.md).
+**Red, Budget y AMI ya están verificados; faltan permisos y certificado para preparar el change set final.** Los parámetros conservan marcadores visibles. Estimación base **22,96 USD/mes**, reserva de 24 USD; t3.medium alcanzaría 38,15 USD. Ver [costos y supuestos](costos.md).
 
-Copiar el ejemplo a `deploy/aws/parameters.production.json`, excluido de Git, y completar solo datos reales. Revisar si existe `corodev-phase2` y elegir CREATE/UPDATE según su estado; no eliminar/recrear para evitar errores.
+La copia `deploy/aws/parameters.production.json`, modo 600 y excluida de Git, ya tiene la VPC, subred, AMI, Budget y TCP 80/443 públicos previstos. El ARN ACM mantiene un marcador visible; no ejecutar así. Revisar si existe `corodev-phase2` y elegir CREATE/UPDATE según su estado; no eliminar/recrear para evitar errores.
 
 ```sh
-# CHANGE_SET_TYPE y CHANGE_SET_NAME corresponden al estado/nombre revisados.
+# CHANGE_SET_TYPE corresponde al estado real; nombre phase3a2-* para el suplemento IAM.
+# No usar --tags ni RoleARN con la política de preparación.
 aws cloudformation create-change-set --region "$AWS_REGION" \
   --stack-name corodev-phase2 --change-set-name "$CHANGE_SET_NAME" \
   --change-set-type "$CHANGE_SET_TYPE" --template-body file://deploy/aws/stack.yaml \

@@ -2,7 +2,9 @@
 
 Consulta del **26 de octubre de 2026**, America/Guayaquil. Región: **us-east-2 (Ohio)**. Estimación mensual base: **22,96 USD**; reservar **24 USD** para el consumo pequeño descrito. No es gasto observado, cotización ni límite de facturación.
 
-La identidad IAM autentica, pero `budgets:ViewBudget` y `pricing:GetProducts` fueron denegados. Se usaron los catálogos públicos oficiales de AWS para precios. No se pudo comprobar el Budget de 30 USD informado por el propietario, sus destinatarios, alertas o gasto acumulado. **Gasto observado: no disponible**, no equivale a cero. No se creó ningún recurso con consumo.
+El reintento con permisos nuevos comprobó el **Budget mensual real de 30 USD**, HEALTHY y sin filtros de cuenta. Tiene avisos ACTUAL al 85%/100% y FORECASTED al 100%, con un destinatario EMAIL por aviso. No se cambiaron ni duplicaron. Direcciones y respuestas completas se conservan privadas.
+
+**Gasto acumulado observado por AWS Budgets: 0,00 USD**, consultado el 26 de octubre de 2026. Es un dato de cuenta con posible retraso, excluye créditos/reembolsos y no demuestra una factura final ni atribución exclusiva al proyecto. No se aprovisionó infraestructura. La estimación usa catálogos públicos oficiales descargados; no se consultó Cost Explorer.
 
 ## Supuestos y cálculo reproducible
 
@@ -44,7 +46,7 @@ Los endpoints regionales de precios no crean infraestructura. Catálogos complet
 
 La plantilla usa `CreateProjectBudget=false` y exige `ExistingBudgetName`. El parámetro **no demuestra que exista el Budget**: antes del change set verificar importe mensual en USD, cobertura/filtros, vigencia, salud, avisos y suscriptores. No crear otro presupuesto para resolver un permiso denegado.
 
-El Budget monitoriza y avisa; **no detiene automáticamente los cargos**. Confirmar entrega de alertas con el propietario. La captura de consola debe ser auténtica y privada en `docs/budget.png` o `deploy/evidence-private/`; aún no existe una captura de esta fase.
+El Budget monitoriza y avisa; **no detiene automáticamente los cargos**. Confirmar entrega de alertas con el propietario. Los avisos comprobados equivalen a 25,50 USD de gasto real (85%), 30 USD de gasto real y 30 USD previsto. Cada aviso tiene un email configurado; entrega aún sin confirmar. La captura de consola debe ser auténtica y privada en `docs/budget.png` o `deploy/evidence-private/`; aún no existe una captura de esta fase.
 
 La estimación deja aproximadamente **7,04 USD** respecto al Budget informado para este proyecto aislado. El Budget puede cubrir otras aplicaciones de la cuenta. Tráfico API/CloudFront, logs, versiones S3 antiguas, pruebas sostenidas, snapshots, impuestos o soporte pueden consumir el margen. No hay NAT Gateway, ALB, RDS, ECR ni escalado automático.
 
@@ -54,4 +56,6 @@ Detener EC2 no elimina cargos de EBS ni de una EIP retenida. Borrar el stack tam
 
 ## Gasto observado
 
-No hay dato de facturación verificable con la identidad actual. No se consultó Cost Explorer: sus consultas pueden tener costo y no están autorizadas antes del punto de control de gasto. Al habilitar acceso, consultar primero `CalculatedSpend` del Budget y registrar fecha, período, moneda, cobertura y retraso del dato. Cualquier consulta facturable adicional requiere autorización.
+AWS Budgets devolvió CalculatedSpend.ActualSpend de **0,00 USD** para el Budget mensual de cuenta. Su configuración excluye créditos y reembolsos. La fecha y alcance están en [la evidencia del reintento](../deploy/validation-phase3a2-retry.json) y [el cálculo actualizado](../deploy/cost-estimate-phase3a2.json). No interpretar ese importe como disponibilidad garantizada de créditos ni como costo final de recursos todavía no desplegados.
+
+No se consultó Cost Explorer: puede tener costo por consulta. No hay captura de consola auténtica disponible, ni recursos con consumo creados por esta ejecución.

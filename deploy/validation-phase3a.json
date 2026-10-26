@@ -1,9 +1,9 @@
 {
   "phase": "3A.2",
-  "recorded_at": "2026-10-26T15:38:46-05:00",
+  "recorded_at": "2026-10-26T15:55:50-05:00",
   "timezone": "America/Guayaquil",
-  "status": "prepared_locally_aws_access_deferred_by_owner",
-  "reason": "Correct IAM user authenticated; required AWS reads denied. Owner selected preparing files and leaving AWS access pending.",
+  "status": "partial_preflight_complete_additional_permissions_and_dns_pending",
+  "reason": "Owner resumed after adding policies; Budget, alerts, public network and AL2023 verified. Additional CloudFormation/ACM/CloudFront and quota/plan permissions plus DNS remain pending.",
   "previous_phase3a_record": {
     "phase": "3A",
     "status": "paused_by_owner",
@@ -73,28 +73,60 @@
     "credentials_or_profiles_modified": false,
     "profile": "default",
     "region": "us-east-2",
-    "preflight_permissions_available": false
+    "preflight_permissions_available": "partial"
   },
   "budget": {
-    "owner_reported_monthly_usd": "30",
-    "existence_verified": false,
-    "notifications_verified": false,
-    "recipients_verified": false,
-    "observed_spend_usd": null,
+    "verified": true,
+    "monthly_usd": "30.00",
+    "unit": "USD",
+    "type": "COST",
+    "time_unit": "MONTHLY",
+    "health": "HEALTHY",
+    "scope": "account; no cost filters",
+    "observed_actual_spend_usd": "0.00",
+    "observed_at": "2026-10-26T15:55:50-05:00",
+    "billing_value_may_lag": true,
+    "credits_and_refunds_included": false,
+    "alerts": [
+      {
+        "type": "ACTUAL",
+        "threshold_percent": 100.0,
+        "state": "OK",
+        "subscriber_count": 1,
+        "email_subscriber_count": 1
+      },
+      {
+        "type": "ACTUAL",
+        "threshold_percent": 85.0,
+        "state": "OK",
+        "subscriber_count": 1,
+        "email_subscriber_count": 1
+      },
+      {
+        "type": "FORECASTED",
+        "threshold_percent": 100.0,
+        "state": "OK",
+        "subscriber_count": 1,
+        "email_subscriber_count": 1
+      }
+    ],
+    "recipients_verified": true,
+    "delivery_confirmed_by_owner": false,
     "duplicate_created": false,
-    "authentic_screenshot_available": false
+    "screenshot_available": false
   },
   "cost_estimate": {
     "region": "us-east-2",
     "monthly_usd": "22.96",
-    "observed_spend_usd": null,
-    "details": "deploy/cost-estimate-phase3a2.json"
+    "observed_spend_usd": "0.00",
+    "details": "deploy/cost-estimate-phase3a2.json",
+    "observed_spend_source": "AWS Budgets, account scope; may lag"
   },
   "change_set": {
     "created": false,
     "executed": false,
     "arn": null,
-    "reason": "Unknown verified network/AMI/budget/certificate and missing IAM access; owner requested files only pending access.",
+    "reason": "Budget, VPC, subnet and AMI verified; CloudFormation/ACM/CloudFront and quota/plan reads still denied. DNS pending.",
     "specific_execution_approval_received": false
   },
   "evidence_phase3a2": [
@@ -103,13 +135,13 @@
     "deploy/cost-estimate-phase3a2.json"
   ],
   "pending": [
-    "Enable authorized read access and repeat AWS preflight",
-    "Verify existing monthly Budget, notifications and recipients",
-    "Verify VPC/subnet/AMI/quotas and reusable resources",
-    "Verify/request issued ACM certificate and provide actual DNS records",
-    "Create actual CloudFormation change set and obtain specific execution approval",
-    "Deploy and run external HTTPS/API/browser/CloudWatch checks",
-    "Define and authorize public Git remote before publication"
+    "Attach reviewed supplemental preparation permissions",
+    "Verify account quotas/plan and ACM/CloudFront/CloudFormation inventory",
+    "Request/reuse frontend certificate; validate DNS in Cloudflare",
+    "Create actual change set and obtain specific execution approval",
+    "Grant scoped deployment permissions after approval and deploy",
+    "Verify public TLS/API/browser/CloudWatch and external latency",
+    "Define authorized Git remote before publication"
   ],
   "phase3b_started": false,
   "local_artifacts": {
@@ -140,5 +172,7 @@
     "remote": null,
     "published": false,
     "secret_scan_result": "no_confirmed_findings_in_269_candidates_including_compressed_osm"
-  }
+  },
+  "previous_status": "prepared_locally_aws_access_deferred_by_owner",
+  "latest_retry_evidence": "deploy/validation-phase3a2-retry.json"
 }

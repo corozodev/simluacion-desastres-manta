@@ -1,0 +1,128 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "OhioTemplateValidationAndStackInventory",
+      "Effect": "Allow",
+      "Action": [
+        "cloudformation:ListStacks",
+        "cloudformation:ValidateTemplate",
+        "cloudformation:GetTemplateSummary"
+      ],
+      "Resource": "*",
+      "Condition": {"StringEquals": {"aws:RequestedRegion": "us-east-2"}}
+    },
+    {
+      "Sid": "CoroDevStackAndChangeSetRead",
+      "Effect": "Allow",
+      "Action": [
+        "cloudformation:DescribeStacks",
+        "cloudformation:DescribeChangeSet",
+        "cloudformation:ListChangeSets",
+        "cloudformation:GetTemplate"
+      ],
+      "Resource": "arn:aws:cloudformation:us-east-2:REPLACE_WITH_AUTHORIZED_ACCOUNT_ID:stack/corodev-phase2/*",
+      "Condition": {"StringEquals": {"aws:RequestedRegion": "us-east-2"}}
+    },
+    {
+      "Sid": "CoroDevPrepareChangeSetWithoutExecutionRole",
+      "Effect": "Allow",
+      "Action": "cloudformation:CreateChangeSet",
+      "Resource": "arn:aws:cloudformation:us-east-2:REPLACE_WITH_AUTHORIZED_ACCOUNT_ID:stack/corodev-phase2/*",
+      "Condition": {
+        "StringEquals": {"aws:RequestedRegion": "us-east-2"},
+        "StringLike": {"cloudformation:ChangeSetName": "phase3a2-*"},
+        "Null": {"cloudformation:RoleArn": "true"}
+      }
+    },
+    {
+      "Sid": "CoroDevValidationEvents",
+      "Effect": "Allow",
+      "Action": "cloudformation:DescribeEvents",
+      "Resource": [
+        "arn:aws:cloudformation:us-east-2:REPLACE_WITH_AUTHORIZED_ACCOUNT_ID:stack/corodev-phase2/*",
+        "arn:aws:cloudformation:us-east-2:REPLACE_WITH_AUTHORIZED_ACCOUNT_ID:changeSet/phase3a2-*/*"
+      ],
+      "Condition": {"StringEquals": {"aws:RequestedRegion": "us-east-2"}}
+    },
+    {
+      "Sid": "CloudFrontCertificateInventory",
+      "Effect": "Allow",
+      "Action": "acm:ListCertificates",
+      "Resource": "*",
+      "Condition": {"StringEquals": {"aws:RequestedRegion": "us-east-1"}}
+    },
+    {
+      "Sid": "CloudFrontCertificateMetadata",
+      "Effect": "Allow",
+      "Action": "acm:DescribeCertificate",
+      "Resource": "arn:aws:acm:us-east-1:REPLACE_WITH_AUTHORIZED_ACCOUNT_ID:certificate/*",
+      "Condition": {"StringEquals": {"aws:RequestedRegion": "us-east-1"}}
+    },
+    {
+      "Sid": "RequestOnlyPublicNonExportableFrontendCertificate",
+      "Effect": "Allow",
+      "Action": "acm:RequestCertificate",
+      "Resource": "*",
+      "Condition": {
+        "StringEquals": {
+          "aws:RequestedRegion": "us-east-1",
+          "acm:ValidationMethod": "DNS",
+          "acm:Export": "DISABLED",
+          "acm:CertificateKeyPairOrigin": "AWS_MANAGED"
+        },
+        "ForAllValues:StringEquals": {
+          "acm:DomainNames": ["sistemamanta.lexinnovate.com"]
+        },
+        "Null": {
+          "acm:DomainNames": "false",
+          "acm:CertificateAuthority": "true"
+        }
+      }
+    },
+    {
+      "Sid": "GlobalCloudFrontInventory",
+      "Effect": "Allow",
+      "Action": "cloudfront:ListDistributions",
+      "Resource": "*"
+    },
+    {
+      "Sid": "OhioEc2QuotaRead",
+      "Effect": "Allow",
+      "Action": "servicequotas:GetServiceQuota",
+      "Resource": [
+        "arn:aws:servicequotas:us-east-2:REPLACE_WITH_AUTHORIZED_ACCOUNT_ID:ec2/L-1216C47A",
+        "arn:aws:servicequotas:us-east-2:REPLACE_WITH_AUTHORIZED_ACCOUNT_ID:ec2/L-0263D0A3"
+      ],
+      "Condition": {"StringEquals": {"aws:RequestedRegion": "us-east-2"}}
+    },
+    {
+      "Sid": "PublicAmazonLinuxAmiParameter",
+      "Effect": "Allow",
+      "Action": "ssm:GetParameter",
+      "Resource": "arn:aws:ssm:us-east-2::parameter/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64",
+      "Condition": {"StringEquals": {"aws:RequestedRegion": "us-east-2"}}
+    },
+    {
+      "Sid": "AccountPlanRead",
+      "Effect": "Allow",
+      "Action": "freetier:GetAccountPlanState",
+      "Resource": "*",
+      "Condition": {"StringEquals": {"aws:RequestedRegion": "us-east-1"}}
+    },
+    {
+      "Sid": "OhioAuditTrailInventory",
+      "Effect": "Allow",
+      "Action": "cloudtrail:DescribeTrails",
+      "Resource": "*",
+      "Condition": {"StringEquals": {"aws:RequestedRegion": "us-east-2"}}
+    },
+    {
+      "Sid": "OhioAuditTrailStatus",
+      "Effect": "Allow",
+      "Action": "cloudtrail:GetTrailStatus",
+      "Resource": "arn:aws:cloudtrail:us-east-2:REPLACE_WITH_AUTHORIZED_ACCOUNT_ID:trail/*",
+      "Condition": {"StringEquals": {"aws:RequestedRegion": "us-east-2"}}
+    }
+  ]
+}

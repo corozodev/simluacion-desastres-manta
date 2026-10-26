@@ -1,8 +1,8 @@
 {
   "phase": "3A.2",
-  "recorded_at": "2026-10-26T15:38:46-05:00",
+  "recorded_at": "2026-10-26T15:55:50-05:00",
   "timezone": "America/Guayaquil",
-  "status": "preflight_blocked_permissions_owner_deferred_aws_access",
+  "status": "partial_preflight_complete_additional_permissions_and_dns_pending",
   "aws_cli_version": "2.38.6",
   "profile": "default",
   "preferred_profile_corodev_present": false,
@@ -230,21 +230,52 @@
     "pricing:GetProducts"
   ],
   "budget": {
-    "owner_reported_monthly_usd": "30",
-    "existence_verified": false,
-    "notifications_verified": false,
-    "recipients_verified": false,
-    "observed_spend_usd": null,
+    "verified": true,
+    "monthly_usd": "30.00",
+    "unit": "USD",
+    "type": "COST",
+    "time_unit": "MONTHLY",
+    "health": "HEALTHY",
+    "scope": "account; no cost filters",
+    "observed_actual_spend_usd": "0.00",
+    "observed_at": "2026-10-26T15:55:50-05:00",
+    "billing_value_may_lag": true,
+    "credits_and_refunds_included": false,
+    "alerts": [
+      {
+        "type": "ACTUAL",
+        "threshold_percent": 100.0,
+        "state": "OK",
+        "subscriber_count": 1,
+        "email_subscriber_count": 1
+      },
+      {
+        "type": "ACTUAL",
+        "threshold_percent": 85.0,
+        "state": "OK",
+        "subscriber_count": 1,
+        "email_subscriber_count": 1
+      },
+      {
+        "type": "FORECASTED",
+        "threshold_percent": 100.0,
+        "state": "OK",
+        "subscriber_count": 1,
+        "email_subscriber_count": 1
+      }
+    ],
+    "recipients_verified": true,
+    "delivery_confirmed_by_owner": false,
     "duplicate_created": false,
-    "authentic_screenshot_available": false
+    "screenshot_available": false
   },
   "network": {
-    "vpc_verified": false,
-    "subnet_verified": false,
-    "route_verified": false,
-    "security_groups_verified": false,
-    "nacl_verified": false,
-    "ami_verified": false,
+    "vpc_verified": true,
+    "subnet_verified": true,
+    "route_verified": true,
+    "security_groups_verified": true,
+    "nacl_verified": true,
+    "ami_verified": true,
     "quotas_verified": false,
     "account_plan_verified": false
   },
@@ -271,7 +302,7 @@
     "created": false,
     "executed": false,
     "arn": null,
-    "reason": "Unknown verified network/AMI/budget/certificate and missing IAM access; owner requested files only pending access.",
+    "reason": "Budget, VPC, subnet and AMI verified; CloudFormation/ACM/CloudFront and quota/plan reads still denied. DNS pending.",
     "specific_execution_approval_received": false
   },
   "aws_resources_created": [],
@@ -313,5 +344,24 @@
     "remote": null,
     "published": false,
     "secret_scan_result": "no_confirmed_findings_in_269_candidates_including_compressed_osm"
-  }
+  },
+  "previous_status": "preflight_blocked_permissions_owner_deferred_aws_access",
+  "latest_retry_evidence": "deploy/validation-phase3a2-retry.json",
+  "aws_access": {
+    "profile": "default",
+    "region": "us-east-2",
+    "sts_authenticated": true,
+    "authorized_account_matches": true,
+    "preflight_permissions_available": "partial"
+  },
+  "pending": [
+    "Attach reviewed supplemental preparation permissions",
+    "Verify account quotas/plan and ACM/CloudFront/CloudFormation inventory",
+    "Request/reuse frontend certificate; validate DNS in Cloudflare",
+    "Create actual change set and obtain specific execution approval",
+    "Grant scoped deployment permissions after approval and deploy",
+    "Verify public TLS/API/browser/CloudWatch and external latency",
+    "Define authorized Git remote before publication"
+  ],
+  "reason": "Owner resumed after adding policies; Budget, alerts, public network and AL2023 verified. Additional CloudFormation/ACM/CloudFront and quota/plan permissions plus DNS remain pending."
 }
