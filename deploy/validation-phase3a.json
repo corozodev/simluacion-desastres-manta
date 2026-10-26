@@ -1,9 +1,9 @@
 {
   "phase": "3A.2",
-  "recorded_at": "2026-10-26T16:26:20-05:00",
+  "recorded_at": "2026-10-26T18:30:41.049760-05:00",
   "timezone": "America/Guayaquil",
-  "status": "ready_for_specific_change_set_execution_authorization",
-  "reason": "Preflight advanced: quotas/template pass; frontend certificate issued; exact named-IAM change set prepared. Specific approval and scoped IAM/SSM/event permissions still required.",
+  "status": "deployed_and_externally_verified",
+  "reason": "Owner approved exact reviewed change set; stack created, existing releases deployed, public HTTPS/API/browser and CloudWatch verified. Git publication deferred by owner.",
   "previous_phase3a_record": {
     "phase": "3A",
     "status": "paused_by_owner",
@@ -62,10 +62,78 @@
     "phase3b_started": false
   },
   "aws_resources_created": [
-    "ACM non-exportable public certificate in us-east-1",
-    "CloudFormation REVIEW_IN_PROGRESS metadata and unexecuted change set"
+    {
+      "logical_id": "ArtifactBucketPolicy",
+      "type": "AWS::S3::BucketPolicy",
+      "status": "CREATE_COMPLETE"
+    },
+    {
+      "logical_id": "ArtifactBucket",
+      "type": "AWS::S3::Bucket",
+      "status": "CREATE_COMPLETE"
+    },
+    {
+      "logical_id": "BackendAddress",
+      "type": "AWS::EC2::EIP",
+      "status": "CREATE_COMPLETE"
+    },
+    {
+      "logical_id": "BackendLogs",
+      "type": "AWS::Logs::LogGroup",
+      "status": "CREATE_COMPLETE"
+    },
+    {
+      "logical_id": "BackendProfile",
+      "type": "AWS::IAM::InstanceProfile",
+      "status": "CREATE_COMPLETE"
+    },
+    {
+      "logical_id": "BackendRole",
+      "type": "AWS::IAM::Role",
+      "status": "CREATE_COMPLETE"
+    },
+    {
+      "logical_id": "BackendSecurityGroup",
+      "type": "AWS::EC2::SecurityGroup",
+      "status": "CREATE_COMPLETE"
+    },
+    {
+      "logical_id": "Backend",
+      "type": "AWS::EC2::Instance",
+      "status": "CREATE_COMPLETE"
+    },
+    {
+      "logical_id": "CPUAlarm",
+      "type": "AWS::CloudWatch::Alarm",
+      "status": "CREATE_COMPLETE"
+    },
+    {
+      "logical_id": "SPARoutes",
+      "type": "AWS::CloudFront::Function",
+      "status": "CREATE_COMPLETE"
+    },
+    {
+      "logical_id": "WebBucketPolicy",
+      "type": "AWS::S3::BucketPolicy",
+      "status": "CREATE_COMPLETE"
+    },
+    {
+      "logical_id": "WebBucket",
+      "type": "AWS::S3::Bucket",
+      "status": "CREATE_COMPLETE"
+    },
+    {
+      "logical_id": "WebDistribution",
+      "type": "AWS::CloudFront::Distribution",
+      "status": "CREATE_COMPLETE"
+    },
+    {
+      "logical_id": "WebOriginAccess",
+      "type": "AWS::CloudFront::OriginAccessControl",
+      "status": "CREATE_COMPLETE"
+    }
   ],
-  "aws_deployed": false,
+  "aws_deployed": true,
   "aws_budget_created": false,
   "aws_access": {
     "sts_authenticated": true,
@@ -76,7 +144,7 @@
     "credentials_or_profiles_modified": false,
     "profile": "default",
     "region": "us-east-2",
-    "preflight_permissions_available": "sufficient_to_prepare; runtime_inline_ssm_and_event_reads_missing"
+    "preflight_permissions_available": "effective; operator AdministratorAccess selected and attached by owner"
   },
   "budget": {
     "verified": true,
@@ -87,7 +155,7 @@
     "health": "HEALTHY",
     "scope": "account; no cost filters",
     "observed_actual_spend_usd": "0.00",
-    "observed_at": "2026-10-26T15:55:50-05:00",
+    "observed_at": "2026-10-26T18:30:41.049760-05:00",
     "billing_value_may_lag": true,
     "credits_and_refunds_included": false,
     "alerts": [
@@ -116,7 +184,8 @@
     "recipients_verified": true,
     "delivery_confirmed_by_owner": false,
     "duplicate_created": false,
-    "screenshot_available": false
+    "screenshot_available": false,
+    "source_last_updated_at": "2026-10-26T14:41:50.810000-05:00"
   },
   "cost_estimate": {
     "region": "us-east-2",
@@ -131,7 +200,7 @@
     "region": "us-east-2",
     "type": "CREATE",
     "status": "CREATE_COMPLETE",
-    "execution_status": "AVAILABLE",
+    "execution_status": "EXECUTE_COMPLETE",
     "capabilities": [
       "CAPABILITY_NAMED_IAM"
     ],
@@ -224,24 +293,23 @@
         "Replacement": null
       }
     ],
-    "executed": false,
-    "specific_execution_approval_received": false,
+    "executed": true,
+    "specific_execution_approval_received": true,
     "full_arn_receipt_private": "deploy/evidence-private/phase3a2-final-preflight-20261026/change_set_create.json"
   },
   "evidence_phase3a2": [
     "deploy/validation-phase3a2-preflight.json",
     "deploy/validation-phase3a2-local.json",
-    "deploy/cost-estimate-phase3a2.json"
+    "deploy/cost-estimate-phase3a2.json",
+    "deploy/validation-phase3a2-deployment.json",
+    "deploy/validation-phase3a-public.json",
+    "deploy/validation-phase3a2-browser.json"
   ],
   "pending": [
-    "Owner approval for this exact change set and its costs/network/IAM",
-    "Owner attaches scoped runtime/validation permission supplement",
-    "Read detailed CloudFormation validation events and account/audit state",
-    "Execute approved change set only after prerequisites pass",
-    "Install backend/release/secret/Caddy and publish frontend",
-    "Provide actual Cloudflare application DNS records after stack outputs",
-    "Verify public HTTPS/endpoints/browser/latencies/CloudWatch",
-    "Authorize Git remote and authentic Budget screenshot if required"
+    "GitHub publication deferred by owner; no remote or push",
+    "Confirm Budget alert delivery and optional authentic console capture",
+    "Billing spend has not yet updated after deployment",
+    "Worldwide DNS cache propagation not guaranteed; final ordinary system-DNS HTTPS returned200 for both domains"
   ],
   "phase3b_started": false,
   "local_artifacts": {
@@ -251,14 +319,14 @@
       "sha256": "1d0713cafb19a18f2699080f29089379b50d1f32c42590add90f29819305ff53",
       "platform": "linux/amd64",
       "contains_private_env": false,
-      "uploaded": false
+      "uploaded": true
     },
     "frontend_build": {
       "path": "apps/web/dist",
       "api_url": "https://api.sistemamanta.lexinnovate.com",
       "url_found_in_bundle": true,
       "build_completed_at": "2026-10-26T15:40:40-05:00",
-      "uploaded": false,
+      "uploaded": true,
       "assets_sha256": {
         "index-BX3a91v5.js": "496ed1564aae0b4191c3d5da9a7744ca5a00809402abd4a4f8ffbbdb00724c58"
       }
@@ -271,11 +339,12 @@
     "commit_identifier_source": "git log -1 --format=%H",
     "remote": null,
     "published": false,
-    "secret_scan_result": "no_confirmed_findings_in_269_candidates_including_compressed_osm"
+    "secret_scan_result": "No findings in 285 tracked/nonignored files for actual runtime key, 13 changed files for private patterns/contact, 3 frontend files and 2 APKs",
+    "publication_deferred_by_owner": true
   },
-  "previous_status": "partial_preflight_complete_additional_permissions_and_dns_pending",
+  "previous_status": "ready_for_specific_change_set_execution_authorization",
   "latest_retry_evidence": "deploy/validation-phase3a2-retry.json",
-  "latest_evidence": "deploy/validation-phase3a2-operator-effective.json",
+  "latest_evidence": "deploy/validation-phase3a2-deployment.json",
   "certificate": {
     "resource_created": true,
     "region": "us-east-1",
@@ -289,11 +358,26 @@
     "reused_by_cloudfront_after_approved_execution": true,
     "backend_caddy_certificate_independent": true
   },
-  "aws_billable_infrastructure_created": [],
+  "aws_billable_infrastructure_created": [
+    "ArtifactBucketPolicy",
+    "ArtifactBucket",
+    "BackendAddress",
+    "BackendLogs",
+    "BackendProfile",
+    "BackendRole",
+    "BackendSecurityGroup",
+    "Backend",
+    "CPUAlarm",
+    "SPARoutes",
+    "WebBucketPolicy",
+    "WebBucket",
+    "WebDistribution",
+    "WebOriginAccess"
+  ],
   "operator_audit": {
     "integrity_verified": true,
-    "deployment_runtime_permissions_effective": false,
-    "detailed_events_read": false,
+    "deployment_runtime_permissions_effective": true,
+    "detailed_events_read": true,
     "candidate_simulations_passed": 17,
     "required_base_replacement": "deploy/operator-base-policy.example.json",
     "required_supplement": "deploy/execute-changeset-policy.example.json",
@@ -301,10 +385,25 @@
     "audit_optional": "deploy/audit-readonly-policy.example.json",
     "documentation": "docs/revision-seguridad-fase3a2.md"
   },
-  "specific_execution_approval_received": false,
+  "specific_execution_approval_received": true,
   "owner_requested_admin_operator": true,
   "admin_policy_attached_by_agent": false,
   "admin_operator_verified": true,
   "validation_event_errors": 0,
-  "known_preexecution_blockers": []
+  "known_preexecution_blockers": [],
+  "external_latency": {
+    "endpoint": "POST /paso",
+    "request_attempts": 41,
+    "successful_samples": 30,
+    "snapshot_conflicts": 11,
+    "errors": 0,
+    "timeouts": 0,
+    "method": "HTTPS transport and JSON receipt; nearest-rank percentiles of successful samples",
+    "p50_ms": 364.428412009147,
+    "p95_ms": 384.71535399730783,
+    "p99_ms": 524.4935609953245,
+    "max_ms": 524.4935609953245
+  },
+  "public_react_url": "https://sistemamanta.lexinnovate.com/escape",
+  "public_paso_url": "https://api.sistemamanta.lexinnovate.com/paso"
 }

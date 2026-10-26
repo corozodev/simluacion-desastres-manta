@@ -1,7 +1,7 @@
 {
   "phase": "3A.2",
-  "recorded_at": "2026-10-26T17:47:51-05:00",
-  "status": "ready_for_specific_change_set_execution_authorization",
+  "recorded_at": "2026-10-26T18:30:41.049760-05:00",
+  "status": "approved_change_set_executed_create_complete",
   "identity": {
     "type": "IAMUser",
     "name": "deploy-cli",
@@ -28,7 +28,7 @@
   "resource_count": 14,
   "all_changes": "Add",
   "status_in_aws": "CREATE_COMPLETE",
-  "execution_status": "AVAILABLE",
+  "execution_status": "EXECUTE_COMPLETE",
   "validation": {
     "describe_events_actual_read": "passed",
     "create_change_set_operation": "SUCCEEDED",
@@ -53,12 +53,15 @@
   },
   "certificate": "ISSUED",
   "known_preexecution_blockers": [],
-  "deployment_runtime_still_requires_real_verification": true,
-  "specific_execution_approval_received": false,
-  "executed": false,
+  "deployment_runtime_still_requires_real_verification": false,
+  "specific_execution_approval_received": true,
+  "executed": true,
   "new_change_set_created": false,
   "template_modified": false,
   "parameters_modified": false,
   "private_evidence_directory": "deploy/evidence-private/phase3a2-operator-effective-20261026/",
-  "phase3b_started": false
+  "phase3b_started": false,
+  "preexecution_recorded_at": "2026-10-26T17:47:51-05:00",
+  "previous_status": "ready_for_specific_change_set_execution_authorization",
+  "postexecution_evidence": "deploy/validation-phase3a2-deployment.json"
 }

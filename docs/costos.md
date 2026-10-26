@@ -4,7 +4,7 @@ Consulta del **26 de octubre de 2026**, America/Guayaquil. Región: **us-east-2 
 
 El reintento con permisos nuevos comprobó el **Budget mensual real de 30 USD**, HEALTHY y sin filtros de cuenta. Tiene avisos ACTUAL al 85%/100% y FORECASTED al 100%, con un destinatario EMAIL por aviso. No se cambiaron ni duplicaron. Direcciones y respuestas completas se conservan privadas.
 
-**Gasto acumulado observado por AWS Budgets: 0,00 USD**, consultado el 26 de octubre de 2026. Es un dato de cuenta con posible retraso, excluye créditos/reembolsos y no demuestra una factura final ni atribución exclusiva al proyecto. Sólo se solicitó el certificado ACM público no exportable y se preparó metadata del change set; no se aprovisionó la infraestructura facturable. La estimación usa catálogos públicos oficiales descargados; no se consultó Cost Explorer.
+**Gasto acumulado observado por AWS Budgets: 0,00 USD**, consultado el 26 de octubre de 2026. Es un dato de cuenta con posible retraso, excluye créditos/reembolsos y no demuestra una factura final ni atribución exclusiva al proyecto. El stack aprobado ya creó los 14 recursos el 26 de octubre a las 18:04 de Ecuador. La última actualización del Budget devuelta por AWS es de las 14:41:50 de Ecuador, anterior al despliegue; ese cero todavía no refleja su consumo. La estimación usa catálogos públicos oficiales descargados; no se consultó Cost Explorer.
 
 ## Supuestos y cálculo reproducible
 
@@ -27,7 +27,7 @@ El reintento con permisos nuevos comprobó el **Budget mensual real de 30 USD**,
 
 El [JSON de cálculo](../deploy/cost-estimate-phase3a2.json) conserva cantidades, tarifas, procedencia y sumas. La salida API de 0,09/GB es una reserva de planificación, no una tarifa contractual verificada en la cuenta. El catálogo EC2 también publica `t3.medium` a 0,0416/h: con estos mismos supuestos subiría a **38,15 USD/mes**, superando el Budget informado. No cambiar de tamaño sin revisión y aprobación.
 
-No se descuentan créditos, Free Tier ni franquicias compartidas: su disponibilidad no se pudo verificar. CloudFront cobra por ubicación de entrega; `PriceClass_100` permite servir Ecuador desde sus ubicaciones admitidas. La fila usa el precio de entrega en Estados Unidos; revisar tráfico real y planes disponibles antes de aprobar. La plantilla no contrata un plan de tarifa plana.
+No se descuentan créditos, Free Tier ni franquicias compartidas. El plan FREE/ACTIVE y los créditos se verificaron en evidencia privada; no se cambió el plan. La elegibilidad no sustituye el seguimiento del gasto. CloudFront cobra por ubicación de entrega; `PriceClass_100` permite servir Ecuador desde sus ubicaciones admitidas. La fila usa el precio de entrega en Estados Unidos; revisar tráfico real y planes disponibles antes de aprobar. La plantilla no contrata un plan de tarifa plana.
 
 ## Fuentes consultadas
 
@@ -56,6 +56,6 @@ Detener EC2 no elimina cargos de EBS ni de una EIP retenida. Borrar el stack tam
 
 ## Gasto observado
 
-AWS Budgets devolvió CalculatedSpend.ActualSpend de **0,00 USD** para el Budget mensual de cuenta. Su configuración excluye créditos y reembolsos. La fecha y alcance están en [la evidencia del reintento](../deploy/validation-phase3a2-retry.json) y [el cálculo actualizado](../deploy/cost-estimate-phase3a2.json). No interpretar ese importe como disponibilidad garantizada de créditos ni como costo final de recursos todavía no desplegados.
+AWS Budgets devolvió CalculatedSpend.ActualSpend de **0,00 USD** para el Budget mensual de cuenta. Su configuración excluye créditos y reembolsos. La fecha y alcance están en [la evidencia del reintento](../deploy/validation-phase3a2-retry.json) y [el cálculo actualizado](../deploy/cost-estimate-phase3a2.json). No interpretar ese importe como disponibilidad garantizada de créditos ni como costo final de los recursos ya desplegados.
 
-No se consultó Cost Explorer: puede tener costo por consulta. No hay captura de consola auténtica disponible, ni recursos con consumo creados por esta ejecución.
+No se consultó Cost Explorer: puede tener costo por consulta. No hay captura de consola auténtica disponible. La consulta posterior al despliegue sigue informando 0,00 USD con LastUpdatedTime anterior a la creación efectiva; consultar de nuevo cuando AWS actualice facturación. La captura no se fabricó. [Evidencia de despliegue](../deploy/validation-phase3a2-deployment.json).

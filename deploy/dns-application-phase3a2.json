@@ -1,0 +1,28 @@
+{
+  "provider": "Cloudflare",
+  "zone": "lexinnovate.com",
+  "records": [
+    {
+      "type": "CNAME",
+      "name": "sistemamanta",
+      "fqdn": "sistemamanta.lexinnovate.com",
+      "content": "d3oor59fj9nlnj.cloudfront.net",
+      "proxied": false,
+      "ttl": "Auto"
+    },
+    {
+      "type": "A",
+      "name": "api.sistemamanta",
+      "fqdn": "api.sistemamanta.lexinnovate.com",
+      "content": "77.112.199.249",
+      "proxied": false,
+      "ttl": "Auto"
+    }
+  ],
+  "preserve_acm_validation_cname": true,
+  "recorded_at": "2026-10-26T18:30:41.049760-05:00",
+  "created_by_owner": true,
+  "authoritative_records_verified": true,
+  "public_recursive_records_verified": true,
+  "isp_cache_inconsistency_observed": true
+}

@@ -8,7 +8,7 @@ Se conserva el monolito modular. La fuente urbana OSM se separa en maestro (`man
 
 `internal/diagnostics` conserva mediciones privadas separadas de `WorldSnapshot`; sus archivos pueden incluir sleepers iniciales y no se publican. `internal/evaluation` ejecuta comparaciones por HTTP real con el motor histórico congelado, hashes de condiciones iniciales y remapeos geográficos.
 
-La preparación AWS está en [despliegue](despliegue-aws.md) y [diagrama SVG](arquitectura.svg). La imagen final funciona localmente con200sobrevivientes; no hubo despliegue cloud por falta de acceso y región/cuenta autorizadas. Polling permanece cada dos segundos; WebSocket se pospone. La descripción modular original sigue debajo.
+El despliegue AWS de FASE 3A.2 está en [despliegue](despliegue-aws.md) y [diagrama SVG](arquitectura.svg): stack CREATE_COMPLETE, Go/Docker/Caddy en EC2 y React en S3 privado/CloudFront. La imagen validada con 200 sobrevivientes se reutilizó sin cambiar el motor. La API HTTPS externa está comprobada; polling permanece cada dos segundos. La simulación termina tras 150 turnos y conserva el snapshot final. WebSocket se pospone. La descripción modular original sigue debajo.
 
 # Arquitectura de evacuación
 

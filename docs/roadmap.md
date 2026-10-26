@@ -2,9 +2,11 @@
 
 FASE2 añadió fuente urbana, variantes geográficas, orígenes municipales, predicción, reservas, evaluación, mapa y preparación AWS. La evidencia, incluidos resultados negativos, está en [informe-fase2.md](informe-fase2.md).
 
-Para una eventual FASE3, sin iniciarla:
+FASE 3A.2 completó el despliegue autorizado: stack CREATE_COMPLETE, Budget existente verificado, DNS/HTTPS y pruebas externas. Véase [despliegue](despliegue-aws.md). No se inició FASE 3B.
 
-1. Confirmar región/cuenta y acceso AWS, crear Budget/alertas, desplegar y medir en la instancia real; conservar rollback y capturas auténticas.
+Pendientes de operación y opciones futuras, sin implementarlas:
+
+1. Seguir el gasto cuando AWS actualice el Budget, confirmar entrega de alertas y obtener una captura auténtica si se necesita. Conservar rollback; la simulación finita requiere un reinicio controlado para otra sesión. La publicación GitHub se aplazó por elección del propietario.
 2. Resolver con la organización la tensión entre aproximadamente300intersecciones y conectividad urbana. El ampliado1000es experimental y no se activa automáticamente.
 3. Mejorar calibración del predictor con más semillas predeclaradas y validación separada; investigar regresiones de ronda2 y personas vivas sin evacuar.
 4. Evaluar asignación global más eficiente y rutas temporales para cruzar cuellos de botella sin violar restricciones.

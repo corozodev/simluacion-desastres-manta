@@ -1,0 +1,43 @@
+{
+  "recorded_at": "2026-10-26T23:23:23.817143+00:00",
+  "phase": "3A",
+  "base_url": "https://api.sistemamanta.lexinnovate.com",
+  "vantage": "invoking client; execution outside target EC2 must be attested separately",
+  "tls_verification": true,
+  "redirects_followed": false,
+  "checks": {
+    "/healthz": 200,
+    "/grafo": 200,
+    "/estado": 200,
+    "missing_key": 401,
+    "wrong_key": 401,
+    "/admin": 404,
+    "/reset": 404,
+    "/config": 404,
+    "/debug/pprof/": 404,
+    "simulation": {
+      "initial_turn": 59,
+      "observed_turn": 78,
+      "turn_advanced": true,
+      "requests_success": 4169,
+      "requests_invalid": 0,
+      "requests_timeout": 0
+    }
+  },
+  "complete": true,
+  "probe_errors": 0,
+  "probe_timeouts": 0,
+  "latency": {
+    "endpoint": "POST /paso",
+    "request_attempts": 41,
+    "successful_samples": 30,
+    "snapshot_conflicts": 11,
+    "errors": 0,
+    "timeouts": 0,
+    "method": "HTTPS transport and JSON receipt; nearest-rank percentiles of successful samples",
+    "p50_ms": 364.428412009147,
+    "p95_ms": 384.71535399730783,
+    "p99_ms": 524.4935609953245,
+    "max_ms": 524.4935609953245
+  }
+}

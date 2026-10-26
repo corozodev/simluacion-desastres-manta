@@ -1,0 +1,113 @@
+{
+  "recorded_at": "2026-10-26T23:27:39.012Z",
+  "phase": "3A.2",
+  "web_origin": "https://sistemamanta.lexinnovate.com",
+  "api_origin": "https://api.sistemamanta.lexinnovate.com",
+  "vantage": "Browser process launched by the workstation agent, outside the newly provisioned target EC2; root agent must attest target/vantage separately.",
+  "tls_verification": "Chromium default certificate and hostname verification; ignoreHTTPSErrors=false",
+  "mocked_responses": false,
+  "unexpected_origins_blocked": true,
+  "dns_method": "Cloudflare DoH https://1.1.1.1/dns-query through local CONNECT forwarding; dynamic public answers, no fixed target-IP override; end-to-end Chromium TLS",
+  "api_key_read_by_helper": false,
+  "world_mutations": false,
+  "complete": true,
+  "checks": {
+    "public_escape": true,
+    "browser_go_cors_tls": true,
+    "graph": {
+      "version": "manta-v2-0ab03290b16a",
+      "nodes": 300,
+      "edges": 383
+    },
+    "simulation": {
+      "initial_turn": 8,
+      "observed_turn": 9,
+      "turn_advanced": true,
+      "initial_world_version": 17,
+      "observed_world_version": 19,
+      "changed_map_marker_count": 60,
+      "samples_received": 2,
+      "last_active": 91
+    },
+    "map_controls_and_selection": true,
+    "mobile_viewport": true,
+    "no_privileged_browser_headers_or_routes": true
+  },
+  "requests": [
+    {
+      "origin": "https://sistemamanta.lexinnovate.com",
+      "path": "/escape",
+      "method": "GET",
+      "status": 200,
+      "request_origin": null,
+      "allow_origin": null,
+      "request_id_present": false,
+      "cache_control": "no-cache"
+    },
+    {
+      "origin": "https://api.sistemamanta.lexinnovate.com",
+      "path": "/estado",
+      "method": "GET",
+      "status": 200,
+      "request_origin": "https://sistemamanta.lexinnovate.com",
+      "allow_origin": "https://sistemamanta.lexinnovate.com",
+      "request_id_present": true,
+      "cache_control": "no-store"
+    },
+    {
+      "origin": "https://api.sistemamanta.lexinnovate.com",
+      "path": "/grafo",
+      "method": "GET",
+      "status": 200,
+      "request_origin": "https://sistemamanta.lexinnovate.com",
+      "allow_origin": "https://sistemamanta.lexinnovate.com",
+      "request_id_present": true,
+      "cache_control": "no-store"
+    },
+    {
+      "origin": "https://api.sistemamanta.lexinnovate.com",
+      "path": "/healthz",
+      "method": "GET",
+      "status": 200,
+      "request_origin": "https://sistemamanta.lexinnovate.com",
+      "allow_origin": "https://sistemamanta.lexinnovate.com",
+      "request_id_present": true,
+      "cache_control": "no-store"
+    },
+    {
+      "origin": "https://api.sistemamanta.lexinnovate.com",
+      "path": "/estado",
+      "method": "GET",
+      "status": 200,
+      "request_origin": "https://sistemamanta.lexinnovate.com",
+      "allow_origin": "https://sistemamanta.lexinnovate.com",
+      "request_id_present": true,
+      "cache_control": "no-store"
+    }
+  ],
+  "failed_requests": [],
+  "certificates": {
+    "https://sistemamanta.lexinnovate.com": {
+      "issuer": "Amazon RSA 2048 M01",
+      "protocol": "TLS 1.3",
+      "subjectName": "sistemamanta.lexinnovate.com",
+      "validFrom": 1792972800,
+      "validTo": 1810079999
+    },
+    "https://api.sistemamanta.lexinnovate.com": {
+      "issuer": "YE2",
+      "protocol": "TLS 1.3",
+      "subjectName": "api.sistemamanta.lexinnovate.com",
+      "validFrom": 1793053382,
+      "validTo": 1800829381
+    }
+  },
+  "violations": {
+    "privileged_headers": 0,
+    "privileged_routes": 0,
+    "unexpected_origins": 0,
+    "network_failures": 0,
+    "javascript_errors": 0
+  },
+  "finished_at": "2026-10-26T23:27:44.574Z"
+}

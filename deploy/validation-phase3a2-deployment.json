@@ -1,0 +1,500 @@
+{
+  "phase": "3A.2",
+  "recorded_at": "2026-10-26T18:30:41.049760-05:00",
+  "timezone": "America/Guayaquil",
+  "status": "deployed_and_externally_verified",
+  "stack": "corodev-phase2",
+  "region": "us-east-2",
+  "stack_status": "CREATE_COMPLETE",
+  "stack_complete_at": "2026-10-26T18:04:43-05:00",
+  "execution": {
+    "owner_explicit_approval_received": true,
+    "approved_message": "si, lo apruebo",
+    "exact_change_set_name": "phase3a2-20261026T211726Z",
+    "exact_arn_match_verified_privately": true,
+    "execution_status": "EXECUTE_COMPLETE",
+    "resource_count": 14,
+    "changes": "14 Add; 0 Modify; 0 Remove; no replacements",
+    "new_change_set_created": false,
+    "template_modified": false,
+    "parameters_modified": false,
+    "template_sha256": "be8bbda4995169bfe75342ddeb3746ebcb1e05c83e4064ce3579cd9967eadbf5",
+    "parameters_sha256": "bd72f438eb145b5881966c7bba29ca2661043d24ef2d1b389f4d3f54d3536315",
+    "cost_file_unchanged": true,
+    "validation_errors_before_execution": 0
+  },
+  "resources": [
+    {
+      "logical_id": "ArtifactBucketPolicy",
+      "type": "AWS::S3::BucketPolicy",
+      "status": "CREATE_COMPLETE"
+    },
+    {
+      "logical_id": "ArtifactBucket",
+      "type": "AWS::S3::Bucket",
+      "status": "CREATE_COMPLETE"
+    },
+    {
+      "logical_id": "BackendAddress",
+      "type": "AWS::EC2::EIP",
+      "status": "CREATE_COMPLETE"
+    },
+    {
+      "logical_id": "BackendLogs",
+      "type": "AWS::Logs::LogGroup",
+      "status": "CREATE_COMPLETE"
+    },
+    {
+      "logical_id": "BackendProfile",
+      "type": "AWS::IAM::InstanceProfile",
+      "status": "CREATE_COMPLETE"
+    },
+    {
+      "logical_id": "BackendRole",
+      "type": "AWS::IAM::Role",
+      "status": "CREATE_COMPLETE"
+    },
+    {
+      "logical_id": "BackendSecurityGroup",
+      "type": "AWS::EC2::SecurityGroup",
+      "status": "CREATE_COMPLETE"
+    },
+    {
+      "logical_id": "Backend",
+      "type": "AWS::EC2::Instance",
+      "status": "CREATE_COMPLETE"
+    },
+    {
+      "logical_id": "CPUAlarm",
+      "type": "AWS::CloudWatch::Alarm",
+      "status": "CREATE_COMPLETE"
+    },
+    {
+      "logical_id": "SPARoutes",
+      "type": "AWS::CloudFront::Function",
+      "status": "CREATE_COMPLETE"
+    },
+    {
+      "logical_id": "WebBucketPolicy",
+      "type": "AWS::S3::BucketPolicy",
+      "status": "CREATE_COMPLETE"
+    },
+    {
+      "logical_id": "WebBucket",
+      "type": "AWS::S3::Bucket",
+      "status": "CREATE_COMPLETE"
+    },
+    {
+      "logical_id": "WebDistribution",
+      "type": "AWS::CloudFront::Distribution",
+      "status": "CREATE_COMPLETE"
+    },
+    {
+      "logical_id": "WebOriginAccess",
+      "type": "AWS::CloudFront::OriginAccessControl",
+      "status": "CREATE_COMPLETE"
+    }
+  ],
+  "regional_scope": {
+    "compute_storage_logs": "us-east-2",
+    "frontend_acm": "us-east-1",
+    "global": [
+      "IAM",
+      "CloudFront distribution",
+      "CloudFront OAC",
+      "CloudFront Function"
+    ]
+  },
+  "security": {
+    "infrastructure_checks": {
+      "role_trust_only_ec2": true,
+      "managed_policy_only_ssm": true,
+      "inline_policy_only_logs_and_release": true,
+      "inline_release_read_exact_bucket": true,
+      "inline_logs_scope": true,
+      "no_admin_or_wildcard_iam_actions": true,
+      "ingress_only_tcp_80_443": true,
+      "public_http_https_only": true,
+      "web_block_all_public": true,
+      "web_encrypted_sse_s3": true,
+      "web_deny_non_tls": true,
+      "web_policy_scoped_distribution": true,
+      "artifact_block_all_public": true,
+      "artifact_encrypted_sse_s3": true,
+      "artifact_deny_non_tls": true,
+      "web_versioning_enabled": true,
+      "oac_always_sigv4_s3": true,
+      "distribution_alias_exact": true,
+      "distribution_tls12": true,
+      "distribution_https_redirect": true,
+      "distribution_oac_actual": true,
+      "log_retention_7_days": true,
+      "volumes_encrypted_20gb_gp3": true,
+      "instance_imdsv2_required": true,
+      "instance_exact_profile": true,
+      "instance_exact_sg": true,
+      "cpu_alarm": true,
+      "ec2_system_status_ok": true,
+      "ec2_instance_status_ok": true,
+      "ssm_online": true
+    },
+    "failed_checks": [],
+    "operator_identity": "IAMUser deploy-cli; not root",
+    "operator_administrator_access": "Explicitly chosen and attached by owner for development; operator is not globally least privileged",
+    "administrator_access_on_ec2_role": false,
+    "session_manager_real_session": "passed; id as ssm-user; session exited",
+    "run_command_deployment": "passed",
+    "backend_env_mode": "0o600",
+    "backend_hardening": {
+      "running": true,
+      "restart_count": 0,
+      "image_id": "sha256:ee09a3b6a38c89df40d30c0042cb800e101cd79ff062c992ee885cd5635fa105",
+      "readonly_rootfs": true,
+      "cap_drop": [
+        "ALL"
+      ],
+      "security_opt": [
+        "no-new-privileges:true"
+      ],
+      "restart_policy": {
+        "Name": "unless-stopped",
+        "MaximumRetryCount": 0
+      },
+      "port_bindings": {
+        "8080/tcp": [
+          {
+            "HostIp": "127.0.0.1",
+            "HostPort": "8080"
+          }
+        ]
+      },
+      "log_driver": "awslogs"
+    },
+    "caddy_running": true,
+    "ssh_public": false,
+    "go_8080_public": false,
+    "s3_direct_web_object_status": 403
+  },
+  "release": {
+    "rebuilt": false,
+    "local_tests_repeated": false,
+    "bundle_sha256": "1d0713cafb19a18f2699080f29089379b50d1f32c42590add90f29819305ff53",
+    "outer_and_inner_checksums_verified_on_ec2": true,
+    "runtime_image_id": "sha256:ee09a3b6a38c89df40d30c0042cb800e101cd79ff062c992ee885cd5635fa105",
+    "platform": "linux/amd64",
+    "scenario": "existing scenarios/urban/round3.json",
+    "survivors": 200,
+    "turns": 150,
+    "turn_interval_seconds": 2,
+    "simulation_concurrency": 16,
+    "controlled_restart_for_browser": {
+      "count": 1,
+      "before_turn": 150,
+      "before_active": 27,
+      "after_turn": 0,
+      "after_active": 200,
+      "existing_container_and_configuration_retained": true,
+      "ram_reset": true
+    }
+  },
+  "frontend": {
+    "url": "https://sistemamanta.lexinnovate.com/escape",
+    "existing_validated_build_reused": true,
+    "api_url": "https://api.sistemamanta.lexinnovate.com",
+    "published_to_private_s3": true,
+    "cloudfront_distribution_status": "Deployed",
+    "invalidation_status": "Completed",
+    "assets_immutable": true,
+    "index_no_cache": true,
+    "previous_objects_deleted": false
+  },
+  "dns": {
+    "provider": "Cloudflare",
+    "application_record_file": "deploy/dns-application-phase3a2.json",
+    "acm_validation_cname_preserved": true,
+    "records_created_by_owner": true,
+    "both_records_dns_only": true,
+    "authoritative_and_public_recursive_api_address": "77.112.199.249",
+    "frontend_target": "d3oor59fj9nlnj.cloudfront.net",
+    "isp_cache_inconsistency_observed": true,
+    "probe_resolution": "Live public DNS query @1.1.1.1 with per-run cache; no static target mapping",
+    "browser_resolution": "Cloudflare DoH https://1.1.1.1/dns-query through local CONNECT forwarding; dynamic public answers, no fixed target-IP override; end-to-end Chromium TLS",
+    "initial_probe_runs": {
+      "count": 2,
+      "probe_errors_each": 1,
+      "timeouts_each": 0,
+      "authenticated_request_attempts_each": 0
+    },
+    "initial_browser_run": {
+      "escape_status": 200,
+      "network_failures": 9,
+      "individual_failure_codes_unavailable": true,
+      "dns_cause_inferred_from_independent_resolver_failures": true
+    },
+    "worldwide_dns_propagation_verified": false,
+    "final_system_resolver_checks": {
+      "recorded_at": "2026-10-26T23:29:38.973595+00:00",
+      "checks": [
+        {
+          "addresses": [
+            "77.112.199.249"
+          ]
+        },
+        {
+          "addresses": [
+            "77.112.199.249"
+          ]
+        },
+        {
+          "addresses": [
+            "77.112.199.249"
+          ]
+        }
+      ]
+    },
+    "final_https_using_ordinary_system_dns": {
+      "recorded_at": "2026-10-26T23:31:19.582400+00:00",
+      "system_resolver": true,
+      "resolver_override": false,
+      "proxy_override": false,
+      "checks": {
+        "api": {
+          "status": 200,
+          "bytes": 65,
+          "tls_verified": true
+        },
+        "frontend": {
+          "status": 200,
+          "bytes": 617,
+          "tls_verified": true
+        }
+      }
+    }
+  },
+  "https": {
+    "frontend": {
+      "verified": true,
+      "version": "TLSv1.3",
+      "san": [
+        [
+          "DNS",
+          "sistemamanta.lexinnovate.com"
+        ]
+      ],
+      "not_before": "Oct 26 00:00:00 2026 GMT",
+      "not_after": "May 11 23:59:59 2027 GMT",
+      "issuer": [
+        [
+          [
+            "countryName",
+            "US"
+          ]
+        ],
+        [
+          [
+            "organizationName",
+            "Amazon"
+          ]
+        ],
+        [
+          [
+            "commonName",
+            "Amazon RSA 2048 M01"
+          ]
+        ]
+      ]
+    },
+    "api": {
+      "verified": true,
+      "version": "TLSv1.3",
+      "san": [
+        [
+          "DNS",
+          "api.sistemamanta.lexinnovate.com"
+        ]
+      ],
+      "not_before": "Oct 26 22:23:02 2026 GMT",
+      "not_after": "Jan 24 22:23:01 2027 GMT",
+      "issuer": [
+        [
+          [
+            "countryName",
+            "US"
+          ]
+        ],
+        [
+          [
+            "organizationName",
+            "Let's Encrypt"
+          ]
+        ],
+        [
+          [
+            "commonName",
+            "YE2"
+          ]
+        ]
+      ]
+    },
+    "api_http_redirect": {
+      "status": 308,
+      "location": "https://api.sistemamanta.lexinnovate.com/healthz"
+    },
+    "api_hsts": "max-age=31536000",
+    "certificate_verification_disabled": false,
+    "api_certificate_separate_from_acm": true
+  },
+  "external_probe": {
+    "report": "deploy/validation-phase3a-public.json",
+    "vantage": "Owner workstation in Ecuador, outside target EC2",
+    "complete": true,
+    "checks": {
+      "/healthz": 200,
+      "/grafo": 200,
+      "/estado": 200,
+      "missing_key": 401,
+      "wrong_key": 401,
+      "/admin": 404,
+      "/reset": 404,
+      "/config": 404,
+      "/debug/pprof/": 404,
+      "simulation": {
+        "initial_turn": 59,
+        "observed_turn": 78,
+        "turn_advanced": true,
+        "requests_success": 4169,
+        "requests_invalid": 0,
+        "requests_timeout": 0
+      }
+    },
+    "latency": {
+      "endpoint": "POST /paso",
+      "request_attempts": 41,
+      "successful_samples": 30,
+      "snapshot_conflicts": 11,
+      "errors": 0,
+      "timeouts": 0,
+      "method": "HTTPS transport and JSON receipt; nearest-rank percentiles of successful samples",
+      "p50_ms": 364.428412009147,
+      "p95_ms": 384.71535399730783,
+      "p99_ms": 524.4935609953245,
+      "max_ms": 524.4935609953245
+    },
+    "probe_errors": 0,
+    "probe_timeouts": 0,
+    "dns_method_documented": true,
+    "api_key_passed_in_arguments": false
+  },
+  "browser": {
+    "report": "deploy/validation-phase3a2-browser.json",
+    "complete": true,
+    "checks": {
+      "public_escape": true,
+      "browser_go_cors_tls": true,
+      "graph": {
+        "version": "manta-v2-0ab03290b16a",
+        "nodes": 300,
+        "edges": 383
+      },
+      "simulation": {
+        "initial_turn": 8,
+        "observed_turn": 9,
+        "turn_advanced": true,
+        "initial_world_version": 17,
+        "observed_world_version": 19,
+        "changed_map_marker_count": 60,
+        "samples_received": 2,
+        "last_active": 91
+      },
+      "map_controls_and_selection": true,
+      "mobile_viewport": true,
+      "no_privileged_browser_headers_or_routes": true
+    },
+    "violations": {
+      "privileged_headers": 0,
+      "privileged_routes": 0,
+      "unexpected_origins": 0,
+      "network_failures": 0,
+      "javascript_errors": 0
+    },
+    "screenshots_authentic_and_private": true,
+    "mocked_responses": false,
+    "api_key_read_by_helper": false,
+    "vantage": "Workstation Chromium outside target EC2; local CONNECT forwards end-to-end TLS using public DoH",
+    "mobile_validation_scope": "390px viewport without horizontal overflow; screenshot caught sidebar transition, not an exhaustive mobile visual review"
+  },
+  "cors": {
+    "allowed_origin": "https://sistemamanta.lexinnovate.com",
+    "other_origin_header": null,
+    "public_gets_remain_public": true
+  },
+  "observability": {
+    "cloudwatch_group": "/corodev/corodev-phase2/backend",
+    "stream": "backend",
+    "events_read": 3,
+    "real_api_key_absent_in_queried_logs": true,
+    "retention_days": 7,
+    "caddy_logs": "local json-file rotation; no access-body logging",
+    "otel_existing": false,
+    "otel_added": false,
+    "cpu_alarm_actions": []
+  },
+  "budget": {
+    "existing": true,
+    "duplicated": false,
+    "monthly_usd": "30.00",
+    "health": "HEALTHY",
+    "alerts_actual_percent": [
+      85,
+      100
+    ],
+    "alert_forecast_percent": 100,
+    "email_subscribers_verified": true,
+    "alert_delivery_confirmed": false,
+    "authentic_console_screenshot_available": false,
+    "observed_actual_spend_usd": "0.0",
+    "source_last_updated_at": "2026-10-26T14:41:50.810000-05:00",
+    "queried_at": "2026-10-26T18:30:41.049760-05:00",
+    "scope": "account; no filters; excludes credits and refunds",
+    "last_update_precedes_deployment": true,
+    "billing_may_lag": true,
+    "automatic_spend_shutdown": false
+  },
+  "cost": {
+    "monthly_estimate_usd": "22.96",
+    "planning_reserve_usd": "24.00",
+    "estimated_before_credits_discounts_and_taxes": true,
+    "observed_spend_is_not_final_invoice": true,
+    "account_plan": "FREE/ACTIVE; not changed",
+    "credits_deducted_from_estimate": false
+  },
+  "git": {
+    "branch": "main",
+    "remote": null,
+    "published": false,
+    "publication_deferred_by_owner": true,
+    "history_dates_authentic": true,
+    "secret_scan": {
+      "findings": [],
+      "tracked_and_nonignored_files_checked_for_runtime_key": 285,
+      "changed_files_checked_for_private_patterns": 13,
+      "frontend_files_checked": 3,
+      "apks_checked": 2,
+      "private_contact_values_checked": 1,
+      "private_paths_remain_ignored": true
+    }
+  },
+  "limitations": [
+    "Initial ISP DNS responses were inconsistent; successful probe/browser used documented public DNS. Final ordinary system-DNS HTTPS checks passed for both domains; worldwide propagation not guaranteed.",
+    "Finite 150-turn simulation retains final snapshot; restart resets RAM and seed",
+    "Operator retains AdministratorAccess by explicit owner choice; EC2 role remains constrained",
+    "Budget billing value predates deployment; alert delivery and authentic console screenshot unconfirmed",
+    "cfn-guard unavailable; previous local checks retained without rerun",
+    "CPU alarm has no SNS action; no new OTel",
+    "Flutter physical-device session not performed; existing local APK retained",
+    "Demo mock service not deployed; public acceptance route is /escape",
+    "Initial deployment has no earlier production release to roll back to"
+  ],
+  "private_evidence_directory": "deploy/evidence-private/phase3a2-deployment-20261026/",
+  "phase3b_started": false
+}

@@ -1,159 +1,105 @@
 # Despliegue AWS — FASE 3A.2
 
-**Última verificación:** el propietario eligió AdministratorAccess para el operador de desarrollo y su asociación está comprobada. DescribeEvents ya responde y muestra preparación SUCCEEDED sin errores de validación. El change set existente conserva ARN, hashes, 14 altas y costo; está listo para la autorización específica, todavía sin ejecutar. Cuenta FREE/ACTIVE con créditos verificados en evidencia privada; no se cambió el plan de facturación ni se descontaron créditos del cálculo conservador. [Evidencia actual](../deploy/validation-phase3a2-operator-effective.json). La EC2 conserva su rol mínimo; no se le asoció AdministratorAccess.
+El propietario autorizó expresamente `phase3a2-20261026T211726Z`. Se ejecutó exclusivamente ese change set y el stack `corodev-phase2` alcanzó **CREATE_COMPLETE el 26 de octubre de 2026 a las 18:04:43 de Ecuador**. Los 14 recursos terminaron correctamente. Se reutilizaron la imagen, el bundle y el build React previamente validados, sin reconstruir infraestructura, repetir pruebas locales o modificar motores, grafos, simulador o contratos.
 
-**Revisión del operador antes de autorizar:** [seguridad y separación de permisos](revision-seguridad-fase3a2.md). El ARN, ambos hashes, los 14 recursos y el costo siguen intactos. El propietario asoció los documentos revisados y eligió posteriormente AdministratorAccess para el operador; DescribeEvents ya se leyó sin errores de validación. La autorización final de ejecución sigue pendiente. No se repitieron pruebas locales.
+Frontend: **[sistemamanta.lexinnovate.com/escape](https://sistemamanta.lexinnovate.com/escape)**. API: **[api.sistemamanta.lexinnovate.com/healthz](https://api.sistemamanta.lexinnovate.com/healthz)**. [Evidencia del despliegue](../deploy/validation-phase3a2-deployment.json), [probe público](../deploy/validation-phase3a-public.json) y [costos](costos.md).
 
-**Estado al 26 de octubre de 2026, America/Guayaquil:** preflight principal comprobado; certificado del frontend **ISSUED** y change set **phase3a2-20261026T211726Z** creado para `corodev-phase2`, Ohio. Estado `CREATE_COMPLETE / AVAILABLE`, **sin ejecutar**. El stack está en `REVIEW_IN_PROGRESS`: no hay EC2, EIP, buckets o distribución aprovisionados por ese plan.
+## Aprobación e integridad
 
-El Budget mensual real de **30 USD** está HEALTHY, con avisos reales al 85%/100% y previsto al 100%, cada uno con email configurado. Informa **0,00 USD** acumulados con posible retraso, sin créditos/reembolsos. No se duplicó ni modificó.
+La autorización está vinculada al ARN completo conservado en evidencia privada. Antes de ejecutar se comprobaron identidad IAM no root, cuenta/región autorizadas, permisos efectivos y eventos CREATE_CHANGESET SUCCEEDED sin VALIDATION_ERROR.
 
-Verificados identidad IAM no root/cuenta autorizada, perfil `default`, VPC/subred pública en `us-east-2a`, ruta IGW, DNS/DHCP, NACL, AMI Amazon Linux 2023 x86_64 y cuotas: ocho vCPU estándar y cinco EIP; se planean dos vCPU y una EIP. Se conserva la AMI kernel 6.1 ya verificada; el parámetro público actual también se consultó y apunta a kernel 6.18. La imagen Docker sigue siendo linux/amd64.
-
-No había certificado reutilizable. Se solicitó ACM público **no exportable** en us-east-1 y el propietario añadió el CNAME; DNS y validación SUCCESS comprobados, certificado emitido. Los registros que enrutan frontend/API esperan los outputs de la infraestructura.
-
-La revisión del operador separó cuatro documentos: base CloudFormation acotada, despliegue/Run Command imprescindible, administración interactiva y auditoría opcional. PutRolePolicy/DeleteRolePolicy sólo pueden concederse para el rol exacto mediante CloudFormation; además hay que reemplazar el bloque CloudFormation amplio del operador para impedir otros payloads. **Estos permisos son del operador, nunca del rol EC2.** Véase la revisión enlazada; no se aplicaron cambios IAM desde el agente.
-
-## Cambio específico pendiente de aprobación
-
-- Nombre: `phase3a2-20261026T211726Z`; stack `corodev-phase2`; región `us-east-2`.
-- Resultado AWS: **14 Add, cero Modify/Remove/reemplazos**. [Lista y evidencia](../deploy/validation-phase3a2-changeset.json).
-- Incluye EC2 t3.small, raíz gp3 20 GB cifrada, EIP, grupo exclusivo, dos buckets privados/políticas, logs/alarma y CloudFront/OAC/función SPA.
-- IAM global: rol y perfil `deploy-cli-ec2-corodev-phase2`, `CAPABILITY_NAMED_IAM`; rol con SSM y permisos internos sólo de logs/releases.
-- Red: entrada pública TCP80/443 y egreso TCP80/443. Sin SSH22 o Go8080 públicos.
-- ACM frontend en us-east-1, emitido y sin exportación; IAM y CloudFront/OAC/función globales. Cómputo, discos, EIP, S3 y logs en Ohio.
-- Estimación **22,96 USD/mes**, reserva de planificación 24 USD, sin descuentos/impuestos. Budget existente 30 USD; no es un corte automático.
-
-La revisión con ARN completo y hashes está en `deploy/evidence-private/phase3a2-final-preflight-20261026/change-set-review.md`. Ese documento conserva la revisión del cambio; la nueva revisión de seguridad del operador documenta las correcciones del complemento y las condiciones previas a autorizar. No ejecutar otro change set ni cambiar plantilla/parámetros bajo esta aprobación.
-
-## Evidencias y permisos pendientes
-
-- [Change set real y certificado](../deploy/validation-phase3a2-changeset.json), [reintento anterior](../deploy/validation-phase3a2-retry.json), [estado consolidado](../deploy/validation-phase3a.json), [preflight de esta fase](../deploy/validation-phase3a2-preflight.json) y [validación local](../deploy/validation-phase3a2-local.json).
-- Respuestas/errores actuales: `deploy/evidence-private/phase3a2-final-preflight-20261026/`, privado y excluido de Git. No contienen credenciales.
-- [Plantilla de política de lectura para preflight](../deploy/preflight-readonly-policy.example.json), con marcador de cuenta, revisable y **no aplicada**. Un administrador autorizado debe revisarla para el usuario existente o adaptar la inspección a un rol temporal.
-- [Explicación de los permisos](aws-preflight-permisos.md). Los permisos de preparar/ejecutar el change set se revisarán por separado, con los recursos reales. No usar AdministratorAccess para resolver este bloqueo.
-
-Cuotas, inventario CloudFormation/CloudFront y certificado ya comprobados. El plan de cuenta, CloudTrail y los eventos detallados de validación siguen sin acceso; no se afirma auditabilidad o validación de esa capa. Las evidencias anteriores se conservan como historia.
-
-## Infraestructura existente adaptada
-
-Se reutilizan `deploy/aws/stack.yaml`, Docker, Caddy y scripts de release/rollout/rollback. Completar una copia privada de [parameters.example.json](../deploy/aws/parameters.example.json) con parámetros comprobados.
-
-| Recursos previstos con Budget externo | Finalidad |
+| Control aprobado | Resultado |
 | --- | --- |
-| EC2 `Backend` | Una t3.small x86_64, raíz gp3 20 GB cifrada e IMDSv2 obligatorio |
-| EIP `BackendAddress` | IPv4 estable API |
-| `BackendSecurityGroup` | Grupo exclusivo, sin SSH ni Go 8080 público |
-| `BackendRole` / `BackendProfile` | SSM, escritura en logs y lectura releases/* del bucket privado |
-| `BackendLogs` / `CPUAlarm` | Logs siete días y alarma CPU sin acciones SNS |
-| `ArtifactBucket` / `ArtifactBucketPolicy` | Bundle privado, TLS obligatorio, expiración siete días |
-| `WebBucket` / `WebBucketPolicy` | S3 privado cifrado/versionado y lectura exclusiva por OAC/distribución |
-| `WebOriginAccess` / `SPARoutes` / `WebDistribution` | OAC, rutas SPA, alias CloudFront y TLS mínimo 1.2 |
+| Change set / stack | `phase3a2-20261026T211726Z` / `corodev-phase2`, us-east-2 |
+| Cambios | 14 Add; cero Modify, Remove o reemplazos |
+| SHA-256 plantilla | `be8bbda4995169bfe75342ddeb3746ebcb1e05c83e4064ce3579cd9967eadbf5` |
+| SHA-256 parámetros privados | `bd72f438eb145b5881966c7bba29ca2661043d24ef2d1b389f4d3f54d3536315` |
+| Estimación conservada | 22,96 USD/mes; reserva 24 USD; Budget existente 30 USD |
+| Resultado | CREATE_COMPLETE; distribución Deployed |
 
-Son **14 recursos declarados** con Budget nuevo desactivado; EBS es parte de Backend. La lista coincide con el **change set real creado**, todavía sin ejecutar. No se crean VPC, NAT Gateway, balanceador ni zona DNS.
+No se creó otro change set ni se cambiaron plantilla o parámetros. IAM y CloudFront/OAC/función son globales; ACM frontend está en us-east-1. EC2, EBS, EIP, S3 y CloudWatch están en Ohio. No se crearon VPC, NAT Gateway, balanceador o zona DNS.
 
-`CreateProjectBudget=false` mantiene el Budget fuera de CloudFormation. `ExistingBudgetName` procede de una comprobación real; no se importa ni modifica. El modo alternativo que crea Budget queda para otros entornos, requiere aprobación y no garantiza precedencia del Budget respecto al consumo. No usarlo en este despliegue.
+## Recursos y seguridad comprobados
 
-El grupo de seguridad comienza restringido en el ejemplo. El change set creado muestra **TCP 80/443 desde 0.0.0.0/0**, solicitado para Caddy/ACME; 22 y 8080 seguirán cerrados. Egreso TCP 80/443 para paquetes, SSM, logs y ACME. Go publica 8080 en loopback/red Docker. IMDS hop limit uno impide acceso desde el contenedor Go; el driver de logs utiliza el rol desde el host.
+| Recursos creados | Configuración verificada en AWS |
+| --- | --- |
+| `Backend` | EC2 t3.small, Amazon Linux 2023 x86_64; sistema/instancia OK; Docker linux/amd64 |
+| `BackendAddress` | IPv4 estable `77.112.199.249` |
+| `BackendSecurityGroup` | Entrada pública sólo TCP 80/443; egreso TCP 80/443; sin SSH 22 ni Go 8080 públicos |
+| `BackendRole` / `BackendProfile` | Confianza EC2, AmazonSSMManagedInstanceCore, logs del grupo concreto y GetObject sólo en releases/* del bucket de artefactos |
+| `BackendLogs` / `CPUAlarm` | Logs siete días; alarma CPU 80%, sin acciones SNS |
+| `ArtifactBucket` / `ArtifactBucketPolicy` | Privado, AES256, TLS obligatorio, releases con expiración siete días |
+| `WebBucket` / `WebBucketPolicy` | Privado, AES256, versionado, TLS obligatorio, lectura OAC restringida a la distribución |
+| `WebOriginAccess` / `SPARoutes` / `WebDistribution` | OAC SigV4 always, rutas SPA, alias exacto y TLS mínimo 1.2 |
 
-## Dominios, DNS y certificados
+Son 14 recursos; el disco raíz gp3 cifrado de 20 GB forma parte de Backend. IMDSv2 es obligatorio con hop limit 1; créditos T3 en standard. La inspección real de infraestructura pasó 30 controles y no encontró eventos de creación fallidos. Un GET anónimo directo a index.html en S3 devolvió 403.
 
-DNS público observado: `lexinnovate.com` usa **Cloudflare**, servidores `kayleigh.ns.cloudflare.com` y `luke.ns.cloudflare.com`. No se hallaron A/CNAME para los nombres del proyecto. No hay acceso conectado y autorizado a Cloudflare; no se modificó DNS ni se asumió Route 53.
+El propietario eligió y asoció **AdministratorAccess al operador deploy-cli** para desarrollo. Esa decisión concede administración amplia y sustituye la alternativa acotada de la [revisión histórica](revision-seguridad-fase3a2.md); no se afirma mínimo privilegio global del operador. **La EC2 mantiene su rol mínimo y no recibe AdministratorAccess.** No se crearon claves permanentes ni se cambiaron perfiles/credenciales.
 
-| Uso | Registro en Cloudflare, inicialmente DNS only | Valor pendiente |
+Run Command y una sesión real de Session Manager funcionaron. La sesión ejecutó `id` como ssm-user y terminó correctamente. No se utilizó SSH. El daemon SSH de la AMI escucha en el host, pero el grupo de seguridad no permite entrada 22.
+
+## Release y secretos
+
+Se transfirió el bundle existente `deploy/releases/corodev-release-phase3a2-20261026.tgz`, SHA-256 `1d0713cafb19a18f2699080f29089379b50d1f32c42590add90f29819305ff53`, a releases/ del bucket privado. En EC2 se verificaron el checksum exterior y todos los archivos internos antes de cargar Docker. La imagen desplegada conserva ID `sha256:ee09a3b6a38c89df40d30c0042cb800e101cd79ff062c992ee885cd5635fa105`, linux/amd64.
+
+`/etc/corodev/backend.env` tiene modo 0600. La API_KEY se generó en EC2 y no apareció en solicitudes o salidas SSM. Para el probe externo autorizado se cifró en EC2 con RSA-OAEP-SHA256 y una clave pública transitoria; sólo el ciphertext salió por SSM. El cliente local privado tiene modo 0600 y la clave RSA privada transitoria se eliminó. La API key nunca se pasa como argumento de comando ni se incorpora a React o Flutter.
+
+Se ejecutaron los scripts existentes `deploy/start-backend.sh` y `deploy/start-tls.sh`. Go usa usuario no root, rootfs readonly, cap-drop ALL, no-new-privileges, límites de memoria/CPU/procesos, tmpfs y restart unless-stopped. El puerto 8080 está publicado exclusivamente en 127.0.0.1 y la red Docker. La inspección del contenedor confirmó estas opciones y awslogs.
+
+El runtime utiliza manta-v2 y el escenario urbano round3 existente: 200 sobrevivientes, 150 turnos, intervalo 2 s, concurrencia 16. CORS permite `https://sistemamanta.lexinnovate.com`. Caddy conserva su imagen fijada por digest, API administrativa apagada, volúmenes de certificados y logs locales con rotación. No hay logs de acceso con cuerpos/credenciales.
+
+La simulación termina tras 150 turnos y el servidor conserva el snapshot final. **El mapa puede quedar inmóvil al terminar; health 200 no implica que siga avanzando.** Reiniciar el contenedor Go reinicia el escenario desde su semilla y pierde la RAM. No se añadió reproducción automática ni persistencia.
+
+## Frontend, DNS y HTTPS
+
+Se publicó exclusivamente el build existente `apps/web/dist`, que contiene la URL HTTPS real de la API: assets con hash y caché inmutable, index.html no-cache. No se borraron versiones/assets. La invalidación CloudFront terminó Completed.
+
+Cloudflare administra lexinnovate.com. El propietario creó/corrigió estos registros, ambos **DNS only, nube gris, TTL Auto**:
+
+| Tipo | Nombre | Destino real |
 | --- | --- | --- |
-| Frontend | CNAME sistemamanta.lexinnovate.com | Output real WebCloudFrontDomain |
-| API | A api.sistemamanta.lexinnovate.com | Output real BackendIPv4 |
-| Validación ACM, completada | CNAME _18414b2fbc926162e72dc758bc022bf9.sistemamanta.lexinnovate.com | _7fe3626cee5c306831112ca94dc4d567.wzccmgtwzk.acm-validations.aws |
+| CNAME | sistemamanta | d3oor59fj9nlnj.cloudfront.net |
+| A | api.sistemamanta | 77.112.199.249 |
 
-El CNAME ACM ya está creado y verificado; conservarlo para renovación. Sus datos están en [DNS de validación](../deploy/dns-validation-phase3a2.json). Los destinos de aplicación todavía dependen de outputs; no inventar IP/hostname ni añadir AAAA sin ruta IPv6 comprobada.
+Los [registros de aplicación](../deploy/dns-application-phase3a2.json) proceden de outputs reales. Conservar el [CNAME de validación ACM](../deploy/dns-validation-phase3a2.json) para renovación. No se modificaron registros ajenos al proyecto.
 
-Buscar primero ACM en **us-east-1**: certificado ISSUED, vigente y SAN exacto o wildcard válido para el frontend. `*.lexinnovate.com` puede cubrirlo, pero no `api.sistemamanta.lexinnovate.com`. Caddy obtiene un certificado independiente para API. [Requisitos de CloudFront](https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/cnames-and-https-requirements.html).
+CloudFront sirve un certificado Amazon válido para el nombre exacto del frontend, emitido por ACM en us-east-1 y vigente hasta el 11 de mayo de 2027. Caddy obtuvo otro certificado de Let's Encrypt para el nombre exacto de la API, vigente hasta el 24 de enero de 2027. Ambos se comprobaron con cadena y hostname válidos y TLS 1.3. API HTTP redirige 308 a HTTPS y entrega HSTS.
 
-La [solicitud preparada](../deploy/aws/certificate-request.example.json) ya se ejecutó, sin tags, pública/DNS/Export=DISABLED. El certificado exacto está ISSUED y cargado en los parámetros privados del change set. Es independiente del HTTPS que Caddy emitirá para la API.
+Tras corregir el proxy de API, los DNS autoritativos y 1.1.1.1 devolvieron la EIP. Los resolvedores del ISP de este equipo alternaron temporalmente entre la IP correcta, direcciones antiguas Cloudflare y NXDOMAIN. Se conservaron los dos intentos iniciales fallidos del probe y la corrida inicial del navegador. La medición válida consultó DNS real 1.1.1.1 y cacheó la respuesta para la corrida, manteniendo SNI y verificación TLS; no usó una IP fija inventada. Esta diferencia de resolvedor se declara en la evidencia. La propagación a todos los ISP no queda garantizada por una consulta correcta. Al cierre, a las 18:31:19 de Ecuador, el resolvedor normal de este equipo devolvió la EIP en tres consultas y tanto API como frontend respondieron 200 por HTTPS sin sustituir DNS o proxy.
 
-CloudFront, función/OAC e IAM son globales. ACM CloudFront y endpoints globales Budgets/Price List utilizan us-east-1. EC2, EBS, EIP, S3 y CloudWatch permanecen en Ohio.
+## Comprobaciones externas y latencias
 
-## Reanudar el preflight
+Se ejecutó `tools/qa/phase3a_probe.py` sin modificarlo desde el equipo del propietario, en Ecuador, **fuera de EC2**. La clave sólo estuvo en el entorno privado del proceso. Los fallos iniciales de DNS se conservan separados de la corrida completa.
 
-Cuando el propietario confirme acceso habilitado, elegir el perfil autorizado sin sobrescribir el actual:
+| Comprobación pública | Resultado |
+| --- | --- |
+| GET /healthz, /grafo, /estado | 200; grafo 300 nodos/383 aristas |
+| POST /paso autorizado | 200, contrato exacto y vecino transitable o espera |
+| /paso sin clave / clave incorrecta | 401 / 401 |
+| /admin, /reset, /config, /debug/pprof/ | 404 |
+| Simulación observada por probe | Turno 59→78; 4169 solicitudes internas correctas, 0 inválidas y 0 timeouts |
+| CORS origen frontend | Access-Control-Allow-Origin exacto |
+| CORS otro origen | Sin permiso CORS; los GET públicos siguen siendo públicos |
+| /escape y objeto S3 directo | 200 / 403 |
 
-```sh
-export AWS_PROFILE=default
-export AWS_REGION=us-east-2
-# Definir EXPECTED_AWS_ACCOUNT_ID fuera del repositorio con la cuenta autorizada.
-bash deploy/aws/check-access.sh
-aws cloudformation validate-template --region "$AWS_REGION" --template-body file://deploy/aws/stack.yaml
-aws budgets describe-budgets --region us-east-1 --account-id "$EXPECTED_AWS_ACCOUNT_ID"
-```
+POST /paso: **30 muestras válidas, 41 intentos, 11 conflictos 409 de turno reintentados; 0 errores y 0 timeouts en la corrida completa**. p50 **364,43 ms**, p95 **384,72 ms**, p99/máximo **524,49 ms**. Son tiempos HTTPS externos con recepción JSON, percentiles nearest-rank sobre éxitos; no son benchmarks locales ni garantía de SLA. Los conflictos y fallos DNS iniciales deben leerse junto con los percentiles. [Reporte completo](../deploy/validation-phase3a-public.json).
 
-El script verifica cuenta y rechaza root; no sustituye el preflight completo. Verificar Budget mensual **30 USD**, filtros/cobertura, vigencia, salud, avisos y suscriptores con describe-budget, describe-notifications-for-budget y describe-subscribers-for-notification. Guardar destinatarios privados, confirmar entrega y no crear otro Budget por un permiso denegado.
+Chromium real comprobó /escape y la integración Go/CORS/HTTPS: turno 8→9, versión 17→19 y 60 marcadores cambiaron coordenadas. Pasaron zoom/reset/selección y la comprobación de ancho sin desbordamiento a 390 px, con 0 errores de JavaScript/red, 0 cabeceras x-api-key y 0 llamadas /paso desde el navegador. Para evitar cachés del ISP se utilizó DoH real 1.1.1.1 mediante un túnel CONNECT local, con TLS del navegador extremo a extremo, sin interceptarlo ni fijar la IP. [Reporte de navegador](../deploy/validation-phase3a2-browser.json). La captura móvil coincidió con una transición del menú y no constituye una revisión visual exhaustiva. La corrida inicial con DNS del ISP tuvo 9 fallos de red sin códigos individuales; su relación con DNS es una inferencia respaldada por las consultas independientes.
 
-Elegir VPC/subred existentes: disponible, misma VPC, ruta efectiva activa 0.0.0.0/0 a Internet Gateway adjunto, DNS habilitado y NACL que permita HTTP/HTTPS y respuestas efímeras. Una asociación explícita de rutas prevalece sobre la principal. Revisar attachments antes de tocar grupos existentes; la plantilla crea un grupo exclusivo.
+El panel de latencia del mapa muestra la métrica interna del simulador, distinta de los percentiles HTTPS externos del probe. React sólo consulta observaciones públicas; no se desplegó un servidor demo adicional.
 
-Consultar SSM público `/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64` en Ohio y describir la AMI de Amazon: disponible, AL2023, x86_64, EBS/HVM y compatible con t3.small. Verificar oferta en la zona y cuotas/uso vCPU/EIP. La imagen local es linux/amd64; no seleccionar ARM sin reconstrucción y validación.
+## Logs, rollback y límites
 
-## Change set y aprobación obligatoria
+CloudWatch recibió el evento JSON real `backend ready` en el stream backend del grupo `/corodev/corodev-phase2/backend`, con grafo 300/383 e intervalo 2 s. Se comprobó que la clave real no aparece en los eventos consultados. No se encontró OTel implementado y no se añadió una plataforma de observabilidad. Caddy conserva logs locales con rotación; la alarma CPU no notifica por SNS.
 
-**Change set preparado y certificado emitido.** Los parámetros privados ya están completos; faltan aprobación específica y permisos acotados para ejecución/instalación y lectura de validaciones. Estimación base **22,96 USD/mes**, reserva de 24 USD; t3.medium alcanzaría 38,15 USD. Ver [costos y supuestos](costos.md).
+`deploy/rollout.sh` conserva el contenedor previo y lo restaura si falla el nuevo; `deploy/rollback.sh` vuelve después de un rollout. La instalación inicial no crea un release previo al que volver. Un reinicio restaura el escenario desde semilla, **no la RAM**. Para web, restaurar una versión anterior de index.html y sus assets y después invalidar CloudFront. No destruir el stack por un fallo parcial; cualquier cambio de infraestructura requiere revisión nueva.
 
-La copia `deploy/aws/parameters.production.json`, modo 600 y excluida de Git, ya tiene la VPC, subred, AMI, Budget y TCP 80/443 públicos previstos. El ARN ACM real está completado. El stack `corodev-phase2` ya existe en REVIEW_IN_PROGRESS con el cambio CREATE preparado; reutilizar ese plan. No borrar el stack ni recrearlo para saltar controles.
+Detener EC2 conserva cargos EBS/EIP. Al retirar, revisar buckets/versiones Retain y recursos retenidos. El Budget externo no pertenece al stack. Presupuesto 30 USD y gasto informado 0 USD tienen retraso y no detienen cargos; ver [costos](costos.md).
 
-```sh
-# CHANGE_SET_TYPE corresponde al estado real; nombre phase3a2-* para el suplemento IAM.
-# No usar --tags ni RoleARN con la política de preparación.
-aws cloudformation create-change-set --region "$AWS_REGION" \
-  --stack-name corodev-phase2 --change-set-name "$CHANGE_SET_NAME" \
-  --change-set-type "$CHANGE_SET_TYPE" --template-body file://deploy/aws/stack.yaml \
-  --parameters file://deploy/aws/parameters.production.json --capabilities CAPABILITY_NAMED_IAM
-aws cloudformation describe-change-set --region "$AWS_REGION" \
-  --stack-name corodev-phase2 --change-set-name "$CHANGE_SET_NAME"
-```
+Se mantienen las verificaciones locales previas, sin repetirlas. cfn-guard no estaba disponible y no se ejecutó; no se afirma cumplimiento automatizado de esa herramienta. No se repitieron experimentos FASE 2. Flutter conserva su APK local; no se hizo prueba física ni se incluyó API_KEY.
 
-La creación y descripción del change set **ya se ejecutaron**; no repetirlas sin necesidad. Crear el change set no aprovisiona los 14 recursos. DescribeEvents aún fue denegado: obtener esos resultados antes de ejecutar, una vez añadido el complemento de permisos.
+## Git y evidencias
 
-Antes de execute-change-set, mostrar **ARN específico**, Add/Modify/Remove/reemplazos, recursos, costos, rol/perfil IAM, reglas de red y recursos globales/us-east-1. Solicitar aprobación expresa para **ese change set**. El encargo y la decisión de preparar archivos no son aprobación anticipada.
+Los recibos completos de autorización, ejecución, AWS, SSM y pruebas están en `deploy/evidence-private/phase3a2-deployment-20261026/`, excluido de Git. Los JSON públicos omiten cuenta, destinatarios, secretos y parámetros privados. El historial local utiliza fechas auténticas. El propietario **aplazó la publicación GitHub**: no hay remoto ni push; no se creó repositorio público.
 
-## Artefactos locales listos
-
-Se preparó `deploy/releases/corodev-release-phase3a2-20261026.tgz` con la imagen validada y scripts existentes; SHA-256 `1d0713cafb19a18f2699080f29089379b50d1f32c42590add90f29819305ff53`. Se conserva fuera de Git y no se subió a AWS. El build React final contiene la URL HTTPS real prevista de la API; tampoco se publicó. Sus metadatos están en el preflight.
-
-## Publicar solamente tras aprobación
-
-1. Ejecutar el change set aprobado; esperar stack y comprobar outputs/eventos. Investigar errores concretos antes de reintentar.
-2. `bash deploy/aws/prepare-release.sh corodev-evacuation:phase2 DIRECTORIO_NUEVO_PRIVADO`: verifica linux/amd64 y SHA-256 de imagen/scripts/Caddyfile; sin secretos.
-3. Subir bundle a releases/ del bucket privado. Entrar con Session Manager, descargar en /opt/corodev, verificar `sha256sum -c SHA256SUMS` y cargar Docker. Sin SSH.
-4. Crear /etc/corodev/backend.env modo 600 en el host; generar API_KEY allí sin imprimirla. Conservar grafo/escenario urbano validados y fijar CORS_ORIGINS=https://sistemamanta.lexinnovate.com. No enviar la clave por SSM Run Command ni registrar su contenido.
-5. Iniciar deploy/start-backend.sh con LOG_DRIVER=awslogs, AWS_REGION=us-east-2 y AWS_LOG_GROUP del output. Conserva no-root, readonly, capabilities eliminadas, límites y reinicio; Docker utiliza el rol del host.
-6. Crear DNS con outputs reales. Iniciar Caddy con API_DOMAIN=api.sistemamanta.lexinnovate.com y contacto TLS privado real. Conserva volúmenes de certificados, redirección HTTP, admin apagado y logs sin claves. Verificar cadena HTTPS desde Internet.
-7. **Compilar al final**, porque la integración puede reemplazar dist con una URL local: `VITE_WORLD_API_BASE_URL=https://api.sistemamanta.lexinnovate.com npm run build:web`. Confirmar URL y ausencia de credenciales.
-8. Publicar exclusivamente apps/web/dist: assets con hash/caché inmutable, index.html no-cache, invalidar /index.html y /escape. Conservar versiones/assets para rollback.
-
-React y Flutter no reciben la API key de /paso. Se conserva mock/demo; no se añade un servidor demo productivo o pantallas. No se encontró OTel y no se introduce una plataforma nueva.
-
-## Pruebas externas y rollback
-
-Desde un cliente fuera de EC2, simulación activa y clave solo en su entorno privado:
-
-```sh
-python3 tools/qa/phase3a_probe.py https://api.sistemamanta.lexinnovate.com \
-  --output deploy/validation-phase3a-public.json
-```
-
-Comprueba DNS público/TLS, /healthz, /grafo, /estado, /paso autenticado, 401 sin clave, ausencia de rutas administrativas y avance. Registra p50/p95/p99/máximo, intentos, errores y timeouts; conserva resultados parciales. Registrar la procedencia del cliente externo: el JSON solo no la demuestra. Leer percentiles exitosos junto con errores/timeouts.
-
-Verificar además /escape en navegador externo, mapa/turnos, URL Go real, CORS, cadena TLS y logs efectivos CloudWatch. La simulación finalizada sigue respondiendo health: coordinar reinicios antes de medir. La alarma CPU no tiene SNS. No hay resultados públicos ni latencias AWS de esta fase.
-
-deploy/rollout.sh conserva el contenedor previo y lo restaura si falla el nuevo; deploy/rollback.sh vuelve después. Reinicia desde semilla: **no restaura RAM**. Web: restaurar index.html anterior y assets, invalidar CloudFront. Infraestructura: revisar el cambio concreto; no eliminar el stack por un fallo parcial.
-
-Al retirar, revisar EBS, EIP y buckets/versiones Retain. El Budget externo no pertenece al stack ni debe borrarse con él. Conservar evidencia de gasto si se necesita.
-
-## Validación local y Git
-
-Pasaron cfn-lint 1.58.0 en Ohio, shell, JSON y controles estáticos de seguridad/identidad. **cfn-guard no disponible**: cumplimiento automatizado pendiente; la revisión estática no lo sustituye. ValidateTemplate del servicio pasó. El change set llegó a CREATE_COMPLETE; DescribeEvents ya leído: operación CREATE_CHANGESET SUCCEEDED, sin errores de validación reportados. El plan FREE/ACTIVE está verificado; CloudTrail sigue como auditoría opcional. Las 17 simulaciones de políticas propuestas están en evidencia privada y no sustituyen comprobar las políticas efectivamente asociadas. El canal interactivo usa una política separada y requiere comprobación real.
-
-Pasaron checks/contratos/generación consistente/TypeScript/ESLint, 22 React, 40 mock, Go race/build, 10 pruebas de grafo, Docker con 200 decisiones internas, Caddy sin red e integración HTTP urbana Chromium/Dart. Flutter analyze, 21 pruebas unitarias y APK debug correctos; sin prueba física. Son resultados **locales**, no latencias AWS. No se repitieron experimentos FASE 2 ni se cambiaron motores/grafos/contratos.
-
-Git estaba inicializado en main, sin commits/remoto. El encargo actual autoriza commits reales tras escanear, por encima de la prohibición histórica de FASE 2 en AGENTS.md. Se creó el primer commit con fechas auténticas tras el escaneo; comprobar git log para el identificador. No hay remoto definido ni publicación: el destino requiere autorización del propietario. .gitignore excluye credenciales, .env, parámetros completos, reportes privados, bundles, builds y evidencias sensibles.
-
-**Pendiente:** recibir aprobación específica del change set preparado, ejecutar, instalar/publicar y configurar los DNS de aplicación con outputs reales. No se inició FASE 3B.
+Quedan como límites: propagación DNS global sin garantizar, simulación finita/RAM, operador con permisos administrativos por decisión del propietario, entrega de alertas Budget sin confirmar y ausencia de captura auténtica de consola. El Budget sí se comprobó por API; no se fabricó una imagen. No se inició FASE 3B.
