@@ -1,0 +1,46 @@
+{
+  "name": "Ronda 3 — Apocalipsis — aparición urbana por zonas",
+  "seed": 20261028,
+  "turns": 150,
+  "survivors": 200,
+  "walkers": 20,
+  "runners": 8,
+  "hordes": 3,
+  "sleepers": 10,
+  "concurrency": 32,
+  "horde_move_every": 0,
+  "events": [
+    {
+      "turn": 35,
+      "edge_index": 1,
+      "blocked": true,
+      "type": "street_block"
+    },
+    {
+      "turn": 80,
+      "edge_index": 2,
+      "blocked": true,
+      "type": "street_block"
+    }
+  ],
+  "use_spawn_zones": true,
+  "allow_initial_overlaps": false,
+  "spawn_zone_weights": [
+    {
+      "zone_id": "tarqui",
+      "weight": 1
+    },
+    {
+      "zone_id": "los-esteros",
+      "weight": 1
+    },
+    {
+      "zone_id": "barbasquillo",
+      "weight": 1
+    },
+    {
+      "zone_id": "jocay",
+      "weight": 1
+    }
+  ]
+}

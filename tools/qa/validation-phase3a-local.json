@@ -1,0 +1,90 @@
+{
+  "recorded_at": "2026-10-26T19:07:51.878Z",
+  "phase": "3A",
+  "scope": "local_loopback_only_no_AWS_no_external_URL",
+  "runtime": {
+    "node": "v22.18.0",
+    "go": "go1.26.1 linux/amd64",
+    "browser": "156.0.8078.4"
+  },
+  "checks": {
+    "healthz": 200,
+    "grafo": 200,
+    "estado": 200,
+    "paso_authenticated": 200,
+    "paso_missing_key": 401,
+    "paso_wrong_key": 401,
+    "administrative_routes": {
+      "/admin": 404,
+      "/reset": 404,
+      "/config": 404,
+      "/debug/pprof/": 404
+    },
+    "cors_exact_allowlist": true,
+    "random_runtime_key_absent_from_logs": true,
+    "random_API_KEY_build_environment_absent_from_production_bundle": true,
+    "no_source_maps": true,
+    "hidden_sleepers_excluded": true,
+    "react_production_bundle_real_Go_polling": true,
+    "react_map_coordinates_changed": true,
+    "react_initial_turn": "2 / 150 nominales",
+    "react_final_turn": "3 / 150 nominales",
+    "react_world_requests": 2,
+    "react_privileged_headers": 0,
+    "simulation_requests_success": 54,
+    "simulation_requests_invalid": 0,
+    "simulation_requests_timeout": 0
+  },
+  "latency": {
+    "vantage": "same_workstation_loopback_not_external_EC2",
+    "endpoint": "POST /paso",
+    "requests": 30,
+    "errors": 0,
+    "p50_ms": 1.1268910000000005,
+    "p95_ms": 2.7157849999999826,
+    "p99_ms": 3.5249370000000226,
+    "maximum_ms": 3.5249370000000226
+  },
+  "bundle": [
+    {
+      "file": "index-D16s4u7o.css",
+      "bytes": 69059,
+      "sha256": "f61cdf77341932ef7aa2d4075a915bbcc6b618f2e190d727315ed6fc7c966ca9"
+    },
+    {
+      "file": "index-DcW197Ua.js",
+      "bytes": 352251,
+      "sha256": "181a92d7146983f2ae3480f00378529d1363af1fe821c91a5df73fb1b2e53dff"
+    }
+  ],
+  "additional_completed_commands": [
+    "npm run check",
+    "npm test (22 React + 40 mock)",
+    "npm run build:web",
+    "npm run test:race (cached Go package results)",
+    "node tools/scripts/go.mjs vet ./...",
+    "npm run build:backend",
+    "npm run test:contracts:http -- --urban --browser"
+  ],
+  "limitations": [
+    "No public URL or AWS access supplied to this validator.",
+    "No external HTTP latency measured.",
+    "Private source/scenario reports must remain excluded from public Git and web upload.",
+    "Local bundle currently embeds the ephemeral loopback URL; rebuild with the authorized production HTTPS API URL before publication."
+  ],
+  "probe_tool_validation": {
+    "file": "tools/qa/phase3a_probe.py",
+    "python_compile": "passed",
+    "help": "passed",
+    "http_origin_rejected": "passed",
+    "URL_credentials_rejected_without_echo": "passed",
+    "missing_API_KEY_rejected_before_network": "passed",
+    "public_probe_executed": false,
+    "external_vantage_requires_separate_attestation": true,
+    "authenticated_sample_count": 30,
+    "requires_live_turn_advancement": true,
+    "no_redirects": true,
+    "TLS_certificate_verification": true,
+    "API_KEY_source": "environment only"
+  }
+}

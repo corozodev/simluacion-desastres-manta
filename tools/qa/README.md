@@ -1,0 +1,34 @@
+# Pruebas de contrato y clientes con Go real
+
+Desde la raíz del monorepo:
+
+```sh
+node tools/qa/check_http_contracts.mjs
+node tools/qa/check_http_contracts.mjs --browser
+FLUTTER_BIN=/ruta/a/flutter/bin/flutter node tools/qa/check_http_contracts.mjs --browser --flutter
+```
+
+El script compila Go en un directorio temporal, inicia un puerto local efímero y
+crea una credencial aleatoria únicamente en memoria. Valida respuestas reales
+con JSON Schema generado, adyacencia del movimiento y errores 400/401/409.
+Termina los procesos y elimina el binario temporal incluso cuando falla.
+
+`--browser` inicia Vite en `127.0.0.1:5174` y Chromium de Playwright; verifica
+que `/escape` consume el grafo OSM y el estado real, filtra sobrevivientes,
+no envía API keys y cabe en un viewport móvil de 390 px. Requiere ese puerto libre
+y Chromium disponible; admite `PLAYWRIGHT_CHROMIUM_EXECUTABLE`.
+
+`--flutter` ejecuta `world_http_integration_test.dart` contra ese mismo servidor
+Go, sin exponer credenciales al repositorio Dart. Usa `FLUTTER_BIN` o Flutter en PATH.
+Las pruebas unitarias normales no necesitan servidores, navegador ni Android.
+
+## Variantes de FASE 2
+
+El modo predeterminado fija explícitamente `data/manta-v1.json` y `scenarios/round1.json`, para mantener la comprobación del grafo histórico aunque cambien los defaults productivos. `--urban` usa `data/manta-v2.json` y `scenarios/urban/round1.json`. Ambos prueban el motor productivo actual; este script no reemplaza los experimentos comparativos del evaluador.
+
+```sh
+node tools/qa/check_http_contracts.mjs --urban
+FLUTTER_BIN=/ruta/flutter/bin/flutter node tools/qa/check_http_contracts.mjs --urban --browser --flutter
+```
+
+El modo urbano comprueba cuatro zonas de origen, geometrías y coherencia de ocupación/reservas/disponibilidad. El navegador verifica zoom, desplazamiento/reset, selección de ruta, búsqueda, ausencia de solicitudes al health demo y de credenciales, además del viewport móvil. Las cifras de nodos/aristas se leen del grafo recibido; no se fija 325 para la variante urbana.

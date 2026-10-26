@@ -1,0 +1,71 @@
+/* GENERATED from packages/design-tokens. Do not edit. */
+:root {
+  --color-background: #0B0D14;
+  --color-surface: #171B29;
+  --color-surfaceElevated: #222738;
+  --color-primary: #F59E0B;
+  --color-secondary: #8B5CF6;
+  --color-accent: #22D3EE;
+  --color-success: #22C55E;
+  --color-warning: #FBBF24;
+  --color-error: #EF4444;
+  --color-textPrimary: #F8FAFC;
+  --color-textSecondary: #94A3B8;
+  --color-border: #32384B;
+  --color-onPrimary: #0B0D14;
+  --color-onSecondary: #F8FAFC;
+  --color-focus: #22D3EE;
+  --color-primaryHover: #FBBF24;
+  --color-disabled: #64748B;
+  --font-family-sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-family-mono: ui-monospace, SFMono-Regular, Consolas, monospace;
+  --font-size-xs: 12px;
+  --font-size-sm: 14px;
+  --font-size-base: 16px;
+  --font-size-lg: 18px;
+  --font-size-xl: 24px;
+  --font-size-2xl: 32px;
+  --font-size-3xl: 44px;
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --font-lineHeight-body: 1.6;
+  --font-lineHeight-heading: 1.15;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-7: 28px;
+  --space-8: 32px;
+  --space-9: 36px;
+  --space-10: 40px;
+  --space-11: 44px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-20: 80px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --radius-xl: 24px;
+  --radius-full: 999px;
+  --shadow-card: 0 12px 32px #00000026;
+  --shadow-glow: 0 0 40px #F59E0B0D;
+  --shadow-elevated: 0 20px 60px #00000066;
+  --breakpoint-sm: 640px;
+  --breakpoint-md: 768px;
+  --breakpoint-lg: 1024px;
+  --breakpoint-xl: 1280px;
+  --duration-fast: 120ms;
+  --duration-normal: 200ms;
+  --duration-slow: 350ms;
+  --easing-standard: cubic-bezier(0.2, 0, 0, 1);
+  --state-disabledOpacity: 0.45;
+  --state-hoverOpacity: 0.08;
+  --state-pressedOpacity: 0.14;
+}
+@media (prefers-reduced-motion: reduce) {
+  :root { --duration-fast: 0ms; --duration-normal: 0ms; --duration-slow: 0ms; }
+}

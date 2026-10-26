@@ -1,0 +1,144 @@
+{
+  "phase": "3A.2",
+  "recorded_at": "2026-10-26T15:38:46-05:00",
+  "timezone": "America/Guayaquil",
+  "status": "prepared_locally_aws_access_deferred_by_owner",
+  "reason": "Correct IAM user authenticated; required AWS reads denied. Owner selected preparing files and leaving AWS access pending.",
+  "previous_phase3a_record": {
+    "phase": "3A",
+    "status": "paused_by_owner",
+    "recorded_at": "2026-10-26T14:12:50.286035-05:00",
+    "timezone": "America/Guayaquil",
+    "reason": "Owner requested pause until AWS account/access/budget configuration is ready.",
+    "confirmed_web_domain": "sistemamanta.lexinnovate.com",
+    "proposed_api_domain": "api.sistemamanta.lexinnovate.com",
+    "public_react_url": null,
+    "public_paso_url": null,
+    "external_latency": null,
+    "aws_resources_created": [],
+    "aws_access": {
+      "cli_version": "2.38.6",
+      "signature_verified": true,
+      "session_manager_plugin_version": "1.2.896.0",
+      "sts_exit": 253,
+      "sts_error": "NoCredentials",
+      "account_authorized": false,
+      "region_authorized": false,
+      "spending_authorized": false
+    },
+    "budget": {
+      "verified": false,
+      "created_in_this_session": false,
+      "screenshot": null
+    },
+    "cost": {
+      "illustrative_usd_per_month": 24.03,
+      "region_example_only": "us-east-1",
+      "observed_spend": null
+    },
+    "git": {
+      "initialized": true,
+      "branch": "main",
+      "commits": 0,
+      "remote": null,
+      "published": false,
+      "secret_pattern_scan": "No findings among 259 candidate files at initial scan; final staged scan remains pending."
+    },
+    "evidence": [
+      "validation-phase3a-infrastructure.json",
+      "validation-phase3a-docker.json",
+      "validation-phase3a-guards.json",
+      "../tools/qa/validation-phase3a-local.json"
+    ],
+    "pending": [
+      "Owner AWS account/region/spend approval and temporary authentication",
+      "Verify real IAM, network and AMI",
+      "Budget alerts and authentic evidence",
+      "Implement CloudFront custom-domain parameters and ACM certificate after resume",
+      "Deploy existing infrastructure and DNS",
+      "External HTTPS/API/browser/CloudWatch/restart checks and latency",
+      "Final Git review, authentic commits and authorized remote preparation"
+    ],
+    "phase3b_started": false
+  },
+  "aws_resources_created": [],
+  "aws_deployed": false,
+  "aws_budget_created": false,
+  "aws_access": {
+    "sts_authenticated": true,
+    "authorized_account_matches": true,
+    "type": "IAMUser",
+    "user_name": "deploy-cli",
+    "is_root": false,
+    "credentials_or_profiles_modified": false,
+    "profile": "default",
+    "region": "us-east-2",
+    "preflight_permissions_available": false
+  },
+  "budget": {
+    "owner_reported_monthly_usd": "30",
+    "existence_verified": false,
+    "notifications_verified": false,
+    "recipients_verified": false,
+    "observed_spend_usd": null,
+    "duplicate_created": false,
+    "authentic_screenshot_available": false
+  },
+  "cost_estimate": {
+    "region": "us-east-2",
+    "monthly_usd": "22.96",
+    "observed_spend_usd": null,
+    "details": "deploy/cost-estimate-phase3a2.json"
+  },
+  "change_set": {
+    "created": false,
+    "executed": false,
+    "arn": null,
+    "reason": "Unknown verified network/AMI/budget/certificate and missing IAM access; owner requested files only pending access.",
+    "specific_execution_approval_received": false
+  },
+  "evidence_phase3a2": [
+    "deploy/validation-phase3a2-preflight.json",
+    "deploy/validation-phase3a2-local.json",
+    "deploy/cost-estimate-phase3a2.json"
+  ],
+  "pending": [
+    "Enable authorized read access and repeat AWS preflight",
+    "Verify existing monthly Budget, notifications and recipients",
+    "Verify VPC/subnet/AMI/quotas and reusable resources",
+    "Verify/request issued ACM certificate and provide actual DNS records",
+    "Create actual CloudFormation change set and obtain specific execution approval",
+    "Deploy and run external HTTPS/API/browser/CloudWatch checks",
+    "Define and authorize public Git remote before publication"
+  ],
+  "phase3b_started": false,
+  "local_artifacts": {
+    "backend_release": {
+      "bundle": "deploy/releases/corodev-release-phase3a2-20261026.tgz",
+      "size_bytes": 36794034,
+      "sha256": "1d0713cafb19a18f2699080f29089379b50d1f32c42590add90f29819305ff53",
+      "platform": "linux/amd64",
+      "contains_private_env": false,
+      "uploaded": false
+    },
+    "frontend_build": {
+      "path": "apps/web/dist",
+      "api_url": "https://api.sistemamanta.lexinnovate.com",
+      "url_found_in_bundle": true,
+      "build_completed_at": "2026-10-26T15:40:40-05:00",
+      "uploaded": false,
+      "assets_sha256": {
+        "index-BX3a91v5.js": "496ed1564aae0b4191c3d5da9a7744ca5a00809402abd4a4f8ffbbdb00724c58"
+      }
+    }
+  },
+  "git": {
+    "initialized": true,
+    "branch": "main",
+    "initial_commit_recorded": true,
+    "commit_identifier_source": "git log -1 --format=%H",
+    "remote": null,
+    "published": false,
+    "secret_scan_result": "no_confirmed_findings_in_269_candidates_including_compressed_osm"
+  }
+}

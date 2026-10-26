@@ -1,0 +1,22 @@
+{
+  "deployment": "local_docker_verified_not_aws",
+  "image": "corodev-evacuation:phase2",
+  "image_id": "sha256:ee09a3b6a38c89df40d30c0042cb800e101cd79ff062c992ee885cd5635fa105",
+  "image_size_bytes": 104896693,
+  "graph_version": "manta-v2-0ab03290b16a",
+  "nodes": 300,
+  "edges": 383,
+  "survivors": 200,
+  "checks": {
+    "nonroot_readonly_restart": "passed",
+    "health_probe": "passed",
+    "200_real_internal_http_decisions": "passed",
+    "authenticated_exact_paso": "passed",
+    "neighbor_and_blocks": "passed",
+    "zones_and_reservations": "passed",
+    "hidden_sleepers_excluded": "passed"
+  },
+  "regression_fixed": "explicit IPv4 wildcard must not advertise unusable IPv6 loopback",
+  "aws_deployed": false,
+  "aws_budget_created": false
+}

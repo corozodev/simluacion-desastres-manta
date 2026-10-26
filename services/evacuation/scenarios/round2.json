@@ -1,0 +1,15 @@
+{
+  "name": "Ronda 2 — Medianoche",
+  "seed": 20261027,
+  "turns": 150,
+  "survivors": 80,
+  "walkers": 12,
+  "runners": 4,
+  "hordes": 2,
+  "sleepers": 0,
+  "concurrency": 16,
+  "horde_move_every": 0,
+  "events": [
+    {"turn": 40, "edge_id": "E-4420ceab96c993b4", "blocked": true, "type": "bridge_collapse"}
+  ]
+}

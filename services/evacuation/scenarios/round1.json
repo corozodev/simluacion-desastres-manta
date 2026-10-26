@@ -1,0 +1,13 @@
+{
+  "name": "Ronda 1 — Anochecer",
+  "seed": 20261026,
+  "turns": 150,
+  "survivors": 20,
+  "walkers": 8,
+  "runners": 0,
+  "hordes": 0,
+  "sleepers": 0,
+  "concurrency": 16,
+  "horde_move_every": 0,
+  "events": []
+}

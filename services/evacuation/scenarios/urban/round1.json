@@ -1,0 +1,33 @@
+{
+  "name": "Ronda 1 — Anochecer — aparición urbana por zonas",
+  "seed": 20261026,
+  "turns": 150,
+  "survivors": 20,
+  "walkers": 8,
+  "runners": 0,
+  "hordes": 0,
+  "sleepers": 0,
+  "concurrency": 16,
+  "horde_move_every": 0,
+  "events": [],
+  "use_spawn_zones": true,
+  "allow_initial_overlaps": false,
+  "spawn_zone_weights": [
+    {
+      "zone_id": "tarqui",
+      "weight": 1
+    },
+    {
+      "zone_id": "los-esteros",
+      "weight": 1
+    },
+    {
+      "zone_id": "barbasquillo",
+      "weight": 1
+    },
+    {
+      "zone_id": "jocay",
+      "weight": 1
+    }
+  ]
+}

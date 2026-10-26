@@ -1,0 +1,135 @@
+import type { DemoItem, ErrorResponse, HealthResponse, ItemListResponse, SubmitRequest, SubmitResponse, Graph, WorldSnapshot, Survivor, Shelter, Zombie } from '@corodev/contracts';
+import { config } from '../lib/config';
+
+export class ApiError extends Error {
+  constructor(
+    message: string,
+    public readonly code: string,
+    public readonly status?: number,
+    public readonly requestId?: string,
+    public readonly details: { field: string; message: string }[] = [],
+  ) { super(message); this.name = 'ApiError'; }
+}
+
+function isObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+function isItem(value: unknown): value is DemoItem {
+  return isObject(value) && typeof value.id === 'string' && typeof value.title === 'string'
+    && typeof value.description === 'string' && ['active', 'pending', 'completed'].includes(String(value.status))
+    && typeof value.createdAt === 'string' && !Number.isNaN(Date.parse(value.createdAt));
+}
+
+function isErrorResponse(value: unknown): value is ErrorResponse {
+  if (!isObject(value) || !isObject(value.error)) return false;
+  const error = value.error;
+  return typeof error.code === 'string' && typeof error.message === 'string' && typeof error.requestId === 'string'
+    && Array.isArray(error.details) && error.details.every(detail => isObject(detail)
+      && typeof detail.field === 'string' && typeof detail.message === 'string');
+}
+
+async function request<T>(path: string, validate: (value: unknown) => value is T, init?: RequestInit, signal?: AbortSignal, baseUrl = config.apiBaseUrl): Promise<T> {
+  if (config.error) throw new ApiError(config.error, 'CONFIGURATION_ERROR');
+  const controller = new AbortController();
+  let timedOut = false;
+  const onAbort = () => controller.abort();
+  signal?.addEventListener('abort', onAbort, { once: true });
+  if (signal?.aborted) controller.abort();
+  const timer = setTimeout(() => { timedOut = true; controller.abort(); }, config.timeoutMs);
+  try {
+    const response = await fetch(`${baseUrl}${path}`, {
+      ...init, signal: controller.signal,
+      headers: { Accept: 'application/json', ...(init?.body ? { 'Content-Type': 'application/json' } : {}), ...init?.headers },
+    });
+    const value: unknown = await response.json().catch(() => null);
+    if (!response.ok) {
+      if (isErrorResponse(value)) {
+        const { code, message, requestId, details } = value.error;
+        throw new ApiError(message, code, response.status, requestId, details);
+      }
+      throw new ApiError('La API devolvió un error. Inténtalo de nuevo.', 'HTTP_ERROR', response.status, response.headers.get('x-request-id') ?? undefined);
+    }
+    if (!validate(value)) throw new ApiError('La respuesta no coincide con el contrato de la API.', 'INVALID_RESPONSE', response.status);
+    return value;
+  } catch (error) {
+    if (error instanceof ApiError) throw error;
+    if (timedOut) throw new ApiError('La API tardó demasiado en responder. Inténtalo de nuevo.', 'TIMEOUT');
+    if (signal?.aborted) throw error;
+    throw new ApiError('No pudimos conectar con la API. Comprueba que el servidor esté disponible.', 'BACKEND_UNAVAILABLE');
+  } finally {
+    clearTimeout(timer);
+    signal?.removeEventListener('abort', onAbort);
+  }
+}
+
+function isNatural(value: unknown): value is number { return Number.isInteger(value) && Number(value) >= 0; }
+function isNumber(value: unknown): value is number { return typeof value === 'number' && Number.isFinite(value); }
+function isStrings(value: unknown): value is string[] { return Array.isArray(value) && value.every(item => typeof item === 'string'); }
+function isPoint(value: unknown): boolean { return isObject(value) && isNumber(value.lat) && Math.abs(value.lat) <= 90 && isNumber(value.lng) && Math.abs(value.lng) <= 180; }
+function isGeometry(value: unknown): boolean { return Array.isArray(value) && value.every(isPoint); }
+function isShelter(value: unknown): value is Shelter {
+  return isObject(value) && typeof value.id === 'string' && typeof value.node_id === 'string'
+    && isNatural(value.capacity) && isNatural(value.occupancy) && value.occupancy <= value.capacity
+    && (value.reserved === undefined || isNatural(value.reserved) && value.reserved + value.occupancy <= value.capacity)
+    && (value.available === undefined || isNatural(value.available) && value.available <= value.capacity)
+    && (value.reserved === undefined || value.available === undefined || Number(value.reserved) + Number(value.available) + value.occupancy === value.capacity);
+}
+function isSurvivor(value: unknown): value is Survivor {
+  return isObject(value) && typeof value.id === 'string' && typeof value.current_node === 'string'
+    && ['active', 'bitten', 'evacuated'].includes(String(value.status))
+    && typeof value.target_shelter_id === 'string' && isStrings(value.planned_route)
+    && (value.spawn_zone_id === undefined || typeof value.spawn_zone_id === 'string');
+}
+function isZombie(value: unknown): value is Zombie {
+  return isObject(value) && typeof value.id === 'string' && typeof value.current_node === 'string'
+    && ['walker', 'runner', 'horde', 'sleeper'].includes(String(value.type))
+    && typeof value.movement_state === 'string' && typeof value.awake === 'boolean'
+    && !(value.type === 'sleeper' && !value.awake) && isStrings(value.path);
+}
+function isGraph(value: unknown): value is Graph {
+  return isObject(value) && typeof value.version === 'string' && typeof value.source === 'string'
+    && Array.isArray(value.nodes) && value.nodes.length > 0 && value.nodes.every(node => isObject(node)
+      && typeof node.id === 'string' && isNumber(node.lat) && Math.abs(node.lat) <= 90 && isNumber(node.lng) && Math.abs(node.lng) <= 180)
+    && Array.isArray(value.edges) && value.edges.every(edge => isObject(edge) && typeof edge.id === 'string'
+      && typeof edge.from === 'string' && typeof edge.to === 'string' && isNumber(edge.distance_m) && edge.distance_m > 0
+      && typeof edge.road_type === 'string' && isNumber(edge.speed_mps) && edge.speed_mps > 0
+      && typeof edge.blocked === 'boolean' && typeof edge.directed === 'boolean'
+      && (edge.geometry === undefined || isGeometry(edge.geometry)) && (edge.bridge === undefined || typeof edge.bridge === 'boolean'))
+    && Array.isArray(value.shelters) && value.shelters.every(isShelter)
+    && (value.coverage === undefined || isGeometry(value.coverage))
+    && (value.spawn_zones === undefined || Array.isArray(value.spawn_zones) && value.spawn_zones.every(zone => isObject(zone)
+      && typeof zone.id === 'string' && typeof zone.name === 'string' && typeof zone.source === 'string'
+      && isGeometry(zone.geometry) && isStrings(zone.node_ids) && isNumber(zone.weight) && zone.weight >= 0));
+}
+function isWorld(value: unknown): value is WorldSnapshot {
+  if (!isObject(value) || !isObject(value.metrics)) return false;
+  const metrics = value.metrics;
+  return isNatural(value.turn) && isNatural(value.world_version) && typeof value.graph_version === 'string'
+    && Array.isArray(value.zombies) && value.zombies.every(isZombie)
+    && Array.isArray(value.survivors) && value.survivors.every(isSurvivor)
+    && Array.isArray(value.shelters) && value.shelters.every(isShelter) && isStrings(value.blocked_edges)
+    && Array.isArray(value.events) && value.events.every(event => isObject(event) && isNatural(event.turn)
+      && ['type', 'entity_id', 'edge_id', 'message'].every(field => typeof event[field] === 'string'))
+    && ['evacuated', 'bitten', 'active', 'turns', 'requests_success', 'requests_invalid', 'requests_timeout'].every(field => isNatural(metrics[field]))
+    && ['http_p50_ms', 'http_p95_ms', 'http_p99_ms', 'availability'].every(field => isNumber(metrics[field]) && Number(metrics[field]) >= 0)
+    && Number(metrics.availability) <= 1;
+}
+
+export const api = {
+  world: (signal?: AbortSignal) => request<WorldSnapshot>('/estado', isWorld, undefined, signal, config.worldApiBaseUrl),
+  graph: (signal?: AbortSignal) => request<Graph>('/grafo', isGraph, undefined, signal, config.worldApiBaseUrl),
+  health: (signal?: AbortSignal) => request<HealthResponse>('/health', (value): value is HealthResponse =>
+    isObject(value) && value.status === 'ok' && typeof value.service === 'string' && typeof value.version === 'string', undefined, signal),
+  items: (page = 1, pageSize = 6, q = '', signal?: AbortSignal) => {
+    const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize), ...(q ? { q } : {}) });
+    return request<ItemListResponse>(`/v1/demo/items?${params}`, (value): value is ItemListResponse =>
+      isObject(value) && Array.isArray(value.data) && value.data.every(isItem) && isObject(value.pagination)
+      && Number.isInteger(value.pagination.page) && Number.isInteger(value.pagination.pageSize)
+      && Number.isInteger(value.pagination.total) && Number(value.pagination.total) >= 0, undefined, signal);
+  },
+  item: (id: string, signal?: AbortSignal) => request<DemoItem>(`/v1/demo/items/${encodeURIComponent(id)}`, isItem, undefined, signal),
+  submit: (body: SubmitRequest) => request<SubmitResponse>('/v1/demo/submit', (value): value is SubmitResponse =>
+    isObject(value) && typeof value.submissionId === 'string' && value.status === 'accepted' && typeof value.message === 'string',
+  { method: 'POST', body: JSON.stringify(body) }),
+};

@@ -1,0 +1,36 @@
+{
+  "date_local": "2026-10-26",
+  "timezone": "America/Guayaquil",
+  "web_tests_passed": 22,
+  "mock_tests_passed": 40,
+  "flutter_tests_passed": 21,
+  "flutter_normal_suite_gated_skips": 2,
+  "checks": {
+    "typescript": "passed",
+    "eslint": "passed",
+    "react_production_build": "passed",
+    "flutter_analyze": "passed",
+    "android_debug_apk": "passed",
+    "real_http_v1_browser_and_flutter": "passed",
+    "real_http_v2_browser_and_flutter": "passed",
+    "urban_graph_nodes": 300,
+    "urban_graph_edges": 383,
+    "zoom_pan_reset_and_mobile_390px": "passed",
+    "no_movement_key_in_clients": "passed",
+    "escape_no_demo_health_dependency": "passed"
+  },
+  "sha256": {
+    "apps/mobile/lib/app/app_shell.dart": "dedb3bd10ac4c51686d2287c6f879c6b997754c8a3383449bec7100bde651b86",
+    "apps/mobile/lib/core/api/world_repository.dart": "29c28171953403b5b7b60517d5607af33a8c6c90a08c508bb4a594a0df35ef40",
+    "apps/mobile/lib/core/providers.dart": "a9aec875ee97ae7436786725980149d2785b1a2d0614e1a92a43ac91001b2530",
+    "apps/mobile/lib/features/escape/escape_screen.dart": "3bbffabf47364a5cde1d987e6ad2b47ca5c136c58a708d14b64f9f79d56279b7",
+    "apps/mobile/lib/features/escape/route_map.dart": "5e77c479d4ab043bb1ea4e7cbc3fbc235c15cda9857a044588e3510f27dd6c08",
+    "apps/web/src/components/AppShell.tsx": "a35662818cdbf0ec7aec1f4e1f2282303fe8ff01d2581c2230754c49759ee2e7",
+    "apps/web/src/features/Escape.tsx": "6ef66368c98ae178a5d04a02439ba93fe007a15d4fdcefddc9ec66491b11f1c5",
+    "apps/web/src/features/WorldMap.tsx": "91b891ae1ade649ed388207450ea0a79acf5bcd5a9faa27d80916b7a7ecb88bc",
+    "apps/web/src/services/api.ts": "164d66a0d0bf9bd48f69174d3a3091d39237949e339f5b3cd4fada1945b3002d",
+    "apps/web/src/services/queries.ts": "c22c38efd6941167c24376dd6440dff8dbb9e8c23f3d06fa635276a152334ccd",
+    "apps/web/src/styles/global.css": "ed984f603bb499c9da65c01c9fea1d76b61a9a098b70854fa155c6fa13f09126",
+    "tools/qa/check_http_contracts.mjs": "ae1af3dfe65274a6825b48c7b9ed73eb7c6eb506f7f2b90fd68addc7de8bae9d"
+  }
+}

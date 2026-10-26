@@ -1,0 +1,12 @@
+{
+  "data": [
+    {
+      "id": "item-001",
+      "title": "Portal de medianoche",
+      "description": "Una puerta abierta a nuevas ideas.",
+      "status": "active",
+      "createdAt": "2026-10-01T09:00:00.000Z"
+    }
+  ],
+  "pagination": { "page": 1, "pageSize": 1, "total": 12 }
+}

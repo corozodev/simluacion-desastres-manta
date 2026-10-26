@@ -1,0 +1,61 @@
+{
+  "name": "corodev-spooky",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.12.0",
+    "npm": ">=10"
+  },
+  "workspaces": [
+    "apps/web",
+    "services/mock-api",
+    "packages/contracts",
+    "packages/design-tokens"
+  ],
+  "scripts": {
+    "dev:api": "npm run dev -w @corodev/mock-api",
+    "dev:web": "npm run dev -w @corodev/web",
+    "contracts:validate": "node tools/codegen/contracts.mjs --validate",
+    "contracts:generate": "node tools/codegen/contracts.mjs",
+    "tokens:generate": "node tools/codegen/tokens.mjs",
+    "generated:check": "node tools/codegen/contracts.mjs --check && node tools/codegen/tokens.mjs --check",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "lint": "eslint apps/web services/mock-api tools tests/e2e playwright.config.ts eslint.config.mjs",
+    "check": "npm run contracts:validate && npm run generated:check && npm run typecheck && npm run lint",
+    "test": "npm run test --workspaces --if-present",
+    "build:web": "npm run build -w @corodev/web",
+    "build:api": "npm run build -w @corodev/mock-api",
+    "mobile:check": "node tools/scripts/flutter.mjs analyze",
+    "mobile:test": "node tools/scripts/flutter.mjs test",
+    "mobile:build": "node tools/scripts/flutter.mjs build apk --debug",
+    "mobile:integration": "node tools/scripts/flutter.mjs test --dart-define=RUN_HTTP_TESTS=true test/http_integration_test.dart",
+    "test:e2e": "playwright test",
+    "dev:backend": "node tools/scripts/go.mjs run ./cmd/server",
+    "simulate": "node tools/scripts/go.mjs run ./cmd/sim",
+    "test:backend": "node tools/scripts/go.mjs test ./...",
+    "test:race": "node tools/scripts/go.mjs test -race ./...",
+    "bench:backend": "node tools/scripts/go.mjs run ./cmd/bench",
+    "build:backend": "node tools/scripts/go.mjs build ./...",
+    "graph:generate": "python3 tools/geo/urban_manta.py",
+    "graph:test": "python3 -m unittest discover -s tools/geo -p test_*.py",
+    "test:contracts:http": "node tools/qa/check_http_contracts.mjs",
+    "evaluate": "node tools/scripts/go.mjs run ./cmd/evaluate",
+    "graph:generate:v1": "python3 tools/geo/import_manta.py",
+    "graph:audit": "python3 tools/geo/audit_graph.py"
+  },
+  "devDependencies": {
+    "@apidevtools/swagger-parser": "12.1.0",
+    "@eslint/js": "^10.0.0",
+    "@playwright/test": "^1.64.1",
+    "@types/node": "^22.0.0",
+    "eslint": "^10.0.0",
+    "globals": "^17.0.0",
+    "openapi-typescript": "^7.13.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.72.0",
+    "vitest": "^5.0.5",
+    "yaml": "^2.8.0"
+  }
+}

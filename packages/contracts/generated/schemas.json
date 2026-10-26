@@ -1,0 +1,725 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "definitions": {
+    "GraphNode": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "lat",
+        "lng"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "lat": {
+          "type": "number",
+          "minimum": -90,
+          "maximum": 90
+        },
+        "lng": {
+          "type": "number",
+          "minimum": -180,
+          "maximum": 180
+        }
+      }
+    },
+    "GeoPoint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "lat",
+        "lng"
+      ],
+      "properties": {
+        "lat": {
+          "type": "number",
+          "minimum": -90,
+          "maximum": 90
+        },
+        "lng": {
+          "type": "number",
+          "minimum": -180,
+          "maximum": 180
+        }
+      }
+    },
+    "SpawnZone": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name",
+        "source",
+        "geometry",
+        "node_ids",
+        "weight"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source": {
+          "type": "string",
+          "minLength": 1
+        },
+        "geometry": {
+          "type": "array",
+          "minItems": 4,
+          "items": {
+            "$ref": "#/definitions/GeoPoint"
+          }
+        },
+        "node_ids": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string"
+          }
+        },
+        "weight": {
+          "type": "number",
+          "minimum": 0
+        }
+      }
+    },
+    "GraphEdge": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "from",
+        "to",
+        "distance_m",
+        "road_type",
+        "speed_mps",
+        "blocked",
+        "directed"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "from": {
+          "type": "string",
+          "minLength": 1
+        },
+        "to": {
+          "type": "string",
+          "minLength": 1
+        },
+        "distance_m": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "road_type": {
+          "type": "string",
+          "minLength": 1
+        },
+        "speed_mps": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "blocked": {
+          "type": "boolean"
+        },
+        "directed": {
+          "type": "boolean"
+        },
+        "bridge": {
+          "type": "boolean"
+        },
+        "geometry": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/GeoPoint"
+          }
+        }
+      }
+    },
+    "Shelter": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "node_id",
+        "capacity",
+        "occupancy"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "node_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "capacity": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "occupancy": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "reserved": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "available": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "Graph": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "version",
+        "source",
+        "nodes",
+        "edges",
+        "shelters"
+      ],
+      "properties": {
+        "version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source": {
+          "type": "string",
+          "minLength": 1
+        },
+        "nodes": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/definitions/GraphNode"
+          }
+        },
+        "edges": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/GraphEdge"
+          }
+        },
+        "shelters": {
+          "type": "array",
+          "minItems": 4,
+          "maxItems": 4,
+          "items": {
+            "$ref": "#/definitions/Shelter"
+          }
+        },
+        "spawn_zones": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/SpawnZone"
+          }
+        },
+        "coverage": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/GeoPoint"
+          }
+        }
+      }
+    },
+    "Zombie": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "type",
+        "current_node",
+        "movement_state",
+        "awake",
+        "path"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "walker",
+            "runner",
+            "horde",
+            "sleeper"
+          ]
+        },
+        "current_node": {
+          "type": "string",
+          "minLength": 1
+        },
+        "movement_state": {
+          "type": "string"
+        },
+        "awake": {
+          "type": "boolean"
+        },
+        "path": {
+          "type": "array",
+          "description": "Recorrido del turno incluyendo origen, nodos intermedios y destino.",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "Survivor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "current_node",
+        "status",
+        "target_shelter_id",
+        "planned_route"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "current_node": {
+          "type": "string",
+          "minLength": 1
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "active",
+            "bitten",
+            "evacuated"
+          ]
+        },
+        "target_shelter_id": {
+          "type": "string"
+        },
+        "spawn_zone_id": {
+          "type": "string"
+        },
+        "planned_route": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "WorldEvent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "turn",
+        "type",
+        "entity_id",
+        "edge_id",
+        "message"
+      ],
+      "properties": {
+        "turn": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "type": {
+          "type": "string"
+        },
+        "entity_id": {
+          "type": "string"
+        },
+        "edge_id": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        }
+      }
+    },
+    "WorldMetrics": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "evacuated",
+        "bitten",
+        "active",
+        "turns",
+        "requests_success",
+        "requests_invalid",
+        "requests_timeout",
+        "http_p50_ms",
+        "http_p95_ms",
+        "http_p99_ms",
+        "availability"
+      ],
+      "properties": {
+        "evacuated": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "bitten": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "active": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "turns": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "requests_success": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "requests_invalid": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "requests_timeout": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "http_p50_ms": {
+          "type": "number",
+          "minimum": 0
+        },
+        "http_p95_ms": {
+          "type": "number",
+          "minimum": 0
+        },
+        "http_p99_ms": {
+          "type": "number",
+          "minimum": 0
+        },
+        "availability": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        }
+      }
+    },
+    "WorldSnapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "turn",
+        "world_version",
+        "graph_version",
+        "zombies",
+        "survivors",
+        "shelters",
+        "blocked_edges",
+        "events",
+        "metrics"
+      ],
+      "properties": {
+        "turn": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "world_version": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "graph_version": {
+          "type": "string"
+        },
+        "zombies": {
+          "type": "array",
+          "description": "Solo zombies visibles; los sleepers dormidos se excluyen completamente.",
+          "items": {
+            "$ref": "#/definitions/Zombie"
+          }
+        },
+        "survivors": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Survivor"
+          }
+        },
+        "shelters": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Shelter"
+          }
+        },
+        "blocked_edges": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "events": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/WorldEvent"
+          }
+        },
+        "metrics": {
+          "$ref": "#/definitions/WorldMetrics"
+        }
+      }
+    },
+    "StepRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sobrevivienteId",
+        "nodoActual",
+        "turno"
+      ],
+      "properties": {
+        "sobrevivienteId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "nodoActual": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "turno": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "StepResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "siguienteNodo"
+      ],
+      "properties": {
+        "siguienteNodo": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "HealthResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "service",
+        "version"
+      ],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": [
+            "ok"
+          ]
+        },
+        "service": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        }
+      }
+    },
+    "DemoItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "title",
+        "description",
+        "status",
+        "createdAt"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "active",
+            "pending",
+            "completed"
+          ]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "Pagination": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "page",
+        "pageSize",
+        "total"
+      ],
+      "properties": {
+        "page": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "pageSize": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "ItemListResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "data",
+        "pagination"
+      ],
+      "properties": {
+        "data": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/DemoItem"
+          }
+        },
+        "pagination": {
+          "$ref": "#/definitions/Pagination"
+        }
+      }
+    },
+    "SubmitRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "title"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100,
+          "pattern": "\\S",
+          "description": "Se recortan espacios exteriores; debe contener al menos un carácter no blanco."
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 1000
+        }
+      }
+    },
+    "SubmitResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "submissionId",
+        "status",
+        "message"
+      ],
+      "properties": {
+        "submissionId": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "accepted"
+          ]
+        },
+        "message": {
+          "type": "string"
+        }
+      }
+    },
+    "ErrorDetail": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "field",
+        "message"
+      ],
+      "properties": {
+        "field": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        }
+      }
+    },
+    "ErrorResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "error"
+      ],
+      "properties": {
+        "error": {
+          "$ref": "#/definitions/ErrorResponseError"
+        }
+      }
+    },
+    "ErrorResponseError": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "code",
+        "message",
+        "requestId",
+        "details"
+      ],
+      "properties": {
+        "code": {
+          "type": "string",
+          "enum": [
+            "VALIDATION_ERROR",
+            "NOT_FOUND",
+            "INTERNAL_ERROR",
+            "UNAUTHORIZED",
+            "CONFLICT",
+            "UNAVAILABLE",
+            "TIMEOUT",
+            "METHOD_NOT_ALLOWED"
+          ]
+        },
+        "message": {
+          "type": "string"
+        },
+        "requestId": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ErrorDetail"
+          }
+        }
+      }
+    }
+  }
+}

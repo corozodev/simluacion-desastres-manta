@@ -1,0 +1,48 @@
+{
+  "turn": 0,
+  "world_version": 1,
+  "graph_version": "synthetic-example-v1",
+  "zombies": [],
+  "survivors": [],
+  "shelters": [
+    {
+      "id": "R-1",
+      "node_id": "N-0000",
+      "capacity": 50,
+      "occupancy": 0
+    },
+    {
+      "id": "R-2",
+      "node_id": "N-0001",
+      "capacity": 50,
+      "occupancy": 0
+    },
+    {
+      "id": "R-3",
+      "node_id": "N-0002",
+      "capacity": 50,
+      "occupancy": 0
+    },
+    {
+      "id": "R-4",
+      "node_id": "N-0003",
+      "capacity": 50,
+      "occupancy": 0
+    }
+  ],
+  "blocked_edges": [],
+  "events": [],
+  "metrics": {
+    "evacuated": 0,
+    "bitten": 0,
+    "active": 0,
+    "turns": 0,
+    "requests_success": 0,
+    "requests_invalid": 0,
+    "requests_timeout": 0,
+    "http_p50_ms": 0,
+    "http_p95_ms": 0,
+    "http_p99_ms": 0,
+    "availability": 0
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "bundle_arm64_rejected": {
+    "exit": 2,
+    "message": "The EC2 template requires a linux/amd64 image; rebuild with --platform linux/amd64",
+    "scope": "mocked Docker architecture responses; no container started"
+  },
+  "start_mismatched_architecture_rejected": {
+    "exit": 2,
+    "message": "Image platform differs from Docker host; build for the target architecture before starting",
+    "scope": "mocked Docker architecture responses; no container started"
+  }
+}

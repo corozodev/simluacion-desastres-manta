@@ -1,0 +1,6 @@
+{
+  "source": "FASE 1 local implementation; evaluation baseline without routing modifications",
+  "files": {
+    "services/evacuation/internal/decision/engine.go": "af7c4bc32ac996a458c6d4c3f5974390555fec6c0bfc74a5c7757b2e4ae91636"
+  }
+}

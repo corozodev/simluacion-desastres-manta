@@ -1,0 +1,245 @@
+{
+  "phase": "3A.2",
+  "recorded_at": "2026-10-26T15:42:59.214372-05:00",
+  "timezone": "America/Guayaquil",
+  "scope": "local_validation_only_not_external_aws_evidence",
+  "checks": [
+    {
+      "command": "npm run check",
+      "exit_code": 0,
+      "result": "OpenAPI, generated consistency, TypeScript and ESLint passed"
+    },
+    {
+      "command": "npm test",
+      "exit_code": 0,
+      "result": {
+        "react_passed": 22,
+        "mock_api_passed": 40
+      }
+    },
+    {
+      "command": "VITE_WORLD_API_BASE_URL=https://api.sistemamanta.lexinnovate.com npm run build:web",
+      "exit_code": 0,
+      "result": "Production bundle built; configured public API URL found in generated asset; artifact not uploaded"
+    },
+    {
+      "command": "npm run test:race",
+      "exit_code": 0,
+      "result": "Go race test packages passed (cached)"
+    },
+    {
+      "command": "npm run build:backend",
+      "exit_code": 0,
+      "result": "Go packages built"
+    },
+    {
+      "command": "npm run graph:test",
+      "exit_code": 0,
+      "result": {
+        "python_passed": 10
+      }
+    },
+    {
+      "command": "npm run test:contracts:http -- --urban --browser",
+      "exit_code": 0,
+      "result": "Real local Go contract 400/401/409, urban map, geometry, browser zoom/pan/search/route, mobile viewport and absence of privileged client headers passed"
+    },
+    {
+      "command": "python3 tools/qa/verify_docker.py --output /tmp/corodev-phase3a2-docker.json",
+      "exit_code": 0,
+      "result": "Existing image verified through local HTTP"
+    },
+    {
+      "command": "bash -n deploy/start-backend.sh deploy/start-tls.sh deploy/rollout.sh deploy/rollback.sh deploy/aws/check-access.sh deploy/aws/prepare-release.sh",
+      "exit_code": 0,
+      "result": "Shell syntax passed"
+    },
+    {
+      "command": "Caddy 2 validate --network none with existing pinned image",
+      "exit_code": 0,
+      "result": "Configuration valid; no certificate requested or public HTTPS verified"
+    },
+    {
+      "command": "FLUTTER_BIN=<installed Flutter> npm run mobile:check",
+      "exit_code": 0,
+      "result": "No analyze issues"
+    },
+    {
+      "command": "FLUTTER_BIN=<installed Flutter> npm run mobile:test",
+      "exit_code": 0,
+      "result": {
+        "flutter_passed": 21,
+        "integration_tests_skipped_in_unit_suite": 2
+      }
+    },
+    {
+      "command": "FLUTTER_BIN=<installed Flutter> npm run mobile:build",
+      "exit_code": 0,
+      "result": "Debug APK built; no physical device test"
+    },
+    {
+      "command": "FLUTTER_BIN=<installed Flutter> npm run test:contracts:http -- --urban --flutter",
+      "exit_code": 0,
+      "result": "Dart world repository consumed actual local Go HTTP contract; one integration test passed"
+    },
+    {
+      "command": "Local HTTP fixture with HTTPS adapter for tools/qa/phase3a_probe.py",
+      "exit_code": 0,
+      "result": {
+        "validation": "local_http_fixture_with_https_adapter_not_public_tls_or_aws",
+        "cases": [
+          {
+            "case": "success",
+            "passed": true
+          },
+          {
+            "case": "timeout_partial",
+            "passed": true
+          },
+          {
+            "case": "timeout_zero",
+            "passed": true
+          },
+          {
+            "case": "timeout_health",
+            "passed": true
+          },
+          {
+            "case": "http500",
+            "passed": true
+          },
+          {
+            "case": "conflict",
+            "passed": true
+          },
+          {
+            "case": "frozen",
+            "passed": true
+          }
+        ],
+        "api_key_absent_from_reports_and_stdout": true
+      }
+    },
+    {
+      "command": "cfn-lint 1.58.0 --regions us-east-2 --template deploy/aws/stack.yaml; bash -n final deployment scripts; parse parameters.example.json",
+      "exit_code": 0,
+      "result": "Final infrastructure agent changes independently validated locally; no AWS API used"
+    },
+    {
+      "command": "Validate preflight IAM proposal against AWS service authorization references, final public JSON and SVG XML",
+      "exit_code": 0,
+      "result": "17 IAM statements and 41 exact actions exist and are read/list/ValidateTemplate only; no write, permission management, tagging or action wildcard. Public JSON and diagram XML valid."
+    },
+    {
+      "command": "Validate public policy example and ignored private substituted copy; verify ARN variable positions",
+      "exit_code": 0,
+      "result": "11 scoped ARN entries checked. Public account placeholder requires substitution. Private copy matches, mode600 and ignored. IAM variables are only in resource portion; no service-side Access Analyzer validation possible."
+    }
+  ],
+  "docker": {
+    "deployment": "local_docker_verified_not_aws",
+    "image": "corodev-evacuation:phase2",
+    "image_id": "sha256:ee09a3b6a38c89df40d30c0042cb800e101cd79ff062c992ee885cd5635fa105",
+    "image_size_bytes": 104896693,
+    "graph_version": "manta-v2-0ab03290b16a",
+    "nodes": 300,
+    "edges": 383,
+    "survivors": 200,
+    "checks": {
+      "nonroot_readonly_restart": "passed",
+      "health_probe": "passed",
+      "200_real_internal_http_decisions": "passed",
+      "authenticated_exact_paso": "passed",
+      "neighbor_and_blocks": "passed",
+      "zones_and_reservations": "passed",
+      "hidden_sleepers_excluded": "passed"
+    },
+    "regression_fixed": "explicit IPv4 wildcard must not advertise unusable IPv6 loopback",
+    "aws_deployed": false,
+    "aws_budget_created": false
+  },
+  "security": {
+    "git_scan": {
+      "recorded_at": "2026-10-26T15:42:39.719386-05:00",
+      "stage": "final_before_commit",
+      "status": "no_confirmed_secret_findings",
+      "candidate_count": 269,
+      "patterns": [
+        "aws_access_key",
+        "private_key",
+        "github_token",
+        "slack_token",
+        "aws_secret_assignment",
+        "jwt",
+        "credential_url"
+      ],
+      "findings": [],
+      "reviewed_false_positives": [
+        {
+          "path": "apps/mobile/test/repository_test.dart",
+          "line": 28,
+          "pattern": "credential_url",
+          "classification": "Reviewed test fixture rejecting credentials in URLs; example.com or localhost only"
+        },
+        {
+          "path": "apps/web/src/tests/api.test.ts",
+          "line": 46,
+          "pattern": "credential_url",
+          "classification": "Reviewed test fixture rejecting credentials in URLs; example.com or localhost only"
+        },
+        {
+          "path": "apps/web/src/tests/world.test.tsx",
+          "line": 58,
+          "pattern": "credential_url",
+          "classification": "Reviewed test fixture rejecting credentials in URLs; example.com or localhost only"
+        },
+        {
+          "path": "services/evacuation/internal/simulation/client_test.go",
+          "line": 155,
+          "pattern": "credential_url",
+          "classification": "Reviewed test fixture rejecting credentials in URLs; example.com or localhost only"
+        }
+      ],
+      "compressed_osm_files_scanned": [
+        "services/evacuation/data/manta-urban.osm.json.gz",
+        "services/evacuation/data/manta-v1.osm.json.gz",
+        "services/evacuation/data/manta.osm.json.gz"
+      ],
+      "large_files": [],
+      "sensitive_paths": []
+    },
+    "ignore_checks": "passed: .env, private environment, parameters, reports, private evidence, Budget screenshot and release bundles excluded",
+    "api_key_delivery": "private backend environment only; no privileged React or Flutter key configuration",
+    "network": "Go host publish is loopback 127.0.0.1:8080; Caddy is intended public TLS entry point; no SSH rule in template",
+    "otel": "No OpenTelemetry integration or exporter configured in reviewed application/deployment source",
+    "probe_review": "Existing API contract preserved. Explicit probe and authenticated decision errors/timeouts, attempts and partial successful latency percentiles survive failure; zero-sample percentiles are null. Seven local fixture cases passed; no public TLS or AWS claim.",
+    "preflight_readonly_policy": {
+      "statements": 17,
+      "actions_checked": 41,
+      "action_wildcards": 0,
+      "write_or_permission_management_actions": 0,
+      "source": "AWS service authorization references fetched during preflight",
+      "public_policy": "deploy/preflight-readonly-policy.example.json",
+      "public_policy_requires_account_substitution": true,
+      "resource_arns_checked": 11,
+      "resource_arn_validation": "passed: no policy variable before fifth ARN colon; aws:username retained only in resource portion",
+      "private_substituted_copy_matches_example": true,
+      "private_copy_mode": "600",
+      "private_copy_ignored": true,
+      "policy_variables_reference": "https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_variables.html",
+      "service_iam_access_analyzer_validation": "not performed: IAM permissions unavailable",
+      "applied": false
+    }
+  },
+  "git_before_commit": {
+    "initialized": true,
+    "branch": "main",
+    "commits": 0,
+    "staged_files": 0,
+    "remote": null,
+    "published": false
+  },
+  "aws_provisioning_performed_by_this_validation": false,
+  "external_aws_latency": null,
+  "phase3b_started": false
+}

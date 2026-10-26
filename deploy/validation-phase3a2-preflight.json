@@ -1,0 +1,317 @@
+{
+  "phase": "3A.2",
+  "recorded_at": "2026-10-26T15:38:46-05:00",
+  "timezone": "America/Guayaquil",
+  "status": "preflight_blocked_permissions_owner_deferred_aws_access",
+  "aws_cli_version": "2.38.6",
+  "profile": "default",
+  "preferred_profile_corodev_present": false,
+  "region": "us-east-2",
+  "identity": {
+    "sts_authenticated": true,
+    "authorized_account_matches": true,
+    "type": "IAMUser",
+    "user_name": "deploy-cli",
+    "is_root": false,
+    "credentials_or_profiles_modified": false
+  },
+  "initial_denied_checks": [
+    {
+      "check": "account_attributes",
+      "operation": [
+        "ec2",
+        "describe-account-attributes"
+      ],
+      "result": "access_denied_no_identity_based_allow"
+    },
+    {
+      "check": "account_plan",
+      "operation": [
+        "freetier",
+        "get-account-plan-state"
+      ],
+      "result": "access_denied_no_identity_based_allow"
+    },
+    {
+      "check": "addresses",
+      "operation": [
+        "ec2",
+        "describe-addresses"
+      ],
+      "result": "access_denied_no_identity_based_allow"
+    },
+    {
+      "check": "ami_parameter",
+      "operation": [
+        "ssm",
+        "get-parameter"
+      ],
+      "result": "access_denied_no_identity_based_allow"
+    },
+    {
+      "check": "buckets",
+      "operation": [
+        "s3api",
+        "list-buckets"
+      ],
+      "result": "access_denied_no_identity_based_allow"
+    },
+    {
+      "check": "budgets",
+      "operation": [
+        "budgets",
+        "describe-budgets"
+      ],
+      "result": "access_denied_no_identity_based_allow"
+    },
+    {
+      "check": "certificates",
+      "operation": [
+        "acm",
+        "list-certificates"
+      ],
+      "result": "access_denied_no_identity_based_allow"
+    },
+    {
+      "check": "distributions",
+      "operation": [
+        "cloudfront",
+        "list-distributions"
+      ],
+      "result": "access_denied_no_identity_based_allow"
+    },
+    {
+      "check": "eip_quota",
+      "operation": [
+        "service-quotas",
+        "get-service-quota"
+      ],
+      "result": "access_denied_no_identity_based_allow"
+    },
+    {
+      "check": "iam_attached",
+      "operation": [
+        "iam",
+        "list-attached-user-policies"
+      ],
+      "result": "access_denied_no_identity_based_allow"
+    },
+    {
+      "check": "iam_groups",
+      "operation": [
+        "iam",
+        "list-groups-for-user"
+      ],
+      "result": "access_denied_no_identity_based_allow"
+    },
+    {
+      "check": "iam_inline",
+      "operation": [
+        "iam",
+        "list-user-policies"
+      ],
+      "result": "access_denied_no_identity_based_allow"
+    },
+    {
+      "check": "iam_user",
+      "operation": [
+        "iam",
+        "get-user"
+      ],
+      "result": "access_denied_no_identity_based_allow"
+    },
+    {
+      "check": "instance_offerings",
+      "operation": [
+        "ec2",
+        "describe-instance-type-offerings"
+      ],
+      "result": "access_denied_no_identity_based_allow"
+    },
+    {
+      "check": "instance_types",
+      "operation": [
+        "ec2",
+        "describe-instance-types"
+      ],
+      "result": "access_denied_no_identity_based_allow"
+    },
+    {
+      "check": "instances",
+      "operation": [
+        "ec2",
+        "describe-instances"
+      ],
+      "result": "access_denied_no_identity_based_allow"
+    },
+    {
+      "check": "internet_gateways",
+      "operation": [
+        "ec2",
+        "describe-internet-gateways"
+      ],
+      "result": "access_denied_no_identity_based_allow"
+    },
+    {
+      "check": "log_groups",
+      "operation": [
+        "logs",
+        "describe-log-groups"
+      ],
+      "result": "access_denied_no_identity_based_allow"
+    },
+    {
+      "check": "network_acls",
+      "operation": [
+        "ec2",
+        "describe-network-acls"
+      ],
+      "result": "access_denied_no_identity_based_allow"
+    },
+    {
+      "check": "routes",
+      "operation": [
+        "ec2",
+        "describe-route-tables"
+      ],
+      "result": "access_denied_no_identity_based_allow"
+    },
+    {
+      "check": "security_groups",
+      "operation": [
+        "ec2",
+        "describe-security-groups"
+      ],
+      "result": "access_denied_no_identity_based_allow"
+    },
+    {
+      "check": "stacks",
+      "operation": [
+        "cloudformation",
+        "describe-stacks"
+      ],
+      "result": "access_denied_no_identity_based_allow"
+    },
+    {
+      "check": "subnets",
+      "operation": [
+        "ec2",
+        "describe-subnets"
+      ],
+      "result": "access_denied_no_identity_based_allow"
+    },
+    {
+      "check": "vcpu_quota",
+      "operation": [
+        "service-quotas",
+        "get-service-quota"
+      ],
+      "result": "access_denied_no_identity_based_allow"
+    },
+    {
+      "check": "vpcs",
+      "operation": [
+        "ec2",
+        "describe-vpcs"
+      ],
+      "result": "access_denied_no_identity_based_allow"
+    },
+    {
+      "check": "zones",
+      "operation": [
+        "route53",
+        "list-hosted-zones"
+      ],
+      "result": "access_denied_no_identity_based_allow"
+    }
+  ],
+  "additional_denied_operations": [
+    "cloudformation:ValidateTemplate",
+    "pricing:GetProducts"
+  ],
+  "budget": {
+    "owner_reported_monthly_usd": "30",
+    "existence_verified": false,
+    "notifications_verified": false,
+    "recipients_verified": false,
+    "observed_spend_usd": null,
+    "duplicate_created": false,
+    "authentic_screenshot_available": false
+  },
+  "network": {
+    "vpc_verified": false,
+    "subnet_verified": false,
+    "route_verified": false,
+    "security_groups_verified": false,
+    "nacl_verified": false,
+    "ami_verified": false,
+    "quotas_verified": false,
+    "account_plan_verified": false
+  },
+  "dns": {
+    "provider_observed": "Cloudflare",
+    "authoritative_nameservers": [
+      "kayleigh.ns.cloudflare.com",
+      "luke.ns.cloudflare.com"
+    ],
+    "frontend": "sistemamanta.lexinnovate.com",
+    "api": "api.sistemamanta.lexinnovate.com",
+    "frontend_a_or_cname_observed": false,
+    "api_a_or_cname_observed": false,
+    "records_modified": false,
+    "exact_targets_available": false
+  },
+  "certificate": {
+    "acm_inventory_verified": false,
+    "cloudfront_certificate_required_region": "us-east-1",
+    "request_created": false,
+    "caddy_public_certificate_verified": false
+  },
+  "change_set": {
+    "created": false,
+    "executed": false,
+    "arn": null,
+    "reason": "Unknown verified network/AMI/budget/certificate and missing IAM access; owner requested files only pending access.",
+    "specific_execution_approval_received": false
+  },
+  "aws_resources_created": [],
+  "aws_paid_api_calls_made": false,
+  "public_urls_verified": [],
+  "external_aws_latency": null,
+  "cloudwatch_logs_verified": false,
+  "otel_found": false,
+  "template_sha256": "785cdbe5da62419a007ae932b6c5d501e8f2c0c360361cebe9ca12f9092152cc",
+  "local_validation": "deploy/validation-phase3a2-local.json",
+  "cost_estimate": "deploy/cost-estimate-phase3a2.json",
+  "private_evidence_directory": "deploy/evidence-private/phase3a2/",
+  "phase3b_started": false,
+  "local_artifacts": {
+    "backend_release": {
+      "bundle": "deploy/releases/corodev-release-phase3a2-20261026.tgz",
+      "size_bytes": 36794034,
+      "sha256": "1d0713cafb19a18f2699080f29089379b50d1f32c42590add90f29819305ff53",
+      "platform": "linux/amd64",
+      "contains_private_env": false,
+      "uploaded": false
+    },
+    "frontend_build": {
+      "path": "apps/web/dist",
+      "api_url": "https://api.sistemamanta.lexinnovate.com",
+      "url_found_in_bundle": true,
+      "build_completed_at": "2026-10-26T15:40:40-05:00",
+      "uploaded": false,
+      "assets_sha256": {
+        "index-BX3a91v5.js": "496ed1564aae0b4191c3d5da9a7744ca5a00809402abd4a4f8ffbbdb00724c58"
+      }
+    }
+  },
+  "git": {
+    "initialized": true,
+    "branch": "main",
+    "initial_commit_recorded": true,
+    "commit_identifier_source": "git log -1 --format=%H",
+    "remote": null,
+    "published": false,
+    "secret_scan_result": "no_confirmed_findings_in_269_candidates_including_compressed_osm"
+  }
+}

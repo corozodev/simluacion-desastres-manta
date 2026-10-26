@@ -1,0 +1,236 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "OhioEc2Inventory",
+      "Effect": "Allow",
+      "Action": [
+        "ec2:DescribeVpcs",
+        "ec2:DescribeSubnets",
+        "ec2:DescribeRouteTables",
+        "ec2:DescribeInternetGateways",
+        "ec2:DescribeSecurityGroups",
+        "ec2:DescribeNetworkAcls",
+        "ec2:DescribeInstances",
+        "ec2:DescribeAddresses",
+        "ec2:DescribeImages",
+        "ec2:DescribeInstanceTypes",
+        "ec2:DescribeInstanceTypeOfferings",
+        "ec2:DescribeAccountAttributes"
+      ],
+      "Resource": "*",
+      "Condition": {
+        "StringEquals": {
+          "aws:RequestedRegion": "us-east-2"
+        }
+      }
+    },
+    {
+      "Sid": "OhioVpcDns",
+      "Effect": "Allow",
+      "Action": [
+        "ec2:DescribeVpcAttribute"
+      ],
+      "Resource": "arn:aws:ec2:us-east-2:REPLACE_WITH_AUTHORIZED_ACCOUNT_ID:vpc/*",
+      "Condition": {
+        "StringEquals": {
+          "aws:RequestedRegion": "us-east-2"
+        }
+      }
+    },
+    {
+      "Sid": "PublicAmazonLinuxAmi",
+      "Effect": "Allow",
+      "Action": [
+        "ssm:GetParameter"
+      ],
+      "Resource": "arn:aws:ssm:us-east-2::parameter/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64",
+      "Condition": {
+        "StringEquals": {
+          "aws:RequestedRegion": "us-east-2"
+        }
+      }
+    },
+    {
+      "Sid": "OhioEc2Quotas",
+      "Effect": "Allow",
+      "Action": [
+        "servicequotas:GetServiceQuota"
+      ],
+      "Resource": [
+        "arn:aws:servicequotas:us-east-2:REPLACE_WITH_AUTHORIZED_ACCOUNT_ID:ec2/L-1216C47A",
+        "arn:aws:servicequotas:us-east-2:REPLACE_WITH_AUTHORIZED_ACCOUNT_ID:ec2/L-0263D0A3"
+      ],
+      "Condition": {
+        "StringEquals": {
+          "aws:RequestedRegion": "us-east-2"
+        }
+      }
+    },
+    {
+      "Sid": "ExistingBudgetRead",
+      "Effect": "Allow",
+      "Action": [
+        "budgets:ViewBudget"
+      ],
+      "Resource": "arn:aws:budgets::REPLACE_WITH_AUTHORIZED_ACCOUNT_ID:budget/*",
+      "Condition": {
+        "StringEquals": {
+          "aws:RequestedRegion": "us-east-1"
+        }
+      }
+    },
+    {
+      "Sid": "AccountPlanRead",
+      "Effect": "Allow",
+      "Action": [
+        "freetier:GetAccountPlanState"
+      ],
+      "Resource": "*",
+      "Condition": {
+        "StringEquals": {
+          "aws:RequestedRegion": "us-east-1"
+        }
+      }
+    },
+    {
+      "Sid": "CloudFormationInventory",
+      "Effect": "Allow",
+      "Action": [
+        "cloudformation:ListStacks"
+      ],
+      "Resource": "*",
+      "Condition": {
+        "StringEquals": {
+          "aws:RequestedRegion": "us-east-2"
+        }
+      }
+    },
+    {
+      "Sid": "CloudFormationStackRead",
+      "Effect": "Allow",
+      "Action": [
+        "cloudformation:DescribeStacks",
+        "cloudformation:DescribeChangeSet",
+        "cloudformation:ListChangeSets",
+        "cloudformation:DescribeStackEvents"
+      ],
+      "Resource": "arn:aws:cloudformation:us-east-2:REPLACE_WITH_AUTHORIZED_ACCOUNT_ID:stack/*/*",
+      "Condition": {
+        "StringEquals": {
+          "aws:RequestedRegion": "us-east-2"
+        }
+      }
+    },
+    {
+      "Sid": "CloudFormationTemplateValidation",
+      "Effect": "Allow",
+      "Action": [
+        "cloudformation:ValidateTemplate",
+        "cloudformation:GetTemplateSummary"
+      ],
+      "Resource": "*",
+      "Condition": {
+        "StringEquals": {
+          "aws:RequestedRegion": "us-east-2"
+        }
+      }
+    },
+    {
+      "Sid": "CloudFrontCertificateInventory",
+      "Effect": "Allow",
+      "Action": [
+        "acm:ListCertificates"
+      ],
+      "Resource": "*",
+      "Condition": {
+        "StringEquals": {
+          "aws:RequestedRegion": "us-east-1"
+        }
+      }
+    },
+    {
+      "Sid": "CloudFrontCertificateRead",
+      "Effect": "Allow",
+      "Action": [
+        "acm:DescribeCertificate"
+      ],
+      "Resource": "arn:aws:acm:us-east-1:REPLACE_WITH_AUTHORIZED_ACCOUNT_ID:certificate/*",
+      "Condition": {
+        "StringEquals": {
+          "aws:RequestedRegion": "us-east-1"
+        }
+      }
+    },
+    {
+      "Sid": "GlobalInventory",
+      "Effect": "Allow",
+      "Action": [
+        "route53:ListHostedZones",
+        "cloudfront:ListDistributions",
+        "s3:ListAllMyBuckets"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "OhioLogInventory",
+      "Effect": "Allow",
+      "Action": [
+        "logs:DescribeLogGroups"
+      ],
+      "Resource": "*",
+      "Condition": {
+        "StringEquals": {
+          "aws:RequestedRegion": "us-east-2"
+        }
+      }
+    },
+    {
+      "Sid": "CurrentIamUserRead",
+      "Effect": "Allow",
+      "Action": [
+        "iam:GetUser",
+        "iam:ListAttachedUserPolicies",
+        "iam:ListUserPolicies",
+        "iam:ListGroupsForUser",
+        "iam:GetUserPolicy"
+      ],
+      "Resource": "arn:aws:iam::REPLACE_WITH_AUTHORIZED_ACCOUNT_ID:user/${aws:username}"
+    },
+    {
+      "Sid": "AccountGroupRead",
+      "Effect": "Allow",
+      "Action": [
+        "iam:ListAttachedGroupPolicies",
+        "iam:ListGroupPolicies",
+        "iam:GetGroupPolicy"
+      ],
+      "Resource": "arn:aws:iam::REPLACE_WITH_AUTHORIZED_ACCOUNT_ID:group/*"
+    },
+    {
+      "Sid": "PolicyDocumentRead",
+      "Effect": "Allow",
+      "Action": [
+        "iam:GetPolicy",
+        "iam:GetPolicyVersion"
+      ],
+      "Resource": [
+        "arn:aws:iam::REPLACE_WITH_AUTHORIZED_ACCOUNT_ID:policy/*",
+        "arn:aws:iam::aws:policy/*"
+      ]
+    },
+    {
+      "Sid": "PublicPriceRead",
+      "Effect": "Allow",
+      "Action": [
+        "pricing:GetProducts"
+      ],
+      "Resource": "*",
+      "Condition": {
+        "StringEquals": {
+          "aws:RequestedRegion": "us-east-1"
+        }
+      }
+    }
+  ]
+}

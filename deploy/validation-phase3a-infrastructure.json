@@ -1,0 +1,107 @@
+{
+  "phase": "3A",
+  "recorded_at": "2026-10-26T14:08:04.440054-05:00",
+  "timezone": "America/Guayaquil",
+  "scope": "Local infrastructure review only; no AWS resource creation or deployment",
+  "checks": {
+    "cloudformation_cfn_lint": {
+      "result": "passed",
+      "version": "1.58.0",
+      "template": "deploy/aws/stack.yaml"
+    },
+    "shell_syntax": {
+      "result": "passed",
+      "command": "for script in deploy/*.sh deploy/aws/*.sh; do bash -n \"$script\" || exit; done"
+    },
+    "caddy_config": {
+      "result": "passed",
+      "network": "none",
+      "certificate_issuance_tested": false,
+      "image": "caddy:2-alpine@sha256:eb4d35b7452d1ab6171fbdbe8d9275b2301dad6dad92115d91e19fb9b24d510f"
+    },
+    "image_architecture": {
+      "result": "passed",
+      "image": "corodev-evacuation:phase2",
+      "id": "sha256:ee09a3b6a38c89df40d30c0042cb800e101cd79ff062c992ee885cd5635fa105",
+      "platform": "linux/amd64",
+      "docker_daemon": "linux/x86_64",
+      "ec2_allowed_types": [
+        "t3.small",
+        "t3.medium"
+      ],
+      "ec2_required_ami_architecture": "x86_64",
+      "ami_verified_in_aws": false
+    },
+    "release_bundle": {
+      "result": "passed",
+      "image_saved_and_manifest_verified": true,
+      "sha256_verified_files": 8,
+      "existing_destination_rejected": true,
+      "temporary_bundle_removed": true
+    },
+    "budget_resource_dependencies": {
+      "result": "reviewed_statically",
+      "direct": [
+        "BackendLogs",
+        "ArtifactBucket",
+        "Backend",
+        "WebBucket"
+      ],
+      "transitive": {
+        "BackendAddress": "Backend",
+        "CPUAlarm": "Backend",
+        "WebDistribution": "WebBucket"
+      },
+      "budget_notifications_actual_percent": [
+        80,
+        100
+      ],
+      "budget_created_or_verified": false
+    },
+    "network": {
+      "result": "reviewed_statically",
+      "ingress_tcp": [
+        80,
+        443
+      ],
+      "ingress_cidr_default": "127.0.0.1/32",
+      "egress_tcp": [
+        80,
+        443
+      ],
+      "ssh_public": false,
+      "go_port_public": false,
+      "public_reachability_tested": false
+    },
+    "iam": {
+      "result": "reviewed_template_only",
+      "instance_role_managed_policy": "AmazonSSMManagedInstanceCore",
+      "inline_release_read": "s3:GetObject scoped to artifact bucket/releases/*",
+      "inline_logs": "CreateLogStream/PutLogEvents/DescribeLogStreams scoped to backend log group",
+      "real_operator_or_instance_permissions_verified": false
+    },
+    "privacy": {
+      "result": "reviewed_statically",
+      "web_origin": "private S3 with CloudFront OAC and distribution-scoped read",
+      "s3_tls_required": true,
+      "caddy_admin": "off",
+      "caddy_access_logs": "disabled"
+    },
+    "restart": {
+      "result": "reviewed_statically",
+      "policy": "unless-stopped",
+      "unhealthy_alone_restarts": false
+    }
+  },
+  "changed_files": [
+    "deploy/aws/check-access.sh",
+    "deploy/aws/prepare-release.sh",
+    "deploy/start-backend.sh"
+  ],
+  "limitations": [
+    "No authenticated AWS account or authorized region was available to this infrastructure review.",
+    "No AMI, subnet, route, deployed IAM policy, Budget, billing, public DNS, TLS certificate or external URL verified.",
+    "No AWS resources created.",
+    "Caddy config validation used reserved example.invalid input and no network; it is not public HTTPS evidence."
+  ]
+}

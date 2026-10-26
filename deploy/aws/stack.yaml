@@ -1,0 +1,283 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: CoroDev persistent EC2 backend plus private S3/CloudFront web; reuse a verified existing budget unless a new one is explicitly selected.
+Metadata:
+  AWSToolsMetrics:
+    AWSAgentToolkit: aws-cloudformation@3
+  com.aws.cloudformation.Context:
+    ref: [docs/despliegue-aws.md, docs/costos.md]
+    must:
+      - Execute only the owner-approved change set after checking the existing budget.
+      - Keep the API key outside CloudFormation, release bundles, and public clients.
+Parameters:
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+  PublicSubnetId:
+    Type: AWS::EC2::Subnet::Id
+    Description: Existing public subnet with Internet Gateway route; no NAT Gateway is created.
+  AmiId:
+    Type: AWS::EC2::Image::Id
+    Description: Verified Amazon Linux 2023 x86_64 AMI in the confirmed region.
+  InstanceType:
+    Type: String
+    Default: t3.small
+    AllowedValues: [t3.small, t3.medium]
+  WebIngressCidr:
+    Type: String
+    Default: 127.0.0.1/32
+    Description: Start restricted; set the explicitly approved public/test CIDR for ports 80/443.
+    AllowedPattern: '(\d{1,3}\.){3}\d{1,3}/\d{1,2}'
+  BudgetEmail:
+    Type: String
+    Default: ''
+    Description: Real owner email receiving budget notifications; no messages are sent until deployed.
+    AllowedPattern: '(^$)|([^\s@]+@[^\s@]+\.[^\s@]+)'
+  CreateProjectBudget:
+    Type: String
+    Default: 'false'
+    AllowedValues: ['false', 'true']
+    Description: Keep false when the account already has a verified monthly budget; never duplicate it.
+  ExistingBudgetName:
+    Type: String
+    Default: ''
+    Description: Name verified through Budgets API before approving this change set; not managed by this stack.
+  BudgetUSD:
+    Type: Number
+    Default: 30
+    MinValue: 1
+  WebPriceClass:
+    Type: String
+    Default: PriceClass_100
+    AllowedValues: [PriceClass_100, PriceClass_200, PriceClass_All]
+  WebDomainName:
+    Type: String
+    Default: sistemamanta.lexinnovate.com
+    AllowedPattern: '[a-z0-9][a-z0-9.-]+\.[a-z]{2,}'
+  WebCertificateArn:
+    Type: String
+    Description: Existing ACM certificate in us-east-1, issued and covering WebDomainName exactly or by a valid one-level wildcard.
+    AllowedPattern: 'arn:aws:acm:us-east-1:[0-9]{12}:certificate/[0-9a-f-]{36}'
+  ApiDomainName:
+    Type: String
+    Default: api.sistemamanta.lexinnovate.com
+    Description: DNS A record points to BackendIPv4; Caddy obtains its own certificate after DNS is ready.
+    AllowedPattern: '[a-z0-9][a-z0-9.-]+\.[a-z]{2,}'
+  LogRetentionDays:
+    Type: Number
+    Default: 7
+    AllowedValues: [1, 3, 5, 7, 14, 30, 60, 90]
+Rules:
+  ExistingBudgetRequired:
+    RuleCondition: !Equals [!Ref CreateProjectBudget, 'false']
+    Assertions:
+      - Assert: !Not [!Equals [!Ref ExistingBudgetName, '']]
+        AssertDescription: Set the existing monthly budget name after verifying its amount and notifications.
+  NewBudgetEmailRequired:
+    RuleCondition: !Equals [!Ref CreateProjectBudget, 'true']
+    Assertions:
+      - Assert: !Not [!Equals [!Ref BudgetEmail, '']]
+        AssertDescription: A new budget requires a real notification recipient and explicit approval.
+Conditions:
+  CreateBudget: !Equals [!Ref CreateProjectBudget, 'true']
+Resources:
+  CostBudget:
+    Type: AWS::Budgets::Budget
+    Condition: CreateBudget
+    # Existing budgets are verified externally and never imported, modified, or duplicated.
+    Properties:
+      Budget:
+        BudgetName: !Sub '${AWS::StackName}-monthly'
+        BudgetType: COST
+        TimeUnit: MONTHLY
+        BudgetLimit: {Amount: !Ref BudgetUSD, Unit: USD}
+      NotificationsWithSubscribers:
+        - Notification: {NotificationType: ACTUAL, ComparisonOperator: GREATER_THAN, Threshold: 80, ThresholdType: PERCENTAGE}
+          Subscribers: [{SubscriptionType: EMAIL, Address: !Ref BudgetEmail}]
+        - Notification: {NotificationType: ACTUAL, ComparisonOperator: GREATER_THAN, Threshold: 100, ThresholdType: PERCENTAGE}
+          Subscribers: [{SubscriptionType: EMAIL, Address: !Ref BudgetEmail}]
+  BackendLogs:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '/corodev/${AWS::StackName}/backend'
+      RetentionInDays: !Ref LogRetentionDays
+  ArtifactBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      PublicAccessBlockConfiguration: {BlockPublicAcls: true, BlockPublicPolicy: true, IgnorePublicAcls: true, RestrictPublicBuckets: true}
+      BucketEncryption: {ServerSideEncryptionConfiguration: [{ServerSideEncryptionByDefault: {SSEAlgorithm: AES256}}]}
+      LifecycleConfiguration: {Rules: [{Id: ExpireTemporaryBundles, Status: Enabled, ExpirationInDays: 7, AbortIncompleteMultipartUpload: {DaysAfterInitiation: 1}}]}
+  ArtifactBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref ArtifactBucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Deny
+            Principal: '*'
+            Action: 's3:*'
+            Resource: [!GetAtt ArtifactBucket.Arn, !Sub '${ArtifactBucket.Arn}/*']
+            Condition: {Bool: {'aws:SecureTransport': false}}
+  BackendRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement: [{Effect: Allow, Principal: {Service: ec2.amazonaws.com}, Action: 'sts:AssumeRole'}]
+      ManagedPolicyArns: [!Sub 'arn:${AWS::Partition}:iam::aws:policy/AmazonSSMManagedInstanceCore']
+      Policies:
+        - PolicyName: BackendLogsAndReleaseRead
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: ['logs:CreateLogStream', 'logs:PutLogEvents', 'logs:DescribeLogStreams']
+                Resource: !GetAtt BackendLogs.Arn
+              - Effect: Allow
+                Action: ['s3:GetObject']
+                Resource: !Sub '${ArtifactBucket.Arn}/releases/*'
+  BackendProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties: {Roles: [!Ref BackendRole]}
+  BackendSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    # Dedicated to Backend only. Public TCP 80/443 requires owner approval;
+    # HTTP supports redirects and ACME. Never expose SSH or the Go listener.
+    Properties:
+      GroupDescription: HTTPS/API only; no public Go port or SSH; use SSM Session Manager.
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - {IpProtocol: tcp, FromPort: 80, ToPort: 80, CidrIp: !Ref WebIngressCidr}
+        - {IpProtocol: tcp, FromPort: 443, ToPort: 443, CidrIp: !Ref WebIngressCidr}
+      SecurityGroupEgress:
+        - {IpProtocol: tcp, FromPort: 443, ToPort: 443, CidrIp: 0.0.0.0/0}
+        - {IpProtocol: tcp, FromPort: 80, ToPort: 80, CidrIp: 0.0.0.0/0}
+  Backend:
+    Type: AWS::EC2::Instance
+    # Verify the selected existing budget before execution. Docker's host-side
+    # log driver uses the instance role; the Go container does not need IMDS.
+    Properties:
+      ImageId: !Ref AmiId
+      InstanceType: !Ref InstanceType
+      IamInstanceProfile: !Ref BackendProfile
+      CreditSpecification: {CPUCredits: standard}
+      MetadataOptions: {HttpTokens: required, HttpPutResponseHopLimit: 1, HttpEndpoint: enabled}
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs: {VolumeSize: 20, VolumeType: gp3, Encrypted: true, DeleteOnTermination: true}
+      NetworkInterfaces:
+        - {DeviceIndex: '0', AssociatePublicIpAddress: true, SubnetId: !Ref PublicSubnetId, GroupSet: [!Ref BackendSecurityGroup]}
+      Tags: [{Key: Project, Value: CoroDev}, {Key: Name, Value: !Sub '${AWS::StackName}-backend'}]
+      UserData:
+        Fn::Base64: |
+          #!/bin/bash
+          set -euo pipefail
+          dnf install -y docker
+          systemctl enable --now docker
+          systemctl enable --now amazon-ssm-agent
+          install -d -m 700 /opt/corodev /etc/corodev
+          # Deployment bundle and secret are installed later through an authenticated SSM session.
+  BackendAddress:
+    Type: AWS::EC2::EIP
+    Properties: {Domain: vpc, InstanceId: !Ref Backend}
+  CPUAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: Investigate CPU credits/latency before resizing; no automatic paid scaling.
+      Namespace: AWS/EC2
+      MetricName: CPUUtilization
+      Dimensions: [{Name: InstanceId, Value: !Ref Backend}]
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 80
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+  WebBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      VersioningConfiguration: {Status: Enabled}
+      PublicAccessBlockConfiguration: {BlockPublicAcls: true, BlockPublicPolicy: true, IgnorePublicAcls: true, RestrictPublicBuckets: true}
+      OwnershipControls: {Rules: [{ObjectOwnership: BucketOwnerEnforced}]}
+      BucketEncryption: {ServerSideEncryptionConfiguration: [{ServerSideEncryptionByDefault: {SSEAlgorithm: AES256}}]}
+  WebOriginAccess:
+    Type: AWS::CloudFront::OriginAccessControl
+    Properties:
+      OriginAccessControlConfig:
+        Name: !Sub '${AWS::StackName}-web'
+        OriginAccessControlOriginType: s3
+        SigningBehavior: always
+        SigningProtocol: sigv4
+  SPARoutes:
+    Type: AWS::CloudFront::Function
+    Properties:
+      Name: !Sub '${AWS::StackName}-spa'
+      AutoPublish: true
+      FunctionConfig: {Comment: Rewrite application routes only; preserve real asset errors., Runtime: cloudfront-js-2.0}
+      FunctionCode: |
+        function handler(event) {
+          var request = event.request;
+          if (request.uri.indexOf('.') === -1) request.uri = '/index.html';
+          return request;
+        }
+  WebDistribution:
+    Type: AWS::CloudFront::Distribution
+    # ACM for CloudFront must be in us-east-1. This certificate is independent
+    # of Caddy's API certificate; no DNS provider or hosted zone is assumed.
+    Properties:
+      DistributionConfig:
+        Enabled: true
+        Aliases: [!Ref WebDomainName]
+        Comment: !Sub '${AWS::StackName}: private S3 SPA; API is a separately secured HTTPS origin'
+        PriceClass: !Ref WebPriceClass
+        DefaultRootObject: index.html
+        HttpVersion: http2and3
+        IPV6Enabled: true
+        Origins:
+          - Id: private-web
+            DomainName: !GetAtt WebBucket.RegionalDomainName
+            OriginAccessControlId: !GetAtt WebOriginAccess.Id
+            S3OriginConfig: {OriginAccessIdentity: ''}
+        DefaultCacheBehavior:
+          TargetOriginId: private-web
+          ViewerProtocolPolicy: redirect-to-https
+          AllowedMethods: [GET, HEAD, OPTIONS]
+          CachedMethods: [GET, HEAD]
+          Compress: true
+          CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6
+          FunctionAssociations: [{EventType: viewer-request, FunctionARN: !GetAtt SPARoutes.FunctionARN}]
+        ViewerCertificate:
+          AcmCertificateArn: !Ref WebCertificateArn
+          SslSupportMethod: sni-only
+          MinimumProtocolVersion: TLSv1.2_2021
+  WebBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref WebBucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal: {Service: cloudfront.amazonaws.com}
+            Action: 's3:GetObject'
+            Resource: !Sub '${WebBucket.Arn}/*'
+            Condition: {StringEquals: {'AWS:SourceArn': !Sub 'arn:${AWS::Partition}:cloudfront::${AWS::AccountId}:distribution/${WebDistribution}'}}
+          - Effect: Deny
+            Principal: '*'
+            Action: 's3:*'
+            Resource: [!GetAtt WebBucket.Arn, !Sub '${WebBucket.Arn}/*']
+            Condition: {Bool: {'aws:SecureTransport': false}}
+Outputs:
+  BackendInstanceId: {Value: !Ref Backend}
+  BackendIPv4: {Value: !Ref BackendAddress}
+  BackendLogGroup: {Value: !Ref BackendLogs}
+  ArtifactBucket: {Value: !Ref ArtifactBucket}
+  WebBucket: {Value: !Ref WebBucket}
+  WebDistributionId: {Value: !Ref WebDistribution}
+  WebURL: {Value: !Sub 'https://${WebDomainName}'}
+  WebCloudFrontDomain: {Value: !GetAtt WebDistribution.DomainName}
+  BackendURL: {Value: !Sub 'https://${ApiDomainName}'}
+  BudgetName: {Value: !If [CreateBudget, !Sub '${AWS::StackName}-monthly', !Ref ExistingBudgetName]}

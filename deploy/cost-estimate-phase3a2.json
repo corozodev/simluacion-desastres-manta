@@ -1,0 +1,165 @@
+{
+  "recorded_at": "2026-10-26T15:38:24-05:00",
+  "region": "us-east-2",
+  "currency": "USD",
+  "hours_per_month": 730,
+  "free_tier_or_credits_deducted": false,
+  "line_items": [
+    {
+      "name": "EC2 t3.small",
+      "quantity": "730",
+      "usd_per_unit": "0.0208",
+      "unit": "instance-hour",
+      "monthly_usd": "15.1840",
+      "source": "https://b0.p.awsstatic.com/pricing/2.0/meteredUnitMaps/ec2/USD/current/ec2-ondemand-without-sec-sel/US%20East%20(Ohio)/Linux/index.json",
+      "rate_code": "BQPEB7HYTVEZPKJW.JRTCKXETXF.6YS6EN2CT7",
+      "planning_allowance": false
+    },
+    {
+      "name": "EBS gp3",
+      "quantity": "20",
+      "usd_per_unit": "0.08",
+      "unit": "GB-month",
+      "monthly_usd": "1.60",
+      "source": "https://b0.p.awsstatic.com/pricing/2.0/meteredUnitMaps/ec2/USD/current/ebs.json",
+      "rate_code": "M6UGCCQ3CDJQAA37.JRTCKXETXF.6YS6EN2CT7",
+      "planning_allowance": false
+    },
+    {
+      "name": "Public IPv4",
+      "quantity": "730",
+      "usd_per_unit": "0.005",
+      "unit": "address-hour",
+      "monthly_usd": "3.650",
+      "source": "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonVPC/current/us-east-2/index.json",
+      "rate_code": "8HFJK44D9234XNWA.JRTCKXETXF.6YS6EN2CT7",
+      "planning_allowance": false
+    },
+    {
+      "name": "S3 Standard storage",
+      "quantity": "1",
+      "usd_per_unit": "0.023",
+      "unit": "GB-month",
+      "monthly_usd": "0.023",
+      "source": "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonS3/current/us-east-2/index.json",
+      "rate_code": "YPGKVRB2EKTVDJDT.JRTCKXETXF.PGHJ3S3EYE",
+      "planning_allowance": false
+    },
+    {
+      "name": "S3 PUT/LIST",
+      "quantity": "500",
+      "usd_per_unit": "0.000005",
+      "unit": "request",
+      "monthly_usd": "0.002500",
+      "source": "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonS3/current/us-east-2/index.json",
+      "rate_code": "GJKK9PMSTKPNGZS9.JRTCKXETXF.6YS6EN2CT7",
+      "planning_allowance": false
+    },
+    {
+      "name": "S3 GET",
+      "quantity": "10000",
+      "usd_per_unit": "0.0000004",
+      "unit": "request",
+      "monthly_usd": "0.0040000",
+      "source": "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonS3/current/us-east-2/index.json",
+      "rate_code": "DJEKB32FV4HNZJZY.JRTCKXETXF.6YS6EN2CT7",
+      "planning_allowance": false
+    },
+    {
+      "name": "S3 artifact planning allowance",
+      "quantity": "1",
+      "usd_per_unit": "0.01",
+      "unit": "monthly-allowance",
+      "monthly_usd": "0.01",
+      "source": null,
+      "rate_code": null,
+      "planning_allowance": true
+    },
+    {
+      "name": "CloudFront US egress",
+      "quantity": "10",
+      "usd_per_unit": "0.085",
+      "unit": "GB",
+      "monthly_usd": "0.850",
+      "source": "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonCloudFront/current/index.json",
+      "rate_code": "GV2WFGX37Q9PDSHF.JRTCKXETXF.Q3Z75P77EN",
+      "planning_allowance": false
+    },
+    {
+      "name": "CloudFront US HTTPS",
+      "quantity": "100000",
+      "usd_per_unit": "0.000001",
+      "unit": "request",
+      "monthly_usd": "0.100000",
+      "source": "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonCloudFront/current/index.json",
+      "rate_code": "NPFD6SEH9MXS8M4J.JRTCKXETXF.6YS6EN2CT7",
+      "planning_allowance": false
+    },
+    {
+      "name": "CloudFront Function",
+      "quantity": "100000",
+      "usd_per_unit": "0.0000001",
+      "unit": "invocation",
+      "monthly_usd": "0.0100000",
+      "source": "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonCloudFront/current/index.json",
+      "rate_code": "QAZUUEJG8GARJCET.JRTCKXETXF.VQ39PKQRBK",
+      "planning_allowance": false
+    },
+    {
+      "name": "Direct API egress planning allowance",
+      "quantity": "10",
+      "usd_per_unit": "0.09",
+      "unit": "GB",
+      "monthly_usd": "0.90",
+      "source": null,
+      "rate_code": null,
+      "planning_allowance": true
+    },
+    {
+      "name": "CloudWatch Standard logs ingestion",
+      "quantity": "1",
+      "usd_per_unit": "0.50",
+      "unit": "GB",
+      "monthly_usd": "0.50",
+      "source": "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonCloudWatch/current/us-east-2/index.json",
+      "rate_code": "5T6Z6V26DSR7SZ49.JRTCKXETXF.6YS6EN2CT7",
+      "planning_allowance": false
+    },
+    {
+      "name": "CloudWatch log storage allowance",
+      "quantity": "1",
+      "usd_per_unit": "0.03",
+      "unit": "GB-month",
+      "monthly_usd": "0.03",
+      "source": "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonCloudWatch/current/us-east-2/index.json",
+      "rate_code": "X7X4WD4A95NDR9U5.JRTCKXETXF.6YS6EN2CT7",
+      "planning_allowance": false
+    },
+    {
+      "name": "CPU alarm",
+      "quantity": "1",
+      "usd_per_unit": "0.10",
+      "unit": "alarm-month",
+      "monthly_usd": "0.10",
+      "source": "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonCloudWatch/current/us-east-2/index.json",
+      "rate_code": "28VSMYRVQXUWCTMA.JRTCKXETXF.6YS6EN2CT7",
+      "planning_allowance": false
+    }
+  ],
+  "monthly_total_usd": "22.9635000",
+  "monthly_total_rounded_usd": "22.96",
+  "recommended_small_usage_allowance_usd": "24.00",
+  "reported_budget_usd": "30.00",
+  "budget_verified": false,
+  "estimated_headroom_if_no_other_account_spend_usd": "7.04",
+  "t3_medium_monthly_estimate_usd": "38.15",
+  "observed_spend_usd": null,
+  "notes": [
+    "Low traffic planning estimate; not a spending cap or observed charge.",
+    "CloudFront PriceClass_100 with US delivery rates; audience location and usage affect bill.",
+    "7-day logs retention; stored-log allowance intentionally conservative.",
+    "API egress uses planning allowance; account-specific effective rate not verified.",
+    "No paid Cost Explorer query made.",
+    "Taxes, support, domain registration, excess traffic and retained versions excluded."
+  ]
+}

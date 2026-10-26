@@ -1,0 +1,13 @@
+**
+!services/
+!services/evacuation/
+!services/evacuation/**
+!deploy/
+!deploy/healthcheck/
+!deploy/healthcheck/main.go
+**/.env
+**/.env.*
+**/*secret*
+**/*credentials*
+services/evacuation/reports/
+services/evacuation/**/testdata/

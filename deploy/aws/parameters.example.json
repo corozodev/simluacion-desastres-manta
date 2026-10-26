@@ -1,0 +1,15 @@
+[
+  {"ParameterKey":"VpcId","ParameterValue":"REPLACE_WITH_EXISTING_VPC"},
+  {"ParameterKey":"PublicSubnetId","ParameterValue":"REPLACE_WITH_PUBLIC_SUBNET"},
+  {"ParameterKey":"AmiId","ParameterValue":"REPLACE_WITH_VERIFIED_AL2023_X86_64_AMI"},
+  {"ParameterKey":"InstanceType","ParameterValue":"t3.small"},
+  {"ParameterKey":"WebIngressCidr","ParameterValue":"127.0.0.1/32"},
+  {"ParameterKey":"CreateProjectBudget","ParameterValue":"false"},
+  {"ParameterKey":"ExistingBudgetName","ParameterValue":"REPLACE_WITH_VERIFIED_EXISTING_BUDGET_NAME"},
+  {"ParameterKey":"BudgetUSD","ParameterValue":"30"},
+  {"ParameterKey":"WebDomainName","ParameterValue":"sistemamanta.lexinnovate.com"},
+  {"ParameterKey":"WebCertificateArn","ParameterValue":"REPLACE_WITH_ISSUED_ACM_CERTIFICATE_ARN_IN_US_EAST_1"},
+  {"ParameterKey":"ApiDomainName","ParameterValue":"api.sistemamanta.lexinnovate.com"},
+  {"ParameterKey":"LogRetentionDays","ParameterValue":"7"},
+  {"ParameterKey":"WebPriceClass","ParameterValue":"PriceClass_100"}
+]

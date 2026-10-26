@@ -1,0 +1,27 @@
+{
+  "date_local": "2026-10-26",
+  "timezone": "America/Guayaquil",
+  "deployment": "not_deployed",
+  "aws_cli_available": false,
+  "aws_config_directory_present": false,
+  "aws_environment_names_present": false,
+  "authorized_region": null,
+  "docker_image_id": "sha256:ddd00e5c9b5a688978edaba0ad53e3a7283a19df5e65ed5e490df824c0c5aa54",
+  "docker_image_size_bytes": 89607396,
+  "checks": {
+    "docker_build": "passed",
+    "docker_nonroot_readonly_restart": "passed",
+    "real_http_health_and_authenticated_step": "passed",
+    "local_rollout_rollback": "passed",
+    "caddy_validate_without_network": "passed",
+    "shell_syntax": "passed",
+    "cloudformation_cfn_lint": "passed (1.58.0)",
+    "architecture_svg_xml": "passed"
+  },
+  "limitations": [
+    "No AWS account or region verified",
+    "No public HTTPS certificate issued or endpoints verified",
+    "No Budget created or real spend captured",
+    "Docker image captures the backend state at packaging time; rebuild after integration changes"
+  ]
+}

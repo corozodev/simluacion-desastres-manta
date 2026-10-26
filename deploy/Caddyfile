@@ -1,0 +1,15 @@
+{
+	admin off
+	email {$TLS_EMAIL}
+}
+
+{$API_DOMAIN} {
+	encode gzip
+	header {
+		X-Content-Type-Options nosniff
+		Referrer-Policy no-referrer
+		Strict-Transport-Security "max-age=31536000"
+	}
+	# Access logging is deliberately disabled: do not log x-api-key headers.
+	reverse_proxy corodev-backend:8080
+}
