@@ -1,0 +1,50 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "OptionalAccountPlanRead",
+      "Effect": "Allow",
+      "Action": "freetier:GetAccountPlanState",
+      "Resource": "*",
+      "Condition": {
+        "ArnEquals": {
+          "aws:PrincipalArn": "arn:aws:iam::REPLACE_WITH_AUTHORIZED_ACCOUNT_ID:user/deploy-cli"
+        },
+        "StringEquals": {
+          "aws:RequestedRegion": "us-east-1"
+        }
+      }
+    },
+    {
+      "Sid": "OptionalOhioAuditInventory",
+      "Effect": "Allow",
+      "Action": "cloudtrail:DescribeTrails",
+      "Resource": "*",
+      "Condition": {
+        "ArnEquals": {
+          "aws:PrincipalArn": "arn:aws:iam::REPLACE_WITH_AUTHORIZED_ACCOUNT_ID:user/deploy-cli"
+        },
+        "StringEquals": {
+          "aws:RequestedRegion": "us-east-2"
+        }
+      }
+    },
+    {
+      "Sid": "OptionalOhioTrailSettingsRead",
+      "Effect": "Allow",
+      "Action": [
+        "cloudtrail:GetTrailStatus",
+        "cloudtrail:GetEventSelectors"
+      ],
+      "Resource": "arn:aws:cloudtrail:us-east-2:REPLACE_WITH_AUTHORIZED_ACCOUNT_ID:trail/*",
+      "Condition": {
+        "ArnEquals": {
+          "aws:PrincipalArn": "arn:aws:iam::REPLACE_WITH_AUTHORIZED_ACCOUNT_ID:user/deploy-cli"
+        },
+        "StringEquals": {
+          "aws:RequestedRegion": "us-east-2"
+        }
+      }
+    }
+  ]
+}

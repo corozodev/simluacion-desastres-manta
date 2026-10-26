@@ -2,7 +2,7 @@
   "phase": "3A.2",
   "recorded_at": "2026-10-26T16:26:20-05:00",
   "timezone": "America/Guayaquil",
-  "status": "change_set_prepared_awaiting_specific_approval_and_runtime_permissions",
+  "status": "operator_policy_review_complete_pending_owner_application_and_effective_validation",
   "profile": "default",
   "region": "us-east-2",
   "authorized_account_matches": true,
@@ -240,5 +240,18 @@
     "Verify public HTTPS/endpoints/browser/latencies/CloudWatch",
     "Authorize Git remote and authentic Budget screenshot if required"
   ],
-  "phase3b_started": false
+  "phase3b_started": false,
+  "latest_evidence": "deploy/validation-phase3a2-operator-audit.json",
+  "operator_audit": {
+    "integrity_verified": true,
+    "deployment_runtime_permissions_effective": false,
+    "detailed_events_read": false,
+    "candidate_simulations_passed": 17,
+    "required_base_replacement": "deploy/operator-base-policy.example.json",
+    "required_supplement": "deploy/execute-changeset-policy.example.json",
+    "admin_separate": "deploy/admin-ssm-policy.example.json",
+    "audit_optional": "deploy/audit-readonly-policy.example.json",
+    "documentation": "docs/revision-seguridad-fase3a2.md"
+  },
+  "specific_execution_approval_received": false
 }

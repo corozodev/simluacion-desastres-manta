@@ -1,0 +1,66 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "OperatorSessionOnlyTaggedCorodevInstance",
+      "Effect": "Allow",
+      "Action": "ssm:StartSession",
+      "Resource": "arn:aws:ec2:us-east-2:REPLACE_WITH_AUTHORIZED_ACCOUNT_ID:instance/*",
+      "Condition": {
+        "ArnEquals": {
+          "aws:PrincipalArn": "arn:aws:iam::REPLACE_WITH_AUTHORIZED_ACCOUNT_ID:user/deploy-cli"
+        },
+        "StringEquals": {
+          "aws:RequestedRegion": "us-east-2",
+          "ssm:resourceTag/Project": "CoroDev",
+          "ssm:resourceTag/Name": "corodev-phase2-backend"
+        }
+      }
+    },
+    {
+      "Sid": "OperatorExactSessionShellDocument",
+      "Effect": "Allow",
+      "Action": "ssm:StartSession",
+      "Resource": "arn:aws:ssm:us-east-2:REPLACE_WITH_AUTHORIZED_ACCOUNT_ID:document/SSM-SessionManagerRunShell",
+      "Condition": {
+        "ArnEquals": {
+          "aws:PrincipalArn": "arn:aws:iam::REPLACE_WITH_AUTHORIZED_ACCOUNT_ID:user/deploy-cli"
+        },
+        "StringEquals": {
+          "aws:RequestedRegion": "us-east-2"
+        }
+      }
+    },
+    {
+      "Sid": "OperatorOwnSessionLifecycle",
+      "Effect": "Allow",
+      "Action": [
+        "ssm:ResumeSession",
+        "ssm:TerminateSession"
+      ],
+      "Resource": "arn:aws:ssm:us-east-2:REPLACE_WITH_AUTHORIZED_ACCOUNT_ID:session/${aws:username}-*",
+      "Condition": {
+        "ArnEquals": {
+          "aws:PrincipalArn": "arn:aws:iam::REPLACE_WITH_AUTHORIZED_ACCOUNT_ID:user/deploy-cli"
+        },
+        "StringEquals": {
+          "aws:RequestedRegion": "us-east-2"
+        }
+      }
+    },
+    {
+      "Sid": "OperatorRegionalSessionDataChannel",
+      "Effect": "Allow",
+      "Action": "ssmmessages:OpenDataChannel",
+      "Resource": "*",
+      "Condition": {
+        "ArnEquals": {
+          "aws:PrincipalArn": "arn:aws:iam::REPLACE_WITH_AUTHORIZED_ACCOUNT_ID:user/deploy-cli"
+        },
+        "StringEquals": {
+          "aws:RequestedRegion": "us-east-2"
+        }
+      }
+    }
+  ]
+}

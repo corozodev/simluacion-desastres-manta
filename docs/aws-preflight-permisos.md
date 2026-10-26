@@ -1,14 +1,18 @@
 # Permisos para reanudar el preflight
 
-## Change set creado y permisos finales
+## Revisión vigente del operador
 
-CF/ACM/CloudFront/cuotas y parámetro público ya responden. El certificado del frontend está ISSUED tras validar el CNAME; el change set real está creado y sin ejecutar. Se adaptaron los nombres de rol/perfil a `deploy-cli-ec2-corodev-phase2` para respetar la restricción de prefijo que configuró el propietario.
+La [revisión de seguridad](revision-seguridad-fase3a2.md) sustituye la propuesta agrupada anterior. El change set, la plantilla y los parámetros permanecen intactos. No se cambiaron permisos en AWS desde el agente.
 
-La simulación AWS detectó que faltan `iam:PutRolePolicy` y `iam:DeleteRolePolicy` sólo para ese rol, y permisos SSM para instalar/administrar el backend sin SSH. El [complemento final](../deploy/execute-changeset-policy.example.json) conserva los límites de tags Project=CoroDev/Name=corodev-phase2-backend, documentos exactos y sesiones propias. Incluye lecturas de eventos del stack/change set, plan y auditoría; no se aplicó desde el agente. La copia lista está en `deploy/evidence-private/phase3a2-final-preflight-20261026/execute-changeset-policy.json`, modo 600.
+1. **Reemplazar** DeployCliPolicy con la copia privada operator-base-policy.json: retira sus mutadores CloudFormation amplios y permite ejecutar sólo el ARN ya preparado. Adjuntar otra política sin retirar el Allow anterior no limita permisos efectivos.
+2. Asociar al operador deploy-cli el complemento execute-changeset-policy.json, ahora de cuatro bloques: inline del rol exacto sólo vía CloudFormation y Run Command con tags/documento exactos.
+3. Administración interactiva Session Manager y auditoría son documentos separados. Auditoría Free Tier/CloudTrail no bloquea el despliegue. La política interactiva hace explícito Resource * sólo en OpenDataChannel, pues su referencia de autorización no admite ARN de recurso; sigue restringida al usuario operador y Ohio.
 
-**Asociar como política administrada separada tras revisión/autorización:** el documento compacto supera el límite agregado de 2048 caracteres inline de un usuario. El ejemplo público exige cuenta y UUID del stack; la copia privada ya tiene ambos. Adjuntarlo no ejecuta CloudFormation. El cambio facturable sigue requiriendo aprobación de su ARN específico.
+Copias listas: `deploy/evidence-private/phase3a2-operator-audit-20261026/`. Los ejemplos públicos requieren completar cuenta y UUID. El complemento imprescindible compacto tiene 1343 caracteres y cabe dentro del límite inline de usuario si no hay otras políticas inline; también puede ser administrado por separado. **No asociar ninguno al rol EC2.**
 
-Simulaciones: los objetivos correctos permiten inline/SSM y los tags, roles, documentos o sesiones ajenos se deniegan. OpenDataChannel devolvió implicitDeny en simulador pese al patrón restringido del ejemplo oficial; requiere verificación real y no se amplió a Resource *. Run Command sí pasó por simulación. CloudWatch tagging y perfil IAM ya están permitidos; no se pidieron de nuevo. UpdateAssumeRolePolicy no se necesita para esta creación inicial.
+${aws:username} se evalúa por IAM a deploy-cli en las sesiones del usuario actual; no representa la cuenta local ni funciona igual con roles/SSO. El documento interactivo conserva esa variable sólo para ResumeSession/TerminateSession; el despliegue por Run Command no depende de ella.
+
+Las 17 simulaciones conjuntas pasaron, incluyendo rechazos de otros cambios/stacks, inline directo y tags ajenos. El complemento aún no está asociado y la lectura real de DescribeEvents continúa denegada: faltan aplicación por el propietario y verificación efectiva antes de pedir autorización de ejecución.
 
 ## Evidencia de las revisiones anteriores
 

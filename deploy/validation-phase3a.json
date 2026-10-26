@@ -2,7 +2,7 @@
   "phase": "3A.2",
   "recorded_at": "2026-10-26T16:26:20-05:00",
   "timezone": "America/Guayaquil",
-  "status": "change_set_prepared_awaiting_specific_approval_and_runtime_permissions",
+  "status": "operator_policy_review_complete_pending_owner_application_and_effective_validation",
   "reason": "Preflight advanced: quotas/template pass; frontend certificate issued; exact named-IAM change set prepared. Specific approval and scoped IAM/SSM/event permissions still required.",
   "previous_phase3a_record": {
     "phase": "3A",
@@ -275,7 +275,7 @@
   },
   "previous_status": "partial_preflight_complete_additional_permissions_and_dns_pending",
   "latest_retry_evidence": "deploy/validation-phase3a2-retry.json",
-  "latest_evidence": "deploy/validation-phase3a2-changeset.json",
+  "latest_evidence": "deploy/validation-phase3a2-operator-audit.json",
   "certificate": {
     "resource_created": true,
     "region": "us-east-1",
@@ -289,5 +289,17 @@
     "reused_by_cloudfront_after_approved_execution": true,
     "backend_caddy_certificate_independent": true
   },
-  "aws_billable_infrastructure_created": []
+  "aws_billable_infrastructure_created": [],
+  "operator_audit": {
+    "integrity_verified": true,
+    "deployment_runtime_permissions_effective": false,
+    "detailed_events_read": false,
+    "candidate_simulations_passed": 17,
+    "required_base_replacement": "deploy/operator-base-policy.example.json",
+    "required_supplement": "deploy/execute-changeset-policy.example.json",
+    "admin_separate": "deploy/admin-ssm-policy.example.json",
+    "audit_optional": "deploy/audit-readonly-policy.example.json",
+    "documentation": "docs/revision-seguridad-fase3a2.md"
+  },
+  "specific_execution_approval_received": false
 }

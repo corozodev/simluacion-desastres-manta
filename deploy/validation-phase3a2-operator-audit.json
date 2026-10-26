@@ -1,0 +1,91 @@
+{
+  "phase": "3A.2",
+  "recorded_at": "2026-10-26T17:21:48-05:00",
+  "timezone": "America/Guayaquil",
+  "status": "operator_policy_review_complete_pending_owner_application_and_effective_validation",
+  "change_set_name": "phase3a2-20261026T211726Z",
+  "stack": "corodev-phase2",
+  "region": "us-east-2",
+  "change_set_status": "CREATE_COMPLETE",
+  "execution_status": "AVAILABLE",
+  "integrity_checks": {
+    "same_change_set_arn": true,
+    "same_stack_arn": true,
+    "cloud_template_hash_matches": true,
+    "local_template_hash_matches": true,
+    "local_parameter_file_hash_matches": true,
+    "server_parameter_values_match": true,
+    "same_14_resources": true,
+    "same_reviewed_monthly_cost": true
+  },
+  "template_sha256": "be8bbda4995169bfe75342ddeb3746ebcb1e05c83e4064ce3579cd9967eadbf5",
+  "parameters_sha256": "bd72f438eb145b5881966c7bba29ca2661043d24ef2d1b389f4d3f54d3536315",
+  "monthly_estimated_usd": "22.96",
+  "planning_reserve_usd": "24.00",
+  "resource_count": 14,
+  "all_actions": "Add",
+  "changeset_recreated": false,
+  "template_modified": false,
+  "parameters_modified": false,
+  "local_tests_repeated": false,
+  "aws_policies_modified_by_agent": false,
+  "infrastructure_executed": false,
+  "operator": {
+    "type": "IAMUser",
+    "name": "deploy-cli",
+    "root": false,
+    "permissions_boundary_present": false,
+    "managed_policy_count": 7,
+    "inline_user_policies": 0,
+    "proposed_supplement_currently_attached": false,
+    "base_policy_observed_version": "v1",
+    "existing_fullaccess_policies_preserved": true
+  },
+  "policy_review": {
+    "inline_actions_exact_role": true,
+    "inline_actions_require_cloudformation_last_hop": true,
+    "inline_actions_bound_to_operator_principal": true,
+    "inline_policy_payload_not_restrictable_by_resource_arn": true,
+    "base_cloudformation_replacement_required_to_close_other_template_path": true,
+    "base_non_cloudformation_statements_unchanged": true,
+    "execute_uses_full_exact_changeset_arn": true,
+    "application_identity_target": "operator deploy-cli; never EC2 role",
+    "ssm_username_variable": "valid for current IAM user in session resource portion; not SSO/assumed role",
+    "interactive_open_data_channel": "Resource * required by service authorization reference; explicit separate document bound to operator and region; live session not verified",
+    "required_operational_file": "deploy/execute-changeset-policy.example.json",
+    "base_replacement_file": "deploy/operator-base-policy.example.json",
+    "separate_interactive_admin_file": "deploy/admin-ssm-policy.example.json",
+    "optional_audit_file": "deploy/audit-readonly-policy.example.json"
+  },
+  "simulations": {
+    "combined_cases_passed": 17,
+    "actual_current_attached_policies_replaced_only_in_simulation": true,
+    "other_target_negative_cases_passed": true,
+    "runtime_execution_proven": false,
+    "private_details": "deploy/evidence-private/phase3a2-operator-audit-20261026/validation_final_combined_summary.json"
+  },
+  "validation": {
+    "previous_aws_template_validation": "passed, tied to unchanged cloud/local SHA-256",
+    "detailed_cloudformation_events": "AccessDenied; required before approval",
+    "get_template_summary_review_stack": "not applicable to REVIEW_IN_PROGRESS; no template defect inferred",
+    "certificate": "ISSUED",
+    "optional_audit_permissions": "not prerequisites for deployment; reduced account/audit visibility disclosed",
+    "cfn_guard": "not run; existing local checks retained"
+  },
+  "blocking_before_authorization": [
+    "Owner replaces existing DeployCliPolicy CF block using reviewed full replacement",
+    "Owner associates mandatory operator deployment supplement",
+    "Re-read effective policies and CloudFormation detailed validation events"
+  ],
+  "optional_not_blocking": [
+    "Interactive SSM channel policy requires separate approval and live verification after instance creation",
+    "CloudTrail and Free Tier read policy"
+  ],
+  "specific_execution_approval_received": false,
+  "private_evidence_directory": "deploy/evidence-private/phase3a2-operator-audit-20261026/",
+  "documentation": "docs/revision-seguridad-fase3a2.md",
+  "phase3b_started": false,
+  "last_effective_check_at": "2026-10-26T22:25:13.404198+00:00",
+  "full_cost_file_sha256": "900c47369947407735b6165c5ecffc1334f29f10a339b477bbe23368dd526426",
+  "full_cost_file_identical_to_review_commit": true
+}
