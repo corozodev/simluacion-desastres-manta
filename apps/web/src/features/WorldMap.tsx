@@ -29,13 +29,16 @@ export function routeWarnings(graph: Graph, world: WorldSnapshot, survivor: Surv
 
 const initialView = { x: 0, y: 0, width: 900, height: 480 };
 
-export function WorldMap({ graph, world, selected }: { graph: Graph; world: WorldSnapshot; selected?: Survivor }) {
+export function WorldMap({ graph, world, selected }: { graph: Graph; world?: WorldSnapshot; selected?: Survivor }) {
   const [view, setView] = useState(initialView);
   const drag = useRef<{ x: number; y: number } | null>(null);
   const projection = useMemo(() => {
     const coordinates = [...graph.nodes, ...(graph.coverage ?? []), ...graph.edges.flatMap(edge => edge.geometry ?? []), ...(graph.spawn_zones ?? []).flatMap(zone => zone.geometry)];
-    const left = Math.min(...coordinates.map(point => point.lng)), right = Math.max(...coordinates.map(point => point.lng));
-    const bottom = Math.min(...coordinates.map(point => point.lat)), top = Math.max(...coordinates.map(point => point.lat));
+    let left = Infinity, right = -Infinity, bottom = Infinity, top = -Infinity;
+    for (const coordinate of coordinates) {
+      left = Math.min(left, coordinate.lng); right = Math.max(right, coordinate.lng);
+      bottom = Math.min(bottom, coordinate.lat); top = Math.max(top, coordinate.lat);
+    }
     const scale = Math.min(850 / Math.max(right - left, .00001), 430 / Math.max(top - bottom, .00001));
     const offsetX = (900 - (right - left) * scale) / 2, offsetY = (480 - (top - bottom) * scale) / 2;
     const point = (coordinate: GeoPoint) => ({ x: offsetX + (coordinate.lng - left) * scale, y: offsetY + (top - coordinate.lat) * scale });
@@ -47,7 +50,16 @@ export function WorldMap({ graph, world, selected }: { graph: Graph; world: Worl
     return { x: previous.x + (previous.width - width) / 2, y: previous.y + (previous.height - height) / 2, width, height };
   });
   const pan = (dx: number, dy: number) => setView(previous => ({ ...previous, x: previous.x + dx * previous.width, y: previous.y + dy * previous.height }));
-  const blocked = new Set(world.blocked_edges);
+  const blockedKey = (world?.blocked_edges ?? []).join(',');
+  const roads = useMemo(() => {
+    const blocked = new Set(blockedKey.split(','));
+    const geometryPoints = (coordinates: GeoPoint[]) => coordinates.map(coordinate => { const p = projection.point(coordinate); return `${p.x},${p.y}`; }).join(' ');
+    return graph.edges.map(edge => {
+      const a = projection.nodes.get(edge.from), b = projection.nodes.get(edge.to);
+      const geometry = edge.geometry?.length ? geometryPoints(edge.geometry) : a && b ? `${a.x},${a.y} ${b.x},${b.y}` : '';
+      return geometry ? <polyline key={edge.id} points={geometry} className={edge.blocked || blocked.has(edge.id) ? 'escape-road escape-road-blocked' : 'escape-road'}><title>{edge.road_type} · {Math.round(edge.distance_m)} m{edge.blocked || blocked.has(edge.id) ? ' · bloqueada' : ''}{edge.bridge ? ' · puente físico' : ''}</title></polyline> : null;
+    });
+  }, [graph, projection, blockedKey]);
   return <figure className="escape-map"><div className="escape-map-controls" role="group" aria-label="Controles del mapa">
     <Button variant="secondary" onClick={() => zoom(.75)} aria-label="Acercar mapa">+</Button><Button variant="secondary" onClick={() => zoom(1 / .75)} aria-label="Alejar mapa">−</Button><Button variant="secondary" onClick={() => setView(initialView)}>Restablecer mapa</Button>
     <Button variant="secondary" onClick={() => pan(-.15, 0)} aria-label="Mover mapa al oeste">←</Button><Button variant="secondary" onClick={() => pan(0, -.15)} aria-label="Mover mapa al norte">↑</Button><Button variant="secondary" onClick={() => pan(0, .15)} aria-label="Mover mapa al sur">↓</Button><Button variant="secondary" onClick={() => pan(.15, 0)} aria-label="Mover mapa al este">→</Button><output aria-label="Escala del mapa">{(900 / view.width).toFixed(1)}×</output>
@@ -64,21 +76,17 @@ export function WorldMap({ graph, world, selected }: { graph: Graph; world: Worl
     <title id="escape-map-title">Red de evacuación y posiciones observables</title><desc id="escape-map-description">Calles reales, envolvente de referencia urbana, zonas de aparición, bloqueos, sobrevivientes y zombies visibles. Arrastra para desplazar; usa flechas, +, − y 0 para navegar. La navegación se extiende fuera de las zonas de origen.</desc>
     {!!graph.coverage?.length && <polygon points={points(graph.coverage)} className="escape-coverage"><title>Envolvente de referencia urbana; no es el límite oficial ni representa todas las calles</title></polygon>}
     {(graph.spawn_zones ?? []).map(zone => <g key={zone.id}><polygon points={points(zone.geometry)} className="escape-spawn-zone"><title>{zone.name} · zona de aparición · {zone.source}</title></polygon>{zone.geometry[0] && <text x={projection.point(zone.geometry[0]).x} y={projection.point(zone.geometry[0]).y - 8} className="escape-zone-label">{zone.name}</text>}</g>)}
-    {graph.edges.map(edge => {
-      const a = projection.nodes.get(edge.from), b = projection.nodes.get(edge.to);
-      const geometry = edge.geometry?.length ? points(edge.geometry) : a && b ? `${a.x},${a.y} ${b.x},${b.y}` : '';
-      return geometry ? <polyline key={edge.id} points={geometry} className={edge.blocked || blocked.has(edge.id) ? 'escape-road escape-road-blocked' : 'escape-road'}><title>{edge.road_type} · {Math.round(edge.distance_m)} m{edge.blocked || blocked.has(edge.id) ? ' · bloqueada' : ''}{edge.bridge ? ' · puente físico' : ''}</title></polyline> : null;
-    })}
+    {roads}
     {selected && <polyline points={points(routeGeometry(graph, selected))} className="escape-planned-route"><title>Ruta publicada de {selected.id}</title></polyline>}
-    {world.survivors.filter(s => s.status === 'active' || s.id === selected?.id).map(survivor => {
+    {(world?.survivors ?? []).filter(s => s.status === 'active' || s.id === selected?.id).map(survivor => {
       const point = projection.nodes.get(survivor.current_node);
       return point ? <circle key={survivor.id} cx={point.x} cy={point.y} r={survivor.id === selected?.id ? 7 : 3.6} className="escape-survivor"><title>{survivor.id} · {survivor.status}</title></circle> : null;
     })}
-    {world.zombies.map(zombie => {
+    {(world?.zombies ?? []).map(zombie => {
       const point = projection.nodes.get(zombie.current_node);
       return point ? <circle key={zombie.id} cx={point.x} cy={point.y} r={zombie.type === 'horde' ? 7 : 4.3} className="escape-zombie"><title>{zombie.id} · {zombie.type}</title></circle> : null;
     })}
-    {world.shelters.map(shelter => {
+    {(world?.shelters ?? graph.shelters).map(shelter => {
       const point = projection.nodes.get(shelter.node_id);
       return point ? <g key={shelter.id}><rect x={point.x - 6} y={point.y - 6} width="12" height="12" rx="2" className="escape-shelter"><title>Refugio ficticio {shelter.id} · {shelter.occupancy}/{shelter.capacity}</title></rect><text x={point.x + 10} y={point.y + 4} className="escape-map-label">{shelter.id}</text></g> : null;
     })}

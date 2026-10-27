@@ -196,3 +196,9 @@ main { flex: 1; width: 100%; outline: 0; }
 .escape-table td, .escape-table th { padding: 10px 6px; border-bottom: 1px solid var(--color-border); }
 .escape-table td { color: var(--color-textSecondary); overflow-wrap: anywhere; }
 @media (max-width: 700px) { .escape-details { grid-template-columns: 1fr; } .escape-metric strong { font-size: 22px; } .escape-map-card { padding: 14px; } }
+
+.simulation-control { margin-bottom: var(--space-6, 24px); }
+.simulation-form { display: flex; flex-wrap: wrap; gap: var(--space-4, 16px); align-items: end; margin-block: 16px; }
+.simulation-form p { flex-basis: 100%; }
+.simulation-form label { display: grid; gap: 8px; min-width: 0; }
+.simulation-control select, .simulation-control input { max-width: 100%; }

@@ -12,7 +12,8 @@ import addFormats from 'ajv-formats';
 
 const root = fileURLToPath(new URL('../../', import.meta.url));
 const backend = path.join(root, 'services/evacuation');
-const urban = process.argv.includes('--urban');
+// The server starts exclusively from the approved urban competition catalogue.
+const urban = true;
 const schema = JSON.parse(await readFile(path.join(root, 'packages/contracts/generated/schemas.json'), 'utf8'));
 const ajv = new Ajv({ strict: false, allErrors: true });
 addFormats(ajv);
@@ -123,7 +124,7 @@ try {
     browser = await chromium.launch(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE } : {});
     const page = await browser.newPage({ viewport: { width: 1440, height: 1100 } });
     const credentialLeaks = [], legacyRequests = [], unexpectedApiRequests = [];
-    const publicWorldRoutes = new Set(['/healthz', '/grafo', '/estado']);
+    const publicWorldRoutes = new Set(['/healthz', '/grafo', '/estado', '/simulation/catalog']);
     page.on('request', request => {
       if (request.url().startsWith(baseUrl) && request.headers()['x-api-key']) credentialLeaks.push(request.url());
       const route = new URL(request.url()).pathname;

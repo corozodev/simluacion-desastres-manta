@@ -1,4 +1,4 @@
-import type { ErrorResponse, HealthResponse, Graph, WorldSnapshot, Survivor, Shelter, Zombie } from '@corodev/contracts';
+import type { ErrorResponse, HealthResponse, Graph, WorldSnapshot, Survivor, Shelter, Zombie, SimulationInfo, SimulationCatalog, OperatorSession, StartSimulation } from '@corodev/contracts';
 import { config } from '../lib/config';
 import { ApiError } from './errors';
 export { ApiError } from './errors';
@@ -99,12 +99,44 @@ function isWorld(value: unknown): value is WorldSnapshot {
       && ['type', 'entity_id', 'edge_id', 'message'].every(field => typeof event[field] === 'string'))
     && ['evacuated', 'bitten', 'active', 'turns', 'requests_success', 'requests_invalid', 'requests_timeout'].every(field => isNatural(metrics[field]))
     && ['http_p50_ms', 'http_p95_ms', 'http_p99_ms', 'availability'].every(field => isNumber(metrics[field]) && Number(metrics[field]) >= 0)
-    && Number(metrics.availability) <= 1;
+    && Number(metrics.availability) <= 1 && (value.simulation === undefined || isSimulation(value.simulation));
+}
+
+function isSimulation(value: unknown): value is SimulationInfo {
+  return isObject(value) && ['run_id', 'graph_version', 'round'].every(key => typeof value[key] === 'string')
+    && ['competition', 'full', 'expanded'].includes(String(value.mode))
+    && ['idle', 'starting', 'running', 'finished', 'failed'].includes(String(value.state))
+    && Number.isSafeInteger(value.seed) && isNatural(value.turn_limit) && isNatural(value.interval_ms);
+}
+function isCatalog(value: unknown): value is SimulationCatalog {
+  return isObject(value) && value.default_mode === 'competition' && typeof value.admin_enabled === 'boolean'
+    && isNatural(value.history_limit) && Array.isArray(value.presets) && value.presets.every(preset => isObject(preset)
+      && ['competition', 'full', 'expanded'].includes(String(preset.id))
+      && ['name', 'graph_version', 'source', 'coverage', 'disabled_reason'].every(key => typeof preset[key] === 'string')
+      && isNatural(preset.nodes) && isNatural(preset.edges)
+      && ['enabled', 'experimental', 'preview_available'].every(key => typeof preset[key] === 'boolean'))
+    && Array.isArray(value.rounds) && value.rounds.every(round => isObject(round) && typeof round.id === 'string'
+      && typeof round.name === 'string' && isNatural(round.survivors) && isNatural(round.turns));
+}
+function isSession(value: unknown): value is OperatorSession {
+  return isObject(value) && typeof value.enabled === 'boolean' && typeof value.authenticated === 'boolean'
+    && (!value.authenticated || typeof value.operator === 'string' && typeof value.csrf_token === 'string' && typeof value.expires_at === 'string');
 }
 
 export const api = {
   world: (signal?: AbortSignal) => request<WorldSnapshot>('/estado', isWorld, undefined, signal),
-  graph: (signal?: AbortSignal) => request<Graph>('/grafo', isGraph, undefined, signal),
+  graph: (signal?: AbortSignal, options?: { runId?: string; mode?: string }) => {
+    const query = new URLSearchParams(options?.mode ? { mode: options.mode } : options?.runId ? { run_id: options.runId } : {});
+    return request<Graph>(`/grafo${query.size ? `?${query}` : ''}`, isGraph, undefined, signal);
+  },
+  catalog: (signal?: AbortSignal) => request<SimulationCatalog>('/simulation/catalog', isCatalog, undefined, signal),
+  session: (signal?: AbortSignal) => request<OperatorSession>('/admin/session', isSession, { credentials: 'include' }, signal),
+  login: (operator: string, accessCode: string) => request<OperatorSession>('/admin/session', isSession,
+    { method: 'POST', credentials: 'include', body: JSON.stringify({ operator, access_code: accessCode }) }),
+  logout: (csrf: string) => request<OperatorSession>('/admin/session', isSession,
+    { method: 'DELETE', credentials: 'include', headers: { 'X-CSRF-Token': csrf } }),
+  startRun: (input: StartSimulation, csrf: string) => request<SimulationInfo>('/admin/runs', isSimulation,
+    { method: 'POST', credentials: 'include', headers: { 'X-CSRF-Token': csrf }, body: JSON.stringify(input) }),
   health: (signal?: AbortSignal) => request<HealthResponse>('/healthz', (value): value is HealthResponse =>
     isObject(value) && value.status === 'ok' && typeof value.service === 'string' && typeof value.version === 'string', undefined, signal),
 };
