@@ -1,6 +1,6 @@
 # Informe FASE 3B.2 — simulación multigrafo
 
-Entrega local validada el 26 de octubre de 2026, Ecuador. Competición conserva el comportamiento anterior; React incorpora previsualización y control de rondas autenticado. La URL pública y el backend AWS permanecen en la versión previa: la candidata está preparada y requiere autorización para el rollout que reinicia el proceso. [Operación](operacion-multigrafo.md), [evidencia resumida](../deploy/validation-phase3b2.json) y [revisión concreta del rollout](revision-rollout-fase3b2.md).
+Entrega validada y desplegada en AWS el 26 de octubre de 2026, Ecuador, tras autorización expresa. Competición conserva el comportamiento anterior; React incorpora previsualización y control de rondas autenticado. El backend arrancó en un contenedor nuevo a las 21:24:28 y el propietario ordenó después retirar el contenedor/imagen anteriores, ya eliminados de EC2. [Operación](operacion-multigrafo.md), [evidencia resumida](../deploy/validation-phase3b2.json) y [revisión concreta del rollout](revision-rollout-fase3b2.md).
 
 ## Alcance y criterio
 
@@ -58,7 +58,7 @@ El estrés separado mantuvo un snapshot inicial estable, calentó el motor y env
 
 El maestro registra 23,9% de timeouts bajo saturación de 200 clientes, mientras sus rondas con concurrencia interna 16 no tuvieron timeouts. No son la misma carga. Bajo saturación, la goroutine cliente puede recuperar control después del deadline: los tiempos de retorno superiores a 500 ms se conservan en lugar de truncarlos. Los recibos Docker no registraron OOM.
 
-La lectura del store copia el grafo completo y la planificación trabaja sobre una red mayor. Ese trabajo aumenta con el grafo, además de influencias de GC, concurrencia y contención; no se presupone una relación lineal ni se presenta un perfil de CPU inexistente. Se conserva el maestro y se informa su costo. La activación experimental queda deshabilitada por defecto en la candidata; cualquier ensayo público requiere una decisión explícita de operación, sin ampliar EC2 automáticamente.
+La lectura del store copia el grafo completo y la planificación trabaja sobre una red mayor. Ese trabajo aumenta con el grafo, además de influencias de GC, concurrencia y contención; no se presupone una relación lineal ni se presenta un perfil de CPU inexistente. Se conserva el maestro y se informa su costo. La activación experimental permanece deshabilitada en producción; cualquier ensayo público requiere una decisión explícita de operación, sin ampliar EC2 automáticamente.
 
 Dos series preliminares usaron GOMAXPROCS=12 heredado del host pese a la cuota de dos CPU: hubo timeouts incluso en Competición. Se conservaron esos intentos y dos rondas preliminares interrumpidas, separados de la serie completa con dos hilos. No se mezclaron sus muestras ni se eligieron percentiles entre series.
 
@@ -70,7 +70,7 @@ El primer ensayo real detectó disponibilidad estática de refugios sin normaliz
 
 Pruebas ejecutadas: Go unitarias y race en todos los paquetes; race adicional de control para preparación fallida, ronda obsoleta, semilla ausente, CSRF ligado a sesión y credenciales independientes; vet/build; OpenAPI y generación TypeScript/Dart; TypeScript/ESLint; 22 pruebas React y 40 del servicio histórico; 8 Chromium existentes; integración real Go/React; 10 pruebas geográficas sin regenerar datos; Docker endurecido con 200 decisiones HTTP reales; Flutter analyze, 13 pruebas y un skip condicional, integración Go/Dart ejecutada aparte y APK debug compilada. El maestro pasó las tres rondas; el estrés conserva su resultado desfavorable sin convertirlo en una exigencia oficial del mapa experimental.
 
-El nuevo binario registra inicio/final con timestamp, operador, ID, grafo, semilla y configuración, sin cuerpos o credenciales. Se reutilizará el destino awslogs existente cuando se autorice el despliegue. No se añadió infraestructura de observabilidad, IAM, DNS ni recursos facturables.
+El nuevo binario registra inicio/final con timestamp, operador, ID, grafo, semilla y configuración, sin cuerpos o credenciales. El destino awslogs existente recibió `simulation.run_started`, `backend ready` y `simulation.run_finished`; se comprobó ausencia de la clave de movimiento y el código real del operador en los eventos consultados. No se añadió infraestructura de observabilidad, IAM, DNS ni recursos facturables.
 
 ## Git, AWS y pendientes
 
@@ -82,6 +82,10 @@ Commits auténticos, sin alterar fechas ni reescribir historial:
 
 El repositorio conserva el remoto aprobado `main`, `corozodev/simluacion-desastres-manta`. Se revisó el contenido explícito de cada commit, incluidos patrones AWS, claves privadas y comparación con secretos reales locales; sin hallazgos. Evidencias privadas, códigos/verificadores, snapshots previos, APK, bundles y builds quedan fuera de Git. Los tres commits anteriores ya se enviaron al remoto aprobado mediante avance normal, sin force push. Esta documentación se registra después en un commit separado y se comprueba nuevamente el HEAD remoto al cerrar.
 
-A las 20:48 de Ecuador se consultaron por HTTPS verificado frontend, health y estado públicos: 200; producción seguía en Competición, turno 150, versión 301, 132/41/27, sin reinicio. Se guardó su snapshot observable privado. La imagen candidata y el frontend están empaquetados localmente con hashes en la revisión de rollout. El control nuevo aún no está disponible en AWS.
+A las 20:48 de Ecuador se había conservado el estado observable previo. Tras la autorización, se verificaron los hashes aprobados, se transfirió el paquete por el bucket privado y se inició el contenedor nuevo. Terminó la ronda 3 a las 21:29:28 con 132 evacuados, 41 mordidos y 27 activos: 6113 decisiones internas correctas, cero inválidas/timeouts, p95/p99 internos 7,60/9,60 ms. Se conservaron clave de movimiento, límites, awslogs, Caddy, DNS, IAM y stack. El propietario pidió eliminar respaldos: se retiraron el contenedor anterior detenido, su imagen Docker y cuatro archivos de instalación de imagen en EC2; el contenedor nuevo no se reinició otra vez. No existe rollback inmediato a la imagen anterior en EC2. Los assets/índice web se publicaron en el bucket existente y la invalidación terminó Completed.
 
-Pendientes: autorización para el rollout que detiene el backend y reinicia una ronda, validación externa de esa candidata después del despliegue, prueba física móvil y decisión separada si se desea ensayar el maestro públicamente. El historial es RAM y un rollback restaura imagen, no estado. No se inicia otra fase.
+La comprobación externa reutilizó el probe existente: 30 éxitos HTTPS, 39 intentos y 9 conflictos 409 de turno reintentados; p50/p95/p99 383,61/389,91/392,49 ms, sin errores/timeouts. No se equiparan a las latencias loopback. El monitor del reinicio registró 55 respuestas 200 y una 502 entre 56 muestras; no se afirma duración exacta de la interrupción.
+
+Chromium externo, DNS normal y TLS verificado comprobaron el build aprobado, previsualización de 13.452 calles sin activación, zoom/reset y 390 px, login con cookie Secure/HttpOnly/SameSite Strict, rechazo 401 sin sesión, 403 con CSRF incorrecto o modo deshabilitado, y logout. Cero errores JS/red, cero claves de movimiento y cero solicitudes obsoletas. La previsualización se representó en 828,63 ms en esta corrida de producción; no se compara causalmente con otra ventana local. Ninguna comprobación inició otra ronda. [Evidencia AWS y pruebas públicas](../deploy/validation-phase3b2-rollout.json).
+
+Pendientes: prueba física móvil y decisión separada si se desea activar el maestro públicamente. La ronda es finita y queda inmóvil al terminar; el operador puede iniciar otra desde el panel. El historial sigue en RAM. No se inicia otra fase.

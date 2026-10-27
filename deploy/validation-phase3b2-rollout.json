@@ -1,0 +1,194 @@
+{
+  "phase": "3B.2",
+  "recorded_at": "2026-10-27T02:36:11.154788+00:00",
+  "owner_authorization": {
+    "explicit_rollout_approved": true,
+    "later_instruction_remove_backup_images": true
+  },
+  "deployment": {
+    "reviewed_commit": "54bacbbaff828de9bd68bc32a992816796fcc8d5",
+    "backend_url": "https://api.sistemamanta.lexinnovate.com",
+    "frontend_url": "https://sistemamanta.lexinnovate.com/escape",
+    "image": "sha256:83d45642f9974f1744b54f1c6303c86ef09a1a8b9e3e8d0dee8b1299c6164ffb",
+    "backend_started_at": "2026-10-27T02:24:28.1368498Z",
+    "fresh_container": true,
+    "restart_count": 0,
+    "oom_killed": false,
+    "caddy_unchanged": true,
+    "movement_key_preserved": true,
+    "admin_credentials_separate": true,
+    "experimental_modes_enabled": false,
+    "limits": {
+      "cpus": 2,
+      "memory_bytes": 1073741824,
+      "nonroot_readonly_caps": true,
+      "port8080_loopback_only": true
+    },
+    "previous_backend_container_removed": true,
+    "previous_backend_image_removed": true,
+    "backend_image_archives_removed_from_ec2": 4,
+    "active_backend_image_retained": true,
+    "previous_image_rollback_available_on_ec2": false,
+    "transfer_archive_sha256": "4b8b951e4bc207c8a678e159250a3f6e4eaf6ae5225d663ebff38a54064dcd3d",
+    "reviewed_backend_archive_sha256": "05c807e02b07dfc11a581166ecd03333a0fd61794b7fe18ab897cac628b4ac9d",
+    "frontend_objects": [
+      {
+        "key": "assets/index-BeSfCZlv.css",
+        "sha256": "59239c7af99ef6f115bf3fb6525e4af88c51dd1fee79def57d7a3eaec251796e",
+        "cache_control": "public, max-age=31536000, immutable"
+      },
+      {
+        "key": "assets/index-CMxX7dcP.js",
+        "sha256": "2017d2741ab08ca74522975751933d0984c99b96fc686c4043f01acf26e80713",
+        "cache_control": "public, max-age=31536000, immutable"
+      },
+      {
+        "key": "index.html",
+        "sha256": "e3a8a575e3868e0f9a829c3f92e71df654dad81c225ad06bb9f38d3814b267c5",
+        "cache_control": "no-cache, max-age=0, must-revalidate"
+      }
+    ],
+    "frontend_index_uploaded_last": true,
+    "frontend_prior_versions_retained": true,
+    "cloudfront_invalidation": "Completed",
+    "cloudformation_executed": false,
+    "new_infrastructure_resources": false
+  },
+  "health_during_authorized_restart": {
+    "method": "Verified HTTPS from owner workstation, one public GET per iteration; intervals vary with network; not exact downtime or SLA",
+    "samples": 56,
+    "http200": 55,
+    "other_samples": [
+      {
+        "at": "2026-10-27T02:24:26.883452+00:00",
+        "status": 502,
+        "elapsed_ms": 1749.9564589961665
+      }
+    ],
+    "exact_downtime_claimed": false
+  },
+  "simulation": {
+    "run_id": "9d389f6a1a2deb2e84298f714cc8a83f",
+    "mode": "competition",
+    "round": "round3",
+    "state": "finished",
+    "seed": 20261028,
+    "graph_version": "manta-v2-0ab03290b16a",
+    "turn_limit": 150,
+    "interval_ms": 2000,
+    "started_at": "2026-10-27T02:24:28.516624202Z",
+    "ended_at": "2026-10-27T02:29:28.619622515Z"
+  },
+  "final_metrics": {
+    "evacuated": 132,
+    "bitten": 41,
+    "active": 27,
+    "turns": 150,
+    "requests_success": 6113,
+    "requests_invalid": 0,
+    "requests_timeout": 0,
+    "http_p50_ms": 2.65077,
+    "http_p95_ms": 7.599225,
+    "http_p99_ms": 9.6019,
+    "availability": 1
+  },
+  "final_history_observable_retained": true,
+  "post_run_resource_snapshot": {
+    "CPUPerc": "0.00%",
+    "MemUsage": "25.34MiB / 1GiB",
+    "MemPerc": "2.47%",
+    "PIDs": "8"
+  },
+  "post_run_resource_note": "Single post-run Docker observation, not a peak, benchmark or whole EC2 measurement.",
+  "public_probe": {
+    "recorded_at": "2026-10-27T02:25:57.625552+00:00",
+    "phase": "3A",
+    "base_url": "https://api.sistemamanta.lexinnovate.com",
+    "vantage": "invoking client; execution outside target EC2 must be attested separately",
+    "tls_verification": true,
+    "redirects_followed": false,
+    "checks": {
+      "/healthz": 200,
+      "/grafo": 200,
+      "/estado": 200,
+      "missing_key": 401,
+      "wrong_key": 401,
+      "/admin": 404,
+      "/reset": 404,
+      "/config": 404,
+      "/debug/pprof/": 404,
+      "simulation": {
+        "initial_turn": 46,
+        "observed_turn": 64,
+        "turn_advanced": true,
+        "requests_success": 3791,
+        "requests_invalid": 0,
+        "requests_timeout": 0
+      }
+    },
+    "complete": true,
+    "probe_errors": 0,
+    "probe_timeouts": 0,
+    "latency": {
+      "endpoint": "POST /paso",
+      "request_attempts": 39,
+      "successful_samples": 30,
+      "snapshot_conflicts": 9,
+      "errors": 0,
+      "timeouts": 0,
+      "method": "HTTPS transport and JSON receipt; nearest-rank percentiles of successful samples",
+      "p50_ms": 383.6052950064186,
+      "p95_ms": 389.9098190013319,
+      "p99_ms": 392.48992200009525,
+      "max_ms": 392.48992200009525
+    }
+  },
+  "browser": {
+    "recorded_at": "2026-10-27T02:31:50.975Z",
+    "vantage": "Owner workstation outside EC2; Chromium normal DNS and end-to-end verified HTTPS",
+    "checks": {
+      "public_full_preview_without_activation": true,
+      "full_preview_zoom_reset_mobile": true,
+      "anonymous_start_status": 401,
+      "secure_httponly_host_session": true,
+      "bad_csrf_status": 403,
+      "disabled_mode_status": 403,
+      "login_csrf_disabled_mode_logout": true,
+      "same_run_retained": true
+    },
+    "browser": {
+      "full_preview_load_render_ms": 828.6279119999999,
+      "javascript_errors": [],
+      "network_failures": [],
+      "movement_credentials_requests": 0,
+      "obsolete_api_requests": 0
+    },
+    "simulation": {
+      "run_id": "9d389f6a1a2deb2e84298f714cc8a83f",
+      "mode": "competition",
+      "round": "round3",
+      "state": "finished",
+      "seed": 20261028,
+      "graph_version": "manta-v2-0ab03290b16a",
+      "turn_limit": 150,
+      "interval_ms": 2000,
+      "started_at": "2026-10-27T02:24:28.516624202Z",
+      "ended_at": "2026-10-27T02:29:28.619622515Z"
+    }
+  },
+  "cloudwatch": {
+    "lifecycle_messages": [
+      "simulation.run_started",
+      "backend ready",
+      "simulation.run_finished"
+    ],
+    "actual_secrets_absent": true
+  },
+  "limitations": [
+    "Finite 150-turn run; a finished map stops advancing until an authenticated operator starts a new run.",
+    "Full and expanded can be previewed but remain disabled for production activation.",
+    "No old backend image/container or deployment archive duplicate remains on EC2. Historical source/release evidence elsewhere was not globally purged.",
+    "Browser tests were external Chromium with normal DNS and TLS; no physical mobile-device test.",
+    "HTTPS probe uses its existing phase3A tool label; measurement here targets the newly deployed phase3B2 runtime."
+  ]
+}

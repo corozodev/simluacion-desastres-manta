@@ -2,9 +2,9 @@
   "phase": "3B.2",
   "recorded_at": "2026-10-27T01:57:16.993132+00:00",
   "deployment": {
-    "status": "prepared_locally_awaiting_explicit_restart_authorization",
-    "aws_mutations": false,
-    "production_restarted": false,
+    "status": "deployed_after_explicit_authorization",
+    "aws_mutations": true,
+    "production_restarted": true,
     "new_aws_resources": false,
     "full_enabled_by_default": false,
     "expanded_enabled_by_default": false,
@@ -62,7 +62,9 @@
         "sha256": "e3a8a575e3868e0f9a829c3f92e71df654dad81c225ad06bb9f38d3814b267c5",
         "bytes": 594
       }
-    }
+    },
+    "rollout_evidence": "deploy/validation-phase3b2-rollout.json",
+    "previous_backend_image_retained_on_ec2": false
   },
   "graph_sources": [
     {
