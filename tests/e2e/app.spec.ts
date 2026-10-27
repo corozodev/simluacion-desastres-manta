@@ -14,6 +14,23 @@ const capabilities: SimulationCapabilities = {
   rounds: [{ id: 'round1', name: 'Ronda 1', survivors: 20, turns: 150 }],
 };
 
+// Use a real fixture route; a one-node wait cannot be labelled a highlighted route.
+function fixtureRoute(start: string, shelterId: string): string[] {
+  const target = graph.shelters.find(shelter => shelter.id === shelterId)!.node_id;
+  const queue = [[start]];
+  const seen = new Set([start]);
+  for (const route of queue) {
+    const node = route.at(-1)!;
+    if (node === target) return route;
+    for (const edge of graph.edges) {
+      if (edge.blocked) continue;
+      const next = edge.from === node ? edge.to : !edge.directed && edge.to === node ? edge.from : undefined;
+      if (next && !seen.has(next)) { seen.add(next); queue.push([...route, next]); }
+    }
+  }
+  throw new Error('Fixture shelter is unreachable');
+}
+
 function state(id: string, tick = 0, status: SimulationState['status'] = 'RUNNING'): SimulationState {
   const current = tick > 1 ? 'N-0001' : 'N-0000';
   return { simulation_id: id, status, tick, max_ticks: 150, state_version: tick + 1,
@@ -21,7 +38,7 @@ function state(id: string, tick = 0, status: SimulationState['status'] = 'RUNNIN
     created_at: '2026-10-27T10:00:00Z', started_at: '2026-10-27T10:00:00Z', updated_at: '2026-10-27T10:00:02Z', expires_at: '2026-10-27T10:15:00Z',
     config: { survivors: 20, round: 'round1', refuge_ids: graph.shelters.map(shelter => shelter.id) },
     snapshot: { ...initial, turn: tick, world_version: tick + 1, graph_version: graph.version,
-      survivors: [{ id: 'S-0001', current_node: current, status: 'active', target_shelter_id: 'R-2', planned_route: [current] }], metrics: { ...initial.metrics, active: 1, bitten: 0, evacuated: 0 } },
+      survivors: [{ id: 'S-0001', current_node: current, status: 'active', target_shelter_id: 'R-4', planned_route: fixtureRoute(current, 'R-4') }], metrics: { ...initial.metrics, active: 1, bitten: 0, evacuated: 0 } },
   };
 }
 
