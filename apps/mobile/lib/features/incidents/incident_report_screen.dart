@@ -323,9 +323,8 @@ class _IncidentReportScreenState extends ConsumerState<IncidentReportScreen> {
                             : Icons.radio_button_unchecked,
                       ),
                       label: Text(
-                        '${edge.edgeId} · ${edge.roadType} · '
-                        '${edge.distanceM.toStringAsFixed(1)} m\n'
-                        '${edge.fromNodeId} → ${edge.toNodeId}',
+                        'Calle cercana ${draft.resolution!.candidates.indexOf(edge) + 1} · '
+                        '${edge.distanceM.toStringAsFixed(1)} m del marcador',
                       ),
                     ),
                 ],
@@ -410,14 +409,15 @@ class _IncidentReportScreenState extends ConsumerState<IncidentReportScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(incidentTypes[draft.incidentType]!),
-          Text('Ubicación declarada: ${draft.latitude}, ${draft.longitude}'),
+          const Text('Ubicación: marcador revisado en el mapa'),
           Text(
             'Ubicación: ${draft.locationMethod == 'device' ? 'dispositivo' : 'marcador manual'}',
           ),
           Text('Transitabilidad: ${incidentPassabilities[draft.passability]}'),
           Text('Severidad: ${incidentSeverities[draft.severity]}'),
           Text('Fecha observada declarada: ${_date(draft.eventTime)}'),
-          if (draft.edgeHint != null) Text('Calle asociada: ${draft.edgeHint}'),
+          if (draft.edgeHint != null)
+            const Text('Calle asociada y validada por el servidor.'),
           Text(draft.description.trim()),
           const Text(
             'Sin fotografías adjuntas. Procedencia: ciudadana; estado inicial: pendiente.',
@@ -434,19 +434,14 @@ class _IncidentReportScreenState extends ConsumerState<IncidentReportScreen> {
       children: [
         const Text('Enviado', style: TextStyle(color: SpookyTokens.success)),
         Text('Estado: ${incidentStatuses[report.verificationStatus]}'),
-        SelectableText('ID: ${report.incidentId}'),
+
         Text(incidentTypes[report.incidentType]!),
-        Text(
-          'Ubicación aproximada: ${report.latitude.toStringAsFixed(4)}, ${report.longitude.toStringAsFixed(4)}',
-        ),
+
         Text(report.description),
         Text(
           'Fecha observada declarada: ${_date(DateTime.parse(report.eventTime))}',
         ),
-        Text(
-          'Recibido por el servidor: ${_date(DateTime.parse(report.receivedAt))}',
-        ),
-        Text('Caduca: ${_date(DateTime.parse(report.expiresAt))}'),
+
         Text(
           'Procedencia: ${const {'citizen': 'ciudadana', 'synthetic': 'sintética', 'official': 'oficial'}[report.sourceType]}',
         ),

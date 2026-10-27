@@ -96,6 +96,12 @@ try {
   await page.goto(origin + '/flood-lab');
   await expect(page.getByRole('heading', { name: 'Escape Manta Inundación', exact: true })).toBeVisible();
   const openDetails = async name => { const summary = page.locator('summary').filter({ hasText: name }); if (!await summary.evaluate(element => element.parentElement.open)) await summary.click(); };
+  const startStorm = async () => {
+    const button = page.getByRole('button', { name: 'Iniciar tormenta', exact: true });
+    // A paused storm keeps replacement in its explicit secondary actions.
+    if (!await button.isVisible()) await openDetails(/^Más acciones$/);
+    await button.click();
+  };
   await openDetails(/^Capas$/);
   await openDetails(/^Datos y fuentes oficiales$/);
   const officialToggle = page.getByRole('checkbox', { name: 'Susceptibilidad oficial a inundaciones', exact: true });
@@ -113,7 +119,7 @@ try {
   await page.getByRole('checkbox', { name: 'Usar susceptibilidad geográfica como referencia', exact: true }).check();
   await page.getByRole('spinbutton', { name: 'Peso experimental de susceptibilidad' }).fill('0.25');
   await page.getByText('Configurar tormenta', { selector: 'summary', exact: true }).click();
-  await page.getByRole('button', { name: 'Iniciar tormenta', exact: true }).click();
+  await startStorm();
   state = await until(() => get(lab.url, '/lab/state', 'LabState'), value => value.run_id !== baseline.run_id && value.scenario.simulation_step >= 1, 'hybrid run');
   await page.getByRole('button', { name: 'Pausar', exact: true }).click();
   state = await until(() => get(lab.url, '/lab/state', 'LabState'), value => value.state === 'paused', 'hybrid pause');
@@ -137,7 +143,7 @@ try {
   await openDetails(/^Configurar tormenta$/);
   await page.getByRole('combobox', { name: /Cobertura de inundación/ }).selectOption('full');
   await page.getByText('Configurar tormenta', { selector: 'summary', exact: true }).click();
-  const fullStart = performance.now(); await page.getByRole('button', { name: 'Iniciar tormenta', exact: true }).click();
+  const fullStart = performance.now(); await startStorm();
   state = await until(() => get(lab.url, '/lab/state', 'LabState'), value => value.mode === 'full' && value.scenario.simulation_step >= 1, 'master reference run');
   await page.getByRole('button', { name: 'Pausar', exact: true }).click();
   await expect(page.locator('[data-reference-id]')).toHaveCount(59);

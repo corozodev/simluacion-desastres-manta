@@ -62,3 +62,31 @@ describe('adaptador HTTP privado de simulaciones', () => {
   });
 
 });
+
+describe('observación pública sin credenciales', () => {
+  it('consulta la referencia compartida, reutiliza ETag y acepta 304 sin crear una sesión', async () => {
+    const state = managedState();
+    const published = { scenario: 'zombie_outbreak', availability: 'available', simulation: state };
+    const fetch = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(new Response(JSON.stringify(published), { headers: { ETag: 'W/"published-test-v1"' } })).mockResolvedValueOnce(new Response(null, { status: 304 }));
+    await expect(api.publishedSimulation('zombie_outbreak')).resolves.toEqual(published);
+    await expect(api.publishedSimulation('zombie_outbreak')).resolves.toEqual(published);
+    expect(fetch.mock.calls[1]![1]?.headers).toMatchObject({ 'If-None-Match': 'W/"published-test-v1"' });
+    for (const [url, init] of fetch.mock.calls) {
+      expect(new URL(String(url)).pathname).toBe('/v1/simulations/published/zombie_outbreak');
+      expect(init?.method).toBeUndefined(); expect(init?.credentials).toBe('omit');
+      expect(init?.headers).not.toHaveProperty('Authorization');
+      expect(init?.headers).not.toHaveProperty('x-api-key');
+    }
+  });
+  it('rechaza una credencial privada o un escenario distinto en una publicación', async () => {
+    const fetch = vi.spyOn(globalThis, 'fetch');
+    for (const invalid of [
+      { scenario: 'zombie_outbreak', availability: 'available', simulation: { ...managedState(), access_token: 'must-not-be-public' } },
+      { scenario: 'urban_flood', availability: 'available', simulation: managedState() },
+      { scenario: 'zombie_outbreak', availability: 'none', simulation: managedState() },
+    ]) {
+      fetch.mockResolvedValueOnce(json(invalid));
+      await expect(api.publishedSimulation('zombie_outbreak')).rejects.toMatchObject({ code: 'INVALID_RESPONSE' });
+    }
+  });
+});

@@ -24,6 +24,7 @@ export function MapWorkspaceOverlay({ panel, metrics }: Pick<MapWorkspaceSlots, 
   return <div className="map-stage-ui" data-map-ui><div className="map-stage-panel">{panel}</div><div className="map-stage-metrics">{metrics}</div></div>;
 }
 
-export function MapSource({ graph, flood = false }: { graph: Graph; flood?: boolean }) {
+export function MapSource({ graph, flood = false, citizen = false }: { graph: Graph; flood?: boolean; citizen?: boolean }) {
+  if (citizen) return <div className="map-source-strip"><details className="map-footer"><summary>Fuentes y límites</summary><p>{graph.source}. Refugios propuestos; no son sitios oficiales de evacuación. Los reportes ciudadanos pendientes no confirman condiciones viales. La referencia oficial de susceptibilidad no es una alerta actual.</p></details></div>;
   return <div className="map-source-strip"><p>Simulación {flood ? 'con datos sintéticos' : 'experimental'} · Manta, Ecuador · {graph.nodes.length.toLocaleString('es-EC')} intersecciones · {graph.edges.length.toLocaleString('es-EC')} aristas</p><details className="map-footer"><summary>Fuentes y límites</summary><p>{graph.source}. Refugios experimentales; no son sitios oficiales de evacuación. {flood ? 'El índice sintético no representa profundidad, lluvia observada ni mm/h. La susceptibilidad oficial no describe una inundación actual.' : 'Sólo amenazas publicadas; H representa una horda sin estimar integrantes. Las zonas son orígenes y la envolvente es referencia urbana, sin certificar cobertura vial completa.'}</p></details></div>;
 }

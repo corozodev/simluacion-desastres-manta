@@ -17,8 +17,8 @@ import (
 )
 
 // Exercise the production identity bridge with both real HTTP handlers. The
-// laboratory grants no replacement identity when the shared session is absent.
-func TestOperatorCanStartStormWithoutVisitingZombieUI(t *testing.T) {
+// laboratory keeps identity only for protected tools; storm controls are public.
+func TestOperatorIdentityRemainsScopedToProtectedTools(t *testing.T) {
 	const origin = "https://operator.example"
 	var entropy [32]byte
 	if _, err := rand.Read(entropy[:]); err != nil {
@@ -94,7 +94,7 @@ func TestOperatorCanStartStormWithoutVisitingZombieUI(t *testing.T) {
 	}
 	cfg := compactConfig(lab)
 	cfg.IntervalMS = 2000
-	response, _ = request(server.URL, "POST", "/lab/runs", RunRequest{Config: cfg, ExpectedRunID: lab.State().RunID}, cookie, "forged")
+	response, _ = request(server.URL, "POST", "/lab/incidents/synthetic", map[string]string{}, cookie, "forged")
 	if response.StatusCode != 401 {
 		t.Fatal("laboratory accepted forged csrf")
 	}
@@ -112,7 +112,11 @@ func TestOperatorCanStartStormWithoutVisitingZombieUI(t *testing.T) {
 		t.Fatal("revoked identity retained control")
 	}
 	response, _ = request(server.URL, "POST", "/lab/actions", Action{Action: "pause", ExpectedRunID: running.RunID}, cookie, session.CSRFToken)
+	if response.StatusCode != 200 {
+		t.Fatal("storm control still requires operator identity")
+	}
+	response, _ = request(server.URL, "POST", "/lab/incidents/synthetic", map[string]string{}, cookie, session.CSRFToken)
 	if response.StatusCode != 401 {
-		t.Fatal("revoked identity mutated storm")
+		t.Fatal("revoked identity retained protected incident tools")
 	}
 }

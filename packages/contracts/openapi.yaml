@@ -557,20 +557,52 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "409":
           $ref: "#/components/responses/Conflict"
+  /lab/published:
+    get:
+      operationId: getPublishedFlood
+      tags: [ Evacuation ]
+      summary: Snapshot actual de la tormenta compartida, sin iniciar motores ni solicitar credenciales.
+      description: >-
+        Reutiliza la ejecución del laboratorio. Conserva el último estado final.
+        El estado idle indica que no hay tormenta publicada. No incluye topología;
+        timeline es un arreglo vacío y comparison se omite. La geografía se obtiene
+        una vez desde /lab/graph con mode y run_id; comprobar graph_version antes de
+        mostrar entidades. Los espectadores no alteran el reloj ni el motor.
+      parameters:
+        - in: header
+          name: If-None-Match
+          required: false
+          schema: { type: string }
+      responses:
+        '200':
+          description: Snapshot compacto compartido; nunca incluye secretos.
+          headers:
+            ETag:
+              schema: { type: string }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/LabState' }
+        '304':
+          description: Sin cambios respecto a If-None-Match.
+        '403':
+          description: Host u origen rechazado.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '405':
+          description: Método no permitido.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
   /lab/runs:
     post:
       operationId: startLabRun
       tags:
         - Evacuation
       summary: Inicia una tormenta con configuración validada.
-      description: Sólo servidor experimental loopback. Requiere sesión HttpOnly,
-        Origin permitido y cabecera X-CSRF-Token.
-      parameters:
-        - in: header
-          name: X-CSRF-Token
-          required: true
-          schema:
-            type: string
+      description: >-
+        Inicio directo sin credenciales de operador. Conserva validaciones, Origin
+        permitido, capacidad y expected_run_id para impedir duplicados y carreras.
       requestBody:
         required: true
         content:
@@ -590,20 +622,15 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "409":
           $ref: "#/components/responses/Conflict"
+        "429":
+          $ref: "#/components/responses/RateLimited"
   /lab/actions:
     post:
       operationId: controlLabRun
       tags:
         - Evacuation
       summary: Pausa, continúa, reinicia, repite o cambia el intervalo real.
-      description: Sólo servidor experimental loopback. Requiere sesión HttpOnly,
-        Origin permitido y cabecera X-CSRF-Token.
-      parameters:
-        - in: header
-          name: X-CSRF-Token
-          required: true
-          schema:
-            type: string
+      description: Control directo sin credenciales; valida estado y expected_run_id, conservando restricciones de origen.
       requestBody:
         required: true
         content:
@@ -623,20 +650,15 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "409":
           $ref: "#/components/responses/Conflict"
+        "429":
+          $ref: "#/components/responses/RateLimited"
   /lab/candidates/validate:
     post:
       operationId: validateLabCandidates
       tags:
         - Evacuation
       summary: Valida y ajusta cuatro candidatos a la red vial.
-      description: Sólo servidor experimental loopback. Requiere sesión HttpOnly,
-        Origin permitido y cabecera X-CSRF-Token.
-      parameters:
-        - in: header
-          name: X-CSRF-Token
-          required: true
-          schema:
-            type: string
+      description: Validación directa sin credenciales; conserva los límites de candidatos y las restricciones de origen.
       requestBody:
         required: true
         content:
@@ -656,20 +678,15 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "409":
           $ref: "#/components/responses/Conflict"
+        "429":
+          $ref: "#/components/responses/RateLimited"
   /lab/comparisons:
     post:
       operationId: compareLabShelters
       tags:
         - Evacuation
       summary: Compara originales y personalizados con orígenes y amenaza congelados.
-      description: Sólo servidor experimental loopback. Requiere sesión HttpOnly,
-        Origin permitido y cabecera X-CSRF-Token.
-      parameters:
-        - in: header
-          name: X-CSRF-Token
-          required: true
-          schema:
-            type: string
+      description: Comparación directa sin credenciales; conserva exclusión mutua, validación y expected_run_id.
       requestBody:
         required: true
         content:
@@ -689,6 +706,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "409":
           $ref: "#/components/responses/Conflict"
+        "429":
+          $ref: "#/components/responses/RateLimited"
   /v1/incidents/config:
     get:
       operationId: getIncidentServiceInfo
@@ -1399,11 +1418,63 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorResponse' }
+  /v1/simulations/published/{scenario}:
+    get:
+      operationId: getPublishedSimulation
+      tags: [ Simulations ]
+      summary: Observa la última sesión iniciada correctamente del escenario, sin crear motores ni credenciales.
+      description: >-
+        Devuelve el snapshot actual, incluso para incorporación tardía. No reproduce
+        turnos pasados ni renueva caducidad por visitas de espectadores. La referencia
+        pública es independiente por escenario; una creación idempotente repetida no
+        vuelve a publicar una ejecución anterior. No incluye topología ni tokens.
+        El laboratorio de /flood-lab publica su tormenta mediante /lab/published;
+        urban_flood aquí identifica exclusivamente sesiones de /v1/simulations.
+      parameters:
+        - in: path
+          name: scenario
+          required: true
+          schema: { type: string, enum: [ zombie_outbreak, urban_flood ] }
+        - in: header
+          name: If-None-Match
+          required: false
+          schema: { type: string }
+      responses:
+        '200':
+          description: none si nunca hubo publicación; unavailable si caducó; available con snapshot actual o final.
+          headers:
+            ETag:
+              schema: { type: string }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PublishedSimulation' }
+        '304':
+          description: Sin cambios respecto a If-None-Match.
+        '403':
+          description: Origen CORS rechazado.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '400':
+          description: Escenario no soportado.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '405':
+          description: Método no permitido.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '429':
+          description: Límite de solicitudes; respetar Retry-After.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
   /v1/simulations:
     post:
       operationId: createSimulation
       tags: [ Simulations ]
-      summary: Valida, reserva capacidad y crea una ejecución privada independiente.
+      summary: Valida, reserva capacidad, crea una ejecución independiente y publica su referencia observable.
       description: >-
         No se inicia ninguna ejecución mediante GET. Idempotency-Key evita duplicados
         por reintentos: misma clave y configuración repiten el ID y token originales;
@@ -1972,6 +2043,14 @@ components:
           type: string
           minLength: 32
           description: Credencial opaca; sólo creación, reinicio o replay idempotente. Nunca se devuelve en consultas ni controles normales.
+    PublishedSimulation:
+      type: object
+      additionalProperties: false
+      required: [ scenario, availability ]
+      properties:
+        scenario: { type: string, enum: [ zombie_outbreak, urban_flood ] }
+        availability: { type: string, enum: [ none, available, unavailable ] }
+        simulation: { $ref: '#/components/schemas/SimulationState' }
     SimulationState:
       type: object
       additionalProperties: false
@@ -1998,6 +2077,7 @@ components:
         config: { $ref: '#/components/schemas/SimulationConfig' }
         snapshot: { $ref: '#/components/schemas/WorldSnapshot' }
         scenario_state: { $ref: '#/components/schemas/ScenarioSnapshot' }
+        results: { $ref: '#/components/schemas/SimulationResultMetrics' }
     SimulationResults:
       type: object
       additionalProperties: false

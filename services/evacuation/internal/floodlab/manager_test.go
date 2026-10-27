@@ -229,7 +229,7 @@ func TestComparisonUsesTheSamePopulationAndParameters(t *testing.T) {
 	}
 }
 
-func TestLocalHTTPRequiresSessionOriginAndCSRF(t *testing.T) {
+func TestLocalHTTPAnonymousLifecycleRetainsOriginAndValidation(t *testing.T) {
 	m := newManager(t)
 	server := httptest.NewServer(m)
 	defer server.Close()
@@ -260,8 +260,8 @@ func TestLocalHTTPRequiresSessionOriginAndCSRF(t *testing.T) {
 	}
 	res := request("POST", "/lab/actions", testOrigin, "", Action{Action: "resume", ExpectedRunID: m.State().RunID})
 	res.Body.Close()
-	if res.StatusCode != 401 {
-		t.Fatal("mutation without session accepted")
+	if res.StatusCode != 200 {
+		t.Fatal("anonymous lifecycle requires a session")
 	}
 	res = request("GET", "/lab/session", testOrigin, "", nil)
 	var session Session
@@ -277,10 +277,10 @@ func TestLocalHTTPRequiresSessionOriginAndCSRF(t *testing.T) {
 	if res.StatusCode != 403 {
 		t.Fatal("untrusted origin accepted")
 	}
-	res = request("POST", "/lab/actions", testOrigin, "incorrect", Action{Action: "resume", ExpectedRunID: m.State().RunID})
+	res = request("POST", "/lab/actions", testOrigin, "incorrect", Action{Action: "pause", ExpectedRunID: m.State().RunID})
 	res.Body.Close()
-	if res.StatusCode != 401 {
-		t.Fatal("incorrect CSRF accepted")
+	if res.StatusCode != 200 {
+		t.Fatal("public lifecycle must not depend on CSRF")
 	}
 	cfg := compactConfig(m)
 	cfg.IntervalMS = 100

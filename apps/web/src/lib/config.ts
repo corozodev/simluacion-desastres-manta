@@ -5,6 +5,7 @@ export interface AppConfig {
   osmTilesEnabled: boolean;
   osmTileUrlTemplate: string;
   timeoutMs: number;
+  androidApkUrl?: string;
   error?: string;
   floodError?: string;
   incidentsError?: string;
@@ -38,6 +39,12 @@ export function readConfig(env: Record<string, string | undefined>): AppConfig {
       result.incidentsApiBaseUrl = incidentsUrl.toString().replace(/\/$/, '');
     } catch {
       result.incidentsError = 'VITE_INCIDENTS_API_BASE_URL debe usar HTTP(S), sin credenciales, parámetros ni fragmentos.';
+    }
+    if (env.VITE_ANDROID_APK_URL) {
+      try {
+        const apk = new URL(env.VITE_ANDROID_APK_URL);
+        if (apk.protocol === 'https:' && !apk.username && !apk.password && !apk.hash) result.androidApkUrl = apk.toString();
+      } catch { /* Download is optional; never fabricate an APK link. */ }
     }
     const tileTemplate = env.VITE_OSM_TILE_URL_TEMPLATE ?? 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
     try {

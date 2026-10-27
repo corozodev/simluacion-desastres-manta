@@ -107,6 +107,10 @@ func (m *Manager) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(204)
 		return
 	}
+	if strings.HasPrefix(r.URL.Path, "/v1/simulations/published/") {
+		m.servePublished(w, r)
+		return
+	}
 	actor := remoteActor(r)
 	creating := r.Method == "POST" && (r.URL.Path == "/v1/simulations" || strings.HasSuffix(r.URL.Path, "/restart"))
 	if !m.allow(actor, creating) {

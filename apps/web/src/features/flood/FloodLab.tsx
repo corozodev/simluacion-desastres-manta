@@ -1,9 +1,8 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { FlaskConical, MapPin, Pause, Play, RotateCcw, ShieldCheck } from 'lucide-react';
 import type { EvacuationMetrics, GeoPoint, Graph, LabCandidate, LabCandidateValidation, LabCatalog, LabComparison, LabRunConfig, LabState, LabTimelineEntry } from '@corodev/contracts';
 import { Badge, Button, Card, ErrorState, LoadingState } from '../../components/ui';
-import { OperatorAccess } from '../../components/OperatorAccess';
 import { api, ApiError } from '../../services/api';
 import { useFloodCatalog, useFloodGraph, useFloodSession, useFloodState, useIncidentDetail, useIncidents, useReferenceStatus, useSusceptibilityReference } from '../../services/queries';
 import { FloodMap } from './FloodMap';
@@ -29,17 +28,19 @@ function readCandidate(candidate: CandidateDraft | undefined): LabCandidate | un
 export function FloodLab() {
   const catalog = useFloodCatalog();
   const state = useFloodState();
-  const session = useFloodSession();
   return <div className="page flood-page">
     <header className="scenario-heading"><h1>Escape Manta Inundación</h1><span>Simulación con datos sintéticos</span></header>
-    {catalog.data && state.data ? <FloodWorkspace catalog={catalog.data} backend={state.data} connected={!state.isError && !catalog.isError} operatorAccess={<OperatorAccess session={session.data} loading={session.isPending} error={session.error} retry={() => void session.refetch()} />} csrf={session.data?.authenticated && !session.isError && !state.isError && !catalog.isError ? session.data.csrf_token : ''} sessionError={session.error} retrySession={() => void session.refetch()} /> : catalog.isPending || state.isPending ? <LoadingState label="Conectando con el laboratorio de inundaciones…" /> : null}
+    {catalog.data && state.data ? <FloodWorkspace catalog={catalog.data} backend={state.data} connected={!state.isError && !catalog.isError} /> : catalog.isPending || state.isPending ? <LoadingState label="Conectando con el laboratorio de inundaciones…" /> : null}
     {catalog.isError && <ErrorState error={catalog.error} onRetry={() => void catalog.refetch()} />}
     {state.isError && <><p className="session-notice" role="status">Sin conexión. Conservamos el último estado; no se iniciará otra tormenta automáticamente.</p><ErrorState error={state.error} onRetry={() => void state.refetch()} /></>}
 
   </div>;
 }
 
-function FloodWorkspace({ catalog, backend, csrf, sessionError, retrySession, operatorAccess, connected }: { catalog: LabCatalog; backend: LabState; csrf: string; sessionError: Error | null; retrySession: () => void; operatorAccess: ReactNode; connected: boolean }) {
+function FloodWorkspace({ catalog, backend, connected }: { catalog: LabCatalog; backend: LabState; connected: boolean }) {
+  const [protectedTools, setProtectedTools] = useState(false);
+  const session = useFloodSession(protectedTools);
+  const csrf = session.data?.authenticated && !session.isError ? session.data.csrf_token : ''; // Optional, for moderation/reference only.
   const client = useQueryClient();
   const [draft, setDraft] = useState<LabRunConfig>(() => ({ ...backend.config, shelters: [...backend.config.shelters] }));
   const [presetId, setPresetId] = useState('');
@@ -66,7 +67,7 @@ function FloodWorkspace({ catalog, backend, csrf, sessionError, retrySession, op
     window.addEventListener('keydown', cancel);
     return () => window.removeEventListener('keydown', cancel);
   }, []);
-  useEffect(() => { if (!csrf) cancelPick(); }, [csrf]);
+  useEffect(() => { if (!connected) cancelPick(); }, [connected]);
   const [selectedAgentId, setSelectedAgentId] = useState('');
   const [selectedShelterId, setSelectedShelterId] = useState('');
   const [agentSearch, setAgentSearch] = useState('');
@@ -110,19 +111,19 @@ function FloodWorkspace({ catalog, backend, csrf, sessionError, retrySession, op
     // stale without downloading the master again for pause/resume/speed.
     if (state.run_id !== backend.run_id || state.graph_version !== backend.graph_version) void client.invalidateQueries({ queryKey: ['flood', 'graph'], refetchType: 'none' });
   };
-  const refresh = () => { void client.invalidateQueries({ queryKey: ['flood', 'state'] }); void client.invalidateQueries({ queryKey: ['flood', 'session'] }); };
+  const refresh = () => { void client.invalidateQueries({ queryKey: ['flood', 'state'] }); };
   const activeConfig = (): LabRunConfig => ({ ...draft, shelters: useCustom ? parsed : catalog.original_shelters });
-  const start = useMutation({ mutationFn: () => api.startFlood(activeConfig(), backend.run_id, csrf), onSuccess: state => { setSelectedAgentId(''); syncState(state); }, onError: refresh });
-  const action = useMutation({ mutationFn: (input: { action: 'pause' | 'resume' | 'restart' | 'repeat' | 'speed'; interval?: number }) => api.floodAction(input.action, backend.run_id, csrf, input.interval), onSuccess: (state, input) => { if (state.run_id !== backend.run_id) setSelectedAgentId(''); if (input.action === 'speed') setDraft(previous => ({ ...previous, interval_ms: state.config.interval_ms })); if (input.action === 'restart' || input.action === 'repeat') { setDraft({ ...state.config, shelters: [...state.config.shelters] }); setPresetId(''); } syncState(state); }, onError: (_error, input) => { if (input.action === 'speed') setDraft(previous => ({ ...previous, interval_ms: backend.config.interval_ms })); refresh(); } });
-  const validate = useMutation({ mutationFn: (input: { mode: LabRunConfig['mode']; candidates: LabCandidate[]; key: string }) => api.validateFloodCandidates(input.mode, input.candidates, csrf), onSuccess: (result, input) => setValidation({ key: input.key, result }) });
-  const compare = useMutation({ mutationFn: () => api.compareFlood({ ...draft, shelters: parsed }, backend.run_id, csrf), onSuccess: syncState, onError: refresh });
+  const start = useMutation({ mutationFn: () => api.startFlood(activeConfig(), backend.run_id), onSuccess: state => { setSelectedAgentId(''); syncState(state); }, onError: refresh });
+  const action = useMutation({ mutationFn: (input: { action: 'pause' | 'resume' | 'restart' | 'repeat' | 'speed'; interval?: number }) => api.floodAction(input.action, backend.run_id, input.interval), onSuccess: (state, input) => { if (state.run_id !== backend.run_id) setSelectedAgentId(''); if (input.action === 'speed') setDraft(previous => ({ ...previous, interval_ms: state.config.interval_ms })); if (input.action === 'restart' || input.action === 'repeat') { setDraft({ ...state.config, shelters: [...state.config.shelters] }); setPresetId(''); } syncState(state); }, onError: (_error, input) => { if (input.action === 'speed') setDraft(previous => ({ ...previous, interval_ms: backend.config.interval_ms })); refresh(); } });
+  const validate = useMutation({ mutationFn: (input: { mode: LabRunConfig['mode']; candidates: LabCandidate[]; key: string }) => api.validateFloodCandidates(input.mode, input.candidates), onSuccess: (result, input) => setValidation({ key: input.key, result }) });
+  const compare = useMutation({ mutationFn: () => api.compareFlood({ ...draft, shelters: parsed }, backend.run_id), onSuccess: syncState, onError: refresh });
   const pickValidation = useMutation({
-    mutationFn: (input: { index: number; drafts: (CandidateDraft | undefined)[]; candidates: LabCandidate[]; epoch: number }) => api.validateFloodCandidates(draft.mode, input.candidates, csrf),
+    mutationFn: (input: { index: number; drafts: (CandidateDraft | undefined)[]; candidates: LabCandidate[]; epoch: number }) => api.validateFloodCandidates(draft.mode, input.candidates),
     onSuccess: (result, input) => { if (input.epoch === pickEpoch.current) setProvisional({ index: input.index, drafts: input.drafts, result }); },
     onError: refresh,
   });
   const busy = start.isPending || action.isPending || validate.isPending || compare.isPending || pickValidation.isPending;
-  const authorized = Boolean(csrf);
+  const authorized = connected;
   const configValid = Number.isSafeInteger(draft.seed) && Number.isInteger(draft.simulation_duration) && draft.simulation_duration >= 1 && draft.simulation_duration <= 10000 && draft.rainfall_intensity >= 0 && draft.rainfall_intensity <= 1 && Number.isInteger(draft.agents) && draft.agents >= 1 && draft.agents <= 200 && (!draft.geographic_reference?.enabled || Number.isFinite(draft.geographic_reference.strength) && draft.geographic_reference.strength >= 0 && draft.geographic_reference.strength <= 1);
   const canConfigureRun = !running && !comparisonRunning && !busy && authorized && pickingCandidate === undefined;
   const mutationError = start.error ?? action.error ?? validate.error ?? compare.error;
@@ -179,7 +180,6 @@ function FloodWorkspace({ catalog, backend, csrf, sessionError, retrySession, op
       </div><div className="flood-reference-controls"><label><input type="checkbox" checked={Boolean(draft.geographic_reference?.enabled)} disabled={!referenceStatus.data?.dataset_version} onChange={event => changeDraft('geographic_reference', event.target.checked ? { enabled: true, dataset_version: referenceStatus.data!.dataset_version!, strength: .25 } : undefined)} />Usar susceptibilidad geográfica como referencia</label>{draft.geographic_reference?.enabled && <label>Peso experimental adimensional<input aria-label="Peso experimental de susceptibilidad" type="number" min="0" max="1" step="0.05" value={Number.isFinite(draft.geographic_reference.strength) ? draft.geographic_reference.strength : ''} onChange={event => changeDraft('geographic_reference', { ...draft.geographic_reference!, strength: numericInput(event.target.value) })} /></label>}<p className="muted">Sólo al iniciar. No cambia la lluvia ni la semilla; los pesos de clases son experimentales y no representan profundidad de agua.</p></div>
 </details></div></details>
       <span className="flood-prepared-summary">{selectedMode?.id === 'competition' ? 'Base' : 'Manta ampliada'} · {Number.isFinite(draft.agents) ? draft.agents : '—'} agentes</span>
-      <details className="flood-hud-disclosure flood-operator"><summary>Acceso de operador</summary><div className="flood-config-popover">{operatorAccess}</div></details>
     </div>
     <SimulationHUD label="Tormenta" progressLabel="Tiempo" status={stateLabels[backend.state]} tick={backend.state === 'idle' ? undefined : backend.scenario.simulation_time} maxTicks={backend.config.simulation_duration} elapsed={backend.state === 'idle' ? undefined : `Paso ${backend.scenario.simulation_step}`}>
       {!running && backend.state !== 'paused' && <Button disabled={!canConfigureRun || !configValid || useCustom && !customValid} onClick={requestStart}><Play size={14} />{start.isPending ? 'Iniciando…' : 'Iniciar tormenta'}</Button>}
@@ -194,8 +194,6 @@ function FloodWorkspace({ catalog, backend, csrf, sessionError, retrySession, op
     {preview && <p className="flood-compact-notice" role="status">Previsualizando {selectedMode?.name}. El motor activo conserva {activeMode?.name}.</p>}
     {useCustom && !customValid && <p className="flood-compact-notice" role="status">Valida los cuatro candidatos en Refugios y agentes antes de iniciar.</p>}
     {!configValid && <p className="flood-validation-error" role="alert">Revisa intensidad 0–1, duración 1–10.000, agentes 1–200 y semilla entera.</p>}
-    {!authorized && !sessionError && <p role="status" className="flood-compact-notice">Se requiere sesión de operador para ejecutar.</p>}
-    {sessionError && <ErrorState error={sessionError} onRetry={retrySession} />}
     {mutationError && <ErrorState error={mutationError} onRetry={() => { start.reset(); action.reset(); validate.reset(); compare.reset(); refresh(); }} />}
       {pickingCandidate !== undefined && <div className="flood-pick-notice" role="status"><p>Selecciona la ubicación del refugio {pickingCandidate + 1} en el mapa. Escape cancela.</p>{pickValidation.isPending && <p>Validando ajuste y conectividad con el servidor…</p>}{pickValidation.error && <ErrorState error={pickValidation.error} />}{provisionalCandidate && <p>{provisionalCandidate.message}{provisionalCandidate.valid && <> · ajuste {provisionalCandidate.snap_distance_m.toFixed(1)} m</>}</p>}<div className="flood-actions"><Button disabled={!provisionalCandidate?.valid || pickValidation.isPending || !authorized} onClick={confirmPick}>Confirmar ubicación</Button><Button variant="ghost" onClick={cancelPick}>Cancelar selección en mapa</Button></div></div>}
 
@@ -204,8 +202,8 @@ function FloodWorkspace({ catalog, backend, csrf, sessionError, retrySession, op
     <section className="flood-map-card flood-map-workspace" aria-label="Laboratorio cartográfico de inundación">
       {!visibleGraph && !graph.isError ? <LoadingState label="Cargando la red vial de inundación…" /> : !visibleGraph && graph.isError ? <ErrorState error={graph.error} onRetry={() => { if (graph.error instanceof ApiError && (graph.error.code === 'RUN_CHANGED' || graph.error.status === 409)) refresh(); void graph.refetch(); }} /> : !preview && visibleGraph!.version !== backend.graph_version ? <p role="alert">La geografía cambió de ejecución. <Button variant="secondary" onClick={() => { refresh(); void graph.refetch(); }}>Actualizar geografía</Button></p> : <FloodMap hud={hud} panel={panel} metrics={backend.state === 'idle' && backend.scenario.simulation_step === 0 ? undefined : <MetricsPanel metrics={backend.scenario.evacuation_metrics} latency={backend.timeline.at(-1)?.step_latency_ms ?? backend.scenario.performance.simulation_step_latency_ms} />} referenceAvailable={['cached', 'stale'].includes(referenceStatus.data?.availability ?? '')} lifecycle={{ id: preview ? '' : backend.run_id, running: !preview && backend.state === 'running', connected, interval: backend.config.interval_ms }} graph={visibleGraph!} scenario={preview ? undefined : backend.scenario} shelters={currentShelters} candidates={parsed} validation={currentValidation} selectedAgentId={selectedAgentId} onSelectAgent={id => setSelectedAgentId(previous => previous === id ? '' : id)} selectedShelterId={selectedShelterId} onSelectShelter={setSelectedShelterId} pickingCandidate={pickingCandidate} onPickPosition={pickPosition} onCancelPick={cancelPick} onOpenIncident={id => { setSelectedIncidentId(id); if (incidentTools.current) { incidentTools.current.open = true; incidentTools.current.scrollIntoView({ block: 'nearest' }); } }} previewPosition={provisionalCandidate?.valid ? { lat: provisionalCandidate.snapped_lat, lng: provisionalCandidate.snapped_lng } : undefined} incidents={incidents.data?.incidents} selectedIncidentId={selectedIncidentId} onSelectIncident={setSelectedIncidentId} reference={referencePolygons.data} showReference={showReference} onShowReference={setShowReference} />}
     </section>
-    <details className="flood-secondary"><summary>Datos y fuentes oficiales</summary><ReferencePanel status={referenceStatus.data} collection={referencePolygons.data} loading={referenceStatus.isPending || showReference && referencePolygons.isFetching} error={referenceStatus.error ?? (showReference ? referencePolygons.error : null)} retry={() => { void referenceStatus.refetch(); if (showReference && referenceVersion) void referencePolygons.refetch(); }} csrf={csrf} active={activeReference} /></details>
-    <details ref={incidentTools} className="flood-secondary"><summary>Reportes y herramientas autorizadas</summary><IncidentPanel list={incidents.data} loading={incidents.isPending} error={incidents.error} onRetry={() => { void incidents.refetch(); if (selectedIncidentId) void incidentDetail.refetch(); }} filters={incidentFilters} onFilters={setIncidentFilters} selectedId={selectedIncidentId} onSelect={setSelectedIncidentId} selected={incidentDetail.data ?? incidents.data?.incidents.find(incident => incident.incident_id === selectedIncidentId)} detailLoading={Boolean(selectedIncidentId) && incidentDetail.isPending} detailError={incidentDetail.error} backend={backend} preview={preview} csrf={csrf} busy={busy} onApplied={result => { const current = client.getQueryData<LabState>(['flood', 'state']); if (current?.run_id === result.state.run_id && current.scenario.world_version <= result.state.scenario.world_version) syncState(result.state); else refresh(); client.setQueryData(['incidents', 'detail', result.incident.incident_id], result.incident); }} /></details>
+    <details className="flood-secondary" onToggle={event => { if (event.currentTarget.open) setProtectedTools(true); }}><summary>Datos y fuentes oficiales</summary><ReferencePanel status={referenceStatus.data} collection={referencePolygons.data} loading={referenceStatus.isPending || showReference && referencePolygons.isFetching} error={referenceStatus.error ?? (showReference ? referencePolygons.error : null)} retry={() => { void referenceStatus.refetch(); if (showReference && referenceVersion) void referencePolygons.refetch(); }} csrf={csrf} active={activeReference} /></details>
+    <details ref={incidentTools} className="flood-secondary" onToggle={event => { if (event.currentTarget.open) setProtectedTools(true); }}><summary>Reportes y herramientas autorizadas</summary><IncidentPanel list={incidents.data} loading={incidents.isPending} error={incidents.error} onRetry={() => { void incidents.refetch(); if (selectedIncidentId) void incidentDetail.refetch(); }} filters={incidentFilters} onFilters={setIncidentFilters} selectedId={selectedIncidentId} onSelect={setSelectedIncidentId} selected={incidentDetail.data ?? incidents.data?.incidents.find(incident => incident.incident_id === selectedIncidentId)} detailLoading={Boolean(selectedIncidentId) && incidentDetail.isPending} detailError={incidentDetail.error} backend={backend} preview={preview} csrf={csrf} busy={busy} onApplied={result => { const current = client.getQueryData<LabState>(['flood', 'state']); if (current?.run_id === result.state.run_id && current.scenario.world_version <= result.state.scenario.world_version) syncState(result.state); else refresh(); client.setQueryData(['incidents', 'detail', result.incident.incident_id], result.incident); }} /></details>
     <details className="flood-secondary"><summary>Evolución y resultados</summary><Card className="flood-timeline-card"><Timeline timeline={backend.timeline} current={backend.scenario.simulation_step} duration={backend.config.simulation_duration} /></Card></details>
     <details className="flood-secondary"><summary>Comparar estrategias · A/B</summary><Card className="flood-comparison-card"><div className="flood-card-heading"><div><span className="flood-kicker"><FlaskConical size={16} /> COMPARACIÓN CONTROLADA</span><h2>Cuatro originales frente a cuatro alternativos</h2><p>Misma semilla, lluvia, agentes, duración y puntos de origen. Sólo cambian los refugios.</p></div><Button disabled={!canConfigureRun || !configValid || !customValid} onClick={() => void executeOnce(() => compare.mutateAsync())}>{compare.isPending || comparisonRunning ? 'Comparando…' : 'Comparar A/B'}</Button></div>
       {!customValid && <p className="muted">Edita y valida cuatro candidatos para habilitar la comparación. La capacidad también forma parte de la estrategia de refugios.</p>}

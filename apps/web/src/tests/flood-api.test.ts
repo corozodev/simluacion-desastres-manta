@@ -46,15 +46,16 @@ describe('contrato HTTP del laboratorio de inundación', () => {
     expect(config.worldApiBaseUrl).toBe('http://127.0.0.1:8080');
   });
 
-  it('mantiene cookies y CSRF en las mutaciones reales de control y conserva la configuración', async () => {
+  it('controla tormentas sin cookies, operador ni CSRF y conserva las validaciones de negocio', async () => {
     const fetch = vi.spyOn(globalThis, 'fetch').mockImplementation(async () => response(state));
-    await api.startFlood(runConfig, state.run_id, 'memory-only-csrf');
-    await api.floodAction('pause', state.run_id, 'memory-only-csrf');
-    await api.floodAction('speed', state.run_id, 'memory-only-csrf', 250);
-    await api.compareFlood(runConfig, state.run_id, 'memory-only-csrf');
+    await api.startFlood(runConfig, state.run_id);
+    await api.floodAction('pause', state.run_id);
+    await api.floodAction('speed', state.run_id, 250);
+    await api.compareFlood(runConfig, state.run_id);
     expect(fetch.mock.calls.map(([url]) => new URL(String(url)).pathname)).toEqual(['/lab/runs', '/lab/actions', '/lab/actions', '/lab/comparisons']);
     for (const [, init] of fetch.mock.calls) {
-      expect(init).toMatchObject({ method: 'POST', credentials: 'include', headers: { 'X-CSRF-Token': 'memory-only-csrf' } });
+      expect(init).toMatchObject({ method: 'POST', credentials: 'omit' });
+      expect(init?.headers).not.toHaveProperty('X-CSRF-Token');
       expect(init?.headers).not.toHaveProperty('x-api-key');
     }
     expect(JSON.parse(String(fetch.mock.calls[0]?.[1]?.body))).toEqual({ config: runConfig, expected_run_id: state.run_id });
@@ -74,7 +75,7 @@ describe('contrato HTTP del laboratorio de inundación', () => {
   it('acepta una validación negativa explicada sin convertirla en una asignación imposible', async () => {
     const validated = candidates.map(candidate => ({ ...candidate, node_id: '', snapped_lat: 0, snapped_lng: 0, snap_distance_m: 999, valid: false, message: 'El punto supera la distancia máxima de ajuste.' }));
     const fetch = vi.spyOn(globalThis, 'fetch').mockResolvedValue(response({ valid: false, candidates: validated }));
-    const result = await api.validateFloodCandidates('competition', candidates, 'csrf');
+    const result = await api.validateFloodCandidates('competition', candidates);
     expect(result.valid).toBe(false);
     expect(result.candidates[0]?.message).toContain('distancia máxima');
     expect(JSON.parse(String(fetch.mock.calls[0]?.[1]?.body))).toEqual({ mode: 'competition', candidates });
@@ -110,7 +111,7 @@ describe('contrato HTTP del laboratorio de inundación', () => {
 
   it('propaga fallos de la API con request ID para reintentos y explicación de conflictos', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(response({ error: { code: 'RUN_CHANGED', message: 'La ejecución cambió.', requestId: 'flood-conflict', details: [] } }, 409));
-    await expect(api.floodAction('pause', state.run_id, 'csrf')).rejects.toMatchObject({ status: 409, code: 'RUN_CHANGED', requestId: 'flood-conflict' });
+    await expect(api.floodAction('pause', state.run_id)).rejects.toMatchObject({ status: 409, code: 'RUN_CHANGED', requestId: 'flood-conflict' });
   });
 });
 

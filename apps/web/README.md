@@ -55,3 +55,45 @@ Repetir conserva las configuraciones y semillas originales. Abrir o actualizar l
 página no crea ejecuciones. Cerrar la página pierde la observación de la pareja;
 las sesiones caducan según los límites del servidor. Las pruebas aceleradas usan
 la herramienta local de comparación y no equivalen a rondas HTTP en tiempo real.
+
+### Visor ciudadano `/mobile`
+
+La ruta abre directamente una interfaz táctil con Brote zombi e Inundaciones.
+En escritorio se presenta dentro de un contenedor de teléfono; en pantallas
+estrechas ocupa la pantalla. No utiliza Flutter Web, emulación iOS ni datos de
+muestra. La consola se carga por separado y no forma parte del paquete inicial
+del visor.
+
+El visor sólo consulta ejecuciones existentes: `GET
+/v1/simulations/published/zombie_outbreak` y `GET /lab/published`. Nunca crea ni
+controla simulaciones, no conserva credenciales y no necesita visitar la
+consola. Usa el snapshot actual al incorporarse, polling de 2 s mientras corre,
+consulta de descubrimiento de 15 s en pausa/final/sin ejecución, backoff hasta
+30 s ante errores y suspende consultas al ocultarse. Al regresar obtiene el
+snapshot actual, sin reproducir turnos perdidos. Las geografías tienen claves de
+caché independientes y deben coincidir con la versión del snapshot antes de
+representar agentes. Se reutilizan respuestas públicas mediante ETag/304.
+
+Inundaciones separa el mapa ciudadano de la tormenta experimental. El primero
+muestra reportes ciudadanos/fuentes oficiales y refugios propuestos, excluye
+reportes sintéticos y no aplica bloqueos de la tormenta. Permite seleccionar una
+ubicación manual en mapa, completar tipo/descripción/transitabilidad/severidad,
+revisar y enviar un reporte mediante la API real de novedades. La clave de
+idempotencia y el cuerpo completo se conservan para reintentar una respuesta
+incierta. No se requiere GPS ni login. La referencia oficial disponible se carga
+sólo al activar su capa. Los reportes pendientes no se presentan como vías
+verificadas ni modifican el motor.
+
+`/flood-lab` inicia, pausa, continúa, reinicia, repite y compara tormentas sin
+operador, cookies o CSRF. Conserva validación, ejecución explícita y el guard de
+solicitud pendiente. La sesión protegida opcional sólo se consulta al desplegar
+herramientas de moderación o referencia; sus credenciales no condicionan las
+operaciones de tormenta y sus protecciones continúan en el servidor.
+
+`VITE_ANDROID_APK_URL` admite una URL HTTPS real de distribución. Sin una URL
+válida, no se muestra un enlace de descarga. `/mobile` es el enlace para iPhone;
+la separación de URLs no implementa autorización.
+
+La comprobación automatizada usa Vitest y navegador Chromium local. Safari real
+en iPhone y Chrome en un Android físico requieren dispositivos disponibles; no
+se declara esa compatibilidad comprobada sólo a partir de un viewport móvil.

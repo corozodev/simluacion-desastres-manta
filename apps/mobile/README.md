@@ -1,46 +1,65 @@
-# Flutter — Escape de Manta
+# MantaSim — Android ciudadano
 
-Cliente Material 3 con Riverpod, GoRouter y Dio para la API Go. Sólo existe `/escape`; el inicio y los enlaces anteriores redirigen a esa pantalla. Conserva tema, mapa, rutas, refugios, búsqueda y estado de conexión.
-
-La URL predeterminada es `https://api.sistemamanta.lexinnovate.com`. Para seleccionar una instancia Go explícita:
+Flutter Material 3, Riverpod, GoRouter y Dio. La entrada `/escape` muestra un mapa con navegación inferior entre **Brote zombi** e **Inundaciones**. El cliente observa motores existentes; no crea, pausa ni reinicia ejecuciones. La consola React controla las rondas. No contiene claves administrativas ni credenciales de simulación.
 
 ```sh
 flutter pub get
-flutter run --dart-define=WORLD_API_BASE_URL=https://api.sistemamanta.lexinnovate.com
-# Go local accesible desde el emulador Android:
-flutter run --dart-define=WORLD_API_BASE_URL=http://10.0.2.2:8080
 flutter analyze
 flutter test
 flutter build apk --debug
+# Instancia explícita, conservando prefijos API Gateway:
+flutter run --dart-define=WORLD_API_BASE_URL=https://api.sistemamanta.lexinnovate.com
 ```
 
-La configuración rechaza credenciales, query y fragmentos. No existen modos de transporte alternativos ni API keys en Flutter. Android permite HTTP únicamente en debug; producción usa HTTPS. Flutter web requiere que la instancia Go autorice expresamente el origen del navegador mediante CORS.
+La URL HTTPS de producción sigue siendo el valor predeterminado. `FLOOD_API_BASE_URL` e `INCIDENTS_API_BASE_URL` permiten seleccionar servicios independientes y usan `WORLD_API_BASE_URL` por defecto. No se admiten secretos, query ni fragmentos en las URLs. Android sólo permite HTTP en debug. No se genera Flutter Web para iPhone; el visor ciudadano de iPhone es React `/mobile`.
 
-`WorldRepository` consume `/healthz`, `/grafo` y `/estado`. El simulador conserva `/paso` privado. La observación se actualiza cada dos segundos y al finalizar la simulación permanece el último estado; un mapa inmóvil no equivale por sí solo a desconexión.
+## Publicación y transporte
+
+`HttpSpectatorRepository` consulta exclusivamente GET:
+
+- `/v1/simulations/published/zombie_outbreak`: referencia pública al snapshot actual de una sesión existente.
+- `/grafo?mode=competition|full`: topología zombi, separada del polling.
+- `/lab/published`: snapshot compacto de la tormenta compartida, sin timeline acumulado.
+- `/lab/graph?mode=…&run_id=…`: geografía coherente con el snapshot de inundación.
+
+No usa el runtime legacy `/estado`, que conserva su repositorio y pruebas aisladas. La capa de presentación adapta los modelos Go existentes: no calcula rutas ni simula movimientos en Dart. Los DTO disponibles de grafo, mundo, refugios y novedades continúan generándose desde OpenAPI. Las rutas se dibujan sólo sobre aristas publicadas existentes.
+
+`PublishedObserver` mantiene una solicitud en vuelo por escenario. Actualiza cada dos segundos durante la ejecución y cada quince en espera o terminal para descubrir reemplazos. Los errores incrementan el intervalo hasta treinta segundos y mantienen el último mapa marcado sin conexión. La pausa del servidor se conserva como estado. Un espectador tardío recibe directamente el turno actual; no reproduce historia. Las respuestas de una observación suspendida se descartan; un mismo ID no retrocede de versión. Un ID nuevo limpia la selección de ruta. La caché de geografía está acotada y comparte una misma instancia por escenario, perfil y versión; no vuelve a descargarla en cada turno.
+
+Cambiar de apartado suspende la observación del apartado oculto. Al pasar Android a segundo plano se suspenden temporizadores y animaciones; al regresar se consulta el snapshot vigente. El mapa conserva zoom y desplazamiento al navegar entre apartados. Permite pellizcar, desplazar, restablecer vista, controlar capas y tocar agentes, refugios y novedades. Las listas en bottom sheets ofrecen acceso a las rutas publicadas. Los refugios siguen siendo propuestos/ficticios, no puntos oficiales de emergencia.
+
+## Inundaciones y novedades
+
+**Mapa ciudadano** muestra el grafo, refugios propuestos y hasta cien novedades de la consulta pública, excluyendo fuentes sintéticas y estados rechazados/caducados. Un diamante `?` identifica reportes pendientes; el detalle presenta tipo, fecha observada, descripción, transitabilidad, severidad y verificación sin IDs ni coordenadas internas. La capa SNGR de susceptibilidad histórica usa `/v1/reference/status` y la colección GeoJSON validada y versionada `/v1/reference/susceptibility`; se descarga una vez durante la sesión ciudadana y se identifica como referencia histórica, nunca alerta actual. Su ausencia no bloquea las novedades.
+
+**Simulación** consume el motor de tormenta compartido y muestra exposición sintética, calles transitables/precaución/bloqueadas, agentes, refugios, rutas y métricas. La advertencia **Simulación con datos sintéticos** permanece visible. El mapa ciudadano no recibe bloqueos ni focos sintéticos del snapshot experimental.
+
+**Reportar novedad** reutiliza el flujo real de la API: marcador manual o GPS opcional, tipo existente, descripción, transitabilidad y severidad; revisión y confirmación antes de enviar. No necesita login. La resolución se valida en Go; un reporte se crea como ciudadano y pendiente y no cambia automáticamente el grafo. El borrador se conserva en memoria mientras la app permanece abierta. Ante recepción incierta, reintentar usa exactamente el mismo cuerpo e `Idempotency-Key`. No hay cola offline ni persistencia del borrador al cerrar la aplicación. Denegar GPS permite continuar manualmente.
+
+Para el laboratorio local a través de ADB, manteniendo las validaciones Host:
 
 ```sh
-# Integración contra una instancia Go de desarrollo activa:
-flutter test --dart-define=RUN_WORLD_HTTP_TESTS=true --dart-define=WORLD_API_BASE_URL=http://127.0.0.1:8080 test/world_http_integration_test.dart
-# Desde la raíz, Go real y clientes:
-FLUTTER_BIN=/ruta/flutter/bin/flutter npm run test:contracts:http -- --urban --browser --flutter
+adb reverse tcp:18880 tcp:18880
+flutter run --dart-define=WORLD_API_BASE_URL=http://127.0.0.1:18880 \
+  --dart-define=FLOOD_API_BASE_URL=http://127.0.0.1:18880 \
+  --dart-define=INCIDENTS_API_BASE_URL=http://127.0.0.1:18880
 ```
 
-Los dobles HTTP y los datos sintéticos pertenecen sólo a las pruebas. Los DTOs, colores y marca son generados desde las fuentes compartidas; no editar los archivos generados. Los refugios son ficticios y la envolvente de referencia no representa cobertura vial completa.
+El servidor debe exponer el proxy del laboratorio; no se relajan validaciones del servidor para conectar un dispositivo.
 
-## Novedades ciudadanas — FASE 4C
+## Validación
 
-El botón **Nueva novedad** abre el formulario desde la pantalla del mapa. Permite colocar el marcador sobre el mismo mapa OSM o escribir coordenadas, seleccionar tipo, transitabilidad y severidad observadas, describir lo ocurrido y ajustar su fecha declarada. **Revisar reporte** consulta el área operativa y comprueba la asociación vial en Go; si existen varias calles cercanas, exige seleccionar una. El servidor vuelve a validar la asociación al guardar. **Confirmar envío** crea un reporte de procedencia ciudadana y estado pendiente. La recepción y su fecha en el servidor no certifican la observación ni ofrecen navegación de emergencia.
+`test/spectator_test.dart` prueba GET sin credenciales, caché de geografía, serialización de consultas, incorporación tardía, suspensión/reanudación, respuesta antigua, backoff y cambio de ejecución. `test/world_test.dart` verifica navegación estrecha y selección de rutas junto con las pruebas del contrato legacy. `test/incidents_test.dart` conserva resolución ambigua, permiso denegado, reintento idempotente y recepción pendiente.
 
-La configuración `INCIDENTS_API_BASE_URL` permite elegir la API de novedades por separado. Su valor predeterminado es `WORLD_API_BASE_URL`, o la misma URL HTTPS de producción cuando no se especifica ninguna. Una API anterior sin esta capacidad mostrará su error de recepción y conservará el borrador. El laboratorio de desarrollo se escucha en loopback y valida el Host; para un Android conectado por ADB:
+La integración nueva usa Go real sin crear ejecuciones desde Flutter; primero iniciar las ejecuciones explícitamente desde la consola o un harness de QA:
 
 ```sh
-adb reverse tcp:8080 tcp:8080
-adb reverse tcp:8082 tcp:8082
-flutter run --dart-define=WORLD_API_BASE_URL=http://127.0.0.1:8080 --dart-define=INCIDENTS_API_BASE_URL=http://127.0.0.1:8082
+flutter test --dart-define=RUN_PUBLISHED_HTTP_TESTS=true \
+  --dart-define=WORLD_API_BASE_URL=http://127.0.0.1:18880 \
+  --dart-define=FLOOD_API_BASE_URL=http://127.0.0.1:18880 \
+  --dart-define=EXPECTED_ZOMBIE_ID=ID_PUBLICADO \
+  --dart-define=EXPECTED_FLOOD_ID=ID_PUBLICADO \
+  test/published_http_integration_test.dart
 ```
 
-**Usar ubicación del dispositivo** sólo solicita el permiso de ubicación en Android al pulsarlo. Acepta permiso aproximado o preciso, muestra precisión y hora de la estimación y deja revisar el marcador. No solicita ubicación en segundo plano ni exige conceder permiso para usar otras funciones. La solicitud termina al recibir una posición, tras 15 segundos o al abandonar la actividad. Denegar el permiso, desactivar la ubicación o utilizar Flutter web permite continuar con el marcador o las coordenadas manuales. Se reutiliza `LocationManager` mediante un canal nativo, sin nueva biblioteca de mapas ni dependencia GPS. Este comportamiento sigue la [solicitud de permisos de Android](https://developer.android.com/develop/sensors-and-location/location/permissions/runtime).
-
-El borrador vive en un proveedor Riverpod durante la sesión de la aplicación, incluso si se cierra el formulario. Una desconexión no borra descripción, coordenadas ni fecha. Tras un resultado incierto, **Reintentar envío** reutiliza el mismo cuerpo y `Idempotency-Key`; no permite editarlo mientras su recepción siga sin confirmar. Un rechazo de validación permite corregir el borrador. La aplicación evita el doble toque y nunca envía sin confirmación. No hay cola offline ni persistencia del borrador tras finalizar la aplicación. El reporte confirmado sí se guarda en el servidor y **Consultar estado** recupera su estado actual.
-
-`test/incidents_test.dart` cubre formulario, marcador, permiso denegado, resolución ambigua, validación, desconexión, reintento, doble toque y conservación del borrador. La integración real está en `test/world_incidents_http_integration_test.dart`, habilitada con `RUN_INCIDENT_HTTP_TESTS=true`. Recibe `INCIDENTS_API_BASE_URL`, `INCIDENT_TEST_LATITUDE`, `INCIDENT_TEST_LONGITUDE`, `INCIDENT_TEST_EDGE_ID` opcional e `INCIDENT_TEST_OUTPUT` para escribir el DTO recibido y continuar la demostración React. Las coordenadas y la arista deben obtenerse del grafo revisado; esta prueba usa selección manual y no requiere GPS real.
+`PUBLISHED_TEST_OUTPUT=/ruta/resultados.json` guarda IDs, turnos, cantidades y versiones observadas, sin tokens. La prueba ciudadana HTTP existente usa `RUN_INCIDENT_HTTP_TESTS=true` y `test/world_incidents_http_integration_test.dart`; las coordenadas y arista de prueba deben proceder del grafo real.

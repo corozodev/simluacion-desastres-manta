@@ -331,6 +331,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/lab/published": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Snapshot actual de la tormenta compartida, sin iniciar motores ni solicitar credenciales.
+         * @description Reutiliza la ejecución del laboratorio. Conserva el último estado final. El estado idle indica que no hay tormenta publicada. No incluye topología; timeline es un arreglo vacío y comparison se omite. La geografía se obtiene una vez desde /lab/graph con mode y run_id; comprobar graph_version antes de mostrar entidades. Los espectadores no alteran el reloj ni el motor.
+         */
+        get: operations["getPublishedFlood"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/lab/runs": {
         parameters: {
             query?: never;
@@ -342,7 +362,7 @@ export interface paths {
         put?: never;
         /**
          * Inicia una tormenta con configuración validada.
-         * @description Sólo servidor experimental loopback. Requiere sesión HttpOnly, Origin permitido y cabecera X-CSRF-Token.
+         * @description Inicio directo sin credenciales de operador. Conserva validaciones, Origin permitido, capacidad y expected_run_id para impedir duplicados y carreras.
          */
         post: operations["startLabRun"];
         delete?: never;
@@ -362,7 +382,7 @@ export interface paths {
         put?: never;
         /**
          * Pausa, continúa, reinicia, repite o cambia el intervalo real.
-         * @description Sólo servidor experimental loopback. Requiere sesión HttpOnly, Origin permitido y cabecera X-CSRF-Token.
+         * @description Control directo sin credenciales; valida estado y expected_run_id, conservando restricciones de origen.
          */
         post: operations["controlLabRun"];
         delete?: never;
@@ -382,7 +402,7 @@ export interface paths {
         put?: never;
         /**
          * Valida y ajusta cuatro candidatos a la red vial.
-         * @description Sólo servidor experimental loopback. Requiere sesión HttpOnly, Origin permitido y cabecera X-CSRF-Token.
+         * @description Validación directa sin credenciales; conserva los límites de candidatos y las restricciones de origen.
          */
         post: operations["validateLabCandidates"];
         delete?: never;
@@ -402,7 +422,7 @@ export interface paths {
         put?: never;
         /**
          * Compara originales y personalizados con orígenes y amenaza congelados.
-         * @description Sólo servidor experimental loopback. Requiere sesión HttpOnly, Origin permitido y cabecera X-CSRF-Token.
+         * @description Comparación directa sin credenciales; conserva exclusión mutua, validación y expected_run_id.
          */
         post: operations["compareLabShelters"];
         delete?: never;
@@ -633,6 +653,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/simulations/published/{scenario}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Observa la última sesión iniciada correctamente del escenario, sin crear motores ni credenciales.
+         * @description Devuelve el snapshot actual, incluso para incorporación tardía. No reproduce turnos pasados ni renueva caducidad por visitas de espectadores. La referencia pública es independiente por escenario; una creación idempotente repetida no vuelve a publicar una ejecución anterior. No incluye topología ni tokens. El laboratorio de /flood-lab publica su tormenta mediante /lab/published; urban_flood aquí identifica exclusivamente sesiones de /v1/simulations.
+         */
+        get: operations["getPublishedSimulation"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/simulations": {
         parameters: {
             query?: never;
@@ -643,7 +683,7 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Valida, reserva capacidad y crea una ejecución privada independiente.
+         * Valida, reserva capacidad, crea una ejecución independiente y publica su referencia observable.
          * @description No se inicia ninguna ejecución mediante GET. Idempotency-Key evita duplicados por reintentos: misma clave y configuración repiten el ID y token originales; otra configuración con la misma clave devuelve 409. El token opaco sólo se entrega al crear o repetir esta respuesta; no es una clave administrativa.
          */
         post: operations["createSimulation"];
@@ -948,6 +988,13 @@ export interface components {
             /** @description Credencial opaca; sólo creación, reinicio o replay idempotente. Nunca se devuelve en consultas ni controles normales. */
             access_token: string;
         };
+        PublishedSimulation: {
+            /** @enum {string} */
+            scenario: "zombie_outbreak" | "urban_flood";
+            /** @enum {string} */
+            availability: "none" | "available" | "unavailable";
+            simulation?: components["schemas"]["SimulationState"];
+        };
         SimulationState: {
             runner_forecast?: components["schemas"]["RunnerForecast"];
             simulation_id: string;
@@ -976,6 +1023,7 @@ export interface components {
             config: components["schemas"]["SimulationConfig"];
             snapshot: components["schemas"]["WorldSnapshot"];
             scenario_state?: components["schemas"]["ScenarioSnapshot"];
+            results?: components["schemas"]["SimulationResultMetrics"];
         };
         SimulationResults: {
             runner_forecast?: components["schemas"]["RunnerForecast"];
@@ -2534,12 +2582,58 @@ export interface operations {
             409: components["responses"]["Conflict"];
         };
     };
+    getPublishedFlood: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-None-Match"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Snapshot compacto compartido; nunca incluye secretos. */
+            200: {
+                headers: {
+                    ETag?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LabState"];
+                };
+            };
+            /** @description Sin cambios respecto a If-None-Match. */
+            304: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Host u origen rechazado. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Método no permitido. */
+            405: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     startLabRun: {
         parameters: {
             query?: never;
-            header: {
-                "X-CSRF-Token": string;
-            };
+            header?: never;
             path?: never;
             cookie?: never;
         };
@@ -2561,14 +2655,13 @@ export interface operations {
             400: components["responses"]["ValidationError"];
             401: components["responses"]["Unauthorized"];
             409: components["responses"]["Conflict"];
+            429: components["responses"]["RateLimited"];
         };
     };
     controlLabRun: {
         parameters: {
             query?: never;
-            header: {
-                "X-CSRF-Token": string;
-            };
+            header?: never;
             path?: never;
             cookie?: never;
         };
@@ -2590,14 +2683,13 @@ export interface operations {
             400: components["responses"]["ValidationError"];
             401: components["responses"]["Unauthorized"];
             409: components["responses"]["Conflict"];
+            429: components["responses"]["RateLimited"];
         };
     };
     validateLabCandidates: {
         parameters: {
             query?: never;
-            header: {
-                "X-CSRF-Token": string;
-            };
+            header?: never;
             path?: never;
             cookie?: never;
         };
@@ -2619,14 +2711,13 @@ export interface operations {
             400: components["responses"]["ValidationError"];
             401: components["responses"]["Unauthorized"];
             409: components["responses"]["Conflict"];
+            429: components["responses"]["RateLimited"];
         };
     };
     compareLabShelters: {
         parameters: {
             query?: never;
-            header: {
-                "X-CSRF-Token": string;
-            };
+            header?: never;
             path?: never;
             cookie?: never;
         };
@@ -2648,6 +2739,7 @@ export interface operations {
             400: components["responses"]["ValidationError"];
             401: components["responses"]["Unauthorized"];
             409: components["responses"]["Conflict"];
+            429: components["responses"]["RateLimited"];
         };
     };
     getIncidentServiceInfo: {
@@ -3557,6 +3649,74 @@ export interface operations {
             };
         };
     };
+    getPublishedSimulation: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-None-Match"?: string;
+            };
+            path: {
+                scenario: "zombie_outbreak" | "urban_flood";
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description none si nunca hubo publicación; unavailable si caducó; available con snapshot actual o final. */
+            200: {
+                headers: {
+                    ETag?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublishedSimulation"];
+                };
+            };
+            /** @description Sin cambios respecto a If-None-Match. */
+            304: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Escenario no soportado. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Origen CORS rechazado. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Método no permitido. */
+            405: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Límite de solicitudes; respetar Retry-After. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     createSimulation: {
         parameters: {
             query?: never;
@@ -3956,6 +4116,7 @@ export type SimulationConfig = components['schemas']['SimulationConfig'];
 export type SimulationCreateRequest = components['schemas']['SimulationCreateRequest'];
 export type SimulationMetadata = components['schemas']['SimulationMetadata'];
 export type SimulationCreated = components['schemas']['SimulationCreated'];
+export type PublishedSimulation = components['schemas']['PublishedSimulation'];
 export type SimulationState = components['schemas']['SimulationState'];
 export type SimulationResults = components['schemas']['SimulationResults'];
 export type SimulationResultMetrics = components['schemas']['SimulationResultMetrics'];

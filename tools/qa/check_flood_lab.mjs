@@ -92,17 +92,13 @@ try {
   const presets = new Map(catalog.modes.map(mode => [mode.id, mode]));
   if (presets.get('competition')?.nodes !== 300 || presets.get('competition')?.edges !== 383 || presets.get('full')?.nodes !== 9179 || presets.get('full')?.edges !== 13452 || presets.has('expanded')) throw new Error('Laboratory graph identities disagree with reviewed data');
   report.checks.reviewed_base_and_master_graphs = true;
-  const unauthorized = await fetch(`${lab}/lab/actions`, { method: 'POST', headers: { Origin: origin, 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'pause', expected_run_id: initial.run_id }) });
-  if (![401, 403].includes(unauthorized.status)) throw new Error('Laboratory accepted a mutation without a session and CSRF');
-  check('ErrorResponse', await unauthorized.json());
-  report.checks.mutations_require_session_origin_csrf = true;
-  const sessionResponse = await fetch(`${lab}/lab/session`, { headers: { Origin: origin } });
-  const session = check('LabSession', await sessionResponse.json());
-  const cookie = sessionResponse.headers.get('set-cookie')?.split(';')[0];
-  if (!cookie || !session.authenticated || !session.csrf_token) throw new Error('Local laboratory did not issue its session');
+  const staleAction = await fetch(`${lab}/lab/actions`, { method: 'POST', headers: { Origin: origin, 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'pause', expected_run_id: 'stale-run' }) });
+  if (staleAction.status !== 409) throw new Error('Anonymous flood control must retain expected_run_id validation');
+  check('ErrorResponse', await staleAction.json());
+  report.checks.anonymous_lifecycle_preserves_conflict_validation = true;
   async function mutate(route, body, schema = 'LabState') {
     const response = await fetch(`${lab}${route}`, {
-      method: 'POST', headers: { Origin: origin, Cookie: cookie, 'Content-Type': 'application/json', 'X-CSRF-Token': session.csrf_token },
+      method: 'POST', headers: { Origin: origin, 'Content-Type': 'application/json' },
       body: JSON.stringify(body), signal: AbortSignal.timeout(120000),
     });
     const value = await response.json();

@@ -27,3 +27,22 @@ Las políticas `classic_random`, `correlated_random_walk` y `adaptive_exploratio
 Modo `official`: BASE, classic, población de ronda, refugios originales, 150 turnos/2000 ms, sin flota. Las políticas persistentes y flota son experimentales. Cinco vehículos/capacidad cuatro, hasta dos aristas reales por turno; pasajeros sólo evacuados tras entrega. Pasajeros permanecen observables como presas, fuera del movimiento peatonal; `/paso` devuelve espera para ellos. Reservas se validan atómicamente y no se inventan destinos.
 
 Pronóstico usa sólo observaciones; probabilidades no calibradas, sin sleepers ni futuro privado. `runner_forecast` no repite topología. El laboratorio React sólo inicia al pulsar comparar/repetir; sesiones independientes secuenciales, exports sin tokens. `npm run compare:agents` ejecuta rondas completas aceleradas por HTTP real; `--realtime` añade ritmo nominal. No confundir tiempos medidos con determinismo ni `GOMAXPROCS=2` con EC2 2 vCPU/8 GiB. Ver `docs/informe-fase7.md`. No hacer push ni desplegar sin autorización expresa.
+
+## Visores móviles compartidos autorizados
+
+`GET /v1/simulations/published/{scenario}` observa la última ejecución creada
+correctamente de cada escenario, sin credencial ni renovación del lease. La
+referencia se cambia al confirmar creación; un replay idempotente no vuelve a
+publicar ejecuciones antiguas. El snapshot compacto no repite geografía y se
+serializa una vez por versión observable; ETag permite 304. Una sesión caducada
+se anuncia `unavailable`, nunca se revive por espectadores. Los controles de
+sesiones siguen usando su token privado.
+
+El laboratorio conserva su motor independiente. `GET /lab/published` comparte
+su ejecución actual sin timeline histórico ni comparación A/B; la geografía se
+consulta por `run_id` con `/lab/graph`. `/lab/runs`, `/lab/actions`,
+`/lab/candidates/validate` y `/lab/comparisons` ya no exigen operador ni CSRF.
+Conservan validación estricta, comprobación de origen/host, `expected_run_id`,
+serialización y límites de solicitudes. La moderación de incidentes, aplicación
+experimental de novedades y actualización de referencias conservan autorización.
+No introducir credenciales automáticas para sustituir el login retirado.

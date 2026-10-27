@@ -2,7 +2,7 @@ import type { ErrorResponse, HealthResponse, Graph, WorldSnapshot, Survivor, She
 import type { ScenarioSnapshot, EvacuationMetrics, LabState, LabCatalog, LabSession, LabCandidate, LabRunConfig, LabCandidateValidation, LabComparison, LabAction } from '@corodev/contracts';
 import type { Incident, IncidentCreate, IncidentList, IncidentServiceInfo, IncidentLocation, IncidentResolution, IncidentApplication, IncidentApplyResult, IncidentStatusUpdate } from '@corodev/contracts';
 import type { ReferenceStatus, ReferenceCollection, ReferenceProvenance, OfficialRainEvents, LabTelemetry } from '@corodev/contracts';
-import type { SimulationCapabilities, SimulationCreateRequest, SimulationCreated, SimulationMetadata, SimulationState, SimulationResults } from '@corodev/contracts';
+import type { SimulationCapabilities, SimulationCreateRequest, SimulationCreated, SimulationMetadata, SimulationState, SimulationResults, PublishedSimulation } from '@corodev/contracts';
 import { config } from '../lib/config';
 import { ApiError } from './errors';
 export { ApiError } from './errors';
@@ -19,10 +19,14 @@ function isErrorResponse(value: unknown): value is ErrorResponse {
       && typeof detail.field === 'string' && typeof detail.message === 'string');
 }
 
-async function request<T>(path: string, validate: (value: unknown) => value is T, init?: RequestInit, signal?: AbortSignal, baseUrl = config.worldApiBaseUrl): Promise<T> {
+const publicResponses = new Map<string, { etag: string; value: unknown }>();
+
+async function request<T>(path: string, validate: (value: unknown) => value is T, init?: RequestInit, signal?: AbortSignal, baseUrl = config.worldApiBaseUrl, conditional = false): Promise<T> {
   if (baseUrl === config.worldApiBaseUrl && config.error) throw new ApiError(config.error, 'CONFIGURATION_ERROR');
   if (baseUrl === config.floodApiBaseUrl && config.floodError) throw new ApiError(config.floodError, 'CONFIGURATION_ERROR');
   if (baseUrl === config.incidentsApiBaseUrl && config.incidentsError) throw new ApiError(config.incidentsError, 'CONFIGURATION_ERROR');
+  const cacheKey = `${baseUrl}${path}`;
+  const cached = conditional ? publicResponses.get(cacheKey) : undefined;
   const controller = new AbortController();
   let timedOut = false;
   const onAbort = () => controller.abort();
@@ -32,8 +36,9 @@ async function request<T>(path: string, validate: (value: unknown) => value is T
   try {
     const response = await fetch(`${baseUrl}${path}`, {
       ...init, signal: controller.signal,
-      headers: { Accept: 'application/json', ...(init?.body ? { 'Content-Type': 'application/json' } : {}), ...init?.headers },
+      headers: { Accept: 'application/json', ...(cached ? { 'If-None-Match': cached.etag } : {}), ...(init?.body ? { 'Content-Type': 'application/json' } : {}), ...init?.headers },
     });
+    if (response.status === 304 && cached && validate(cached.value)) return cached.value;
     const value: unknown = await response.json().catch(() => null);
     if (!response.ok) {
       if (isErrorResponse(value)) {
@@ -43,6 +48,10 @@ async function request<T>(path: string, validate: (value: unknown) => value is T
       throw new ApiError('La API devolvió un error. Inténtalo de nuevo.', 'HTTP_ERROR', response.status, response.headers.get('x-request-id') ?? undefined);
     }
     if (!validate(value)) throw new ApiError('La respuesta no coincide con el contrato de la API.', 'INVALID_RESPONSE', response.status, response.headers.get('x-request-id') ?? undefined);
+    if (conditional && response.headers.get('ETag')) {
+      if (publicResponses.size > 8) publicResponses.clear();
+      publicResponses.set(cacheKey, { etag: response.headers.get('ETag')!, value });
+    }
     return value;
   } catch (error) {
     if (error instanceof ApiError) throw error;
@@ -346,6 +355,9 @@ function labRequest<T>(path: string, validate: (value: unknown) => value is T, i
 function labMutation<T>(path: string, validate: (value: unknown) => value is T, body: unknown, csrf: string): Promise<T> {
   return labRequest(path, validate, { method: 'POST', credentials: 'include', headers: { 'X-CSRF-Token': csrf }, body: JSON.stringify(body) });
 }
+function floodControl<T>(path: string, validate: (value: unknown) => value is T, body: unknown): Promise<T> {
+  return labRequest(path, validate, { method: 'POST', credentials: 'omit', body: JSON.stringify(body) });
+}
 
 function isProvenance(value: unknown): value is ReferenceProvenance {
   return isObject(value) && ['synthetic', 'official_reference', 'official_observation', 'citizen_report'].includes(String(value.category))
@@ -432,7 +444,16 @@ function isCapabilities(value: unknown): value is SimulationCapabilities {
 const simulationPath = (id: string) => `/v1/simulations/${encodeURIComponent(id)}`;
 const simulationAuth = (token: string) => ({ Authorization: `Bearer ${token}` });
 
+function isPublished(value: unknown): value is PublishedSimulation {
+  return isObject(value) && ['zombie_outbreak', 'urban_flood'].includes(String(value.scenario))
+    && ['none', 'available', 'unavailable'].includes(String(value.availability))
+    && (value.availability === 'available' ? isManagedState(value.simulation) && value.simulation.scenario === value.scenario
+      && !('access_token' in value.simulation) : value.simulation === undefined);
+}
+
 export const api = {
+  publishedSimulation: (scenario: 'zombie_outbreak' | 'urban_flood', signal?: AbortSignal) => request<PublishedSimulation>(`/v1/simulations/published/${scenario}`, (value): value is PublishedSimulation => isPublished(value) && value.scenario === scenario, { credentials: 'omit' }, signal, config.worldApiBaseUrl, true),
+  publishedFlood: (signal?: AbortSignal) => request('/lab/published', isLabState, { credentials: 'omit' }, signal, config.floodApiBaseUrl, true),
   simulationCapabilities: (signal?: AbortSignal) => request<SimulationCapabilities>('/v1/simulations/capabilities', isCapabilities, undefined, signal),
   createSimulation: (input: SimulationCreateRequest, key: string) => request<SimulationCreated>('/v1/simulations', isManagedCreated,
     { method: 'POST', headers: { 'Idempotency-Key': key }, body: JSON.stringify(input) }),
@@ -476,11 +497,11 @@ export const api = {
     const query = new URLSearchParams(options?.mode ? { mode: options.mode } : options?.runId ? { run_id: options.runId } : {});
     return labRequest<Graph>(`/lab/graph${query.size ? `?${query}` : ''}`, isGraph, undefined, signal);
   },
-  startFlood: (runConfig: LabRunConfig, expectedRunId: string, csrf: string) => labMutation('/lab/runs', isLabState, { config: runConfig, expected_run_id: expectedRunId }, csrf),
-  floodAction: (action: LabAction['action'], expectedRunId: string, csrf: string, intervalMs?: number) => labMutation('/lab/actions', isLabState,
-    { action, expected_run_id: expectedRunId, ...(intervalMs === undefined ? {} : { interval_ms: intervalMs }) }, csrf),
-  validateFloodCandidates: (mode: LabRunConfig['mode'], candidates: LabCandidate[], csrf: string) => labMutation('/lab/candidates/validate', isLabValidation, { mode, candidates }, csrf),
-  compareFlood: (runConfig: LabRunConfig, expectedRunId: string, csrf: string) => labMutation('/lab/comparisons', isLabState, { config: runConfig, expected_run_id: expectedRunId }, csrf),
+  startFlood: (runConfig: LabRunConfig, expectedRunId: string) => floodControl('/lab/runs', isLabState, { config: runConfig, expected_run_id: expectedRunId }),
+  floodAction: (action: LabAction['action'], expectedRunId: string, intervalMs?: number) => floodControl('/lab/actions', isLabState,
+    { action, expected_run_id: expectedRunId, ...(intervalMs === undefined ? {} : { interval_ms: intervalMs }) }),
+  validateFloodCandidates: (mode: LabRunConfig['mode'], candidates: LabCandidate[]) => floodControl('/lab/candidates/validate', isLabValidation, { mode, candidates }),
+  compareFlood: (runConfig: LabRunConfig, expectedRunId: string) => floodControl('/lab/comparisons', isLabState, { config: runConfig, expected_run_id: expectedRunId }),
   world: (signal?: AbortSignal) => request<WorldSnapshot>('/estado', isWorld, undefined, signal),
   graph: (signal?: AbortSignal, options?: { runId?: string; mode?: string }) => {
     const query = new URLSearchParams(options?.mode ? { mode: options.mode } : options?.runId ? { run_id: options.runId } : {});

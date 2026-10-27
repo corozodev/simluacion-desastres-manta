@@ -4,9 +4,9 @@ FASE 2 de Track A: backend Go con simulación determinista, planificación diná
 
 **Acabado map-first:** HUD compacto y panel de refugios/supervivientes por pestañas; «Ver ruta» conserva el mapa sin columnas OSM ni detalles extensos. [Implementación y verificaciones](docs/informe-map-first.md).
 
-**Interfaz React MantaSim:** navegación directa entre `/escape` y `/flood-lab`, mapas compartidos, refugios editables y acceso de operador desde inundaciones. Consulta [cambios, validación y límites de esta iteración](docs/informe-mantasim-ux.md). No se despliega automáticamente.
+**Clientes móviles y simulaciones compartidas:** React escritorio controla `/escape` y `/flood-lab`; Flutter Android y React `/mobile` observan las ejecuciones publicadas, sin crear motores. Inundaciones inicia y se controla sin credenciales de operador. El mapa ciudadano y sus reportes permanecen separados de los resultados sintéticos. Consulta [arquitectura, artefactos y pruebas de la fase móvil](docs/informe-fase7-movil.md). Esta implementación es local y no se despliega automáticamente.
 
-**FASE 5: sesiones independientes bajo demanda.** Abrir React `/escape` carga el mapa y las capacidades sin ejecutar turnos. **Iniciar simulación** crea una sesión privada de zombies o inundación urbana sintética; Go avanza sus turnos y permite pausar, reanudar, cancelar y reiniciar. La recarga recupera la misma ejecución mediante una credencial en `sessionStorage`. Flutter conserva los endpoints Go anteriores y no recibe la clave de `/paso`. Consulta [arquitectura, API, pruebas y límites FASE 5](docs/informe-fase5.md).
+**FASE 5: sesiones independientes bajo demanda.** Abrir React `/escape` carga el mapa y las capacidades sin ejecutar turnos. **Iniciar simulación** crea una sesión; Go avanza sus turnos y permite pausar, reanudar, cancelar y reiniciar. La recarga recupera el control de esa ejecución mediante una credencial en `sessionStorage`. La fase móvil posterior añade observación pública del snapshot sin entregar esa credencial; conserva el runtime legacy aislado. Consulta [arquitectura, API, pruebas y límites FASE 5](docs/informe-fase5.md).
 
 **FASE 6A validada localmente:** sprites CC0 a 4 FPS, interpolación de recorridos comprobables, agrupación por zoom, focos de inundación, leyenda y controles de movimiento. Incluye símbolos estáticos Flutter y evidencia desktop/móvil. [Implementación, recursos, pruebas y límites](docs/informe-fase6a.md).
 
@@ -82,6 +82,8 @@ La prueba de contrato genera su propia clave y prueba `/paso` por HTTP real:
 npm run test:contracts:http
 npm run test:contracts:simulations
 npm run test:simulations:browser
+npm run test:spectators:http
+npm run test:spectators:browser
 npm run check
 npm test
 npm run build:web
@@ -127,7 +129,7 @@ Para una instancia Go local en emulador Android:
 flutter run --dart-define=WORLD_API_BASE_URL=http://10.0.2.2:8080
 ```
 
-Iniciar Go con `LISTEN_ADDR=0.0.0.0:8080 npm run dev:backend` para permitir el acceso desde el emulador o la LAN. Flutter web/escritorio puede utilizar `http://127.0.0.1:8080`; un dispositivo físico necesita una dirección accesible. El override contiene una URL pública de observación, nunca credenciales.
+Iniciar Go con `LISTEN_ADDR=0.0.0.0:8080 npm run dev:backend` para permitir el acceso desde el emulador o la LAN. Para inundaciones a través del mismo origen, ejecutar el laboratorio en loopback `8082` y configurar `FLOOD_LAB_UPSTREAM=http://127.0.0.1:8082` en Go. Un dispositivo físico necesita una dirección accesible. El override contiene una URL pública de observación, nunca credenciales. iPhone utiliza React `/mobile`; no se construye Flutter Web.
 
 Desde la raíz, con Flutter en PATH o `FLUTTER_BIN`:
 
@@ -139,7 +141,7 @@ npm run mobile:build
 npm run mobile:integration
 ```
 
-El APK debug actualizado está en `apps/mobile/build/app/outputs/flutter-apk/app-debug.apk`, excluido de Git. Un APK compilado no demuestra una sesión en dispositivo; iOS no está preparado.
+El APK debug está en `apps/mobile/build/app/outputs/flutter-apk/app-debug.apk`, excluido de Git. Las pruebas y capturas de la iteración móvil se detallan en [el informe de integración](docs/informe-fase7-movil.md). La distribución Android acepta una URL HTTPS real mediante `VITE_ANDROID_APK_URL`; sin configurarla no muestra una descarga ficticia. iPhone accede directamente a `/mobile`.
 
 ## Variables Go
 

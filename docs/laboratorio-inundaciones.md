@@ -96,7 +96,7 @@ Variables públicas:
 
 Las URLs rechazan credenciales, consultas y fragmentos; los mensajes no imprimen valores sensibles. Nunca colocar API keys en variables `VITE_`. El servidor de lectura 4A (`npm run dev:flood`, puerto 8081) se conserva, pero no ofrece los controles nuevos: para React 4B se usa **`dev:flood:lab`**.
 
-El laboratorio exige binding literal de loopback, rechaza Host ajenos a loopback y verifica Origin, cookie HttpOnly y CSRF en mutaciones. La sesión se crea de forma transparente para ese laboratorio local; no sustituye la administración de producción. La credencial interna de `/paso` nunca se envía al navegador. El controlador zombie no se modifica.
+El laboratorio exige binding literal de loopback, rechaza Host ajenos a loopback y verifica Origin. La fase móvil posterior permite iniciar/controlar tormentas, validar candidatos y comparar sin sesión de operador: `/lab/runs`, `/lab/actions`, `/lab/candidates/validate` y `/lab/comparisons`. Conserva `expected_run_id`, validaciones y exclusión mutua, con límites de 120 controles y 10 inicios/comparaciones por IP/minuto. Las mutaciones de moderación de incidentes y actualización de referencia conservan cookie HttpOnly y CSRF. La credencial interna de `/paso` nunca se envía al navegador. El controlador zombie no se modifica.
 
 ## Contratos nuevos
 
@@ -107,6 +107,7 @@ OpenAPI conserva todos los endpoints y schemas anteriores y añade:
 | `GET /lab/catalog` | Modos revisados, presets, defaults, originales y límites |
 | `GET /lab/session` | Sesión local y CSRF en memoria |
 | `GET /lab/state` | Estado coherente del controlador, escenario 4A, plazas, orígenes, timeline y A/B |
+| `GET /lab/published` | Snapshot actual para espectadores, caché ETag, timeline vacío, sin comparación ni geografía |
 | `GET /lab/graph?mode=…` | Previsualización del dataset solicitado |
 | `GET /lab/graph?run_id=…` | Grafo efectivo de esa ejecución, incluidos candidatos |
 | `POST /lab/runs` | Iniciar configuración real con `expected_run_id` |

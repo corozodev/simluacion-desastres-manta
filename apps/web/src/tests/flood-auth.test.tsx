@@ -29,11 +29,6 @@ function setup(enabled = true, authenticated = false) {
   render(<QueryClientProvider client={client}><FloodLab /></QueryClientProvider>);
   return { session, start, login, client };
 }
-function openOperator() {
-  const access = screen.getAllByText('Acceso de operador', { selector: 'summary' })[0]!;
-  const details = access.closest('details')!;
-  if (!details.open) fireEvent.click(access);
-}
 function openShelterEditor() {
   const trigger = screen.getByRole('button', { name: 'Refugios y agentes' });
   if (trigger.getAttribute('aria-expanded') !== 'true') fireEvent.click(trigger);
@@ -47,42 +42,19 @@ function openConfiguration() {
 }
 afterEach(() => { vi.restoreAllMocks(); localStorage.clear(); sessionStorage.clear(); });
 describe('acceso directo al laboratorio', () => {
-  it('no inicia automáticamente y habilita tormenta sólo después de login y permiso del laboratorio', async () => {
+  it('inicia directamente sin operador, sesión previa ni credenciales automáticas', async () => {
     const { session, start, login } = setup();
     const storm = await screen.findByRole('button', { name: 'Iniciar tormenta' });
-    expect(storm).toBeDisabled(); expect(start).not.toHaveBeenCalled();
-    expect(screen.queryByRole('link', { name: /Apocalipsis/ })).not.toBeInTheDocument();
-    session.mockResolvedValue({ enabled: true, authenticated: true, csrf_token: 'lab-csrf' });
-    openOperator();
-    fireEvent.change(screen.getByLabelText('Operador'), { target: { value: 'operator' } });
-    fireEvent.change(screen.getByLabelText('Código de acceso'), { target: { value: 'x'.repeat(43) } });
-    fireEvent.click(screen.getByRole('button', { name: 'Iniciar sesión de operador' }));
-    await waitFor(() => expect(storm).toBeEnabled());
-    expect(login).toHaveBeenCalledWith('operator', 'x'.repeat(43));
-    expect(start).not.toHaveBeenCalled();
+    expect(storm).toBeEnabled(); expect(start).not.toHaveBeenCalled();
+    expect(screen.queryByText('Acceso de operador')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Operador')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Código de acceso')).not.toBeInTheDocument();
+    expect(session).not.toHaveBeenCalled(); expect(login).not.toHaveBeenCalled();
     fireEvent.click(storm);
-    await waitFor(() => expect(start).toHaveBeenCalledWith(config, state.run_id, 'lab-csrf'));
+    await waitFor(() => expect(start).toHaveBeenCalledWith(config, state.run_id));
     expect(localStorage.length + sessionStorage.length).toBe(0);
   });
-  it('un ACK de login sin autorización del laboratorio no permite iniciar', async () => {
-    const { start } = setup();
-    await screen.findByRole('button', { name: 'Iniciar tormenta' });
-    openOperator();
-    fireEvent.change(screen.getByLabelText('Operador'), { target: { value: 'operator' } });
-    fireEvent.change(screen.getByLabelText('Código de acceso'), { target: { value: 'x'.repeat(43) } });
-    fireEvent.click(screen.getByRole('button', { name: 'Iniciar sesión de operador' }));
-    expect(await screen.findByRole('alert')).toHaveTextContent('La sesión no habilita este laboratorio');
-    expect(screen.getByRole('button', { name: 'Iniciar tormenta' })).toBeDisabled();
-    expect(start).not.toHaveBeenCalled();
-  });
-  it('expone observación cuando no hay administración y conserva errores de credenciales', async () => {
-    setup(false);
-    await screen.findByRole('button', { name: 'Iniciar tormenta' });
-    openOperator();
-    expect(await screen.findByText(/acceso de operador está deshabilitado/)).toBeInTheDocument();
-    expect(screen.queryByLabelText('Código de acceso')).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Iniciar tormenta' })).toBeDisabled();
-  });
+
 
   it('valida un marcador provisional, exige confirmación y envía los candidatos confirmados al servidor', async () => {
     const { start } = setup(true, true);
@@ -94,7 +66,7 @@ describe('acceso directo al laboratorio', () => {
     expect(editor.open).toBe(false);
     fireEvent.click(screen.getByRole('button', { name: 'Señalar ubicación de prueba' }));
     expect(await screen.findByText(/Marcador provisional ajustado/)).toHaveTextContent('-1.0001, -80.0001');
-    expect(validate).toHaveBeenCalledWith('competition', expect.arrayContaining([expect.objectContaining({ lat: -1.000123, lng: -80.000123 })]), 'lab-csrf');
+    expect(validate).toHaveBeenCalledWith('competition', expect.arrayContaining([expect.objectContaining({ lat: -1.000123, lng: -80.000123 })]));
     expect(screen.queryByLabelText('Latitud del candidato 1')).not.toBeInTheDocument();
     expect(start).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole('button', { name: 'Confirmar ubicación' }));
@@ -102,7 +74,7 @@ describe('acceso directo al laboratorio', () => {
     expect(screen.getByLabelText('Latitud del candidato 1')).toHaveValue('-1.000123');
     expect(screen.queryByText(/Marcador provisional ajustado/)).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Iniciar tormenta' }));
-    await waitFor(() => expect(start).toHaveBeenCalledWith(expect.objectContaining({ shelters: expect.arrayContaining([expect.objectContaining({ id: shelters[0]!.id, lat: -1.000123, lng: -80.000123 })]) }), state.run_id, 'lab-csrf'));
+    await waitFor(() => expect(start).toHaveBeenCalledWith(expect.objectContaining({ shelters: expect.arrayContaining([expect.objectContaining({ id: shelters[0]!.id, lat: -1.000123, lng: -80.000123 })]) }), state.run_id));
   });
   it('rechaza puntos inadmisibles y Escape conserva la configuración anterior', async () => {
     setup(true, true);
@@ -151,19 +123,6 @@ describe('acceso directo al laboratorio', () => {
     openShelterEditor();
     expect(screen.getByLabelText('Latitud del candidato 1')).toHaveValue(previous);
   });
-  it('retira controles al caducar el operador sin reemplazar la tormenta ni perder parámetros', async () => {
-    const { session, client, start } = setup(true, true);
-    await screen.findByRole('button', { name: 'Iniciar tormenta' });
-    openConfiguration();
-    fireEvent.change(screen.getByLabelText('Cantidad de agentes'), { target: { value: '6' } });
-    session.mockResolvedValue({ enabled: true, authenticated: false, csrf_token: '' });
-    await client.invalidateQueries({ queryKey: ['flood', 'session'] });
-    openOperator();
-    expect(await screen.findByRole('button', { name: 'Iniciar sesión de operador' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Iniciar tormenta' })).toBeDisabled();
-    expect(screen.getByLabelText('Cantidad de agentes')).toHaveValue(6);
-    expect(start).not.toHaveBeenCalled();
-  });
   it('bloquea campos numéricos vacíos y evita dos inicios durante una solicitud pendiente', async () => {
     const { start } = setup(true, true);
     const storm = await screen.findByRole('button', { name: 'Iniciar tormenta' });
@@ -194,15 +153,4 @@ describe('acceso directo al laboratorio', () => {
     await waitFor(() => expect(screen.getByLabelText('Mapa del laboratorio')).toBe(map));
   });
 
-  it('muestra credenciales inválidas y borra el código del campo', async () => {
-    const { login, start } = setup();
-    login.mockRejectedValue(new ApiError('Credenciales no válidas.', 'UNAUTHORIZED', 401));
-    await screen.findByRole('button', { name: 'Iniciar tormenta' });
-    openOperator();
-    fireEvent.change(screen.getByLabelText('Operador'), { target: { value: 'operator' } });
-    fireEvent.change(screen.getByLabelText('Código de acceso'), { target: { value: 'x'.repeat(43) } });
-    fireEvent.click(screen.getByRole('button', { name: 'Iniciar sesión de operador' }));
-    expect(await screen.findByRole('alert')).toHaveTextContent('Credenciales no válidas');
-    expect(screen.getByLabelText('Código de acceso')).toHaveValue(''); expect(start).not.toHaveBeenCalled();
-  });
 });

@@ -276,7 +276,7 @@ func TestIncidentHTTPPublicReceptionAndPrivilegedAllowlist(t *testing.T) {
 	if code != 204 || !strings.Contains(headers.Get("Access-Control-Allow-Headers"), "Idempotency-Key") {
 		t.Fatal("browser retry header not allowed")
 	}
-	for _, path := range []string{"/lab/incidents/synthetic", "/lab/incidents/" + incident.IncidentID + "/status", "/lab/incidents/" + incident.IncidentID + "/apply", "/lab/actions"} {
+	for _, path := range []string{"/lab/incidents/synthetic", "/lab/incidents/" + incident.IncidentID + "/status", "/lab/incidents/" + incident.IncidentID + "/apply"} {
 		code, _, _ = request("POST", path, testOrigin, "", "privileged_key_12345", report)
 		if code != 401 {
 			t.Fatal("public exception leaked into privileged operation", path, code)

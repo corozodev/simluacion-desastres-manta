@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 
 import '../../core/api/generated/models.dart';
 import '../../core/theme/tokens.g.dart';
+import '../../core/api/spectator_repository.dart';
+import '../../core/api/reference_repository.dart';
 
 List<GeoPoint> routeGeometry(Graph graph, Survivor survivor) {
   final nodes = {for (final node in graph.nodes) node.id: node};
@@ -78,7 +80,7 @@ List<String> routeWarnings(
   return warnings;
 }
 
-class RouteMap extends StatelessWidget {
+class RouteMap extends StatefulWidget {
   const RouteMap({
     super.key,
     required this.graph,
@@ -87,6 +89,20 @@ class RouteMap extends StatelessWidget {
     this.marker,
     this.onPickPosition,
     this.highlightedEdgeId,
+    this.height = 230,
+    this.agents,
+    this.shelters,
+    this.roads = const {},
+    this.shelterStates = const {},
+    this.floodZones = const [],
+    this.incidents = const [],
+    this.onSelectAgent,
+    this.onSelectShelter,
+    this.onSelectIncident,
+    this.showAgents = true,
+    this.showShelters = true,
+    this.showRoads = true,
+    this.reference,
   });
   final Graph graph;
   final WorldSnapshot? world;
@@ -94,43 +110,156 @@ class RouteMap extends StatelessWidget {
   final GeoPoint? marker;
   final ValueChanged<GeoPoint>? onPickPosition;
   final String? highlightedEdgeId;
+  final double height;
+  final List<Survivor>? agents;
+  final List<Shelter>? shelters;
+  final Map<String, String> roads, shelterStates;
+  final List<FloodArea> floodZones;
+  final List<Incident> incidents;
+  final ValueChanged<Survivor>? onSelectAgent;
+  final ValueChanged<Shelter>? onSelectShelter;
+  final ValueChanged<Incident>? onSelectIncident;
+  final bool showAgents, showShelters, showRoads;
+  final ReferenceLayer? reference;
+  @override
+  State<RouteMap> createState() => _RouteMapState();
+}
+
+class _RouteMapState extends State<RouteMap> {
+  final camera = TransformationController();
+  @override
+  void dispose() {
+    camera.dispose();
+    super.dispose();
+  }
+
+  @override
+  void didUpdateWidget(RouteMap oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.graph.version != widget.graph.version) {
+      camera.value = Matrix4.identity();
+    }
+  }
+
+  void select(Offset point, Size size) {
+    final projection = MapProjection.forGraph(widget.graph, size);
+    if (projection == null) return;
+    if (widget.onPickPosition != null) {
+      widget.onPickPosition!(projection.unproject(point));
+      return;
+    }
+    final nodes = {
+      for (final node in widget.graph.nodes)
+        node.id: GeoPoint(lat: node.lat, lng: node.lng),
+    };
+    final radius = 26 / camera.value.getMaxScaleOnAxis();
+    double best = radius;
+    VoidCallback? action;
+    void candidate(GeoPoint? location, VoidCallback callback) {
+      if (location == null) return;
+      final distance = (projection.project(location) - point).distance;
+      if (distance < best) {
+        best = distance;
+        action = callback;
+      }
+    }
+
+    if (widget.showShelters && widget.onSelectShelter != null) {
+      for (final shelter
+          in widget.shelters ??
+              widget.world?.shelters ??
+              widget.graph.shelters) {
+        candidate(
+          nodes[shelter.nodeId],
+          () => widget.onSelectShelter!(shelter),
+        );
+      }
+    }
+    if (widget.showAgents && widget.onSelectAgent != null) {
+      for (final agent
+          in widget.agents ?? widget.world?.survivors ?? <Survivor>[]) {
+        candidate(nodes[agent.currentNode], () => widget.onSelectAgent!(agent));
+      }
+    }
+    if (widget.onSelectIncident != null) {
+      for (final report in widget.incidents) {
+        candidate(
+          GeoPoint(lat: report.latitude, lng: report.longitude),
+          () => widget.onSelectIncident!(report),
+        );
+      }
+    }
+    action?.call();
+  }
 
   @override
   Widget build(BuildContext context) => Semantics(
-    label: onPickPosition == null
-        ? 'Mapa de calles reales, zonas de aparición, refugios ficticios y ruta seleccionada'
-        : 'Selecciona la ubicación de la novedad en el mapa. También puedes escribir las coordenadas.',
+    label: widget.onPickPosition == null
+        ? 'Mapa interactivo de calles OSM, refugios propuestos y agentes publicados. Pellizca para ampliar.'
+        : 'Selecciona la ubicación de la novedad en el mapa.',
     child: ClipRRect(
       borderRadius: BorderRadius.circular(SpookyTokens.radiusMd),
       child: SizedBox(
-        height: 230,
+        height: widget.height,
         width: double.infinity,
         child: LayoutBuilder(
-          builder: (context, constraints) => GestureDetector(
-            onTapUp: onPickPosition == null
-                ? null
-                : (details) {
-                    final projection = MapProjection.forGraph(
-                      graph,
-                      Size(constraints.maxWidth, constraints.maxHeight),
-                    );
-                    if (projection != null) {
-                      onPickPosition!(
-                        projection.unproject(details.localPosition),
-                      );
-                    }
-                  },
-            child: CustomPaint(
-              painter: _MapPainter(
-                graph,
-                world,
-                survivor,
-                marker,
-                highlightedEdgeId,
-              ),
-              child: const SizedBox.expand(),
-            ),
-          ),
+          builder: (context, constraints) {
+            final size = Size(constraints.maxWidth, constraints.maxHeight);
+            return Stack(
+              children: [
+                InteractiveViewer(
+                  transformationController: camera,
+                  minScale: 1,
+                  maxScale: 10,
+                  child: GestureDetector(
+                    onTapUp: (details) => select(details.localPosition, size),
+                    child: CustomPaint(
+                      painter: _MapPainter(
+                        widget.graph,
+                        widget.world,
+                        widget.survivor,
+                        widget.marker,
+                        widget.highlightedEdgeId,
+                        agents: widget.showAgents ? widget.agents : const [],
+                        shelters: widget.showShelters
+                            ? widget.shelters
+                            : const [],
+                        roads: widget.showRoads ? widget.roads : const {},
+                        shelterStates: widget.shelterStates,
+                        floodZones: widget.showRoads
+                            ? widget.floodZones
+                            : const [],
+                        incidents: widget.incidents,
+                        showZombies: widget.showAgents,
+                        reference: widget.reference,
+                      ),
+                      child: SizedBox(width: size.width, height: size.height),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  right: 8,
+                  bottom: 24,
+                  child: IconButton.filledTonal(
+                    tooltip: 'Restablecer vista',
+                    onPressed: () => camera.value = Matrix4.identity(),
+                    icon: const Icon(Icons.center_focus_strong),
+                  ),
+                ),
+                const Positioned(
+                  left: 8,
+                  bottom: 4,
+                  child: Text(
+                    '© OpenStreetMap contributors · Refugios propuestos',
+                    style: TextStyle(
+                      fontSize: 9,
+                      backgroundColor: SpookyTokens.background,
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
         ),
       ),
     ),
@@ -183,13 +312,28 @@ class _MapPainter extends CustomPainter {
     this.world,
     this.survivor,
     this.marker,
-    this.highlightedEdgeId,
-  );
+    this.highlightedEdgeId, {
+    this.agents,
+    this.shelters,
+    this.roads = const {},
+    this.shelterStates = const {},
+    this.floodZones = const [],
+    this.incidents = const [],
+    this.showZombies = true,
+    this.reference,
+  });
   final Graph graph;
   final WorldSnapshot? world;
   final Survivor? survivor;
   final GeoPoint? marker;
   final String? highlightedEdgeId;
+  final List<Survivor>? agents;
+  final List<Shelter>? shelters;
+  final Map<String, String> roads, shelterStates;
+  final List<FloodArea> floodZones;
+  final List<Incident> incidents;
+  final bool showZombies;
+  final ReferenceLayer? reference;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -240,16 +384,51 @@ class _MapPainter extends CustomPainter {
           ..strokeWidth = .7,
       );
     }
+    for (final polygon in reference?.polygons ?? <List<List<GeoPoint>>>[]) {
+      final shape = Path()..fillType = PathFillType.evenOdd;
+      for (final ring in polygon) {
+        shape.addPath(path(ring, closed: true), Offset.zero);
+      }
+      canvas.drawPath(
+        shape,
+        Paint()..color = SpookyTokens.secondary.withValues(alpha: .16),
+      );
+      canvas.drawPath(
+        shape,
+        Paint()
+          ..color = SpookyTokens.secondary.withValues(alpha: .5)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = .6,
+      );
+    }
+    for (final zone in floodZones) {
+      final center = project(zone.center);
+      final radius = zone.radiusM / 111320 * projection.scale;
+      canvas.drawCircle(
+        center,
+        radius,
+        Paint()
+          ..color = SpookyTokens.floodMedium.withValues(
+            alpha: (.08 + zone.intensity.clamp(0, 1) * .22),
+          ),
+      );
+    }
     for (final edge in graph.edges) {
       final paint = Paint()
         ..color = edge.id == highlightedEdgeId
             ? SpookyTokens.accent
-            : edge.blocked || world?.blockedEdges.contains(edge.id) == true
+            : edge.blocked ||
+                  world?.blockedEdges.contains(edge.id) == true ||
+                  roads[edge.id] == 'blocked'
             ? SpookyTokens.error
+            : roads[edge.id] == 'caution'
+            ? SpookyTokens.warning
             : SpookyTokens.textSecondary.withValues(alpha: .4)
         ..strokeWidth = edge.id == highlightedEdgeId
             ? 4
-            : edge.blocked || world?.blockedEdges.contains(edge.id) == true
+            : edge.blocked ||
+                  world?.blockedEdges.contains(edge.id) == true ||
+                  roads[edge.id] == 'blocked'
             ? 2
             : 1
         ..style = PaintingStyle.stroke;
@@ -268,14 +447,15 @@ class _MapPainter extends CustomPainter {
           ..strokeWidth = 2.5,
       );
     }
-    for (final zombie in world?.zombies ?? <Zombie>[]) {
+    for (final zombie
+        in showZombies ? world?.zombies ?? <Zombie>[] : <Zombie>[]) {
       final point = nodes[zombie.currentNode];
       if (point != null) {
         _person(canvas, point, SpookyTokens.error, zombie: true);
         if (zombie.type == 'horde') _label(canvas, point, 'H');
       }
     }
-    for (final shelter in world?.shelters ?? graph.shelters) {
+    for (final shelter in shelters ?? world?.shelters ?? graph.shelters) {
       final point = nodes[shelter.nodeId];
       if (point != null) {
         final shelterPath = Path()
@@ -287,11 +467,30 @@ class _MapPainter extends CustomPainter {
           ..close();
         canvas.drawPath(
           shelterPath,
-          Paint()..color = SpookyTokens.shelterAvailable,
+          Paint()
+            ..color =
+                const [
+                  'exposed',
+                  'inaccessible',
+                ].contains(shelterStates[shelter.id])
+                ? SpookyTokens.error
+                : shelterStates[shelter.id] == 'full' ||
+                      shelter.occupancy >= shelter.capacity
+                ? SpookyTokens.warning
+                : SpookyTokens.shelterAvailable,
         );
+        if (const [
+          'exposed',
+          'inaccessible',
+        ].contains(shelterStates[shelter.id])) {
+          _label(canvas, point, '×');
+        } else if (shelterStates[shelter.id] == 'full' ||
+            shelter.occupancy >= shelter.capacity) {
+          _label(canvas, point, '!');
+        }
       }
     }
-    for (final person in world?.survivors ?? <Survivor>[]) {
+    for (final person in agents ?? world?.survivors ?? <Survivor>[]) {
       final point = nodes[person.currentNode];
       if (point == null) continue;
       _person(
@@ -315,6 +514,23 @@ class _MapPainter extends CustomPainter {
           ..style = PaintingStyle.stroke
           ..strokeWidth = 1.5,
       );
+    }
+    for (final report in incidents) {
+      final position = project(
+        GeoPoint(lat: report.latitude, lng: report.longitude),
+      );
+      final pending = report.verificationStatus == 'pending';
+      final shape = Path()
+        ..moveTo(position.dx, position.dy - 6)
+        ..lineTo(position.dx + 6, position.dy)
+        ..lineTo(position.dx, position.dy + 6)
+        ..lineTo(position.dx - 6, position.dy)
+        ..close();
+      canvas.drawPath(
+        shape,
+        Paint()..color = pending ? SpookyTokens.warning : SpookyTokens.accent,
+      );
+      _label(canvas, position, pending ? '?' : '!');
     }
     if (marker != null) {
       final position = project(marker!);
@@ -386,5 +602,13 @@ class _MapPainter extends CustomPainter {
       old.world != world ||
       old.survivor != survivor ||
       old.marker != marker ||
-      old.highlightedEdgeId != highlightedEdgeId;
+      old.highlightedEdgeId != highlightedEdgeId ||
+      old.agents != agents ||
+      old.shelters != shelters ||
+      old.roads != roads ||
+      old.floodZones != floodZones ||
+      old.incidents != incidents ||
+      old.shelterStates != shelterStates ||
+      old.showZombies != showZombies ||
+      old.reference != reference;
 }

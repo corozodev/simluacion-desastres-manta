@@ -6,6 +6,7 @@ import { brand } from '@corodev/design-tokens/brand';
 import { useFloodState } from '../services/queries';
 import { api, ApiError } from '../services/api';
 import { StatusIndicator } from './ui';
+import { config } from '../lib/config';
 
 export function AppShell() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -65,7 +66,7 @@ export function AppShell() {
       <p className="sidebar-description">{brand.webSubtitle}</p>
       <p className="nav-label">ESCENARIOS</p>
       <nav aria-label="Escenarios">{links.map(({ to, name, Icon, active: selected, tone }) => <Link key={to} to={to} aria-label={name} aria-current={selected ? 'page' : undefined} title={collapsed ? name : undefined} onClick={() => setMenuOpen(false)} className={`nav-item nav-${tone} ${selected ? 'nav-item-active' : ''}`}><Icon size={21} strokeWidth={1.75} aria-hidden="true" /><span className="nav-item-label">{name}</span><span className="nav-tooltip" aria-hidden="true">{name}</span></Link>)}</nav>
-      <div className="sidebar-bottom"><button className="sidebar-toggle" aria-label={collapsed ? 'Expandir barra lateral' : 'Colapsar barra lateral'} aria-expanded={!collapsed} aria-controls="scenario-navigation" onClick={() => setCollapsed(value => !value)}>{collapsed ? <PanelLeftOpen size={20} /> : <PanelLeftClose size={20} />}<span>Colapsar barra</span></button><p className="sidebar-credit">{brand.webCredit}</p></div>
+      <div className="sidebar-bottom"><Link to="/mobile" className="text-link" title="Visor móvil para iPhone y Android">Visor móvil · iPhone</Link>{config.androidApkUrl && <a className="text-link" href={config.androidApkUrl}>Descargar Android</a>}<button className="sidebar-toggle" aria-label={collapsed ? 'Expandir barra lateral' : 'Colapsar barra lateral'} aria-expanded={!collapsed} aria-controls="scenario-navigation" onClick={() => setCollapsed(value => !value)}>{collapsed ? <PanelLeftOpen size={20} /> : <PanelLeftClose size={20} />}<span>Colapsar barra</span></button><p className="sidebar-credit">{brand.webCredit}</p></div>
     </aside>
     <div className="shell-api-status" role="status" aria-live="polite"><StatusIndicator compact status={status} />{(status === 'offline' || status === 'degraded') && <button className="icon-button" aria-label="Reintentar conexión de API" title="Reintentar conexión de API" onClick={retry}><RotateCw size={15} /></button>}</div>
     <div className="app-body" inert={menuOpen || undefined}><header className="topbar"><div className="breadcrumb"><button ref={menuButton} className="icon-button mobile-menu" aria-label="Abrir menú" aria-controls="scenario-navigation" aria-expanded={menuOpen} onClick={() => setMenuOpen(true)}><Menu size={22} /></button><span className="breadcrumb-workspace">{brand.webName}</span><span className="breadcrumb-slash">/</span><strong>{floodSelected ? 'Inundación urbana' : 'Brote zombi'}</strong></div><span className={`scenario-tag ${floodSelected ? 'scenario-tag-flood' : 'scenario-tag-zombie'}`}>{floodSelected ? <Waves size={15} /> : <Ghost size={15} />}<span>{floodSelected ? 'Datos sintéticos' : 'Simulación experimental'}</span></span></header>

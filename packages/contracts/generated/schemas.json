@@ -718,6 +718,34 @@
         }
       }
     },
+    "PublishedSimulation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "scenario",
+        "availability"
+      ],
+      "properties": {
+        "scenario": {
+          "type": "string",
+          "enum": [
+            "zombie_outbreak",
+            "urban_flood"
+          ]
+        },
+        "availability": {
+          "type": "string",
+          "enum": [
+            "none",
+            "available",
+            "unavailable"
+          ]
+        },
+        "simulation": {
+          "$ref": "#/definitions/SimulationState"
+        }
+      }
+    },
     "SimulationState": {
       "type": "object",
       "additionalProperties": false,
@@ -827,6 +855,9 @@
         },
         "scenario_state": {
           "$ref": "#/definitions/ScenarioSnapshot"
+        },
+        "results": {
+          "$ref": "#/definitions/SimulationResultMetrics"
         }
       }
     },

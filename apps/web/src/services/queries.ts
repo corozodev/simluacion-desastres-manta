@@ -21,8 +21,8 @@ export function useFloodGraph(runId?: string, mode?: string) {
   return useQuery({ queryKey: ['flood', 'graph', runId ?? '', mode ?? ''], queryFn: ({ signal }) => api.floodGraph(signal, { runId, mode }), retry: false, staleTime: Infinity });
 }
 
-export function useFloodSession() {
-  return useQuery({ queryKey: ['flood', 'session'], queryFn: ({ signal }) => api.floodSession(signal), retry: false, staleTime: 0, refetchInterval: 30000 });
+export function useFloodSession(enabled = true) {
+  return useQuery({ queryKey: ['flood', 'session'], queryFn: ({ signal }) => api.floodSession(signal), retry: false, staleTime: 0, refetchInterval: enabled ? 30000 : false, enabled });
 }
 
 export function useIncidents(filters: IncidentFilters = {}, enabled = true) {

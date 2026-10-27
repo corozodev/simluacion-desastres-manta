@@ -41,7 +41,7 @@ class _SpookyAppState extends State<SpookyApp> {
 
   @override
   Widget build(BuildContext context) => MaterialApp.router(
-    title: '${AppBrand.team} — ${AppBrand.name}',
+    title: '${AppBrand.webName} — ${AppBrand.team}',
     debugShowCheckedModeBanner: false,
     theme: buildSpookyTheme(),
     routerConfig: _router,

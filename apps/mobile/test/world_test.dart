@@ -7,6 +7,7 @@ import 'package:corodev_spooky/core/api/api_failure.dart';
 import 'package:corodev_spooky/core/api/dio_client.dart';
 import 'package:corodev_spooky/core/api/generated/models.dart';
 import 'package:corodev_spooky/core/api/world_repository.dart';
+import 'package:corodev_spooky/core/api/spectator_repository.dart';
 import 'package:corodev_spooky/core/config/api_config.dart';
 import 'package:corodev_spooky/core/providers.dart';
 import 'package:corodev_spooky/features/escape/route_map.dart';
@@ -81,6 +82,33 @@ class _Repository implements WorldRepository {
   @override
   Future<Survivor> survivor(String id) async =>
       world.survivors.firstWhere((survivor) => survivor.id == id);
+}
+
+class _Spectator implements SpectatorRepository {
+  final legacy = _Repository();
+  final observations = <String>[];
+  @override
+  Future<Graph> graph(PublishedView view) => legacy.graph();
+  @override
+  Future<PublishedView> published(String scenario) async {
+    observations.add(scenario);
+    if (scenario == 'urban_flood') {
+      return PublishedView(scenario: scenario, availability: 'none');
+    }
+    return PublishedView(
+      scenario: scenario,
+      availability: 'available',
+      id: 'shared-run',
+      status: 'PAUSED',
+      tick: 80,
+      maxTicks: 150,
+      version: 80,
+      graphVersion: legacy.world.graphVersion,
+      world: legacy.world,
+      agents: legacy.world.survivors,
+      shelters: legacy.world.shelters,
+    );
+  }
 }
 
 void main() {
@@ -162,37 +190,40 @@ void main() {
   );
 
   testWidgets(
-    'escape screen keeps navigation and finds an individual survivor',
+    'spectator joins current turn with map-first navigation and published routes',
     (tester) async {
-      tester.view.physicalSize = const Size(430, 1500);
+      tester.view.physicalSize = const Size(390, 844);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
       final router = createRouter(initialLocation: '/');
+      final repository = _Spectator();
       addTearDown(router.dispose);
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [worldRepositoryProvider.overrideWithValue(_Repository())],
+          overrides: [
+            spectatorRepositoryProvider.overrideWithValue(repository),
+          ],
           child: SpookyApp(router: router),
         ),
       );
       await tester.pumpAndSettle();
-      expect(find.text('Escape de Manta Zombie'), findsWidgets);
-      expect(find.byType(NavigationBar), findsNothing);
-      expect(find.byTooltip('API evacuación conectada'), findsOneWidget);
       expect(router.routeInformationProvider.value.uri.path, '/escape');
-      expect(find.text('Estado conectado'), findsOneWidget);
-      expect(find.widgetWithText(ListTile, 'S-0001'), findsOneWidget);
-      await tester.enterText(
-        find.byKey(const Key('survivor-search')),
-        'S-0002',
-      );
+      expect(find.byType(NavigationBar), findsOneWidget);
+      expect(find.text('Turno 80/150 · Pausada'), findsOneWidget);
+      expect(find.text('Iniciar simulación'), findsNothing);
+      expect(find.text('Pausar'), findsNothing);
+      expect(repository.observations, ['zombie_outbreak']);
+      await tester.tap(find.text('Supervivientes y rutas').first);
       await tester.pumpAndSettle();
-      expect(find.widgetWithText(ListTile, 'S-0001'), findsNothing);
-      expect(find.widgetWithText(ListTile, 'S-0002'), findsOneWidget);
-      expect(find.text('Evacuado'), findsOneWidget);
-      expect(find.text('Refugio asignado: R-2'), findsOneWidget);
-      expect(find.text('Siguiente movimiento: N-0001'), findsOneWidget);
+      expect(find.widgetWithText(ListTile, 'S-0001'), findsOneWidget);
+      await tester.tap(find.widgetWithText(ListTile, 'S-0001'));
+      await tester.pumpAndSettle();
+      expect(find.text('Ver ruta'), findsOneWidget);
+      expect(find.text('Siguiente movimiento: N-0001'), findsNothing);
+      await tester.tap(find.text('Ver ruta'));
+      await tester.pumpAndSettle();
+      expect(find.text('Ruta de S-0001'), findsOneWidget);
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox.shrink());
     },

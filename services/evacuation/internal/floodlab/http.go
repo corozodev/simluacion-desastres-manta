@@ -252,7 +252,7 @@ func (m *Manager) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 		w.Header().Set("Access-Control-Allow-Origin", origin)
 		w.Header().Set("Access-Control-Allow-Credentials", "true")
-		w.Header().Set("Access-Control-Expose-Headers", "x-request-id")
+		w.Header().Set("Access-Control-Expose-Headers", "x-request-id, ETag")
 	}
 	if r.Method == http.MethodOptions {
 		if !m.allowedOrigin(r.Header.Get("Origin")) {
@@ -260,7 +260,7 @@ func (m *Manager) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, X-CSRF-Token, Idempotency-Key")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, X-CSRF-Token, Idempotency-Key, If-None-Match")
 		w.WriteHeader(204)
 		return
 	}
@@ -273,7 +273,7 @@ func (m *Manager) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	} else {
 		switch r.URL.Path {
-		case "/healthz", "/lab/catalog", "/lab/graph", "/lab/state", "/lab/session", "/v1/reference/status", "/v1/reference/susceptibility", "/v1/reference/rain-events", "/lab/telemetry":
+		case "/healthz", "/lab/catalog", "/lab/graph", "/lab/state", "/lab/published", "/lab/session", "/v1/reference/status", "/v1/reference/susceptibility", "/v1/reference/rain-events", "/lab/telemetry":
 		case "/lab/runs", "/lab/actions", "/lab/candidates/validate", "/lab/comparisons", "/lab/reference/refresh":
 			method = "POST"
 		default:
@@ -286,7 +286,13 @@ func (m *Manager) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		fail(w, 405, "METHOD_NOT_ALLOWED", "Método no permitido.")
 		return
 	}
-	if method == "POST" && !(isIncident && publicIncident) && !m.authorized(r) {
+	publicLifecycle := lifecycleRoute(r.URL.Path)
+	if method == "POST" && publicLifecycle && !m.allowLifecycle(r) {
+		w.Header().Set("Retry-After", "60")
+		fail(w, 429, "RATE_LIMITED", "Demasiadas solicitudes. Intenta en un minuto.")
+		return
+	}
+	if method == "POST" && !publicLifecycle && !(isIncident && publicIncident) && !m.authorized(r) {
 		fail(w, 401, "UNAUTHORIZED", "Se requiere una sesión local y token CSRF válidos.")
 		return
 	}
@@ -310,12 +316,19 @@ func (m *Manager) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, 200, state)
 	case "/lab/catalog":
 		writeJSON(w, 200, m.Catalog())
+	case "/lab/published":
+		m.servePublished(w, r)
 	case "/lab/state":
 		writeJSON(w, 200, m.State())
 	case "/lab/graph":
 		g, err := m.Graph(r.URL.Query().Get("mode"), r.URL.Query().Get("run_id"))
 		if err != nil {
 			controlError(w, err)
+			return
+		}
+		w.Header().Set("ETag", `"`+g.Version+`"`)
+		if r.Header.Get("If-None-Match") == w.Header().Get("ETag") {
+			w.WriteHeader(http.StatusNotModified)
 			return
 		}
 		writeJSON(w, 200, g)

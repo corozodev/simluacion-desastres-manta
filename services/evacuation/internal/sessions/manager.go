@@ -50,6 +50,9 @@ type execution struct {
 	engineReleased       bool // guarded by Manager.mu
 	expired              bool // guarded by execution.mu
 	idempotency          string
+	publicVersion        uint64
+	publicBytes          []byte
+	publicETag           string
 }
 
 type idempotencyEntry struct {
@@ -87,6 +90,8 @@ type Manager struct {
 	idempotency           map[string]*idempotencyEntry
 	expired               map[string]tombstone
 	rates                 map[string]rateBucket
+	publicRates           map[string]rateBucket
+	published             map[string]string
 	active, full, pending int
 	metrics               Metrics
 	closed                bool
@@ -104,7 +109,7 @@ func New(c *catalog.Catalog, o Options) (*Manager, error) {
 	}
 	o = completeOptions(o)
 	ctx, cancel := context.WithCancel(context.Background())
-	m := &Manager{catalog: c, options: o, sessions: map[string]*execution{}, idempotency: map[string]*idempotencyEntry{}, expired: map[string]tombstone{}, rates: map[string]rateBucket{}, ctx: ctx, cancel: cancel}
+	m := &Manager{catalog: c, options: o, sessions: map[string]*execution{}, idempotency: map[string]*idempotencyEntry{}, expired: map[string]tombstone{}, rates: map[string]rateBucket{}, publicRates: map[string]rateBucket{}, published: map[string]string{}, ctx: ctx, cancel: cancel}
 	// The manager starts only its janitor, never an engine.
 	m.wg.Add(1)
 	go func() {
@@ -412,6 +417,8 @@ func (m *Manager) CreateAndStart(ctx context.Context, req CreateRequest, key, ac
 	run.tokenHash = sha256.Sum256([]byte(token))
 	run.idempotency = scope
 	m.sessions[run.info.SimulationID] = run
+	// Publication references the successful existing execution; retries never republish.
+	m.published[run.info.Scenario] = run.info.SimulationID
 	entry.id, entry.token = run.info.SimulationID, token
 	close(entry.ready)
 	info := run.info.clone()
@@ -492,6 +499,11 @@ func (m *Manager) GetSnapshot(id, token string, results bool) (State, error) {
 	if results && !terminal(s.info.Status) {
 		return State{}, conflict()
 	}
+	return snapshotLocked(s, results), nil
+}
+
+// snapshotLocked copies only observable dynamic state; callers hold s.mu.
+func snapshotLocked(s *execution, results bool) State {
 	w := s.snapshot.Clone()
 	w.Graph = nil
 	state := State{Metadata: s.info.clone(), Snapshot: w, ScenarioState: w.Scenario, RunnerForecast: s.forecast.clone()}
@@ -507,7 +519,7 @@ func (m *Manager) GetSnapshot(id, token string, results bool) (State, error) {
 		}
 		state.Results = r
 	}
-	return state, nil
+	return state
 }
 
 func (m *Manager) Control(id, token, action string) (Metadata, error) {

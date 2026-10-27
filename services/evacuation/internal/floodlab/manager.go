@@ -54,6 +54,10 @@ type Manager struct {
 	incidentStore      *incidents.Store
 	operatorSessionURL string
 	referenceService   *reference.Service
+	publicBytes        []byte
+	publicETag         string
+	publicKey          string
+	lifecycleRates     map[string]lifecycleRate
 }
 
 func randomID() (string, error) {
@@ -74,7 +78,7 @@ func New(dataDir, scenarioDir string, origins []string) (*Manager, error) {
 		return nil, err
 	}
 	ctx, cancel := context.WithCancel(context.Background())
-	m := &Manager{graphs: map[string]*world.Graph{}, key: key, ctx: ctx, cancel: cancel, wake: make(chan struct{}, 1), origins: append([]string{}, origins...)}
+	m := &Manager{lifecycleRates: map[string]lifecycleRate{}, graphs: map[string]*world.Graph{}, key: key, ctx: ctx, cancel: cancel, wake: make(chan struct{}, 1), origins: append([]string{}, origins...)}
 	for _, mode := range []string{"competition", "full"} {
 		g, err := c.Graph(mode)
 		if err != nil {

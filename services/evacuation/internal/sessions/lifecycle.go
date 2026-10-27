@@ -33,6 +33,7 @@ func (m *Manager) run(s *execution) {
 			s.mu.Lock()
 			report.Prediction = s.audit.Quality
 			s.analytics = report
+			s.publicBytes = nil // final analytics can arrive after cancellation publication
 			s.mu.Unlock()
 		}
 		s.cancel()
@@ -177,6 +178,11 @@ func (m *Manager) Cleanup() {
 			delete(m.expired, id)
 		}
 	}
+	for id, b := range m.publicRates {
+		if now.Sub(b.window) >= time.Minute {
+			delete(m.publicRates, id)
+		}
+	}
 	for id, b := range m.rates {
 		if now.Sub(b.window) >= time.Minute {
 			delete(m.rates, id)
@@ -255,6 +261,8 @@ func (m *Manager) Close() error {
 	m.sessions = map[string]*execution{}
 	m.idempotency = map[string]*idempotencyEntry{}
 	m.rates = map[string]rateBucket{}
+	m.publicRates = map[string]rateBucket{}
+	m.published = map[string]string{}
 	m.expired = map[string]tombstone{}
 	m.metrics.EstimatedMemoryBytes = 0
 	m.mu.Unlock()
