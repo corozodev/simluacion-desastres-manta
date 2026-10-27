@@ -13,6 +13,7 @@ import (
 	"corodev/evacuation/internal/application"
 	"corodev/evacuation/internal/catalog"
 	"corodev/evacuation/internal/flood"
+	"corodev/evacuation/internal/incidents"
 	"corodev/evacuation/internal/simulation"
 	"corodev/evacuation/internal/world"
 )
@@ -49,6 +50,7 @@ type Manager struct {
 	compareCancel context.CancelFunc
 	compareDone   chan struct{}
 	sessions      localSessions
+	incidentStore *incidents.Store
 }
 
 func randomID() (string, error) {

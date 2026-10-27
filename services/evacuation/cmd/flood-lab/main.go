@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"corodev/evacuation/internal/floodlab"
+	"corodev/evacuation/internal/incidents"
 )
 
 func run() error {
@@ -24,6 +25,7 @@ func run() error {
 	origin := flag.String("origin", "http://127.0.0.1:5173,http://localhost:5173", "explicit browser origins")
 	dataDir := flag.String("data-dir", "data", "reviewed graph directory")
 	scenarioDir := flag.String("scenario-dir", "scenarios/urban", "reviewed urban scenario directory")
+	incidentDir := flag.String("incident-dir", "private/incidents", "persistent private directory for declared incidents (single writer)")
 	flag.Parse()
 	host, _, err := net.SplitHostPort(*listen)
 	if err != nil {
@@ -37,7 +39,21 @@ func run() error {
 	if err != nil {
 		return err
 	}
+	master, err := m.Graph("full", "")
+	if err != nil {
+		_ = m.Close()
+		return err
+	}
+	store, err := incidents.Open(*incidentDir, master)
+	if err != nil {
+		_ = m.Close()
+		return err
+	}
+	defer store.Close()
 	defer m.Close()
+	if err = m.SetIncidentStore(store); err != nil {
+		return err
+	}
 	listener, err := net.Listen("tcp", *listen)
 	if err != nil {
 		return err

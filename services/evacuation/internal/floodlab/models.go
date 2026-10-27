@@ -4,6 +4,7 @@ package floodlab
 
 import (
 	"corodev/evacuation/internal/catalog"
+	"corodev/evacuation/internal/incidents"
 	"corodev/evacuation/internal/world"
 )
 
@@ -114,16 +115,17 @@ type Comparison struct {
 }
 
 type State struct {
-	RunID        string                  `json:"run_id"`
-	State        string                  `json:"state"`
-	Mode         string                  `json:"mode"`
-	GraphVersion string                  `json:"graph_version"`
-	Config       RunConfig               `json:"config"`
-	Scenario     *world.ScenarioSnapshot `json:"scenario"`
-	Shelters     []world.Shelter         `json:"shelters"`
-	Timeline     []TimelineEntry         `json:"timeline"`
-	Origins      []Origin                `json:"origins"`
-	Comparison   *Comparison             `json:"comparison,omitempty"`
+	RunID                string                  `json:"run_id"`
+	State                string                  `json:"state"`
+	Mode                 string                  `json:"mode"`
+	GraphVersion         string                  `json:"graph_version"`
+	Config               RunConfig               `json:"config"`
+	Scenario             *world.ScenarioSnapshot `json:"scenario"`
+	Shelters             []world.Shelter         `json:"shelters"`
+	Timeline             []TimelineEntry         `json:"timeline"`
+	Origins              []Origin                `json:"origins"`
+	Comparison           *Comparison             `json:"comparison,omitempty"`
+	IncidentApplications []incidents.Application `json:"incident_applications,omitempty"`
 }
 
 func cloneConfig(c RunConfig) RunConfig {
@@ -137,6 +139,13 @@ func (s State) clone() State {
 	s.Shelters = append([]world.Shelter{}, s.Shelters...)
 	s.Timeline = append([]TimelineEntry{}, s.Timeline...)
 	s.Origins = append([]Origin{}, s.Origins...)
+	if s.IncidentApplications != nil {
+		items := make([]incidents.Application, len(s.IncidentApplications))
+		for i, a := range s.IncidentApplications {
+			items[i] = a.Clone()
+		}
+		s.IncidentApplications = items
+	}
 	if s.Comparison != nil {
 		c := *s.Comparison
 		c.Results = append([]ComparisonResult{}, c.Results...)

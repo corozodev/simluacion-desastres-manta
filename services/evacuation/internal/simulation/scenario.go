@@ -5,6 +5,7 @@ import (
 	"math"
 	"slices"
 	"sort"
+	"strings"
 	"time"
 
 	"corodev/evacuation/internal/flood"
@@ -75,17 +76,19 @@ func normalizeScenario(cfg Config) (Config, error) {
 }
 
 type urbanFloodScenario struct {
-	model       *flood.Model
-	cfg         flood.Config
-	baseBlocked map[string]bool
-	external    map[string]bool
-	roads       []world.RoadCondition
-	shelters    []world.ShelterCondition
-	started     map[string]bool
-	reroutes    int
-	performance world.SimulationPerformance
-	entrances   map[string][]string
-	tracked     map[string]bool
+	model            *flood.Model
+	cfg              flood.Config
+	baseBlocked      map[string]bool
+	external         map[string]bool
+	roads            []world.RoadCondition
+	shelters         []world.ShelterCondition
+	started          map[string]bool
+	reroutes         int
+	performance      world.SimulationPerformance
+	entrances        map[string][]string
+	tracked          map[string]bool
+	activeIncidents  map[string]appliedOverlay
+	appliedIncidents map[string]appliedOverlay
 }
 
 func newThreatScenario(s *Simulator) (threatScenario, error) {
@@ -97,6 +100,8 @@ func newThreatScenario(s *Simulator) (threatScenario, error) {
 		return nil, err
 	}
 	f := &urbanFloodScenario{model: model, cfg: model.Config(), baseBlocked: map[string]bool{}, external: map[string]bool{}, started: map[string]bool{}, entrances: map[string][]string{}, tracked: map[string]bool{}}
+	f.activeIncidents = map[string]appliedOverlay{}
+	f.appliedIncidents = map[string]appliedOverlay{}
 	for _, event := range s.events {
 		f.tracked[event.EdgeID] = true
 	}
@@ -126,6 +131,7 @@ func (f *urbanFloodScenario) roadEvent(_ *Simulator, event ScheduledEvent) {
 }
 
 func (f *urbanFloodScenario) advance(s *Simulator, events *[]world.Event) {
+	f.expireIncidents(s)
 	f.model.Advance(s.turn)
 	before := s.blocked
 	f.updateOverlay(s)
@@ -185,6 +191,35 @@ func (f *urbanFloodScenario) updateOverlay(s *Simulator) {
 		}
 		road.State, road.RiskSource, road.UpdatedAtSimulationStep = "blocked", source, s.turn
 		conditions[id], blocked[id] = road, true
+	}
+	incidentIDs := make([]string, 0, len(f.activeIncidents))
+	for id := range f.activeIncidents {
+		incidentIDs = append(incidentIDs, id)
+	}
+	sort.Strings(incidentIDs)
+	for _, id := range incidentIDs {
+		entry := f.activeIncidents[id]
+		for _, edgeID := range entry.input.EdgeIDs {
+			road, ok := conditions[edgeID]
+			if !ok {
+				road = world.RoadCondition{EdgeID: edgeID, State: "passable", CostMultiplier: 1}
+			}
+			if entry.input.Effect == "blocked" {
+				road.State = "blocked"
+				blocked[edgeID] = true
+			} else if road.State != "blocked" {
+				road.State = "caution"
+				road.CostMultiplier = math.Max(road.CostMultiplier, 2)
+			}
+			if !strings.Contains(road.RiskSource, "experimental_incident") {
+				if road.RiskSource != "" {
+					road.RiskSource += "+"
+				}
+				road.RiskSource += "experimental_incident"
+			}
+			road.UpdatedAtSimulationStep = s.turn
+			conditions[edgeID] = road
+		}
 	}
 	s.blocked = blocked
 	f.roads = make([]world.RoadCondition, 0, len(conditions))
@@ -263,7 +298,7 @@ func (f *urbanFloodScenario) planned(before, after []world.Survivor) {
 	}
 }
 
-func (f *urbanFloodScenario) finishStep(_ *Simulator, elapsed time.Duration) {
+func (f *urbanFloodScenario) finishStep(s *Simulator, elapsed time.Duration) {
 	f.performance.SimulationStepLatencyMS = float64(elapsed) / float64(time.Millisecond)
 	f.performance.SimulationTotalDurationMS += f.performance.SimulationStepLatencyMS
 }

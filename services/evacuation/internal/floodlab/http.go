@@ -244,26 +244,38 @@ func (m *Manager) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, X-CSRF-Token")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, X-CSRF-Token, Idempotency-Key")
 		w.WriteHeader(204)
 		return
 	}
 	method := "GET"
-	switch r.URL.Path {
-	case "/healthz", "/lab/catalog", "/lab/graph", "/lab/state", "/lab/session":
-	case "/lab/runs", "/lab/actions", "/lab/candidates/validate", "/lab/comparisons":
-		method = "POST"
-	default:
-		fail(w, 404, "NOT_FOUND", "El recurso solicitado no existe.")
-		return
+	incidentMethod, publicIncident, isIncident := incidentRoute(r.URL.Path)
+	if isIncident {
+		method = incidentMethod
+		if r.URL.Path == "/v1/incidents" && r.Method == http.MethodPost {
+			method = "POST"
+		}
+	} else {
+		switch r.URL.Path {
+		case "/healthz", "/lab/catalog", "/lab/graph", "/lab/state", "/lab/session":
+		case "/lab/runs", "/lab/actions", "/lab/candidates/validate", "/lab/comparisons":
+			method = "POST"
+		default:
+			fail(w, 404, "NOT_FOUND", "El recurso solicitado no existe.")
+			return
+		}
 	}
 	if r.Method != method {
 		w.Header().Set("Allow", method)
 		fail(w, 405, "METHOD_NOT_ALLOWED", "Método no permitido.")
 		return
 	}
-	if method == "POST" && !m.authorized(r) {
+	if method == "POST" && !(isIncident && publicIncident) && !m.authorized(r) {
 		fail(w, 401, "UNAUTHORIZED", "Se requiere una sesión local y token CSRF válidos.")
+		return
+	}
+	if isIncident {
+		m.serveIncident(w, r)
 		return
 	}
 	switch r.URL.Path {
