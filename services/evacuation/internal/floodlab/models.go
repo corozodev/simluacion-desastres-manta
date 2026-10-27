@@ -20,15 +20,21 @@ type Candidate struct {
 }
 
 type RunConfig struct {
-	Mode               string      `json:"mode"`
-	Seed               int64       `json:"seed"`
-	RainfallProfile    string      `json:"rainfall_profile"`
-	RainfallIntensity  float64     `json:"rainfall_intensity"`
-	SimulationDuration float64     `json:"simulation_duration"`
-	EvacuationBehavior string      `json:"evacuation_behavior"`
-	Agents             int         `json:"agents"`
-	IntervalMS         int         `json:"interval_ms"`
-	Shelters           []Candidate `json:"shelters"`
+	Mode                string               `json:"mode"`
+	Seed                int64                `json:"seed"`
+	RainfallProfile     string               `json:"rainfall_profile"`
+	RainfallIntensity   float64              `json:"rainfall_intensity"`
+	SimulationDuration  float64              `json:"simulation_duration"`
+	EvacuationBehavior  string               `json:"evacuation_behavior"`
+	Agents              int                  `json:"agents"`
+	IntervalMS          int                  `json:"interval_ms"`
+	Shelters            []Candidate          `json:"shelters"`
+	GeographicReference *GeographicReference `json:"geographic_reference,omitempty"`
+}
+type GeographicReference struct {
+	Enabled        bool    `json:"enabled"`
+	DatasetVersion string  `json:"dataset_version,omitempty"`
+	Strength       float64 `json:"strength"`
 }
 
 type RunRequest struct {
@@ -130,6 +136,10 @@ type State struct {
 
 func cloneConfig(c RunConfig) RunConfig {
 	c.Shelters = append([]Candidate{}, c.Shelters...)
+	if c.GeographicReference != nil {
+		r := *c.GeographicReference
+		c.GeographicReference = &r
+	}
 	return c
 }
 

@@ -190,6 +190,11 @@ func requiredInput(raw json.RawMessage, destination any) bool {
 			return false
 		}
 		cfg, ok := requiredObject(body["config"], "mode", "seed", "rainfall_profile", "rainfall_intensity", "simulation_duration", "evacuation_behavior", "agents", "interval_ms", "shelters")
+		if ref, present := cfg["geographic_reference"]; present {
+			if _, valid := requiredObject(ref, "enabled", "strength"); !valid {
+				return false
+			}
+		}
 		return ok && requiredCandidates(cfg["shelters"])
 	case *Action:
 		_, ok := requiredObject(raw, "action", "expected_run_id")
@@ -257,8 +262,8 @@ func (m *Manager) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	} else {
 		switch r.URL.Path {
-		case "/healthz", "/lab/catalog", "/lab/graph", "/lab/state", "/lab/session":
-		case "/lab/runs", "/lab/actions", "/lab/candidates/validate", "/lab/comparisons":
+		case "/healthz", "/lab/catalog", "/lab/graph", "/lab/state", "/lab/session", "/v1/reference/status", "/v1/reference/susceptibility", "/v1/reference/rain-events", "/lab/telemetry":
+		case "/lab/runs", "/lab/actions", "/lab/candidates/validate", "/lab/comparisons", "/lab/reference/refresh":
 			method = "POST"
 		default:
 			fail(w, 404, "NOT_FOUND", "El recurso solicitado no existe.")
@@ -276,6 +281,10 @@ func (m *Manager) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	if isIncident {
 		m.serveIncident(w, r)
+		return
+	}
+	if strings.HasPrefix(r.URL.Path, "/v1/reference/") || r.URL.Path == "/lab/reference/refresh" || r.URL.Path == "/lab/telemetry" {
+		m.serveReference(w, r)
 		return
 	}
 	switch r.URL.Path {

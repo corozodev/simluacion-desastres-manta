@@ -14,6 +14,7 @@ import (
 	"corodev/evacuation/internal/catalog"
 	"corodev/evacuation/internal/flood"
 	"corodev/evacuation/internal/incidents"
+	"corodev/evacuation/internal/reference"
 	"corodev/evacuation/internal/simulation"
 	"corodev/evacuation/internal/world"
 )
@@ -34,23 +35,24 @@ type execution struct {
 }
 
 type Manager struct {
-	mu            sync.RWMutex
-	opMu          sync.Mutex // Step and transitions serialize; GET only reads cached state.
-	state         State
-	current       *execution
-	graphs        map[string]*world.Graph
-	catalog       Catalog
-	origins       []string
-	key           string
-	ctx           context.Context
-	cancel        context.CancelFunc
-	wake          chan struct{}
-	wg            sync.WaitGroup
-	closed        bool
-	compareCancel context.CancelFunc
-	compareDone   chan struct{}
-	sessions      localSessions
-	incidentStore *incidents.Store
+	mu               sync.RWMutex
+	opMu             sync.Mutex // Step and transitions serialize; GET only reads cached state.
+	state            State
+	current          *execution
+	graphs           map[string]*world.Graph
+	catalog          Catalog
+	origins          []string
+	key              string
+	ctx              context.Context
+	cancel           context.CancelFunc
+	wake             chan struct{}
+	wg               sync.WaitGroup
+	closed           bool
+	compareCancel    context.CancelFunc
+	compareDone      chan struct{}
+	sessions         localSessions
+	incidentStore    *incidents.Store
+	referenceService *reference.Service
 }
 
 func randomID() (string, error) {
@@ -134,7 +136,7 @@ func (m *Manager) Catalog() Catalog {
 func (m *Manager) State() State { m.mu.RLock(); defer m.mu.RUnlock(); return m.state.clone() }
 
 func validConfig(cfg RunConfig) bool {
-	return (cfg.Mode == "competition" || cfg.Mode == "full") && cfg.Seed >= -9007199254740991 && cfg.Seed <= 9007199254740991 && finite(cfg.RainfallIntensity) && cfg.RainfallIntensity >= 0 && cfg.RainfallIntensity <= 1 && finite(cfg.SimulationDuration) && cfg.SimulationDuration >= 1 && cfg.SimulationDuration <= 10000 && cfg.Agents >= 1 && cfg.Agents <= 200 && cfg.IntervalMS >= 0 && cfg.IntervalMS <= 5000 && (cfg.RainfallProfile == "storm" || cfg.RainfallProfile == "constant" || cfg.RainfallProfile == "pulse") && (cfg.EvacuationBehavior == "preventive" || cfg.EvacuationBehavior == "late" || cfg.EvacuationBehavior == "adaptive")
+	return validReference(cfg.GeographicReference) && (cfg.Mode == "competition" || cfg.Mode == "full") && cfg.Seed >= -9007199254740991 && cfg.Seed <= 9007199254740991 && finite(cfg.RainfallIntensity) && cfg.RainfallIntensity >= 0 && cfg.RainfallIntensity <= 1 && finite(cfg.SimulationDuration) && cfg.SimulationDuration >= 1 && cfg.SimulationDuration <= 10000 && cfg.Agents >= 1 && cfg.Agents <= 200 && cfg.IntervalMS >= 0 && cfg.IntervalMS <= 5000 && (cfg.RainfallProfile == "storm" || cfg.RainfallProfile == "constant" || cfg.RainfallProfile == "pulse") && (cfg.EvacuationBehavior == "preventive" || cfg.EvacuationBehavior == "late" || cfg.EvacuationBehavior == "adaptive")
 }
 
 type initialClient struct{}
@@ -238,6 +240,9 @@ func (m *Manager) prepare(cfg RunConfig) (*execution, error) {
 	fc.SimulationDuration = cfg.SimulationDuration
 	fc.EvacuationBehavior = cfg.EvacuationBehavior
 	fc.Zones = zones
+	if err = m.configureReference(cfg, &fc, g); err != nil {
+		return nil, err
+	}
 	turns := int(math.Ceil(cfg.SimulationDuration / fc.TimeStep))
 	app, err := application.New(g, simulation.Config{Name: "Laboratorio de inundación urbana sintética", ScenarioType: "urban_flood", Flood: &fc, Seed: cfg.Seed, Turns: turns, Survivors: cfg.Agents, Concurrency: 16, InitialSurvivors: initial}, "127.0.0.1:0", m.key, nil, nil)
 	if err != nil {
