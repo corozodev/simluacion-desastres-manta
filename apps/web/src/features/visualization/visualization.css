@@ -12,7 +12,9 @@
 .visual-bitten use { opacity: .5; }
 .visual-count, .visual-state { fill: var(--color-textPrimary); font: 700 11px var(--font-family-sans); paint-order: stroke; stroke: var(--color-background); stroke-width: 3px; }
 .visual-state { font-size: 12px; }
-.visual-fallback { fill: var(--color-accent); stroke: var(--color-accent); stroke-width: 3; stroke-linecap: round; }
+.visual-fallback { fill: var(--color-accent); stroke: var(--color-accent); stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+.visual-fallback path { fill: none; }
+.visual-zombie-posture { fill: none; stroke: var(--color-error); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .visual-fallback-zombie { fill: var(--color-error); stroke: var(--color-error); }
 .visual-entity:focus-visible { outline: none; }
 .visual-entity:focus-visible .visual-halo { stroke: var(--color-focus); stroke-width: 3; }

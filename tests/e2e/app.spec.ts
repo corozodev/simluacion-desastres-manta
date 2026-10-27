@@ -83,8 +83,13 @@ test('inicia una vez, observa movimientos y recupera la misma sesión al recarga
   await expect(marker).toBeVisible();
   const first = await marker.getAttribute('transform');
   await expect.poll(async () => await marker.getAttribute('transform')).not.toBe(first);
+  await page.getByRole('button', { name: 'Refugios y agentes' }).click();
+  await page.getByRole('tab', { name: /Supervivientes/ }).click();
   await page.getByRole('searchbox', { name: 'Buscar por ID' }).fill('S-0001');
-  await expect(page.getByText('Refugio asignado: R-2')).toBeVisible();
+  await page.getByRole('button', { name: 'Ver ruta de S-0001' }).click();
+  await expect(page.getByText('S-0001 · Ruta resaltada en el mapa')).toBeVisible();
+  await expect(page.getByRole('columnheader')).toHaveText(['Superviviente', 'Estado', 'Refugio', 'Acción']);
+  await page.getByRole('button', { name: 'Cerrar refugios y agentes' }).click();
   const view = await map.getAttribute('viewBox');
   await map.focus();
   await map.press('+');
@@ -92,7 +97,7 @@ test('inicia una vez, observa movimientos y recupera la misma sesión al recarga
   await page.getByRole('button', { name: 'Restablecer vista', exact: true }).click();
   await expect(map).toHaveAttribute('viewBox', view!);
   await page.reload();
-  await expect(page.getByLabel('Tu simulación')).toContainText('browser-simulation-1');
+  expect(await page.evaluate(() => JSON.parse(sessionStorage.getItem('corodev.simulation-session.v1')!).simulation_id)).toBe('browser-simulation-1');
   expect(creates).toBe(1);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
@@ -102,12 +107,12 @@ test('pausa, reanuda, cancela, muestra resultados y reinicia con otro ID', async
   await page.getByRole('button', { name: 'Iniciar simulación', exact: true }).click();
   await page.getByRole('button', { name: 'Pausar', exact: true }).click();
   await expect(page.getByLabel('Tu simulación')).toContainText('Pausada');
-  await page.getByRole('button', { name: 'Reanudar', exact: true }).click();
+  await page.getByRole('button', { name: 'Continuar', exact: true }).click();
   await expect(page.getByLabel('Tu simulación')).toContainText('En ejecución');
   await page.getByRole('button', { name: 'Cancelar', exact: true }).click();
   await expect(page.getByLabel('Resultados de simulación')).toContainText('Cancelada');
-  await page.getByRole('button', { name: 'Reiniciar con la misma configuración', exact: true }).click();
-  await expect(page.getByLabel('Tu simulación')).toContainText('browser-simulation-2');
+  await page.getByRole('button', { name: 'Reiniciar', exact: true }).click();
+  await expect.poll(() => page.evaluate(() => JSON.parse(sessionStorage.getItem('corodev.simulation-session.v1')!).simulation_id)).toBe('browser-simulation-2');
 });
 
 test('conserva el último snapshot durante desconexión y permite reintento', async ({ page }) => {

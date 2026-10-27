@@ -16,7 +16,7 @@ import { chromium, expect } from '@playwright/test';
 const root = fileURLToPath(new URL('../../', import.meta.url));
 const backend = path.join(root, 'services/evacuation');
 const temporary = await mkdtemp(path.join(tmpdir(), 'corodev-incidents-lab-'));
-const directory = process.env.INCIDENTS_LAB_EVIDENCE_DIR || path.join(root, `deploy/evidence-private/mantasim-incidents-${Date.now()}`);
+const directory = process.env.INCIDENTS_LAB_EVIDENCE_DIR || path.join(root, `deploy/evidence-private/mantasim-mapfirst-incidents-${Date.now()}`);
 const origin = 'http://127.0.0.1:5181';
 const children = [];
 let browser;
@@ -133,7 +133,7 @@ async function chooseRoad(base, graph, state) {
   throw new Error('No route street with a genuine nearby association and alternate path was found');
 }
 const report = {
-  phase: 'MantaSim incidents regression', recorded_at: new Date().toISOString(),
+  phase: 'MantaSim map-first incidents regression', recorded_at: new Date().toISOString(),
   source: 'Local real Flutter repository, durable Go HTTP, React and Chromium; checked-in OSM geometry, synthetic agents and test observation, no GPS/AWS.',
   raster_tiles: 'Disabled during headless QA; checked-in OSM vectors remain visible.',
   isolation_scope: 'One explicitly identified experimental run per Manager. Browser operator cookies share that local run; independent Managers are verified by Go tests.',
@@ -223,10 +223,12 @@ try {
   const marker = page.locator(`[data-incident-id="${incident.incident_id}"]`);
   await expect(marker).toHaveAttribute('data-incident-status', 'pending');
   await expect(marker).toHaveAttribute('data-incident-source', 'citizen');
-  await page.getByText('Agentes y disponibilidad de refugios', { selector: 'summary', exact: true }).click();
-  await page.getByRole('button', { name: `Ver ruta de inundación de ${route.agent_id}`, exact: true }).click();
+  await page.getByRole('button', { name: 'Refugios y agentes', exact: true }).click();
+  await page.getByRole('tab', { name: /Supervivientes/ }).click();
+  await page.getByRole('button', { name: `Ver ruta de ${route.agent_id}`, exact: true }).click();
   const routeBefore = await page.locator('path[data-layer="routes"]').getAttribute('d');
   assert(routeBefore, 'React did not render the selected authoritative route');
+  await page.getByRole('button', { name: 'Cerrar refugios y agentes', exact: true }).click();
   await detail.scrollIntoViewIfNeeded();
   await page.screenshot({ path: path.join(directory, 'citizen-pending-before-application.png'), fullPage: true });
   report.checks.react_pending_marker_provenance_and_detail = true;
@@ -255,6 +257,7 @@ try {
   assert(applied.incident.source_type === 'citizen' && applied.incident.verification_status === 'pending', 'Applying an incident changed its provenance or verification');
   await expect(detail.getByLabel('Registro de aplicación experimental')).toContainText(String(applied.application.world_version));
   await expect(page.locator('path[data-layer="routes"]')).not.toHaveAttribute('d', routeBefore);
+  await page.getByText('Inspeccionar vía', { selector: 'summary', exact: true }).click();
   await page.getByLabel('Inspeccionar arista', { exact: true }).fill(route.edge_id);
   await expect(page.getByLabel(`Detalle de arista ${route.edge_id}`)).toContainText('Bloqueada');
   await expect(page.getByLabel(`Detalle de arista ${route.edge_id}`)).toContainText('experimental_incident');

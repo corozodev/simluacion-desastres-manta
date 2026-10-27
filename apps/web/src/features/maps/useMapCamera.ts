@@ -95,7 +95,8 @@ export function useMapCamera(graphVersion: string, onCancel?: () => void) {
     else if (['+', '=', '-', '0'].includes(event.key)) { event.preventDefault(); if (event.key === '0') reset(); else zoomAt(event.key === '-' ? 1 / .75 : .75); }
     else if (event.key === 'Escape') cancel.current?.();
   };
-  return { svg, view, reset, consumeClick: () => { const consumed = moved.current; moved.current = false; return consumed; },
+  const focus = (point: Point) => setView(previous => ({ ...previous, x: point.x - previous.width / 2, y: point.y - previous.height / 2 }));
+  return { svg, view, reset, focus, consumeClick: () => { const consumed = moved.current; moved.current = false; return consumed; },
     bindings: { onPointerDown, onPointerMove, onPointerUp: release, onPointerCancel: release, onKeyDown,
       onDoubleClick: (event: MouseEvent<SVGSVGElement>) => { event.preventDefault(); zoomAt(.6, mapPointer(event.currentTarget, { x: event.clientX, y: event.clientY }, current.current)); } },
   };

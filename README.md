@@ -2,6 +2,8 @@
 
 FASE 2 de Track A: backend Go con simulación determinista, planificación dinámica, predicción observable de runners, reservas y clientes React/Flutter. La fuente urbana OSM de Manta tiene **9.179 nodos y 13.452 aristas**; el grafo operativo tiene **300 nodos y 383 aristas**, y el experimental **1.000 nodos y 1.599 aristas**. Los cuatro sectores son zonas de aparición con polígonos municipales: Tarqui, Los Esteros, Barbasquillo y Jocay. La navegación puede salir de ellas. Los cuatro refugios son ficticios. Los turnos duran dos segundos en modo normal y se ejecutan sin esperas en modo acelerado. Entrega prevista por el equipo: **28 de octubre de 2026, 10:00 Ecuador (UTC−05:00)**.
 
+**Acabado map-first:** HUD compacto y panel de refugios/supervivientes por pestañas; «Ver ruta» conserva el mapa sin columnas OSM ni detalles extensos. [Implementación y verificaciones](docs/informe-map-first.md).
+
 **Interfaz React MantaSim:** navegación directa entre `/escape` y `/flood-lab`, mapas compartidos, refugios editables y acceso de operador desde inundaciones. Consulta [cambios, validación y límites de esta iteración](docs/informe-mantasim-ux.md). No se despliega automáticamente.
 
 **FASE 5: sesiones independientes bajo demanda.** Abrir React `/escape` carga el mapa y las capacidades sin ejecutar turnos. **Iniciar simulación** crea una sesión privada de zombies o inundación urbana sintética; Go avanza sus turnos y permite pausar, reanudar, cancelar y reiniciar. La recarga recupera la misma ejecución mediante una credencial en `sessionStorage`. Flutter conserva los endpoints Go anteriores y no recibe la clave de `/paso`. Consulta [arquitectura, API, pruebas y límites FASE 5](docs/informe-fase5.md).

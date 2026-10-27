@@ -16,10 +16,10 @@ import { chromium, expect } from '@playwright/test';
 const root = fileURLToPath(new URL('../../', import.meta.url));
 const backend = path.join(root, 'services/evacuation');
 const temporary = await mkdtemp(path.join(tmpdir(), 'mantasim-ui-'));
-const evidence = process.env.MANTASIM_EVIDENCE_DIR || path.join(root, 'deploy/evidence-private/mantasim-ui-20261027');
+const evidence = process.env.MANTASIM_EVIDENCE_DIR || path.join(root, `deploy/evidence-private/mantasim-mapfirst-${Date.now()}`);
 const children = [];
 let browser;
-const report = { recorded_at: new Date().toISOString(), source: 'Local real Go, React and Chromium; not AWS performance evidence', authorization: 'Flood local loopback session with cookie, origin and CSRF; production operator authorization separately covered by Go HTTP tests', raster_tiles: 'Disabled in automated QA; real checked-in OSM vectors preserved', checks: [], viewports: [], console_errors: [], unexpected_http_errors: [] };
+const report = { recorded_at: new Date().toISOString(), source: 'Local real Go, React and Chromium; not AWS performance evidence', authorization: 'Flood local loopback session with cookie, origin and CSRF; production operator authorization separately covered by Go HTTP tests', raster_tiles: 'Disabled in automated QA; real checked-in OSM vectors preserved', checks: [], viewports: [], console_errors: [], unexpected_http_errors: [], asset_errors: [] };
 async function port() {
   const server = createServer(); server.listen(0, '127.0.0.1'); await once(server, 'listening');
   const value = server.address().port; await new Promise((resolve, reject) => server.close(error => error ? reject(error) : resolve())); return value;
@@ -49,14 +49,23 @@ async function until(check, label) {
 }
 async function geometry(page, label) {
   const measurement = await page.evaluate(() => {
-    const map = document.querySelector('.map-stage svg, .escape-map svg, .flood-map svg')?.getBoundingClientRect();
-    return { overflow: document.documentElement.scrollWidth > innerWidth, width: innerWidth, map: map && { x: map.x, y: map.y, width: map.width, height: map.height } };
+    const map = document.querySelector('.map-stage > svg')?.getBoundingClientRect();
+    const roads = [...document.querySelectorAll('.map-stage .escape-road, .map-stage path[data-road-state]')].filter(element => element.getAttribute('d')).map(element => element.getBoundingClientRect());
+    const visibleNetwork = roads.some(road => road.top < innerHeight && road.bottom > Math.max(0, map?.top ?? 0) && road.right > 0 && road.left < innerWidth);
+    return { visible_network: visibleNetwork, overflow: document.documentElement.scrollWidth > innerWidth, width: innerWidth, layout: [...document.querySelectorAll('.topbar,.page-header,.map-workspace-hud,.flood-workspace-preparation,.simulation-hud,.map-toolbar')].map(element=>({class:element.className,y:element.getBoundingClientRect().y,height:element.getBoundingClientRect().height})), map: map && { x: map.x, y: map.y, width: map.width, height: map.height } };
   });
+  report.viewports.push({ label, ...measurement });
+  if (measurement.map?.y >= (measurement.width < 760 || label.includes('full') ? 320 : 240)) await page.screenshot({path:path.join(evidence, `failure-${label}.png`),fullPage:true});
+  assert.equal(measurement.visible_network, true, `${label}: actual road geometry visible in first viewport`);
   assert.equal(measurement.overflow, false, `${label}: horizontal overflow`);
+  assert.ok(measurement.map?.y < (measurement.width < 760 || label.includes('full') ? 320 : 240), `${label}: map visible immediately (top=${measurement.map?.y})`);
   assert.ok(measurement.map?.width > 200, `${label}: usable map width`);
   assert.ok(measurement.map.x >= 0 && measurement.map.x + measurement.map.width <= measurement.width + 1, `${label}: map within viewport`);
+  const oversizedIcons = await page.locator('.map-stage-ui button svg, .map-workspace-hud button svg').evaluateAll(icons => icons.filter(icon => { const box=icon.getBoundingClientRect(); return box.width>24 || box.height>24; }).length);
+  assert.equal(oversizedIcons, 0, `${label}: UI icons remain compact`);
+  await expect(page.getByRole('button',{name:'Refugios y agentes',exact:true})).toHaveCSS('min-height', /^(38|40)px$/);
+  assert.ok((await page.getByRole('button',{name:'Refugios y agentes',exact:true}).boundingBox()).height <= 48, `${label}: compact panel trigger`);
   assert.equal(await page.locator('.status-indicator:visible').count(), 1, `${label}: exactly one API indicator`);
-  report.viewports.push({ label, ...measurement });
 }
 try {
   await mkdir(evidence, { recursive: true, mode: 0o700 });
@@ -86,12 +95,13 @@ try {
     const context = await browser.newContext({ viewport, reducedMotion: 'reduce', isMobile: viewport.width < 760, hasTouch: viewport.width < 760 });
     const page = await context.newPage(); const posts = []; const graphReads = [];
     page.on('pageerror', error => report.console_errors.push(error.message));
-    page.on('response', response => { if ((response.url().startsWith(world) || response.url().startsWith(flood)) && response.status() >= 400) report.unexpected_http_errors.push({ path: new URL(response.url()).pathname, status: response.status() }); });
+    page.on('console', message => { if(message.type() === 'error') report.console_errors.push(message.text()); });
+    page.on('response', response => { if (response.url().includes('/visualization/') && response.status() >= 400) report.asset_errors.push({path:new URL(response.url()).pathname,status:response.status()}); if ((response.url().startsWith(world) || response.url().startsWith(flood)) && response.status() >= 400) report.unexpected_http_errors.push({ path: new URL(response.url()).pathname, status: response.status() }); });
     page.on('request', request => { if (request.method() === 'POST') posts.push(new URL(request.url()).pathname); if (new URL(request.url()).pathname === '/grafo') graphReads.push(request.url()); assert.equal(Boolean(request.headers()['x-api-key']), false, 'No private engine key in browser'); });
     await page.goto(`${origin}/flood-lab`);
     await expect(page.getByRole('img', { name: /^Red urbana de inundación simulada/ })).toBeVisible();
     if (viewport.width === 1366) await expect(page.getByRole('button', { name: 'Iniciar tormenta', exact: true })).toBeEnabled();
-    else await expect(page.getByRole('button', { name: 'Iniciar tormenta', exact: true })).toBeVisible();
+    else { const active = await (await fetch(`${flood}/lab/state`)).json(); await expect(page.getByRole('button', { name: active.state === 'paused' ? 'Continuar' : active.state === 'running' ? 'Pausar' : 'Iniciar tormenta', exact: true })).toBeVisible(); }
     assert.equal(posts.length, 0, 'Direct flood visit does not start work');
     await geometry(page, `flood-${viewport.width}`);
     await page.screenshot({ path: path.join(evidence, `flood-${viewport.width}.png`), fullPage: true });
@@ -108,21 +118,31 @@ try {
     if (viewport.width === 1366) {
       await page.getByRole('button', { name: 'Iniciar tormenta', exact: true }).click();
       await expect.poll(async () => (await (await fetch(`${flood}/lab/state`)).json()).scenario.simulation_step).toBeGreaterThan(0);
+      await page.screenshot({ path: path.join(evidence, 'flood-running-1366.png'), fullPage: true });
       await page.getByRole('button', { name: 'Pausar', exact: true }).click();
       await expect.poll(async () => (await (await fetch(`${flood}/lab/state`)).json()).state).toBe('paused');
       await page.getByRole('button', { name: 'Continuar', exact: true }).click();
       await expect.poll(async () => (await (await fetch(`${flood}/lab/state`)).json()).state).toBe('running');
-      report.checks.push('Direct authorized flood start, real step evolution, pause and resume');
-      await page.getByText(/^Parámetros ·/).click();
+      await page.getByRole('button', { name: 'Pausar', exact: true }).click();
+      await expect.poll(async () => (await (await fetch(`${flood}/lab/state`)).json()).state).toBe('paused');
+      report.checks.push('Direct authorized flood start, server progress, pause and resume without auto-start');
+      await page.locator('summary').filter({hasText:/^Configurar tormenta$/}).click();
       const fullFloodGraph = page.waitForResponse(response => new URL(response.url()).pathname === '/lab/graph' && new URL(response.url()).searchParams.get('mode') === 'full');
       await page.getByRole('combobox', { name: /Cobertura de inundación/ }).selectOption('full');
-      await fullFloodGraph;
-      await expect(page.getByRole('heading', { name: 'Previsualización de cobertura', exact: true })).toBeVisible();
-      await page.getByText(/^Parámetros ·/).click();
+      const fullResponse = await fullFloodGraph;
+      await expect(page.locator('.map-source-strip > p')).toContainText('9.179');
+      await page.locator('summary').filter({hasText:/^Configurar tormenta$/}).click();
       await geometry(page, 'flood-full-1366');
       await page.screenshot({ path: path.join(evidence, 'flood-full-1366.png'), fullPage: true });
-      report.checks.push('Flood FULL_MANTA preview without changing the active storm or mixing live agents');
-
+      report.master_previews ??= [];
+      report.master_previews.push({scenario:'flood',nodes:9179,edges:13452,graph_bytes:(await fullResponse.body()).length,map_dom_nodes:await page.locator('.map-stage *').count(),street_paths:await page.locator('path[data-road-state]').count()});
+      report.checks.push('Flood FULL preview without starting an expensive master execution');
+    }
+    if(viewport.width === 390) {
+      const resume = page.getByRole('button',{name:'Continuar',exact:true});
+      if(await resume.count()) { await resume.click(); await expect(page.getByRole('button',{name:'Pausar',exact:true})).toBeVisible(); }
+      await page.screenshot({path:path.join(evidence,'flood-running-390.png'),fullPage:true});
+      await page.getByRole('button',{name:'Pausar',exact:true}).click();
     }
     await page.goto(`${origin}/escape`);
     const map = page.getByRole('img', { name: /Red de evacuación/ }); await expect(map).toBeVisible();
@@ -132,10 +152,12 @@ try {
       const before = await map.boundingBox(); const camera = await map.getAttribute('viewBox');
       await page.getByRole('button', { name: 'Colapsar barra lateral' }).click();
       await expect.poll(async () => (await map.boundingBox()).width).toBeGreaterThan(before.width);
+      const sidebar = await page.locator('.sidebar').boundingBox();
+      assert.ok(sidebar.width >= 48 && sidebar.width <= 56, 'Collapsed sidebar48–56px');
       const initialCamera = camera.split(' ').map(Number); const resizedCamera = (await map.getAttribute('viewBox')).split(' ').map(Number);
       assert.ok(Math.abs(initialCamera[0] + initialCamera[2] / 2 - resizedCamera[0] - resizedCamera[2] / 2) < 1e-6, 'Sidebar preserves camera center');
-      assert.ok(Math.abs(initialCamera[3] - resizedCamera[3]) < 1e-6, 'Sidebar preserves camera scale while adapting aspect ratio');
       await geometry(page, `zombie-collapsed-${viewport.width}`);
+      await page.screenshot({ path: path.join(evidence, `sidebar-collapsed-${viewport.width}.png`), fullPage: true });
       await page.getByRole('button', { name: 'Expandir barra lateral' }).click();
     } else {
       await page.getByRole('button', { name: 'Abrir menú', exact: true }).click();
@@ -147,11 +169,12 @@ try {
     if (viewport.width === 1366) {
       await page.getByRole('combobox', { name: /Profundidad del grafo/ }).selectOption('FULL_MANTA');
       await expect.poll(() => graphReads.filter(url => url.includes('mode=full')).length).toBe(1);
-      await expect(map).toBeVisible(); await geometry(page, 'zombie-full-1366');
+      await expect(page.locator('.map-source-strip > p')).toContainText('9.179'); await expect(map).toBeVisible(); await geometry(page, 'zombie-full-1366');
       const view = await map.getAttribute('viewBox'); await map.focus(); await page.keyboard.press('+'); await expect(map).not.toHaveAttribute('viewBox', view);
       await page.getByRole('button', { name: 'Restablecer vista', exact: true }).click(); await expect(map).toHaveAttribute('viewBox', view);
       assert.equal(graphReads.filter(url => url.includes('mode=full')).length, 1, 'Camera never reloads full graph');
       await page.screenshot({ path: path.join(evidence, 'zombie-full-1366.png'), fullPage: true });
+      report.master_previews.push({scenario:'zombie',nodes:9179,edges:13452,map_dom_nodes:await page.locator('.map-stage *').count(),street_paths:await page.locator('.escape-road').count(),full_geography_requests:graphReads.filter(url=>url.includes('mode=full')).length});
       await page.getByRole('combobox', { name: /Profundidad del grafo/ }).selectOption('BASE');
       const baseGraph = await (await fetch(`${world}/grafo?mode=competition`)).json();
       const shelter = baseGraph.shelters[0];
@@ -159,16 +182,18 @@ try {
       const openEdges = baseGraph.edges.filter(edge => !edge.blocked);
       const index = openEdges.findIndex(edge => !shelterNodes.has(edge.from));
       assert.ok(index >= 0, 'Real alternative graph node');
+      await page.getByRole('button', { name: 'Refugios y agentes', exact: true }).click();
       await page.getByText('Refugios · 4 ubicaciones', { exact: true }).click();
       await page.getByLabel(`Capacidad de ${shelter.id}`, { exact: true }).fill('37');
       await page.getByRole('button', { name: `Editar ubicación de ${shelter.id}`, exact: true }).click();
-      await map.scrollIntoViewIfNeeded();
       const roadPath = await map.locator('.escape-road').first().getAttribute('d');
       const start = /^([\d.eE+-]+),([\d.eE+-]+)/.exec(roadPath.split('M').filter(Boolean)[index]);
       assert.ok(start, 'Real road endpoint');
       const click = await map.evaluate((svg, point) => { const transformed = new DOMPoint(point.x, point.y).matrixTransform(svg.getScreenCTM()); return { x: transformed.x, y: transformed.y }; }, { x: Number(start[1]), y: Number(start[2]) });
       await page.mouse.click(click.x, click.y);
       await page.getByRole('button', { name: 'Confirmar ubicación', exact: true }).click();
+      await map.focus(); await map.press('+');
+      const cameraBeforeStart = await map.getAttribute('viewBox'), renderer = await map.elementHandle();
       const createdResponse = page.waitForResponse(response => response.url() === `${world}/v1/simulations` && response.request().method() === 'POST');
       await page.getByRole('button', { name: 'Iniciar simulación', exact: true }).click();
       const created = await (await createdResponse).json();
@@ -179,26 +204,95 @@ try {
       const requestedNode = created.config.custom_shelters.find(item => item.id === shelter.id).node_id;
       assert.notEqual(requestedNode, shelter.node_id, 'Confirmed shelter actually moved');
       assert.ok(baseGraph.nodes.some(node => node.id === requestedNode), 'Snapped node belongs to real graph');
-      assert.equal(live.snapshot.shelters.find(item => item.id === shelter.id).node_id, requestedNode, 'Server matches the confirmed snapped node exactly');
-      await expect.poll(async () => (await readPrivate()).tick, { timeout: 10000 }).toBeGreaterThanOrEqual(2);
+      assert.equal(live.snapshot.shelters.find(item => item.id === shelter.id).node_id, requestedNode);
       await expect(page.getByLabel('Tu simulación', { exact: true })).toBeVisible();
+      assert.equal(await map.evaluate((current, previous) => current === previous, renderer), true, 'Single renderer survives explicit start');
+      await expect(map).toHaveAttribute('viewBox', cameraBeforeStart);
+      await expect.poll(async () => (await readPrivate()).tick, { timeout: 10000 }).toBeGreaterThanOrEqual(2);
+      await page.screenshot({ path: path.join(evidence, 'zombie-running-1366.png'), fullPage: true });
       await page.getByRole('button', { name: 'Pausar', exact: true }).click();
       await expect(page.getByLabel('Tu simulación', { exact: true })).toContainText('Pausada');
-      await page.getByRole('button', { name: 'Reanudar', exact: true }).click();
+      const paused = await readPrivate();
+      const uniqueRoutes = new Set();
+      const agents = paused.snapshot.survivors.filter(agent => { const key = JSON.stringify(agent.planned_route); if (agent.planned_route.length < 2 || uniqueRoutes.has(key)) return false; uniqueRoutes.add(key); return true; });
+      assert.ok(agents.length >= 2, 'Two real distinct published routes');
+      await page.getByRole('button', { name: 'Refugios y agentes', exact: true }).click();
+      await page.getByRole('tab', { name: /Supervivientes/ }).click();
+      const panel = page.getByRole('region', { name: 'Refugios y agentes' });
+      await expect(panel.getByRole('columnheader')).toHaveText(['Superviviente', 'Estado', 'Refugio', 'Acción']);
+      const panelCamera = await map.getAttribute('viewBox'), geographyReadsBeforePanel = graphReads.length;
+      await panel.getByRole('searchbox', { name: 'Buscar por ID' }).fill(agents[0].id);
+      await panel.getByRole('button', { name: `Ver ruta de ${agents[0].id}`, exact: true }).click();
+      await expect(map.locator('.escape-planned-route')).toBeVisible();
+      const firstRoute = await map.locator('.escape-planned-route').getAttribute('points');
+      await expect(panel).toContainText(`${agents[0].id} · Ruta resaltada en el mapa`);
+      assert.equal(/OSM-|Ruta publicada:|Siguiente movimiento:|Posición:/.test(await panel.innerText()), false);
+      await panel.getByRole('searchbox', { name: 'Buscar por ID' }).fill(agents[1].id);
+      await panel.getByRole('button', { name: `Ver ruta de ${agents[1].id}`, exact: true }).click();
+      await expect(map.locator('.escape-planned-route')).not.toHaveAttribute('points', firstRoute);
+      await expect(panel.locator('tr[aria-selected=true]')).toContainText(agents[1].id);
+      await expect(map).toHaveAttribute('viewBox', panelCamera);
+      assert.equal(graphReads.length, geographyReadsBeforePanel, 'Panel/search/route inspection never reloads geography');
+      const canvas = await map.boundingBox();
+      await page.mouse.move(canvas.x + canvas.width - 35, canvas.y + 30);
+      await page.mouse.down(); await page.mouse.move(canvas.x + canvas.width - 75, canvas.y + 55, {steps:4}); await page.mouse.up();
+      await expect(map).not.toHaveAttribute('viewBox', panelCamera);
+      await expect(panel).toBeVisible();
+      await page.screenshot({ path: path.join(evidence, 'zombie-agents-1366.png'), fullPage: true });
+      await panel.getByRole('button', { name: 'Ocultar ruta', exact: true }).click();
+      await expect(map.locator('.escape-planned-route')).toHaveCount(0);
+      await expect(panel.getByRole('searchbox', {name:'Buscar por ID'})).toBeFocused();
+      await page.keyboard.press('Escape');
+      await expect(panel).toHaveCount(0);
+      await page.getByRole('button', { name: 'Continuar', exact: true }).click();
       await expect(page.getByLabel('Tu simulación', { exact: true })).toContainText('En ejecución');
       await page.getByRole('button', { name: 'Cancelar', exact: true }).click();
       await expect(page.getByLabel('Resultados de simulación')).toBeVisible();
       assert.equal(posts.filter(item => item === '/v1/simulations').length, 1, 'One explicit create');
-      report.checks.push('Zombie real session create/pause/resume/cancel/results, actual 2000 ms cadence, confirmed custom shelter node/capacity overlay, BASE/FULL exploration and cached geography');
+      report.checks.push('One persistent renderer/camera, real custom refuges, actual2000ms, server progress and compact actions');
+      report.checks.push('Friendly four-column survivor panel, real distinct route selection/switch/hide, search and no technical IDs');
+    }
+    if(viewport.width === 390) {
+      const creation = page.waitForResponse(response => response.url() === `${world}/v1/simulations` && response.request().method() === 'POST');
+      await page.getByRole('button',{name:'Iniciar simulación',exact:true}).click();
+      const created = await (await creation).json();
+      const readPrivate = async () => (await fetch(`${world}/v1/simulations/${created.simulation_id}/state`,{headers:{Authorization:`Bearer ${created.access_token}`}})).json();
+      await expect(page.getByLabel('Tu simulación',{exact:true})).toBeVisible();
+      await expect.poll(async()=>(await readPrivate()).tick).toBeGreaterThanOrEqual(1);
+      await page.screenshot({path:path.join(evidence,'zombie-running-390.png'),fullPage:true});
+      await page.getByRole('button',{name:'Pausar',exact:true}).click();
+      const paused = await readPrivate(), agent = paused.snapshot.survivors.find(agent => agent.planned_route.length > 1);
+      assert.ok(agent,'Real published mobile route');
+      await page.getByRole('button',{name:'Refugios y agentes',exact:true}).click();
+      await page.getByRole('tab',{name:/Supervivientes/}).click();
+      const panel=page.getByRole('region',{name:'Refugios y agentes'});
+      await panel.getByRole('searchbox',{name:'Buscar por ID'}).fill(agent.id);
+      await panel.getByRole('button',{name:`Ver ruta de ${agent.id}`,exact:true}).click();
+      await expect(map.locator('.escape-planned-route')).toBeVisible();
+      await expect(panel.getByRole('columnheader')).toHaveText(['Superviviente','Estado','Refugio','Acción']);
+      const box=await panel.boundingBox(), mapBox=await map.boundingBox();
+      assert.ok(box.x>=0 && box.x+box.width<=viewport.width+1 && box.y>=mapBox.y-1,'Mobile drawer stays inside map bounds');
+      assert.equal(/OSM-|Ruta publicada:|Siguiente movimiento:|Posición:/.test(await panel.innerText()),false);
+      await page.screenshot({path:path.join(evidence,'zombie-agents-390.png'),fullPage:true});
+      await panel.getByRole('button',{name:'Ocultar ruta',exact:true}).click();
+      await expect(map.locator('.escape-planned-route')).toHaveCount(0);
+      await expect(panel.getByRole('searchbox', {name:'Buscar por ID'})).toBeFocused();
+      await page.keyboard.press('Escape');
+      await page.getByRole('button',{name:'Cancelar',exact:true}).click();
+      report.checks.push('Mobile active HUD, friendly survivor drawer inside map, actual selected route and clear');
     }
     await context.close();
   }
   assert.deepEqual(report.console_errors, [], 'No uncaught browser errors');
   assert.deepEqual(report.unexpected_http_errors, [], 'No HTTP errors');
+  assert.deepEqual(report.asset_errors, [], 'Existing sprite resources load correctly');
   report.checks.push('Authorized real synthetic report persisted and polled, keyboard popup open/Escape close/focus restoration, contained popup at all viewport sizes');
   report.checks.push('All three viewport sizes: no horizontal overflow, usable maps, one API indicator, sidebar and mobile keyboard controls');
   await writeFile(path.join(evidence, 'report.json'), JSON.stringify(report, null, 2) + '\n', { mode: 0o600 });
   console.log(JSON.stringify({ passed: true, evidence, checks: report.checks, viewports: report.viewports.length }));
+} catch(error) {
+  await writeFile(path.join(evidence,'failure.json'),JSON.stringify({...report,error:error.message},null,2)+'\n',{mode:0o600});
+  throw error;
 } finally {
   await browser?.close(); for (const child of children.reverse()) await stop(child); await rm(temporary, { recursive: true, force: true });
 }

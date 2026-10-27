@@ -6,7 +6,7 @@ import { WorldMap } from '../features/WorldMap';
 import { FloodMap } from '../features/flood/FloodMap';
 import { mapProjection, mapTiles } from '../features/visualization/projection';
 import { config } from '../lib/config';
-import { graph } from './simulation-fixtures';
+import { graph, world } from './simulation-fixtures';
 
 const originalTiles = config.osmTilesEnabled;
 afterEach(() => { config.osmTilesEnabled = originalTiles; vi.restoreAllMocks(); });
@@ -100,6 +100,21 @@ describe('cámara y mapa compartidos', () => {
     expect(cancel).toHaveBeenCalledOnce();
   });
 
+  it.each(['zombie', 'flood'])('permite elegir un refugio con teclado sobre el centro geográfico visible: %s', scenario => {
+    config.osmTilesEnabled = false;
+    const pick = vi.fn();
+    render(scenario === 'zombie' ? <WorldMap graph={graph} pickingPosition onPickPosition={pick} /> : <FloodMap graph={graph} shelters={graph.shelters} candidates={[]} selectedAgentId="" onSelectAgent={() => undefined} pickingCandidate={0} onPickPosition={pick} />);
+    const map = screen.getByRole('img');
+    fireEvent.keyDown(map, { key: 'ArrowRight' });
+    fireEvent.keyDown(map, { key: '+' });
+    const view = map.getAttribute('viewBox')!.split(' ').map(Number);
+    fireEvent.keyDown(map, { key: 'Enter' });
+    expect(pick).toHaveBeenCalledOnce();
+    const point = mapProjection(graph).point(pick.mock.calls[0]![0]);
+    expect(point.x).toBeCloseTo(view[0]! + view[2]! / 2, 5);
+    expect(point.y).toBeCloseTo(view[1]! + view[3]! / 2, 5);
+  });
+
   it('arrastra y pellizca sin convertir el gesto en una selección de refugio', () => {
     config.osmTilesEnabled = false;
     const pick = vi.fn();
@@ -136,6 +151,55 @@ describe('cámara y mapa compartidos', () => {
     fireEvent.click(screen.getByRole('checkbox', { name: 'Refugios' }));
     expect(screen.queryByText('■ Refugio ficticio')).not.toBeInTheDocument();
     expect(document.querySelector('[data-shelter-id]')).not.toBeInTheDocument();
+  });
+
+  it('conserva renderer, cámara y capas al pasar de exploración a ejecución con HUD', () => {
+    config.osmTilesEnabled = false;
+    const { rerender } = render(<WorldMap graph={graph} hud={<span>Preparado</span>} />);
+    const map = screen.getByRole('img');
+    fireEvent.keyDown(map, { key: '+' });
+    fireEvent.keyDown(map, { key: 'ArrowRight' });
+    const camera = map.getAttribute('viewBox');
+    fireEvent.click(screen.getByText('Capas', { selector: 'summary' }));
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Zonas de aparición' }));
+    rerender(<WorldMap graph={graph} world={world} hud={<span>Turno 4/150</span>} />);
+    expect(screen.getByRole('img')).toBe(map);
+    expect(map).toHaveAttribute('viewBox', camera);
+    expect(screen.getByRole('checkbox', { name: 'Zonas de aparición' })).not.toBeChecked();
+    expect(screen.getByText('Turno 4/150')).toBeInTheDocument();
+  });
+
+  it('los controles HTML del HUD no disparan selección ni zoom cartográfico', () => {
+    config.osmTilesEnabled = false;
+    const select = vi.fn(), action = vi.fn();
+    render(<WorldMap graph={graph} pickingPosition onPickPosition={select} panel={<button onClick={action}>Refugios y agentes</button>} metrics={<button>Métricas</button>} />);
+    const map = screen.getByRole('img'), camera = map.getAttribute('viewBox');
+    const panel = screen.getByRole('button', { name: 'Refugios y agentes' });
+    fireEvent.pointerDown(panel, { button: 0, clientX: 200, clientY: 200 });
+    fireEvent.click(panel);
+    const zoom = new WheelEvent('wheel', { ctrlKey: true, deltaY: -100, bubbles: true, cancelable: true });
+    fireEvent(panel, zoom);
+    expect(action).toHaveBeenCalledOnce();
+    expect(select).not.toHaveBeenCalled();
+    expect(zoom.defaultPrevented).toBe(false);
+    expect(map).toHaveAttribute('viewBox', camera);
+  });
+
+  it('localiza el refugio seleccionado una vez y conserva cámara ante nuevos snapshots', () => {
+    config.osmTilesEnabled = false;
+    const select = vi.fn();
+    const { rerender } = render(<WorldMap graph={graph} world={world} selectedShelterId="R-2" onSelectShelter={select} />);
+    const map = screen.getByRole('img');
+    const view = map.getAttribute('viewBox')!.split(' ').map(Number), expected = mapProjection(graph).nodes.get('N-0001')!;
+    expect(view[0]! + view[2]! / 2).toBeCloseTo(expected.x);
+    expect(view[1]! + view[3]! / 2).toBeCloseTo(expected.y);
+    fireEvent.keyDown(map, { key: 'ArrowRight' });
+    const moved = map.getAttribute('viewBox');
+    rerender(<WorldMap graph={graph} world={{ ...world, turn: world.turn + 1 }} selectedShelterId="R-2" onSelectShelter={select} />);
+    expect(map).toHaveAttribute('viewBox', moved);
+    fireEvent.keyDown(screen.getByRole('button', { name: 'Localizar refugio R-1' }), { key: 'Enter' });
+    expect(select).toHaveBeenCalledWith('R-1');
+    expect(map.querySelector('[data-shelter-id="R-2"]')).toHaveClass('map-shelter-selected');
   });
 
   it('abre un popup seguro desde el marcador y mantiene las fuentes diferenciadas', () => {

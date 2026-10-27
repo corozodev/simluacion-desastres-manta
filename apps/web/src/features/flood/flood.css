@@ -258,3 +258,76 @@
 .flood-map-shelters .flood-candidate-actions .button { width: auto; flex: 1; }
 @media(max-width:1250px) { .flood-map-shelters .flood-candidate-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media(max-width:600px) { .flood-map-shelters .flood-candidate-grid { grid-template-columns: minmax(0, 1fr); }.flood-map-shelters > .flood-editor-card { padding: 10px; } }
+
+/* Map-first laboratory: settings are contextual instruments, never a pre-map form. */
+.mantasim-shell .flood-page { gap: 10px; padding-top: 12px; }
+.flood-page .scenario-heading { display: flex; align-items: baseline; gap: 8px 16px; flex-wrap: wrap; min-width: 0; }
+.flood-page .scenario-heading h1 { font-size: clamp(17px, 1.7vw, 22px); margin: 0; line-height: 1.35; }
+.flood-page .scenario-heading > span { color: var(--color-textSecondary); font-size: 11px; }
+.mantasim-shell .flood-page .flood-map-workspace { padding: 0; border: 0; background: transparent; }
+.flood-workspace-hud { display: grid; gap: 7px; min-width: 0; }
+.flood-workspace-preparation { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; min-width: 0; }
+.flood-prepared-summary { color: var(--color-textSecondary); font-size: 11px; }
+.flood-hud-disclosure { position: relative; min-width: 0; }
+.flood-hud-disclosure > summary { display: flex; align-items: center; min-height: 34px; cursor: pointer; padding: 7px 11px; color: var(--color-textPrimary); font-size: 12px; font-weight: 600; border: 1px solid var(--color-border); border-radius: var(--radius-sm); background: var(--color-surface); list-style: none; }
+.flood-hud-disclosure > summary::after { content: '⌄'; margin-left: 9px; color: var(--color-textSecondary); }
+.flood-config-popover { position: absolute; z-index: 30; left: 0; top: calc(100% + 7px); width: min(450px, calc(100vw - 48px)); max-height: min(570px, 70svh); overflow: auto; padding: 16px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); box-shadow: 0 12px 30px #0005; }
+.flood-operator .flood-config-popover { width: min(360px, calc(100vw - 48px)); }
+.flood-workspace-hud .flood-configuration-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.flood-workspace-hud .flood-configuration-grid input[type=number] { width: 100px; }
+.flood-workspace-hud .flood-configuration-grid input, .flood-workspace-hud .flood-configuration-grid select { min-height: 36px; padding: 7px 9px; font-size: 12px; }
+.flood-workspace-hud .flood-reference-controls { margin-top: 10px; padding-top: 10px; }
+.flood-workspace-hud .flood-reference-controls label { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; }
+.flood-workspace-hud .operator-access { border: 0; padding: 0; }
+.flood-workspace-hud .operator-access > summary { font-size: 12px; }
+.flood-workspace-hud .operator-access .simulation-form { gap: 12px; padding: 12px 0 0; }
+.flood-workspace-hud .operator-access .simulation-form input { min-height: 36px; }
+.flood-compact-notice { color: var(--color-textSecondary); font-size: 11px; line-height: 1.5; margin: 0; }
+.flood-workspace-hud .flood-pick-notice { margin: 0; padding: 8px 10px; }
+.flood-workspace-hud .flood-pick-notice .flood-actions { margin-top: 6px; }
+.flood-page .agent-panel-editor .flood-map-shelters { margin: 0; }
+.flood-page .agent-panel-editor .flood-editor-card { padding: 10px; }
+.flood-page .agent-panel-editor .flood-candidate-grid { grid-template-columns: minmax(0, 1fr); margin-top: 8px; }
+.flood-page .agent-panel-editor h2 { font-size: 14px; }
+.flood-page .agent-panel-editor .flood-kicker { display: none; }
+.flood-page .agent-panel-editor .flood-card-heading > div:first-child { min-width: 0; }
+.flood-page .agent-panel-editor .flood-candidate-card { padding: 10px; }
+.flood-page .agent-panel-editor .flood-candidate-actions { flex-wrap: wrap; }
+.flood-page .agent-panel-editor .flood-actions { gap: 6px; margin-top: 10px; }
+.flood-page .agent-panel-editor .flood-actions .button { padding: 7px; font-size: 10px; }
+@media(max-width:600px) {
+  .flood-page .scenario-heading > span { font-size: 10px; }
+  .flood-hud-disclosure { position: static; }
+  .flood-workspace-preparation { position: relative; }
+  .flood-config-popover { top: calc(100% + 6px); width: 100%; left: 0; max-width: 100%; }
+  .flood-workspace-hud .flood-configuration-grid { gap: 10px; }
+  .flood-prepared-summary { font-size: 10px; }
+}
+
+.mantasim-shell .flood-workspace-hud .flood-parameters > summary { padding: 7px 11px; min-height: 34px; }
+.flood-actions-disclosure .flood-config-popover { width: 220px; display: grid; gap: 7px; }
+.flood-workspace-hud .flood-config-popover > .flood-compact-notice { margin-bottom: 12px; }
+@media(min-width:1100px) {
+  .flood-workspace-hud { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+  .flood-workspace-preparation { flex: 0 1 auto; }
+  .flood-workspace-hud > .simulation-hud { flex: 1 1 380px; }
+  .flood-workspace-hud > .flood-pick-notice, .flood-workspace-hud > .flood-compact-notice, .flood-workspace-hud > .error-state { flex-basis: 100%; }
+}
+.flood-workspace-hud .flood-advanced input[type=number] { width: 100%; }
+
+/* Keep the mobile control instrument to two short rows above the map. */
+@media(max-width:600px) {
+  .flood-workspace-preparation { flex-wrap: nowrap; gap: 6px; }
+  .flood-workspace-preparation .flood-prepared-summary { display: none; }
+  .flood-workspace-preparation > .flood-hud-disclosure { flex: 0 1 auto; }
+  .mantasim-shell .flood-workspace-hud .flood-hud-disclosure > summary { padding: 6px 8px; min-height: 34px; font-size: 11px; white-space: nowrap; }
+  .flood-workspace-hud .simulation-hud { display: grid; gap: 6px; padding: 7px 9px; }
+  .flood-workspace-hud .hud-state { width: 100%; flex-wrap: nowrap; gap: 6px; font-size: 10px; }
+  .flood-workspace-hud .hud-state strong { flex: 0 0 auto; font-size: 11px; }
+  .flood-workspace-hud .hud-state > span { min-width: 0; flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .flood-page .flood-workspace-hud .hud-state progress { width: 40px; height: 4px; flex: 0 0 40px; }
+  .flood-workspace-hud .hud-actions { flex-wrap: nowrap; gap: 6px; }
+  .flood-workspace-hud .hud-actions > .button { flex: 0 1 auto; min-height: 36px; padding: 7px 9px; font-size: 11px; }
+  .flood-workspace-hud .hud-actions > .flood-actions-disclosure { flex: 0 0 auto; }
+  .flood-actions-disclosure .flood-config-popover { width: min(300px, 100%); }
+}

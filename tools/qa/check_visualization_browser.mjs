@@ -1,7 +1,7 @@
 // Local integration only: real React + Go, independent browser session stores.
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
-import { randomBytes } from 'node:crypto';
+import { randomBytes, randomUUID } from 'node:crypto';
 import { once } from 'node:events';
 import { existsSync } from 'node:fs';
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
@@ -16,7 +16,7 @@ const root = fileURLToPath(new URL('../../', import.meta.url));
 const backend = path.join(root, 'services/evacuation');
 const temporary = await mkdtemp(path.join(tmpdir(), 'corodev-session-browser-'));
 const processes = [];
-const evidence = process.env.VISUALIZATION_EVIDENCE_DIR || path.join(root, 'deploy/evidence-private/phase6a-20261027');
+const evidence = process.env.VISUALIZATION_EVIDENCE_DIR || path.join(root, `deploy/evidence-private/mantasim-mapfirst-visuals-${Date.now()}`);
 let browser;
 let logs = '';
 async function stop(child) {
@@ -94,7 +94,7 @@ try {
   ].filter(item => !process.env.VISUALIZATION_SCENARIO || item[2] === process.env.VISUALIZATION_SCENARIO)) {
     const context = await browser.newContext({ viewport }); contexts.push(context);
     const page = await context.newPage();
-    let creates = 0;
+    let creates = 0, explicitApiCreates = 0;
     page.on('pageerror', error => errors.push(error.message));
     page.on('request', request => {
       const url = new URL(request.url());
@@ -105,23 +105,48 @@ try {
     await expect(page.getByRole('button', { name: 'Iniciar simulación', exact: true })).toBeEnabled();
     await expect(page.locator('[data-display-key]')).toHaveCount(0);
     assert.equal(creates, 0);
-    await page.getByLabel('Amenaza').selectOption(scenario);
-    await page.getByLabel('Profundidad del grafo').selectOption(profile);
-    await page.getByLabel('Agentes', { exact: true }).fill('80');
-    await page.getByLabel('Turnos máximos').fill('12');
-    // 2s interval lets browser see consecutive ticks rather than fabricate skipped paths.
-    await page.getByLabel('Intervalo entre turnos (ms)').fill('2000');
-    const response = page.waitForResponse(r => r.url() === `${api}/v1/simulations` && r.request().method() === 'POST');
-    await page.getByRole('button', { name: 'Iniciar simulación', exact: true }).click();
-    const credentials = await (await response).json();
+    let credentials;
+    if (scenario === 'zombie_outbreak') {
+      await page.getByLabel('Profundidad del grafo').selectOption(profile);
+      await page.getByLabel('Agentes', { exact: true }).fill('80');
+      await page.getByText('Configuración avanzada', { selector: 'summary', exact: true }).click();
+      await page.getByLabel('Turnos máximos').fill('12');
+      await page.getByText('Configuración avanzada', { selector: 'summary', exact: true }).click();
+      const response = page.waitForResponse(r => r.url() === `${api}/v1/simulations` && r.request().method() === 'POST');
+      await page.getByRole('button', { name: 'Iniciar simulación', exact: true }).click();
+      credentials = await (await response).json();
+    } else {
+      // The zombie route intentionally has no threat selector. Exercise its
+      // supported recovery observer using a legitimately created flood session.
+      const response = await fetch(`${api}/v1/simulations`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Idempotency-Key': randomUUID() }, body: JSON.stringify({ scenario, graph_profile: profile, seed: 20261026, max_ticks: 12, tick_interval_ms: 2000, config: { survivors: 80, round: 'round1', rainfall_intensity: .8 } }) });
+      assert.equal(response.status, 201);
+      credentials = await response.json(); explicitApiCreates++;
+      await page.evaluate(value => sessionStorage.setItem('corodev.simulation-session.v1', JSON.stringify(value)), { simulation_id: credentials.simulation_id, access_token: credentials.access_token, endpoint: api });
+      await page.reload();
+    }
+    assert.equal(credentials.tick_interval_ms, 2000);
     const current = async () => (await fetch(`${api}/v1/simulations/${credentials.simulation_id}/state`, { headers: { Authorization: `Bearer ${credentials.access_token}` } })).json();
     await expect(page.locator('[data-display-key]').first()).toBeVisible();
     if (scenario === 'urban_flood') await waitFor(async () => (await current()).tick >= 6, 'Flood exposure after six actual turns', 20_000);
-    await page.getByRole('button', { name: /Ver ruta de / }).first().click();
-    await page.getByRole('button', { name: 'Centrar agente', exact: true }).click();
+    const stateForSelection = await current();
+    const selectedAgent = scenario === 'urban_flood' ? stateForSelection.scenario_state.agents.find(agent => agent.planned_route.length > 1) : stateForSelection.snapshot.survivors.find(agent => agent.planned_route.length > 1);
+    assert.ok(selectedAgent, 'Real engine must publish a selectable route');
+    await page.getByRole('button', { name: 'Refugios y agentes', exact: true }).click();
+    await page.getByRole('tab', { name: /Supervivientes/ }).click();
+    await page.getByRole('searchbox', { name: 'Buscar por ID', exact: true }).fill(selectedAgent.id);
+    await page.getByRole('button', { name: `Ver ruta de ${selectedAgent.id}`, exact: true }).click();
+    await page.getByRole('button', { name: 'Cerrar refugios y agentes', exact: true }).click();
     const map = page.getByRole('img', { name: scenario === 'urban_flood' ? /^Red urbana de inundación/ : /^Red de evacuación/ });
     await map.scrollIntoViewIfNeeded();
-    await expect(page.locator('[data-sprite]').first()).toBeVisible();
+    const selectedMarker = page.locator(`[data-agent-id="${selectedAgent.id}"]`);
+    await expect(selectedMarker).toBeVisible();
+    // Use the available natural camera gestures to inspect the selected atlas.
+    for (let zoom = 0; zoom < 2; zoom++) {
+      const box = await selectedMarker.boundingBox(); assert.ok(box);
+      await page.mouse.dblclick(box.x + box.width / 2, box.y + box.height / 2);
+    }
+    await expect(selectedMarker.locator('[data-sprite]')).toBeVisible();
+    await page.locator('summary').filter({ hasText: /^Visualización$/ }).click();
     // Measure actual browser RAF intervals and DOM/heap; this is not a guaranteed paint FPS.
     const sample = await page.evaluate(async () => {
       const intervals = []; let previous; const start = performance.now();
@@ -145,24 +170,25 @@ try {
     assert.equal((await current()).tick, paused.tick);
     await map.screenshot({ path: path.join(evidence, `${name}-close-paused.png`) });
     await page.screenshot({ path: path.join(evidence, `${name}-page.png`), fullPage: true });
-    if (scenario === 'urban_flood') { await page.getByRole('button', { name: 'Centrar exposición', exact: true }).click(); await map.screenshot({ path: path.join(evidence, `${name}-exposure.png`) }); }
+    if (scenario === 'urban_flood') { await expect(page.locator('[data-layer=exposure] circle').first()).toBeAttached(); await map.screenshot({ path: path.join(evidence, `${name}-exposure.png`) }); }
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await expect(page.getByText(/Movimiento reducido: efectos detenidos/)).toBeVisible();
     await page.emulateMedia({ reducedMotion: 'no-preference' });
-    await page.getByRole('button', { name: scenario === 'urban_flood' ? 'Restablecer mapa de inundación' : 'Restablecer mapa', exact: true }).click();
+    await page.getByRole('button', { name: 'Restablecer vista', exact: true }).click();
     await map.screenshot({ path: path.join(evidence, `${name}-overview.png`) });
     if (!await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)) {
       console.log('Overflow elements', await page.evaluate(() => [...document.querySelectorAll('*')].filter(e => e.getBoundingClientRect().right > innerWidth + 1 && e.getBoundingClientRect().width > 0).map(e => ({ tag: e.tagName, class: e.getAttribute('class'), width: e.getBoundingClientRect().width, right: e.getBoundingClientRect().right, text: e.textContent?.slice(0, 80) })).slice(0, 20)));
     }
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, `${name} overflow`);
-    await page.getByRole('button', { name: 'Reanudar', exact: true }).click();
+    await page.getByRole('button', { name: 'Continuar', exact: true }).click();
     await expect(page.getByLabel('Tu simulación')).toContainText('En ejecución');
     await context.setOffline(true);
     await expect(page.locator('[data-layer="animated-entities"]')).toHaveAttribute('data-animation-active', 'false');
     await context.setOffline(false);
     await page.reload();
-    await expect(page.getByLabel('Tu simulación')).toContainText(credentials.simulation_id);
-    assert.equal(creates, 1, 'Refresh created another simulation');
+    await page.getByText('Configuración e información técnica', { selector: 'summary', exact: true }).click();
+    await expect(page.locator('details').filter({ has: page.getByText('Configuración e información técnica', { selector: 'summary', exact: true }) })).toContainText(credentials.simulation_id);
+    assert.equal(creates + explicitApiCreates, 1, 'Refresh created another simulation');
     await expect(page.getByLabel('Resultados de simulación')).toContainText('Finalizada', { timeout: 35_000 });
     await expect(page.locator('[data-layer="animated-entities"]')).toHaveAttribute('data-animation-active', 'false');
     const final = await current();
@@ -175,7 +201,7 @@ try {
   }
   assert.equal(logs.includes('access_token'), false, 'Server logs exposed credential fields');
   assert.deepEqual(errors, []); assert.deepEqual(forbidden, []);
-  await writeFile(path.join(evidence, 'browser-measurements.json'), JSON.stringify({ date: '2026-10-27', note: 'Local Chromium RAF scheduling intervals, not guaranteed paint FPS. Real Go snapshots, no synthetic runtime fixtures. Raster disabled.', measurements }, null, 2) + '\n');
+  await writeFile(path.join(evidence, 'browser-measurements.json'), JSON.stringify({ date: '2026-10-27', note: 'Local Chromium RAF scheduling intervals, not guaranteed paint FPS. Real Go snapshots; zombie UI explicit creation, managed flood via explicit real API creation and session recovery. No runtime fixtures. Raster disabled.', measurements }, null, 2) + '\n');
   console.log(JSON.stringify({ checks: 'Real React/Go zombie BASE + flood FULL_MANTA; explicit start, SVG atlases, LOD, opt-out, pause/resume, offline, reduced motion, reload, completion; desktop/mobile screenshots and measured RAF/DOM/heap', evidence, measurements }));
 } finally {
   if (browser) await browser.close();

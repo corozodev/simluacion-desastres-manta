@@ -27,7 +27,7 @@ it('explora las 13.452 aristas sin activar una ejecución ni mezclar posiciones'
   await userEvent.selectOptions(screen.getByLabelText('Profundidad del grafo'), 'FULL_MANTA');
   await waitFor(() => expect([...document.querySelectorAll('.escape-road')].reduce((count, path) => count + (path.getAttribute('d')?.match(/M/g)?.length ?? 0), 0)).toBe(master.edges.length));
   expect(document.querySelectorAll('.escape-survivor, .escape-zombie, .escape-planned-route')).toHaveLength(0);
-  expect(screen.getByText('Solo geografía')).toBeInTheDocument();
+  expect(screen.getByText('Sin ejecución activa')).toBeInTheDocument();
   expect(document.querySelectorAll('.escape-road')).toHaveLength(2);
   expect([...document.querySelectorAll('.escape-road')].reduce((count, path) => count + (path.getAttribute('d')?.match(/M/g)?.length ?? 0), 0)).toBe(master.edges.length);
   expect(start).not.toHaveBeenCalled();
@@ -46,6 +46,8 @@ it('inicia FULL_MANTA sólo con la selección pública y conserva la topología 
   await waitFor(() => expect(start).toHaveBeenCalledWith(expect.objectContaining({ graph_profile: 'FULL_MANTA' }), expect.any(String)));
   await screen.findByLabelText('Tu simulación');
   expect(api.graph).toHaveBeenLastCalledWith(expect.anything(), { runId: undefined, mode: 'full' });
+  await userEvent.click(screen.getByRole('button', { name: 'Refugios y agentes' }));
+  await userEvent.click(screen.getByRole('tab', { name: /^Supervivientes/ }));
   expect(screen.getByLabelText('Buscar por ID')).toHaveValue('');
   client.clear();
 }, 15000);

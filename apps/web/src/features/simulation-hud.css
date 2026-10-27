@@ -1,0 +1,48 @@
+.simulation-hud { display:flex; align-items:center; gap:10px 20px; flex-wrap:wrap; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); background:var(--color-surface); min-width:0; }
+.hud-state { display:flex; align-items:center; gap:8px 12px; flex-wrap:wrap; font-size:12px; flex:1 1 auto; }
+.hud-state strong { font-size:12px; }
+.hud-state span { color:var(--color-textSecondary); font-variant-numeric:tabular-nums; }
+.hud-state progress { width:70px; height:4px; accent-color:var(--color-success); }
+.hud-actions { display:flex; align-items:center; flex-wrap:wrap; gap:6px; }
+.hud-actions .button { min-height:36px; padding:7px 10px; font-size:12px; gap:5px; }
+.hud-actions .button svg { width:14px; height:14px; }
+.hud-metrics { padding:8px 10px; border:1px solid var(--color-border); border-radius:var(--radius-sm); background:var(--color-surface); max-width:min(320px,100%); font-size:11px; }
+.hud-metrics > summary { cursor:pointer; color:var(--color-textSecondary); font-size:11px; }
+.hud-metrics dl { display:flex; flex-wrap:wrap; gap:6px 18px; margin:6px 0 0; }
+.hud-metrics dt { color:var(--color-textSecondary); font-size:10px; }
+.hud-metrics dd { margin:2px 0 0; font-size:15px; font-weight:600; font-variant-numeric:tabular-nums; }
+.workspace-config { display:flex; align-items:end; gap:8px; flex-wrap:wrap; padding:8px 0; min-width:0; }
+.workspace-config > fieldset { display:flex; flex-wrap:wrap; align-items:end; gap:8px; border:0; padding:0; margin:0; min-width:0; }
+.workspace-config label { display:grid; gap:3px; font-size:10px; color:var(--color-textSecondary); min-width:0; }
+.workspace-config input, .workspace-config select { height:36px; min-height:36px; width:100%; border:1px solid var(--color-border); border-radius:var(--radius-sm); padding:6px 8px; background:var(--color-surface); color:var(--color-textPrimary); font:inherit; font-size:12px; }
+.workspace-config .config-graph { width:180px; }
+.workspace-config .config-agents { width:66px; }
+.workspace-config .config-round { width:140px; }
+.workspace-config .button { min-height:36px; padding:7px 12px; font-size:12px; }
+.workspace-advanced { position:relative; margin:0; }
+.workspace-advanced > summary { cursor:pointer; padding:8px 10px; min-height:36px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:12px; }
+.workspace-advanced > .config-popover { position:absolute; top:calc(100% + 6px); right:0; z-index:6; width:min(310px,calc(100vw - 50px)); padding:14px; background:var(--color-surface); border:1px solid var(--color-border); border-radius:var(--radius-sm); box-shadow:0 8px 20px #0004; display:grid; gap:10px; max-height:55svh; overflow:auto; }
+.config-popover fieldset { border:0; margin:0; padding:0; display:grid; gap:12px; }
+.config-popover p { font-size:11px; color:var(--color-textSecondary); }
+.workspace-notice { font-size:12px; padding:8px 12px; color:var(--color-textSecondary); }
+.workspace-results { padding:10px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:12px; }
+.workspace-results > summary { cursor:pointer; font-weight:600; }
+.workspace-results h2 { font-size:14px; margin-top:8px; }
+.workspace-results dl { display:flex; flex-wrap:wrap; gap:10px 28px; }
+.workspace-results dt { font-size:11px; color:var(--color-textSecondary); }
+.workspace-results dd { margin:3px 0; font-size:17px; font-weight:600; }
+.workspace-results p { color:var(--color-textSecondary); font-size:11px; overflow-wrap:anywhere; }
+@media(max-width:600px) {
+ .workspace-config { gap:6px; }.workspace-config > fieldset { gap:6px; flex:1 1 100%; flex-wrap:nowrap; }
+ .workspace-config .config-graph { flex:1 1 120px; width:120px; }.workspace-config .config-agents { flex:0 0 54px; width:54px; }.workspace-config .config-round { flex:1 1 92px; width:92px; }
+ .workspace-advanced > .config-popover { left:0; right:auto; }
+ .simulation-hud { padding:7px 9px; gap:6px; }.hud-state { font-size:11px; }.hud-actions .button { min-height:40px; }
+ .hud-metrics { padding:6px 9px; }.hud-metrics dl { gap:4px 12px; }.hud-metrics dd { font-size:13px; }
+}
+
+.mantasim-shell .escape-page.map-first-page { gap:8px; }
+.workspace-config { padding:0 0 4px; }
+.config-status { font-size:10px; color:var(--color-textSecondary); align-self:center; }
+.map-first-page .scenario-heading { display:flex; align-items:baseline; gap:8px 16px; flex-wrap:wrap; min-width:0; }
+.map-first-page .scenario-heading h1 { font-size:clamp(17px,1.7vw,22px); margin:0; line-height:1.35; }
+.map-first-page .scenario-heading > span { font-size:11px; color:var(--color-textSecondary); }

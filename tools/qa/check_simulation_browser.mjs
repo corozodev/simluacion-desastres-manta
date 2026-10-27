@@ -107,6 +107,7 @@ try {
   assert.equal((await (await fetch(`${api}/estado`)).json()).turn, 0, 'Legacy startup advanced');
   await pageA.getByText('Configuración avanzada', { exact: true }).click();
   await pageA.getByLabel('Turnos máximos').fill('8');
+  await pageA.getByText('Configuración avanzada', { exact: true }).click();
   const createdA = pageA.waitForResponse(response => response.url() === `${api}/v1/simulations` && response.request().method() === 'POST');
   await pageA.getByRole('button', { name: 'Iniciar simulación', exact: true }).dblclick();
   const credentialsA = await (await createdA).json();
@@ -121,6 +122,7 @@ try {
   await pageB.getByLabel('Agentes', { exact: true }).fill('5');
   await pageB.getByText('Configuración avanzada', { exact: true }).click();
   await pageB.getByLabel('Turnos máximos').fill('2');
+  await pageB.getByText('Configuración avanzada', { exact: true }).click();
   const createdB = pageB.waitForResponse(response => response.url() === `${api}/v1/simulations` && response.request().method() === 'POST');
   await pageB.getByRole('button', { name: 'Iniciar simulación', exact: true }).click();
   const credentialsB = await (await createdB).json();
@@ -141,7 +143,7 @@ try {
   assert.equal(stateB.snapshot.survivors.length, 5);
   assert.equal(stateB.status, 'COMPLETED');
   assert.equal(await pageB.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, 'Mobile viewport overflow');
-  await pageA.getByRole('button', { name: 'Reanudar', exact: true }).click();
+  await pageA.getByRole('button', { name: 'Continuar', exact: true }).click();
   await expect(pageA.getByLabel('Tu simulación')).toContainText('En ejecución');
   await a.close();
   await waitFor(async () => (await stateA()).status === 'COMPLETED', 'Backend execution without browser', 20_000);

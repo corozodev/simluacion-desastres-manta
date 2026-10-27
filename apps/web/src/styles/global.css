@@ -158,11 +158,11 @@ main { flex: 1; width: 100%; outline: 0; }
 .escape-metric small { font-size: 12px; font-weight: 500; color: var(--color-textSecondary); }
 .escape-map-card { padding: 22px; }
 .escape-map { margin: 0; }
-.escape-map svg { display: block; width: 100%; min-height: 200px; background: var(--color-background); border-radius: var(--radius-sm); }
+.escape-map .map-stage > svg { display: block; width: 100%; min-height: 200px; background: var(--color-background); border-radius: var(--radius-sm); }
 .escape-road { stroke: var(--color-textSecondary); stroke-width: 1.5; opacity: .48; }
 .escape-road, .escape-planned-route { fill: none; vector-effect: non-scaling-stroke; }
-.escape-map svg { touch-action: none; cursor: grab; }
-.escape-map svg:active { cursor: grabbing; }
+.escape-map .map-stage > svg { touch-action: none; cursor: grab; }
+.escape-map .map-stage > svg:active { cursor: grabbing; }
 .escape-map-controls { display: flex; align-items: center; flex-wrap: wrap; gap: 7px; margin-bottom: 12px; }
 .escape-map-controls .button { min-width: 34px; min-height: 34px; padding: 5px 10px; font-size: 12px; }
 .escape-map-controls output { color: var(--color-textSecondary); font-size: 12px; }
@@ -231,7 +231,7 @@ main { flex: 1; width: 100%; outline: 0; }
 
 /* MantaSim: shared application layout and compact controls. */
 .mantasim-shell { --sidebar-width: 244px; }
-.mantasim-shell.sidebar-collapsed { --sidebar-width: 76px; }
+.mantasim-shell.sidebar-collapsed { --sidebar-width: 52px; }
 .mantasim-shell .sidebar { width: var(--sidebar-width); padding: 24px 14px 100px; background: var(--color-background); overflow: visible; }
 .mantasim-shell .app-body { margin-left: var(--sidebar-width); min-width: 0; }
 .mantasim-shell main, .mantasim-shell .page, .mantasim-shell .card { min-width: 0; }
@@ -366,3 +366,13 @@ main { flex: 1; width: 100%; outline: 0; }
 @media (min-width: 1024px) { .mantasim-shell .flood-page { gap: 8px; padding-top: 20px; } }
 .status-short-label { display: none; }
 @media (max-width: 760px) { .mantasim-shell .shell-api-status .status-short-label { display: inline; font-size: 10px; } }
+
+/* Final map workspace: the collapsed rail keeps 44px controls in 52px. */
+.mantasim-shell .page { padding-block: 12px; }
+@media (min-width: 761px) {
+  .mantasim-shell.sidebar-collapsed .sidebar { padding-inline: 4px; }
+  .mantasim-shell.sidebar-collapsed .brand { padding: 0; gap: 0; justify-content: center; }
+  .mantasim-shell.sidebar-collapsed .sidebar-brand-row { justify-content: center; }
+  .mantasim-shell.sidebar-collapsed .nav-item, .mantasim-shell.sidebar-collapsed .sidebar-toggle { width: 44px; min-height: 44px; padding-inline: 0; }
+  .mantasim-shell.sidebar-collapsed .shell-api-status { left: 4px; width: 44px; padding-inline: 2px; }
+}

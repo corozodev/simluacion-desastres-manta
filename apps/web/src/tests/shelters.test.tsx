@@ -39,6 +39,7 @@ describe('refugios seleccionados sobre el grafo real', () => {
   it('previsualiza y cancela con Escape; confirmar envía el nodo real en el request', async () => {
     const start = setup();
     const map = await screen.findByRole('img', { name: /Red de evacuación/ });
+    await userEvent.click(screen.getByRole('button', { name: 'Refugios y agentes' }));
     await userEvent.click(screen.getByText(/Refugios ·/));
     const edit = screen.getByRole('button', { name: 'Editar ubicación de R-1' });
     await userEvent.click(edit);
@@ -50,8 +51,9 @@ describe('refugios seleccionados sobre el grafo real', () => {
     expect(screen.queryByRole('button', { name: 'Confirmar ubicación' })).not.toBeInTheDocument();
     expect(map.querySelector('[data-layer="shelter-preview"]')).not.toBeInTheDocument();
     expect(start).not.toHaveBeenCalled();
+    await userEvent.click(screen.getByRole('button', { name: 'Refugios y agentes' }));
     await userEvent.click(screen.getByText(/Refugios ·/));
-    await userEvent.click(edit);
+    await userEvent.click(screen.getByRole('button', { name: 'Editar ubicación de R-1' }));
     fireEvent.click(map, { clientX: location.x, clientY: location.y });
     await userEvent.click(screen.getByRole('button', { name: 'Confirmar ubicación' }));
     await userEvent.click(screen.getByRole('button', { name: 'Iniciar simulación' }));
@@ -75,6 +77,7 @@ describe('refugios seleccionados sobre el grafo real', () => {
   it('valida capacidad y restaura originales sin crear trabajo', async () => {
     const start = setup();
     await screen.findByRole('img', { name: /Red de evacuación/ });
+    await userEvent.click(screen.getByRole('button', { name: 'Refugios y agentes' }));
     await userEvent.click(screen.getByText(/Refugios ·/));
     fireEvent.change(screen.getByRole('spinbutton', { name: 'Capacidad de R-1' }), { target: { value: '0' } });
     expect(screen.getByRole('button', { name: 'Iniciar simulación' })).toBeDisabled();

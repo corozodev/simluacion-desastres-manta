@@ -16,7 +16,7 @@ import addFormats from 'ajv-formats';
 const root = fileURLToPath(new URL('../../', import.meta.url));
 const backend = path.join(root, 'services/evacuation');
 const temporary = await mkdtemp(path.join(tmpdir(), 'corodev-reference-'));
-const directory = process.env.REFERENCE_EVIDENCE_DIR || path.join(root, `deploy/evidence-private/mantasim-reference-${Date.now()}`);
+const directory = process.env.REFERENCE_EVIDENCE_DIR || path.join(root, `deploy/evidence-private/mantasim-mapfirst-reference-${Date.now()}`);
 const origin = 'http://127.0.0.1:5183';
 const children = [];
 let browser;
@@ -55,7 +55,7 @@ async function operator(base) {
   return async (route, body) => { const result = await fetch(base + route, { method: 'POST', headers, body: JSON.stringify(body) }); assert(result.ok, `${route}: HTTP ${result.status}`); return check('LabState', await result.json()); };
 }
 const stable = value => createHash('sha256').update(JSON.stringify(value)).digest('hex');
-const report = { phase: 'MantaSim UX reference regression', recorded_at: new Date().toISOString(), scope: 'Current MantaSim UX regression: local real Go, React, Chromium, checked-in official copy; no provider/GPS/AWS/raster requests', checks: {}, measurements: {}, browser: {}, provenance: {} };
+const report = { phase: 'MantaSim map-first reference regression', recorded_at: new Date().toISOString(), scope: 'Current MantaSim UX regression: local real Go, React, Chromium, checked-in official copy; no provider/GPS/AWS/raster requests', checks: {}, measurements: {}, browser: {}, provenance: {} };
 try {
   await mkdir(directory, { recursive: true, mode: 0o700 });
   const go = process.env.GO_BIN || (existsSync('/usr/local/go/bin/go') ? '/usr/local/go/bin/go' : 'go');
@@ -85,6 +85,7 @@ try {
   await until(async () => { try { return (await fetch(origin)).ok; } catch { return false; } }, Boolean, 'Vite');
   browser = await chromium.launch(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE } : {});
   const page = await browser.newPage({ viewport: { width: 1440, height: 1100 } });
+  page.on('dialog', dialog => dialog.accept());
   const errors = [], failed = [], cancelled = [], http = [], external = [], secretLeaks = [], polygonRequests = [];
   page.on('pageerror', error => errors.push(error.message));
   page.on('console', message => { if (message.type() === 'error') errors.push(message.text()); });
@@ -107,10 +108,11 @@ try {
   const pausedAfterLayer = await get(lab.url, '/lab/state', 'LabState');
   assert(pausedAfterLayer.scenario.world_version === baseline.scenario.world_version && !pausedAfterLayer.scenario.data_provenance.geographic_reference, 'Display layer mutated simulation');
   report.checks.independent_layer_and_provenance_without_mutation = true;
-  await openDetails(/^Parámetros ·/);
+  await openDetails(/^Configurar tormenta$/);
   await openDetails(/^Configuración avanzada$/);
   await page.getByRole('checkbox', { name: 'Usar susceptibilidad geográfica como referencia', exact: true }).check();
   await page.getByRole('spinbutton', { name: 'Peso experimental de susceptibilidad' }).fill('0.25');
+  await page.getByText('Configurar tormenta', { selector: 'summary', exact: true }).click();
   await page.getByRole('button', { name: 'Iniciar tormenta', exact: true }).click();
   state = await until(() => get(lab.url, '/lab/state', 'LabState'), value => value.run_id !== baseline.run_id && value.scenario.simulation_step >= 1, 'hybrid run');
   await page.getByRole('button', { name: 'Pausar', exact: true }).click();
@@ -132,7 +134,9 @@ try {
   await page.getByRole('button', { name: 'Pausar', exact: true }).click();
   assert(polygonRequests.length === beforeRequests, 'World polling downloaded static polygons again');
   report.checks.incremental_world_updates_reuse_static_polygons = true;
+  await openDetails(/^Configurar tormenta$/);
   await page.getByRole('combobox', { name: /Cobertura de inundación/ }).selectOption('full');
+  await page.getByText('Configurar tormenta', { selector: 'summary', exact: true }).click();
   const fullStart = performance.now(); await page.getByRole('button', { name: 'Iniciar tormenta', exact: true }).click();
   state = await until(() => get(lab.url, '/lab/state', 'LabState'), value => value.mode === 'full' && value.scenario.simulation_step >= 1, 'master reference run');
   await page.getByRole('button', { name: 'Pausar', exact: true }).click();

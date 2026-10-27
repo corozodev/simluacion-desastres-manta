@@ -33,6 +33,10 @@ function setup(options: { state?: SimulationState; unavailableFlood?: boolean; d
   const view = render(<QueryClientProvider client={client}><Escape /></QueryClientProvider>);
   return { ...view, client, create, control, restart };
 }
+async function openAgents() {
+  await userEvent.click(screen.getByRole('button', { name: 'Refugios y agentes' }));
+  await userEvent.click(screen.getByRole('tab', { name: /^Supervivientes/ }));
+}
 afterEach(() => { clients.splice(0).forEach(client => client.clear()); vi.useRealTimers(); vi.restoreAllMocks(); });
 
 describe('ejecutor independiente bajo demanda', () => {
@@ -58,6 +62,7 @@ describe('ejecutor independiente bajo demanda', () => {
     await userEvent.type(screen.getByLabelText('Semilla'), '123');
     await userEvent.selectOptions(screen.getByLabelText('Ronda'), 'round2');
     fireEvent.change(screen.getByLabelText('Agentes'), { target: { value: '12' } });
+    await userEvent.click(screen.getByRole('button', { name: 'Refugios y agentes' }));
     await userEvent.click(screen.getByText(/Refugios ·/));
     await userEvent.click(screen.getByText('Elegir refugios originales activos'));
     await userEvent.click(screen.getByRole('checkbox', { name: new RegExp(graph.shelters[0]!.id) }));
@@ -79,7 +84,7 @@ describe('ejecutor independiente bajo demanda', () => {
     expect(saved).toMatchObject({ simulation_id: 'private-simulation-id', access_token: 'opaque-private-test-token' });
     expect(localStorage.length).toBe(0);
     expect(window.location.href).not.toContain(saved.access_token);
-    expect(screen.getByRole('button', { name: 'Reiniciar con la misma configuración' })).toBeDisabled();
+    expect(screen.queryByRole('button', { name: 'Reiniciar' })).not.toBeInTheDocument();
   });
 
   it('recupera al actualizar sin crear y continúa consultando con credencial privada', async () => {
@@ -115,19 +120,19 @@ describe('ejecutor independiente bajo demanda', () => {
     await waitFor(() => expect(pause).toBeEnabled());
     await userEvent.click(pause);
     expect(await screen.findByText('Pausada')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Pausar' })).toBeDisabled();
-    await userEvent.click(screen.getByRole('button', { name: 'Reanudar' }));
+    expect(screen.queryByRole('button', { name: 'Pausar' })).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Continuar' }));
     expect(await screen.findByText('En ejecución')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Cancelar' }));
     expect(await screen.findByRole('heading', { name: 'Resultados de simulación' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Reanudar' })).toBeDisabled();
+    expect(screen.queryByRole('button', { name: 'Continuar' })).not.toBeInTheDocument();
     expect(control.mock.calls.map(call => call[2])).toEqual(['pause', 'resume', 'cancel']);
   });
 
   it('reinicia una ejecución terminal con nueva ID y la credencial de su predecesora', async () => {
     restoreSession();
     const { restart, create } = setup({ state: managedState(undefined, { status: 'COMPLETED' }) });
-    const button = await screen.findByRole('button', { name: 'Reiniciar con la misma configuración' });
+    const button = await screen.findByRole('button', { name: 'Reiniciar' });
     await waitFor(() => expect(button).toBeEnabled());
     await userEvent.click(button);
     await waitFor(() => expect(restart).toHaveBeenCalledWith('private-simulation-id', 'opaque-private-test-token', expect.any(String)));
@@ -165,6 +170,7 @@ describe('ejecutor independiente bajo demanda', () => {
     restoreSession();
     const { client, create } = setup();
     const current = await screen.findByLabelText('Tu simulación');
+    await openAgents();
     const search = screen.getByRole('searchbox', { name: 'Buscar por ID' });
     await userEvent.type(search, 'S-0001');
     vi.mocked(api.simulationCapabilities).mockRejectedValue(new ApiError('No hay red.', 'BACKEND_UNAVAILABLE'));
@@ -185,7 +191,7 @@ describe('ejecutor independiente bajo demanda', () => {
     vi.mocked(api.simulationState).mockResolvedValue(managedState(undefined, { status: 'COMPLETED' }));
     await userEvent.click(pause);
     expect(await screen.findByText('Transición tardía.')).toBeInTheDocument();
-    const button = screen.getByRole('button', { name: 'Reiniciar con la misma configuración' });
+    const button = screen.getByRole('button', { name: 'Reiniciar' });
     await waitFor(() => expect(button).toBeEnabled());
     await userEvent.click(button);
     await waitFor(() => expect(restart).toHaveBeenCalledTimes(1));
@@ -197,7 +203,7 @@ describe('ejecutor independiente bajo demanda', () => {
     restoreSession();
     const { restart } = setup({ state: managedState(undefined, { status: 'COMPLETED' }) });
     restart.mockRejectedValueOnce(new ApiError('Sin cupo para reiniciar.', 'CAPACITY_EXHAUSTED', 503));
-    const button = await screen.findByRole('button', { name: 'Reiniciar con la misma configuración' });
+    const button = await screen.findByRole('button', { name: 'Reiniciar' });
     await waitFor(() => expect(button).toBeEnabled());
     await userEvent.click(button);
     expect(await screen.findByText('Sin cupo para reiniciar.')).toBeInTheDocument();
@@ -224,9 +230,11 @@ describe('ejecutor independiente bajo demanda', () => {
     vi.spyOn(api, 'incidents').mockResolvedValue({ incidents: [], total: 0, limit: 100, offset: 0, has_more: false });
     vi.spyOn(api, 'referenceStatus').mockResolvedValue({ schema_version: 1, mode: 'disabled', availability: 'disabled', refreshing: false, provider_status: 'offline', message: 'Referencia deshabilitada.', feature_count: 0, vertex_count: 0, metrics: { queries: 0, provider_errors: 0, cache_hits: 0, cache_misses: 0, last_query_ms: 0, total_query_ms: 0, response_bytes: 0, last_refresh_ms: 0 } });
     expect(create).not.toHaveBeenCalled();
-    expect(await screen.findByRole('heading', { name: 'Agentes de inundación' })).toBeInTheDocument();
+    await screen.findByRole('img', { name: /Red urbana de inundación/ });
+    await openAgents();
+    expect(screen.getByRole('rowheader', { name: 'F-1' })).toBeInTheDocument();
     expect(document.querySelector('[data-agent-id="F-1"]')).toBeInTheDocument();
-    expect(screen.getByText('2 rutas recalculadas')).toBeInTheDocument();
+    expect(screen.getByTitle('2 rutas recalculadas')).toBeInTheDocument();
     expect(screen.getByText(/Las declaraciones ciudadanas y la referencia territorial/)).toBeInTheDocument();
     expect(document.querySelectorAll('.escape-zombie')).toHaveLength(0);
   });

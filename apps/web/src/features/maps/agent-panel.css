@@ -1,0 +1,52 @@
+.agent-panel { position: relative; width: fit-content; max-width: 100%; pointer-events: auto; }
+.agent-panel button { font: inherit; cursor: pointer; }
+.agent-panel button:disabled { cursor: default; opacity: .5; }
+.agent-panel button:focus-visible, .agent-panel input:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 2px; }
+.agent-panel-trigger { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 38px; padding: 7px 11px; color: var(--color-textPrimary); background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-sm); font-size: 12px !important; }
+.agent-panel-body { position: absolute; bottom: calc(100% + 8px); left: 0; display: flex; flex-direction: column; width: min(420px, calc(100vw - 64px)); max-height: min(440px, 60svh); color: var(--color-textPrimary); background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-md); box-shadow: 0 8px 24px #0004; overflow: hidden; font-size: 12px; }
+.agent-panel-body > header { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 9px 12px; border-bottom: 1px solid var(--color-border); flex-shrink: 0; }
+.agent-panel-body > header strong { font-size: 12px; }
+.agent-panel-body > header button { display: grid; place-items: center; min-width: 30px; min-height: 30px; border: 0; background: transparent; color: var(--color-textSecondary); border-radius: var(--radius-sm); }
+.agent-panel-tabs { display: flex; flex-shrink: 0; gap: 4px; padding: 6px 8px; border-bottom: 1px solid var(--color-border); }
+.agent-panel-tabs button { display: flex; align-items: center; justify-content: center; gap: 7px; flex: 1; min-height: 32px; padding: 5px 8px; background: transparent; border: 1px solid transparent; border-radius: var(--radius-sm); color: var(--color-textSecondary); font-size: 12px; }
+.agent-panel-tabs button[aria-selected=true] { color: var(--color-accent); border-color: var(--color-border); background: var(--color-background); }
+.agent-panel-tabs span { font-size: 10px; opacity: .8; }
+.agent-panel-scroll { overflow: auto; overscroll-behavior: contain; min-height: 0; max-height: 330px; }
+.agent-panel-shelters { display: grid; gap: 7px; margin: 0; padding: 10px; list-style: none; }
+.agent-panel-shelters li { border: 1px solid transparent; border-radius: var(--radius-sm); padding: 6px; }
+.agent-panel-shelters li.agent-shelter-selected { border-color: var(--color-focus); background: var(--color-background); }
+.agent-shelter-heading, .agent-shelter-availability { display: flex; align-items: center; justify-content: space-between; gap: 7px; }
+.agent-shelter-heading > span, .agent-shelter-availability { color: var(--color-textSecondary); font-size: 10px; }
+.agent-shelter-location { display: inline-flex; align-items: center; gap: 5px; padding: 3px 0; min-height: 28px; border: 0; background: transparent; color: var(--color-textPrimary); font-size: 12px; }
+.agent-panel-shelters progress { display: block; width: 100%; height: 4px; margin: 5px 0 7px; accent-color: var(--color-accent); background: var(--color-background); border: 0; border-radius: 4px; }
+.agent-panel-shelters progress::-webkit-progress-bar { background: var(--color-background); border-radius: 4px; }
+.agent-panel-shelters progress::-webkit-progress-value { background: var(--color-accent); border-radius: 4px; }
+.agent-shelter-state { white-space: nowrap; }
+.agent-shelter-exposed, .agent-shelter-inaccessible { color: var(--color-warning); }
+.agent-panel-editor { border-top: 1px solid var(--color-border); padding: 10px; }
+.agent-panel-editor > details { margin: 0; }
+.agent-panel-agents { display: flex; flex-direction: column; overflow: hidden; min-height: 0; }
+.agent-panel-search { display: grid; gap: 5px; padding: 9px 11px; font-size: 11px; flex-shrink: 0; }
+.agent-panel-search input { width: 100%; min-height: 34px; padding: 6px 9px; background: var(--color-background); color: var(--color-textPrimary); border: 1px solid var(--color-border); border-radius: var(--radius-sm); font: inherit; }
+.agent-panel-selection { display: flex; align-items: center; flex-wrap: wrap; justify-content: space-between; gap: 4px 8px; padding: 0 11px 8px; font-size: 10px; flex-shrink: 0; }
+.agent-panel-selection span { display: inline-flex; align-items: center; gap: 5px; color: var(--color-accent); }
+.agent-panel-selection button, .agent-panel-table button { border: 0; background: transparent; color: var(--color-accent); padding: 4px; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap; }
+.agent-panel-table-scroll { max-height: 250px; }
+.agent-panel-table { width: 100%; border-collapse: collapse; font-size: 10px; table-layout: auto; }
+.agent-panel-table th, .agent-panel-table td { border-bottom: 1px solid var(--color-border); text-align: left; padding: 6px 7px; white-space: nowrap; font-weight: 400; }
+.agent-panel-table th:first-child { padding-left: 11px; }
+.agent-panel-table thead th { position: sticky; top: 0; z-index: 1; color: var(--color-textSecondary); font-size: 9px; background: var(--color-surface); }
+.agent-panel-table tbody th { font-weight: 600; }
+.agent-panel-table tbody tr.agent-row-selected { background: var(--color-background); box-shadow: inset 3px 0 var(--color-accent); }
+.agent-panel-table button { font-size: 10px; min-height: 26px; }
+.agent-panel-empty { margin: 0; padding: 18px 12px; color: var(--color-textSecondary); font-size: 11px; line-height: 1.6; }
+.agent-panel-pagination { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 7px 10px; border-top: 1px solid var(--color-border); font-size: 10px; flex-shrink: 0; }
+.agent-panel-pagination button { min-height: 28px; padding: 3px 6px; border: 1px solid var(--color-border); border-radius: var(--radius-sm); color: var(--color-textPrimary); background: var(--color-background); }
+@media(max-width:600px) {
+ .agent-panel-trigger { min-height: 40px; }
+ .agent-panel-body { width: min(370px, calc(100vw - 52px)); max-height: min(430px, 57svh); }
+ .agent-panel-tabs button, .agent-shelter-location { min-height: 36px; }
+ .agent-panel-table th, .agent-panel-table td { padding: 6px; font-size: 10px; }
+ .agent-panel-table button, .agent-panel-selection button { min-height: 34px; }
+ .agent-panel-table-scroll { max-height: 220px; }
+}

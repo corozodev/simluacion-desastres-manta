@@ -77,8 +77,12 @@ export function ShelterEditor({ draft, disabled, originalIds, selectedIds, onSel
     </fieldset>
     {!draft.valid && <p role="alert">La capacidad debe ser un entero entre 1 y 200 por refugio.</p>}
   </details>
-    {draft.picking && <div className="shelter-selection-notice" role="status"><p>Selecciona una ubicación en el mapa para {draft.picking}. Escape cancela.</p>{draft.proposal?.error && <p role="alert">{draft.proposal.error}</p>}{draft.proposal?.node && <p>Intersección válida · ajuste {draft.proposal.distance!.toFixed(1)} m.</p>}
-      <Button disabled={!draft.proposal?.node || disabled} onClick={draft.confirm}>Confirmar ubicación</Button><Button variant="secondary" onClick={draft.cancel}>Cancelar selección</Button>
-    </div>}
+
   </>;
+}
+
+export function ShelterSelectionNotice({ draft, disabled }: { draft: ReturnType<typeof useShelterDraft>; disabled: boolean }) {
+  return <>{draft.picking && <div className="shelter-selection-notice" role="status"><p>Selecciona una ubicación en el mapa para {draft.picking}. Escape cancela.</p>{draft.proposal?.error && <p role="alert">{draft.proposal.error}</p>}{draft.proposal?.node && <p>Intersección válida · ajuste {draft.proposal.distance!.toFixed(1)} m.</p>}
+      <Button disabled={!draft.proposal?.node || disabled} onClick={draft.confirm}>Confirmar ubicación</Button><Button variant="secondary" onClick={draft.cancel}>Cancelar selección</Button>
+    </div>}</>;
 }

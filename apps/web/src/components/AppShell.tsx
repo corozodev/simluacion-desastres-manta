@@ -1,7 +1,7 @@
 import { Ghost, MapPinned, Menu, PanelLeftClose, PanelLeftOpen, RotateCw, Waves, X } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { Link, Outlet, useLocation, useSearchParams } from 'react-router-dom';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { notifyManager, useQuery, useQueryClient } from '@tanstack/react-query';
 import { brand } from '@corodev/design-tokens/brand';
 import { useFloodState } from '../services/queries';
 import { api, ApiError } from '../services/api';
@@ -22,7 +22,7 @@ export function AppShell() {
   const [search] = useSearchParams();
   const location = useLocation();
   const floodSelected = search.get('scenario') === 'urban_flood' || location.pathname === '/flood-lab';
-  const sessionHealth = useSyncExternalStore(useCallback(listener => cache.subscribe(listener), [cache]), () => {
+  const sessionHealth = useSyncExternalStore(useCallback(listener => cache.subscribe(notifyManager.batchCalls(listener)), [cache]), () => {
     const failed = cache.findAll({ queryKey: ['simulation-session'] }).find(query => query.queryKey[2] === 'state' && query.state.status === 'error'
       && !(query.state.error instanceof ApiError && [401, 403, 404, 410].includes(query.state.error.status ?? 0)));
     return failed ? failed.state.data ? 'degraded' : 'offline' : 'online';

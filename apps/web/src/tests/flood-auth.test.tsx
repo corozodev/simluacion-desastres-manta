@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { readFileSync } from 'node:fs';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
@@ -6,7 +7,7 @@ import type { GeoPoint, Graph, LabCandidateValidation, LabCatalog, LabRunConfig,
 import { FloodLab } from '../features/flood/FloodLab';
 import { api, ApiError } from '../services/api';
 
-vi.mock('../features/flood/FloodMap', () => ({ FloodMap: ({ onPickPosition, pickingCandidate, previewPosition }: { onPickPosition: (point: GeoPoint) => void; pickingCandidate?: number; previewPosition?: GeoPoint }) => <div aria-label="Mapa del laboratorio"><button disabled={pickingCandidate === undefined} onClick={() => onPickPosition({ lat: -1.000123, lng: -80.000123 })}>Señalar ubicación de prueba</button>{previewPosition && <p>Marcador provisional ajustado: {previewPosition.lat}, {previewPosition.lng}</p>}</div> }));
+vi.mock('../features/flood/FloodMap', () => ({ FloodMap: ({ onPickPosition, pickingCandidate, previewPosition, hud, panel, metrics }: { hud?: ReactNode; panel?: ReactNode; metrics?: ReactNode; onPickPosition: (point: GeoPoint) => void; pickingCandidate?: number; previewPosition?: GeoPoint }) => <div aria-label="Mapa del laboratorio">{hud}{panel}{metrics}<button disabled={pickingCandidate === undefined} onClick={() => onPickPosition({ lat: -1.000123, lng: -80.000123 })}>Señalar ubicación de prueba</button>{previewPosition && <p>Marcador provisional ajustado: {previewPosition.lat}, {previewPosition.lng}</p>}</div> }));
 vi.mock('../features/flood/IncidentPanel', () => ({ IncidentPanel: () => null }));
 vi.mock('../features/flood/ReferencePanel', () => ({ ReferencePanel: () => null }));
 const graph = JSON.parse(readFileSync('../../packages/contracts/examples/graph.json', 'utf8')) as Graph;
@@ -28,6 +29,22 @@ function setup(enabled = true, authenticated = false) {
   render(<QueryClientProvider client={client}><FloodLab /></QueryClientProvider>);
   return { session, start, login, client };
 }
+function openOperator() {
+  const access = screen.getAllByText('Acceso de operador', { selector: 'summary' })[0]!;
+  const details = access.closest('details')!;
+  if (!details.open) fireEvent.click(access);
+}
+function openShelterEditor() {
+  const trigger = screen.getByRole('button', { name: 'Refugios y agentes' });
+  if (trigger.getAttribute('aria-expanded') !== 'true') fireEvent.click(trigger);
+  const editor = screen.getByText('Editar cuatro refugios').closest('details')!;
+  editor.open = true;
+  return editor;
+}
+function openConfiguration() {
+  const summary = screen.getByText('Configurar tormenta', { selector: 'summary' });
+  if (!summary.closest('details')!.open) fireEvent.click(summary);
+}
 afterEach(() => { vi.restoreAllMocks(); localStorage.clear(); sessionStorage.clear(); });
 describe('acceso directo al laboratorio', () => {
   it('no inicia automáticamente y habilita tormenta sólo después de login y permiso del laboratorio', async () => {
@@ -36,6 +53,7 @@ describe('acceso directo al laboratorio', () => {
     expect(storm).toBeDisabled(); expect(start).not.toHaveBeenCalled();
     expect(screen.queryByRole('link', { name: /Apocalipsis/ })).not.toBeInTheDocument();
     session.mockResolvedValue({ enabled: true, authenticated: true, csrf_token: 'lab-csrf' });
+    openOperator();
     fireEvent.change(screen.getByLabelText('Operador'), { target: { value: 'operator' } });
     fireEvent.change(screen.getByLabelText('Código de acceso'), { target: { value: 'x'.repeat(43) } });
     fireEvent.click(screen.getByRole('button', { name: 'Iniciar sesión de operador' }));
@@ -49,6 +67,7 @@ describe('acceso directo al laboratorio', () => {
   it('un ACK de login sin autorización del laboratorio no permite iniciar', async () => {
     const { start } = setup();
     await screen.findByRole('button', { name: 'Iniciar tormenta' });
+    openOperator();
     fireEvent.change(screen.getByLabelText('Operador'), { target: { value: 'operator' } });
     fireEvent.change(screen.getByLabelText('Código de acceso'), { target: { value: 'x'.repeat(43) } });
     fireEvent.click(screen.getByRole('button', { name: 'Iniciar sesión de operador' }));
@@ -58,6 +77,8 @@ describe('acceso directo al laboratorio', () => {
   });
   it('expone observación cuando no hay administración y conserva errores de credenciales', async () => {
     setup(false);
+    await screen.findByRole('button', { name: 'Iniciar tormenta' });
+    openOperator();
     expect(await screen.findByText(/acceso de operador está deshabilitado/)).toBeInTheDocument();
     expect(screen.queryByLabelText('Código de acceso')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Iniciar tormenta' })).toBeDisabled();
@@ -68,16 +89,16 @@ describe('acceso directo al laboratorio', () => {
     const result: LabCandidateValidation = { valid: true, candidates: shelters.map((candidate, index) => ({ ...candidate, ...(index === 0 ? { lat: -1.000123, lng: -80.000123 } : {}), node_id: graph.shelters[index]!.node_id, snapped_lat: index === 0 ? -1.0001 : candidate.lat, snapped_lng: index === 0 ? -80.0001 : candidate.lng, snap_distance_m: 3, valid: true, message: 'Acceso vial válido' })) };
     const validate = vi.spyOn(api, 'validateFloodCandidates').mockResolvedValue(result);
     await screen.findByRole('button', { name: 'Iniciar tormenta' });
-    const editor = screen.getByText('Refugios · cuatro candidatos').closest('details')!; editor.open = true;
-    const previous = (screen.getByLabelText('Latitud del candidato 1') as HTMLInputElement).value;
+    const editor = openShelterEditor();
     fireEvent.click(screen.getByRole('button', { name: 'Elegir candidato 1 en el mapa' }));
     expect(editor.open).toBe(false);
     fireEvent.click(screen.getByRole('button', { name: 'Señalar ubicación de prueba' }));
     expect(await screen.findByText(/Marcador provisional ajustado/)).toHaveTextContent('-1.0001, -80.0001');
     expect(validate).toHaveBeenCalledWith('competition', expect.arrayContaining([expect.objectContaining({ lat: -1.000123, lng: -80.000123 })]), 'lab-csrf');
-    expect(screen.getByLabelText('Latitud del candidato 1')).toHaveValue(previous);
+    expect(screen.queryByLabelText('Latitud del candidato 1')).not.toBeInTheDocument();
     expect(start).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole('button', { name: 'Confirmar ubicación' }));
+    openShelterEditor();
     expect(screen.getByLabelText('Latitud del candidato 1')).toHaveValue('-1.000123');
     expect(screen.queryByText(/Marcador provisional ajustado/)).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Iniciar tormenta' }));
@@ -87,7 +108,7 @@ describe('acceso directo al laboratorio', () => {
     setup(true, true);
     vi.spyOn(api, 'validateFloodCandidates').mockResolvedValue({ valid: false, candidates: shelters.map(candidate => ({ ...candidate, node_id: '', snapped_lat: 0, snapped_lng: 0, snap_distance_m: 999, valid: false, message: 'Supera el ajuste vial máximo de 500 m' })) });
     await screen.findByRole('button', { name: 'Iniciar tormenta' });
-    const editor = screen.getByText('Refugios · cuatro candidatos').closest('details')!; editor.open = true;
+    openShelterEditor();
     const previous = (screen.getByLabelText('Latitud del candidato 1') as HTMLInputElement).value;
     fireEvent.click(screen.getByRole('button', { name: 'Elegir candidato 1 en el mapa' }));
     fireEvent.click(screen.getByRole('button', { name: 'Señalar ubicación de prueba' }));
@@ -95,12 +116,14 @@ describe('acceso directo al laboratorio', () => {
     expect(screen.getByRole('button', { name: 'Confirmar ubicación' })).toBeDisabled();
     fireEvent.keyDown(window, { key: 'Escape' });
     expect(screen.queryByRole('button', { name: 'Confirmar ubicación' })).not.toBeInTheDocument();
+    openShelterEditor();
     expect(screen.getByLabelText('Latitud del candidato 1')).toHaveValue(previous);
     expect(screen.getByRole('button', { name: 'Iniciar tormenta' })).toBeEnabled();
   });
   it('retiene mapa y ediciones tras un fallo de polling sin habilitar mutaciones', async () => {
     const { client, start } = setup(true, true);
     await screen.findByRole('button', { name: 'Iniciar tormenta' });
+    openConfiguration();
     fireEvent.change(screen.getByLabelText('Cantidad de agentes'), { target: { value: '7' } });
     vi.spyOn(api, 'floodState').mockRejectedValue(new ApiError('Sin red', 'NETWORK_ERROR'));
     await client.invalidateQueries({ queryKey: ['flood', 'state'] });
@@ -117,7 +140,7 @@ describe('acceso directo al laboratorio', () => {
     const validation = new Promise<LabCandidateValidation>(resolve => { complete = resolve; });
     vi.spyOn(api, 'validateFloodCandidates').mockReturnValue(validation);
     await screen.findByRole('button', { name: 'Iniciar tormenta' });
-    screen.getByText('Refugios · cuatro candidatos').closest('details')!.open = true;
+    openShelterEditor();
     const previous = (screen.getByLabelText('Latitud del candidato 1') as HTMLInputElement).value;
     fireEvent.click(screen.getByRole('button', { name: 'Elegir candidato 1 en el mapa' }));
     fireEvent.click(screen.getByRole('button', { name: 'Señalar ubicación de prueba' }));
@@ -125,14 +148,17 @@ describe('acceso directo al laboratorio', () => {
     complete({ valid: true, candidates: shelters.map(candidate => ({ ...candidate, node_id: 'A', snapped_lat: -1.0001, snapped_lng: -80.0001, snap_distance_m: 3, valid: true, message: 'Válido' })) });
     await waitFor(() => expect(screen.getByRole('button', { name: 'Iniciar tormenta' })).toBeEnabled());
     expect(screen.queryByText(/Marcador provisional ajustado/)).not.toBeInTheDocument();
+    openShelterEditor();
     expect(screen.getByLabelText('Latitud del candidato 1')).toHaveValue(previous);
   });
   it('retira controles al caducar el operador sin reemplazar la tormenta ni perder parámetros', async () => {
     const { session, client, start } = setup(true, true);
     await screen.findByRole('button', { name: 'Iniciar tormenta' });
+    openConfiguration();
     fireEvent.change(screen.getByLabelText('Cantidad de agentes'), { target: { value: '6' } });
     session.mockResolvedValue({ enabled: true, authenticated: false, csrf_token: '' });
     await client.invalidateQueries({ queryKey: ['flood', 'session'] });
+    openOperator();
     expect(await screen.findByRole('button', { name: 'Iniciar sesión de operador' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Iniciar tormenta' })).toBeDisabled();
     expect(screen.getByLabelText('Cantidad de agentes')).toHaveValue(6);
@@ -141,8 +167,10 @@ describe('acceso directo al laboratorio', () => {
   it('bloquea campos numéricos vacíos y evita dos inicios durante una solicitud pendiente', async () => {
     const { start } = setup(true, true);
     const storm = await screen.findByRole('button', { name: 'Iniciar tormenta' });
+    openConfiguration();
     fireEvent.change(screen.getByLabelText('Cantidad de agentes'), { target: { value: '' } });
     expect(storm).toBeDisabled();
+    openConfiguration();
     fireEvent.change(screen.getByLabelText('Cantidad de agentes'), { target: { value: '1' } });
     let complete!: (next: LabState) => void;
     start.mockReturnValue(new Promise<LabState>(resolve => { complete = resolve; }));
@@ -151,10 +179,26 @@ describe('acceso directo al laboratorio', () => {
     complete({ ...state, state: 'running' });
     await waitFor(() => expect(screen.getByRole('button', { name: 'Pausar' })).toBeEnabled());
   });
+  it('conserva la instancia cartográfica mientras la nueva ejecución obtiene la misma geografía', async () => {
+    const { start } = setup(true, true);
+    const storm = await screen.findByRole('button', { name: 'Iniciar tormenta' });
+    const map = screen.getByLabelText('Mapa del laboratorio');
+    let resolveGraph!: (value: Graph) => void;
+    vi.mocked(api.floodGraph).mockReturnValue(new Promise(resolve => { resolveGraph = resolve; }));
+    start.mockResolvedValue({ ...state, run_id: 'next-same-geography', state: 'running' });
+    fireEvent.click(storm);
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Pausar' })).toBeEnabled());
+    expect(screen.getByLabelText('Mapa del laboratorio')).toBe(map);
+    expect(screen.queryByText('Cargando la red vial de inundación…')).not.toBeInTheDocument();
+    resolveGraph(graph);
+    await waitFor(() => expect(screen.getByLabelText('Mapa del laboratorio')).toBe(map));
+  });
+
   it('muestra credenciales inválidas y borra el código del campo', async () => {
     const { login, start } = setup();
     login.mockRejectedValue(new ApiError('Credenciales no válidas.', 'UNAUTHORIZED', 401));
     await screen.findByRole('button', { name: 'Iniciar tormenta' });
+    openOperator();
     fireEvent.change(screen.getByLabelText('Operador'), { target: { value: 'operator' } });
     fireEvent.change(screen.getByLabelText('Código de acceso'), { target: { value: 'x'.repeat(43) } });
     fireEvent.click(screen.getByRole('button', { name: 'Iniciar sesión de operador' }));

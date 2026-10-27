@@ -16,7 +16,7 @@ import { chromium, expect } from '@playwright/test';
 const root = fileURLToPath(new URL('../../', import.meta.url));
 const backend = path.join(root, 'services/evacuation');
 const temporary = await mkdtemp(path.join(tmpdir(), 'corodev-flood-lab-'));
-const directory = process.env.FLOOD_LAB_EVIDENCE_DIR || path.join(root, `deploy/evidence-private/mantasim-flood-${Date.now()}`);
+const directory = process.env.FLOOD_LAB_EVIDENCE_DIR || path.join(root, `deploy/evidence-private/mantasim-polish-flood-${Date.now()}`);
 const origin = 'http://127.0.0.1:5179';
 const children = [];
 let browser;
@@ -141,6 +141,7 @@ try {
     }, Boolean, 'Vite readiness');
     browser = await chromium.launch(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE } : {});
     const page = await browser.newPage({ viewport: { width: 1440, height: 1100 } });
+    page.on('dialog', dialog => dialog.accept());
     const errors = [], failedRequests = [], cancelledRequests = [], httpErrors = [], credentialLeaks = [], rasterRequests = [];
     await page.route(/https?:\/\/[^/]*tile\.openstreetmap\.org\//, route => { rasterRequests.push(route.request().url()); return route.abort(); });
     page.on('pageerror', error => errors.push(error.message));
@@ -157,7 +158,7 @@ try {
     });
     await page.goto(`${origin}/flood-lab`);
     await expect(page.getByRole('heading', { name: 'Escape Manta Inundación', exact: true })).toBeVisible();
-    await expect(page.getByText('Simulación con datos sintéticos.', { exact: true })).toBeVisible();
+    await expect(page.getByText('Simulación con datos sintéticos', { exact: true })).toBeVisible();
     await expect(page.getByRole('img', { name: /^Red urbana de inundación simulada/ })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Iniciar tormenta', exact: true })).toBeEnabled();
     report.checks.direct_flood_entry_and_synthetic_label = true;
@@ -172,7 +173,7 @@ try {
     }
     report.checks.eight_independent_layer_controls = true;
     await page.getByText('Capas', { selector: 'summary', exact: true }).click();
-    await openDetails(page, 'Refugios · cuatro candidatos');
+    await openShelters(page);
     await page.getByRole('button', { name: 'Eliminar candidato 4', exact: true }).click();
     await expect(page.getByRole('button', { name: 'Validar cuatro candidatos', exact: true })).toBeDisabled();
     await page.getByRole('button', { name: 'Restaurar candidato 4', exact: true }).click();
@@ -194,7 +195,7 @@ try {
     await expect(page.getByRole('button', { name: 'Confirmar ubicación', exact: true })).toBeEnabled();
     await expect(candidateMap.locator('[data-layer="shelter-preview"]')).toHaveCount(1);
     await page.getByRole('button', { name: 'Confirmar ubicación', exact: true }).click();
-    await openDetails(page, 'Refugios · cuatro candidatos');
+    await openShelters(page);
     for (const summary of await page.locator('.flood-candidate-card > details > summary').all()) await summary.click();
     await expect(page.getByLabel('Latitud del candidato 1', { exact: true })).not.toHaveValue(String(catalog.original_shelters[0].lat));
     const candidateOneLat = await page.getByLabel('Latitud del candidato 1', { exact: true }).inputValue();
@@ -216,12 +217,14 @@ try {
     const validatedResponse = page.waitForResponse(response => new URL(response.url()).pathname === '/lab/candidates/validate' && response.request().method() === 'POST');
     await page.getByRole('button', { name: 'Validar cuatro candidatos', exact: true }).click();
     if (!(await (await validatedResponse).json()).valid) throw new Error('UI did not submit its four valid custom candidates');
-    await openDetails(page, /^Parámetros ·/);
+    await openDetails(page, 'Configurar tormenta');
     await openDetails(page, 'Configuración avanzada');
     await page.getByLabel('Cantidad de agentes').fill('20');
     await page.getByLabel('Semilla de inundación').fill('42');
     await page.getByLabel('Duración simulada').fill('80');
     await page.getByLabel('Velocidad de reproducción').selectOption('25');
+    await page.getByText('Configurar tormenta', { selector: 'summary', exact: true }).click();
+    await closeAgentPanel(page);
     const startResponse = page.waitForResponse(response => new URL(response.url()).pathname === '/lab/runs' && response.request().method() === 'POST');
     await page.getByRole('button', { name: 'Iniciar tormenta', exact: true }).click();
     let state = check('LabState', await (await startResponse).json());
@@ -259,9 +262,10 @@ try {
     await expect(page.locator('.flood-edge-details')).toBeVisible();
     const routeAgent = state.scenario.agents.find(agent => agent.state === 'moving' && agent.planned_route.length > 1);
     if (!routeAgent) throw new Error('Paused fixture has no moving agent with a published route');
-    await openDetails(page, 'Agentes y disponibilidad de refugios');
-    await page.getByRole('button', { name: `Ver ruta de inundación de ${routeAgent.id}`, exact: true }).click();
-    await expect(page.locator('.flood-agent-detail')).toBeVisible();
+    await openAgents(page);
+    await page.getByRole('searchbox', { name: 'Buscar por ID' }).fill(routeAgent.id);
+    await page.getByRole('button', { name: `Ver ruta de ${routeAgent.id}`, exact: true }).click();
+    await expect(page.locator('.agent-panel-selection')).toContainText(`${routeAgent.id} · Ruta resaltada en el mapa`);
     await expect(map.locator('[data-layer="routes"]')).not.toHaveAttribute('d', '');
     report.browser.inspected_route_agent = routeAgent.id;
     report.checks.edge_click_and_agent_route_inspection = true;
@@ -274,11 +278,12 @@ try {
     await page.screenshot({ path: path.join(directory, 'flood-desktop-exposure.png'), fullPage: true });
     report.checks.rain_evolution_blocks_visible_streets = true;
     const runBeforeReset = state.run_id;
+    await openDetails(page, 'Más acciones');
     await page.getByRole('button', { name: 'Reiniciar', exact: true }).click();
     state = await until(() => get('/lab/state', 'LabState'), next => next.run_id !== runBeforeReset && next.state === 'idle', 'Restart resets authoritative clock');
     if (state.scenario.simulation_step !== 0 || JSON.stringify(state.origins) !== JSON.stringify(initialOrigins)) throw new Error('Restart did not reset the same experiment');
     const previousRun = state.run_id;
-    await page.getByRole('button', { name: 'Repetir misma seed', exact: true }).click();
+    await page.getByRole('button', { name: 'Repetir', exact: true }).click();
     state = await until(() => get('/lab/state', 'LabState'), next => next.run_id !== previousRun, 'Same-seed replay');
     if (state.config.seed !== 42 || JSON.stringify(state.origins) !== JSON.stringify(initialOrigins)) throw new Error('Same-seed replay changed exact geographical origins');
     report.checks.resume_and_same_seed_replay = true;
@@ -303,12 +308,16 @@ try {
     await page.screenshot({ path: path.join(directory, 'flood-mobile.png'), fullPage: true });
     await page.locator('.flood-map-card').screenshot({ path: path.join(directory, 'flood-mobile-map.png') });
     await page.setViewportSize({ width: 1440, height: 1100 });
-    await page.getByRole('button', { name: 'Reiniciar', exact: true }).click();
+    await openDetails(page, 'Más acciones');
+    const reset = page.getByRole('button', { name: 'Reiniciar', exact: true });
+    if (await reset.count()) await reset.click();
     await until(() => get('/lab/state', 'LabState'), next => next.state === 'idle', 'Reset before master run');
-    await openDetails(page, 'Refugios · cuatro candidatos');
+    await openShelters(page);
     await page.getByRole('radio', { name: 'Conservar cuatro refugios originales', exact: true }).check();
-    await openDetails(page, /^Parámetros ·/);
+    await openDetails(page, 'Configurar tormenta');
     await page.getByLabel('Cobertura de inundación').selectOption('full');
+    await page.getByText('Configurar tormenta', { selector: 'summary', exact: true }).click();
+    await closeAgentPanel(page);
     await expect(page.getByRole('img', { name: /^Red urbana de inundación simulada/ })).toBeVisible();
     await expect(page.getByTestId('flood-map').locator('path[data-road-state="passable"]')).not.toHaveAttribute('d', '');
     const startMaster = performance.now();
@@ -394,4 +403,20 @@ function checkComparison(comparison, total) {
 async function openDetails(page, name) {
   const summary = page.getByText(name, { selector: 'summary', exact: typeof name === 'string' });
   if (await summary.locator('..').getAttribute('open') === null) await summary.click();
+}
+
+async function openShelters(page) {
+  const trigger = page.getByRole('button', { name: 'Refugios y agentes', exact: true });
+  if (await trigger.getAttribute('aria-expanded') !== 'true') await trigger.click();
+  await page.getByRole('tab', { name: /^Refugios/ }).click();
+  await openDetails(page, 'Editar cuatro refugios');
+}
+async function openAgents(page) {
+  const trigger = page.getByRole('button', { name: 'Refugios y agentes', exact: true });
+  if (await trigger.getAttribute('aria-expanded') !== 'true') await trigger.click();
+  await page.getByRole('tab', { name: /^Supervivientes/ }).click();
+}
+async function closeAgentPanel(page) {
+  const close = page.getByRole('button', { name: 'Cerrar refugios y agentes', exact: true });
+  if (await close.isVisible()) await close.click();
 }
