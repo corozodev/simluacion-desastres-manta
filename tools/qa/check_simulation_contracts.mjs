@@ -215,6 +215,40 @@ try {
     assert(!api.logs.join('').includes(credential), 'Session credential appeared in backend logs');
   }
 
+  // FASE 7: real sessions consume policies, fleet and probabilistic forecasts.
+  const phase7 = await start(binary, { SIM_MAX_RETAINED: '16' });
+  const agentConfig = { ...config, max_ticks: 2, tick_interval_ms: 1000, config: {
+    survivors: 8, round: 'round3', mode: 'experimental', zombie_policy: 'adaptive_exploration',
+    evacuation_algorithm: 'predictive_temporal_astar',
+    pro: { runner_prediction: true, shelter_assignment: true, rescue_fleet: true },
+  } };
+  const { value: intelligent } = await phase7.create(agentConfig);
+  assert(intelligent.config.zombie_policy === 'adaptive_exploration' && intelligent.config.pro.rescue_fleet, 'Policy controls were decorative');
+  const { value: intelligentState } = await phase7.session(intelligent, '/state', { schema: 'SimulationState' });
+  assert(intelligentState.snapshot.fleet.length === 5 && intelligentState.snapshot.fleet.every(v => v.capacity === 4 && v.passenger_ids.length <= 4), 'Fleet invariant missing');
+  assert(intelligentState.runner_forecast?.turn === intelligentState.tick, 'Forecast not tied to observable tick');
+  assert(intelligentState.snapshot.zombies.every(z => z.type !== 'sleeper' || z.awake), 'Dormant sleeper leaked');
+  const intelligentFinal = await phase7.completed(intelligent);
+  assert(intelligentFinal.results.analytics?.agents.length === 8, 'Detailed public results missing');
+  assert(intelligentFinal.snapshot.metrics.requests_invalid === 0 && intelligentFinal.snapshot.metrics.requests_timeout === 0, 'Intelligent policies produced invalid HTTP');
+  const { value: repeatIntelligent } = await phase7.session(intelligent, '/restart', { method: 'POST', idempotencyKey: key(), expected: 201, schema: 'SimulationCreated' });
+  const repeatedIntelligentFinal = await phase7.completed(repeatIntelligent);
+  assert(isDeepStrictEqual(logicalState(intelligentFinal), logicalState(repeatedIntelligentFinal)), 'New policies/fleet failed reproducible replay');
+  assert(isDeepStrictEqual(intelligentFinal.snapshot.fleet, repeatedIntelligentFinal.snapshot.fleet), 'Fleet logical result changed on replay');
+  for (const invalidConfig of [
+    { ...agentConfig, config: { ...agentConfig.config, mode: 'official' } },
+    { ...agentConfig, config: { pro: { runner_prediction: null } } },
+    { ...agentConfig, scenario: 'urban_flood' },
+  ]) await phase7.create(invalidConfig, key(), 400);
+  const { value: official } = await phase7.create({ scenario: 'zombie_outbreak', graph_profile: 'BASE', config: { mode: 'official', round: 'round2' } });
+  assert(official.config.survivors === 80 && official.max_ticks === 150 && official.tick_interval_ms === 2000, 'Official round settings drifted');
+  await phase7.session(official, '/cancel', { method: 'POST', schema: 'SimulationMetadata' });
+  const { value: officialRepeat } = await phase7.session(official, '/restart', { method: 'POST', idempotencyKey: key(), expected: 201, schema: 'SimulationCreated' });
+  await phase7.session(officialRepeat, '/cancel', { method: 'POST', schema: 'SimulationMetadata' });
+  for (const credential of [intelligent.access_token, repeatIntelligent.access_token, official.access_token, officialRepeat.access_token]) {
+    assert(!phase7.logs.join('').includes(credential), 'FASE 7 secret appeared in logs');
+  }
+
   const short = await start(binary, { SIM_PAUSED_TTL: '100ms', SIM_COMPLETED_TTL: '3s' });
   const { value: expiring } = await short.create(config);
   await short.session(expiring, '/pause', { method: 'POST', schema: 'SimulationMetadata' });
@@ -257,7 +291,7 @@ try {
   const { response: rateResponse } = await limited.request('/v1/simulations/capabilities', { expected: 429, headers: { 'X-Forwarded-For': '192.0.2.3' } });
   assert(rateResponse.headers.get('retry-after') === '60', 'Rate rejection omitted Retry-After');
 
-  console.log(`FASE 5 HTTP Go real: ${assertions} aserciones correctas; arranque sin ejecución, contratos JSON Schema, auth/CORS, idempotencia concurrente, cupos global/full/retención/memoria, aislamiento, ETag, controles, determinismo, flood real, TTL, métricas y rate limit sin confiar en X-Forwarded-For.`);
+  console.log(`FASE 5/7 HTTP Go real: ${assertions} aserciones correctas; arranque sin ejecución, contratos JSON Schema, auth/CORS, idempotencia concurrente, cupos global/full/retención/memoria, aislamiento, ETag, controles, determinismo, flood real, TTL, métricas y rate limit sin confiar en X-Forwarded-For.`);
 } finally {
   for (const child of children) {
     if (child.exitCode === null && child.signalCode === null) {
