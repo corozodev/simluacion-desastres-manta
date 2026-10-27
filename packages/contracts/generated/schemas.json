@@ -1380,6 +1380,581 @@
           "pattern": "^[a-f0-9]{32}$"
         }
       }
+    },
+    "LabCandidate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "label",
+        "lat",
+        "lng",
+        "capacity"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "lat": {
+          "type": "number",
+          "minimum": -90,
+          "maximum": 90
+        },
+        "lng": {
+          "type": "number",
+          "minimum": -180,
+          "maximum": 180
+        },
+        "capacity": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 200
+        }
+      }
+    },
+    "LabRunConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mode",
+        "seed",
+        "rainfall_profile",
+        "rainfall_intensity",
+        "simulation_duration",
+        "evacuation_behavior",
+        "agents",
+        "interval_ms",
+        "shelters"
+      ],
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": [
+            "competition",
+            "full"
+          ]
+        },
+        "seed": {
+          "type": "integer",
+          "format": "int64",
+          "minimum": -9007199254740991,
+          "maximum": 9007199254740991
+        },
+        "rainfall_profile": {
+          "type": "string",
+          "enum": [
+            "storm",
+            "constant",
+            "pulse"
+          ]
+        },
+        "rainfall_intensity": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "simulation_duration": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 10000
+        },
+        "evacuation_behavior": {
+          "type": "string",
+          "enum": [
+            "preventive",
+            "late",
+            "adaptive"
+          ]
+        },
+        "agents": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 200
+        },
+        "interval_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 5000
+        },
+        "shelters": {
+          "type": "array",
+          "minItems": 4,
+          "maxItems": 4,
+          "items": {
+            "$ref": "#/definitions/LabCandidate"
+          }
+        }
+      }
+    },
+    "LabRunRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "config",
+        "expected_run_id"
+      ],
+      "properties": {
+        "config": {
+          "$ref": "#/definitions/LabRunConfig"
+        },
+        "expected_run_id": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "LabAction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "action",
+        "expected_run_id"
+      ],
+      "properties": {
+        "action": {
+          "type": "string",
+          "enum": [
+            "pause",
+            "resume",
+            "restart",
+            "repeat",
+            "speed"
+          ]
+        },
+        "expected_run_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "interval_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 5000
+        }
+      }
+    },
+    "LabCandidateRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mode",
+        "candidates"
+      ],
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": [
+            "competition",
+            "full"
+          ]
+        },
+        "candidates": {
+          "type": "array",
+          "minItems": 0,
+          "maxItems": 4,
+          "items": {
+            "$ref": "#/definitions/LabCandidate"
+          }
+        }
+      }
+    },
+    "LabValidatedCandidate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "label",
+        "lat",
+        "lng",
+        "capacity",
+        "node_id",
+        "snapped_lat",
+        "snapped_lng",
+        "snap_distance_m",
+        "valid",
+        "message"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "lat": {
+          "type": "number",
+          "minimum": -90,
+          "maximum": 90
+        },
+        "lng": {
+          "type": "number",
+          "minimum": -180,
+          "maximum": 180
+        },
+        "capacity": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 200
+        },
+        "node_id": {
+          "type": "string"
+        },
+        "snapped_lat": {
+          "type": "number"
+        },
+        "snapped_lng": {
+          "type": "number"
+        },
+        "snap_distance_m": {
+          "type": "number",
+          "minimum": 0
+        },
+        "valid": {
+          "type": "boolean"
+        },
+        "message": {
+          "type": "string"
+        }
+      }
+    },
+    "LabCandidateValidation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "valid",
+        "candidates"
+      ],
+      "properties": {
+        "valid": {
+          "type": "boolean"
+        },
+        "candidates": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/LabValidatedCandidate"
+          }
+        }
+      }
+    },
+    "LabSession": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "enabled",
+        "authenticated",
+        "csrf_token"
+      ],
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "authenticated": {
+          "type": "boolean"
+        },
+        "csrf_token": {
+          "type": "string"
+        }
+      }
+    },
+    "LabPreset": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name",
+        "description",
+        "config"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "config": {
+          "$ref": "#/definitions/LabRunConfig"
+        }
+      }
+    },
+    "LabCatalog": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "modes",
+        "presets",
+        "default_config",
+        "original_shelters",
+        "max_snap_distance_m",
+        "disclaimer"
+      ],
+      "properties": {
+        "modes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/GraphPreset"
+          }
+        },
+        "presets": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/LabPreset"
+          }
+        },
+        "default_config": {
+          "$ref": "#/definitions/LabRunConfig"
+        },
+        "original_shelters": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/LabCandidate"
+          }
+        },
+        "max_snap_distance_m": {
+          "type": "number",
+          "minimum": 0
+        },
+        "disclaimer": {
+          "type": "string"
+        }
+      }
+    },
+    "LabOrigin": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "node_id",
+        "lat",
+        "lng",
+        "snap_distance_m"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "node_id": {
+          "type": "string"
+        },
+        "lat": {
+          "type": "number"
+        },
+        "lng": {
+          "type": "number"
+        },
+        "snap_distance_m": {
+          "type": "number",
+          "minimum": 0
+        }
+      }
+    },
+    "LabTimelineEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "step",
+        "simulation_time",
+        "evacuation_metrics",
+        "step_latency_ms"
+      ],
+      "properties": {
+        "step": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "simulation_time": {
+          "type": "number",
+          "minimum": 0
+        },
+        "evacuation_metrics": {
+          "$ref": "#/definitions/EvacuationMetrics"
+        },
+        "step_latency_ms": {
+          "type": "number",
+          "minimum": 0
+        }
+      }
+    },
+    "LabComparisonResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "strategy",
+        "mode",
+        "seed",
+        "graph_version",
+        "total_agents",
+        "evacuated_percentage",
+        "evacuation_metrics",
+        "step_latency_ms",
+        "origins_hash",
+        "config_hash"
+      ],
+      "properties": {
+        "strategy": {
+          "type": "string",
+          "enum": [
+            "original",
+            "custom"
+          ]
+        },
+        "mode": {
+          "type": "string",
+          "enum": [
+            "competition",
+            "full"
+          ]
+        },
+        "seed": {
+          "type": "integer",
+          "format": "int64",
+          "minimum": -9007199254740991,
+          "maximum": 9007199254740991
+        },
+        "graph_version": {
+          "type": "string"
+        },
+        "total_agents": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "evacuated_percentage": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "evacuation_metrics": {
+          "$ref": "#/definitions/EvacuationMetrics"
+        },
+        "step_latency_ms": {
+          "type": "number",
+          "minimum": 0
+        },
+        "origins_hash": {
+          "type": "string"
+        },
+        "config_hash": {
+          "type": "string"
+        }
+      }
+    },
+    "LabComparison": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "state",
+        "progress",
+        "message",
+        "results"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "state": {
+          "type": "string",
+          "enum": [
+            "running",
+            "finished",
+            "failed"
+          ]
+        },
+        "progress": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2
+        },
+        "message": {
+          "type": "string"
+        },
+        "results": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/LabComparisonResult"
+          }
+        }
+      }
+    },
+    "LabState": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "run_id",
+        "state",
+        "mode",
+        "graph_version",
+        "config",
+        "scenario",
+        "shelters",
+        "timeline",
+        "origins"
+      ],
+      "properties": {
+        "run_id": {
+          "type": "string"
+        },
+        "state": {
+          "type": "string",
+          "enum": [
+            "idle",
+            "running",
+            "paused",
+            "finished",
+            "failed"
+          ]
+        },
+        "mode": {
+          "type": "string",
+          "enum": [
+            "competition",
+            "full"
+          ]
+        },
+        "graph_version": {
+          "type": "string"
+        },
+        "config": {
+          "$ref": "#/definitions/LabRunConfig"
+        },
+        "scenario": {
+          "$ref": "#/definitions/ScenarioSnapshot"
+        },
+        "shelters": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Shelter"
+          }
+        },
+        "timeline": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/LabTimelineEntry"
+          }
+        },
+        "origins": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/LabOrigin"
+          }
+        },
+        "comparison": {
+          "$ref": "#/definitions/LabComparison"
+        }
+      }
     }
   }
 }

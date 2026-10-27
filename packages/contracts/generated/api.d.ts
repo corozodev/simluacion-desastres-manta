@@ -246,6 +246,154 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/lab/session": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Crea o recupera una sesión efímera local del laboratorio. */
+        get: operations["getLabSession"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/lab/catalog": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Configuraciones experimentales y grafos revisados del laboratorio. */
+        get: operations["getLabCatalog"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/lab/graph": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Geografía real del modo o de la ejecución del laboratorio. */
+        get: operations["getLabGraph"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/lab/state": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Estado real, reloj, timeline y comparación del laboratorio. */
+        get: operations["getLabState"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/lab/runs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Inicia una tormenta con configuración validada.
+         * @description Sólo servidor experimental loopback. Requiere sesión HttpOnly, Origin permitido y cabecera X-CSRF-Token.
+         */
+        post: operations["startLabRun"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/lab/actions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Pausa, continúa, reinicia, repite o cambia el intervalo real.
+         * @description Sólo servidor experimental loopback. Requiere sesión HttpOnly, Origin permitido y cabecera X-CSRF-Token.
+         */
+        post: operations["controlLabRun"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/lab/candidates/validate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Valida y ajusta cuatro candidatos a la red vial.
+         * @description Sólo servidor experimental loopback. Requiere sesión HttpOnly, Origin permitido y cabecera X-CSRF-Token.
+         */
+        post: operations["validateLabCandidates"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/lab/comparisons": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Compara originales y personalizados con orígenes y amenaza congelados.
+         * @description Sólo servidor experimental loopback. Requiere sesión HttpOnly, Origin permitido y cabecera X-CSRF-Token.
+         */
+        post: operations["compareLabShelters"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -564,6 +712,129 @@ export interface components {
             /** Format: int64 */
             seed: number;
             expected_run_id: string;
+        };
+        LabCandidate: {
+            id: string;
+            label: string;
+            lat: number;
+            lng: number;
+            capacity: number;
+        };
+        LabRunConfig: {
+            /** @enum {string} */
+            mode: "competition" | "full";
+            /** Format: int64 */
+            seed: number;
+            /** @enum {string} */
+            rainfall_profile: "storm" | "constant" | "pulse";
+            rainfall_intensity: number;
+            simulation_duration: number;
+            /** @enum {string} */
+            evacuation_behavior: "preventive" | "late" | "adaptive";
+            agents: number;
+            interval_ms: number;
+            shelters: components["schemas"]["LabCandidate"][];
+        };
+        LabRunRequest: {
+            config: components["schemas"]["LabRunConfig"];
+            expected_run_id: string;
+        };
+        LabAction: {
+            /** @enum {string} */
+            action: "pause" | "resume" | "restart" | "repeat" | "speed";
+            expected_run_id: string;
+            interval_ms?: number;
+        };
+        LabCandidateRequest: {
+            /** @enum {string} */
+            mode: "competition" | "full";
+            candidates: components["schemas"]["LabCandidate"][];
+        };
+        LabValidatedCandidate: {
+            id: string;
+            label: string;
+            lat: number;
+            lng: number;
+            capacity: number;
+            node_id: string;
+            snapped_lat: number;
+            snapped_lng: number;
+            snap_distance_m: number;
+            valid: boolean;
+            message: string;
+        };
+        LabCandidateValidation: {
+            valid: boolean;
+            candidates: components["schemas"]["LabValidatedCandidate"][];
+        };
+        LabSession: {
+            enabled: boolean;
+            authenticated: boolean;
+            csrf_token: string;
+        };
+        LabPreset: {
+            id: string;
+            name: string;
+            description: string;
+            config: components["schemas"]["LabRunConfig"];
+        };
+        LabCatalog: {
+            modes: components["schemas"]["GraphPreset"][];
+            presets: components["schemas"]["LabPreset"][];
+            default_config: components["schemas"]["LabRunConfig"];
+            original_shelters: components["schemas"]["LabCandidate"][];
+            max_snap_distance_m: number;
+            disclaimer: string;
+        };
+        LabOrigin: {
+            id: string;
+            node_id: string;
+            lat: number;
+            lng: number;
+            snap_distance_m: number;
+        };
+        LabTimelineEntry: {
+            step: number;
+            simulation_time: number;
+            evacuation_metrics: components["schemas"]["EvacuationMetrics"];
+            step_latency_ms: number;
+        };
+        LabComparisonResult: {
+            /** @enum {string} */
+            strategy: "original" | "custom";
+            /** @enum {string} */
+            mode: "competition" | "full";
+            /** Format: int64 */
+            seed: number;
+            graph_version: string;
+            total_agents: number;
+            evacuated_percentage: number;
+            evacuation_metrics: components["schemas"]["EvacuationMetrics"];
+            step_latency_ms: number;
+            origins_hash: string;
+            config_hash: string;
+        };
+        LabComparison: {
+            id: string;
+            /** @enum {string} */
+            state: "running" | "finished" | "failed";
+            progress: number;
+            message: string;
+            results: components["schemas"]["LabComparisonResult"][];
+        };
+        LabState: {
+            run_id: string;
+            /** @enum {string} */
+            state: "idle" | "running" | "paused" | "finished" | "failed";
+            /** @enum {string} */
+            mode: "competition" | "full";
+            graph_version: string;
+            config: components["schemas"]["LabRunConfig"];
+            scenario: components["schemas"]["ScenarioSnapshot"];
+            shelters: components["schemas"]["Shelter"][];
+            timeline: components["schemas"]["LabTimelineEntry"][];
+            origins: components["schemas"]["LabOrigin"][];
+            comparison?: components["schemas"]["LabComparison"];
         };
     };
     responses: {
@@ -1149,6 +1420,217 @@ export interface operations {
             };
         };
     };
+    getLabSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Estado observable del laboratorio sintético. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LabSession"];
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    getLabCatalog: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Estado observable del laboratorio sintético. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LabCatalog"];
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    getLabGraph: {
+        parameters: {
+            query?: {
+                mode?: "competition" | "full";
+                run_id?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Estado observable del laboratorio sintético. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Graph"];
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    getLabState: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Estado observable del laboratorio sintético. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LabState"];
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    startLabRun: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-CSRF-Token": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LabRunRequest"];
+            };
+        };
+        responses: {
+            /** @description Estado observable del laboratorio sintético. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LabState"];
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    controlLabRun: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-CSRF-Token": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LabAction"];
+            };
+        };
+        responses: {
+            /** @description Estado observable del laboratorio sintético. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LabState"];
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    validateLabCandidates: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-CSRF-Token": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LabCandidateRequest"];
+            };
+        };
+        responses: {
+            /** @description Estado observable del laboratorio sintético. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LabCandidateValidation"];
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    compareLabShelters: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-CSRF-Token": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LabRunRequest"];
+            };
+        };
+        responses: {
+            /** @description Estado observable del laboratorio sintético. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LabState"];
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+            409: components["responses"]["Conflict"];
+        };
+    };
 }
 
 export type GraphNode = components['schemas']['GraphNode'];
@@ -1188,3 +1670,18 @@ export type SimulationCatalog = components['schemas']['SimulationCatalog'];
 export type OperatorSession = components['schemas']['OperatorSession'];
 export type OperatorLogin = components['schemas']['OperatorLogin'];
 export type StartSimulation = components['schemas']['StartSimulation'];
+export type LabCandidate = components['schemas']['LabCandidate'];
+export type LabRunConfig = components['schemas']['LabRunConfig'];
+export type LabRunRequest = components['schemas']['LabRunRequest'];
+export type LabAction = components['schemas']['LabAction'];
+export type LabCandidateRequest = components['schemas']['LabCandidateRequest'];
+export type LabValidatedCandidate = components['schemas']['LabValidatedCandidate'];
+export type LabCandidateValidation = components['schemas']['LabCandidateValidation'];
+export type LabSession = components['schemas']['LabSession'];
+export type LabPreset = components['schemas']['LabPreset'];
+export type LabCatalog = components['schemas']['LabCatalog'];
+export type LabOrigin = components['schemas']['LabOrigin'];
+export type LabTimelineEntry = components['schemas']['LabTimelineEntry'];
+export type LabComparisonResult = components['schemas']['LabComparisonResult'];
+export type LabComparison = components['schemas']['LabComparison'];
+export type LabState = components['schemas']['LabState'];
