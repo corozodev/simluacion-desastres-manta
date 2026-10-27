@@ -39,14 +39,14 @@ describe('capas y selección del mapa de inundación', () => {
   it('mantiene ocho capas independientes, exposición y rutas publicadas sin representar resultados de muerte', async () => {
     setup();
     const map = screen.getByRole('img', { name: /^Red urbana de inundación simulada/ });
-    expect(screen.getAllByRole('checkbox')).toHaveLength(9);
+    expect(screen.getAllByRole('checkbox')).toHaveLength(11);
     expect(screen.getByRole('checkbox', { name: 'Susceptibilidad oficial a inundaciones' })).not.toBeChecked();
     expect(map.querySelectorAll('[data-road-state]')).toHaveLength(3);
     expect(map.querySelector('.flood-exposure-zone')).toBeInTheDocument();
     expect(map.querySelector('[data-layer="routes"]')).toBeInTheDocument();
     expect(map.querySelector('.flood-shelter-exposed')).toBeInTheDocument();
     expect(map.querySelectorAll('[data-candidate]')).toHaveLength(4);
-    expect(map.querySelector('image')).not.toBeInTheDocument();
+    expect(map.querySelector('[data-layer="osm-base"] image')).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole('checkbox', { name: 'Calles bloqueadas' }));
     expect(map.querySelector('[data-road-state="blocked"]')).not.toBeInTheDocument();
     expect(map.querySelector('[data-road-state="caution"]')).toBeInTheDocument();

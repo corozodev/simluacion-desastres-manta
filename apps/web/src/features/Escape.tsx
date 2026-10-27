@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import type { Graph, SimulationCapabilities, SimulationCreateRequest, SimulationState, WorldSnapshot } from '@corodev/contracts';
 import { Badge, Button, Card, EmptyState, ErrorState, LoadingState, PageHeader, StatusIndicator } from '../components/ui';
@@ -10,6 +10,7 @@ import { FloodMap } from './flood/FloodMap';
 import { ReferencePanel } from './flood/ReferencePanel';
 import { incidentSourceLabels, incidentStatusLabels, incidentTypeLabels } from './flood/incidentPresentation';
 import './flood/flood.css';
+import { sessionLifecycle } from './visualization/observation';
 
 const statusLabels = { CREATED: 'Preparando', RUNNING: 'En ejecución', PAUSED: 'Pausada', COMPLETED: 'Finalizada', CANCELLED: 'Cancelada', FAILED: 'Error del motor' };
 
@@ -95,7 +96,7 @@ function SimulationWorkspace({ capabilities }: { capabilities: SimulationCapabil
     {session.results.data && <Card className="escape-map-card session-results" aria-label="Resultados de simulación"><h2>Resultados de simulación</h2><p>{statusLabels[session.results.data.status]} · {state?.tick}/{state?.max_ticks} turnos · {state ? elapsed(state) : ''}</p><dl><div><dt>Agentes iniciales</dt><dd>{session.results.data.results.initial_survivors}</dd></div><div><dt>Evacuados</dt><dd>{session.results.data.results.evacuated}</dd></div>{!flood && <><div><dt>Mordidos</dt><dd>{session.results.data.results.bitten}</dd></div><div><dt>Tasa de supervivencia</dt><dd>{(session.results.data.results.survival_rate * 100).toFixed(1)}%</dd></div></>}<div><dt>Refugios utilizados</dt><dd>{session.results.data.results.refuges_used}</dd></div></dl></Card>}
     {session.results.isError && <ErrorState error={session.results.error} onRetry={() => void session.results.refetch()} />}
     <Card className="escape-map-card"><div className="section-heading"><div><h2>{session.id ? 'Estado observable de tu simulación' : 'Explora Manta'}</h2><p>{session.id ? 'Datos calculados por Go · consulta cada 2 segundos mientras está activa' : 'Geografía estática · navegar por el mapa no inicia el motor'}</p></div><Badge tone={flood ? 'cyan' : 'purple'}>{flood ? 'SIMULACIÓN — DATOS SINTÉTICOS' : session.id ? 'Sesión independiente' : 'Solo geografía'}</Badge></div>
-      {graph.isPending ? <LoadingState label="Cargando el grafo…" /> : graph.isError ? <ErrorState error={graph.error} onRetry={() => void graph.refetch()} /> : state && state.graph_version !== graph.data.version ? <p role="alert">La versión del grafo no coincide con tu simulación. <Button variant="secondary" onClick={() => void graph.refetch()}>Actualizar grafo</Button></p> : <MapDetails key={session.id ?? `${selectedScenario}:${selectedProfile}`} graph={graph.data} state={state} flood={flood} />}
+      {graph.isPending ? <LoadingState label="Cargando el grafo…" /> : graph.isError ? <ErrorState error={graph.error} onRetry={() => void graph.refetch()} /> : state && state.graph_version !== graph.data.version ? <p role="alert">La versión del grafo no coincide con tu simulación. <Button variant="secondary" onClick={() => void graph.refetch()}>Actualizar grafo</Button></p> : <MapDetails key={session.id ?? `${selectedScenario}:${selectedProfile}`} graph={graph.data} state={state} flood={flood} connected={connected} />}
     </Card>
   </>;
 }
@@ -111,7 +112,8 @@ function LiveMetrics({ state }: { state: SimulationState }) {
   </div>;
 }
 
-function MapDetails({ graph, state, flood }: { graph: Graph; state?: SimulationState; flood: boolean }) {
+function MapDetails({ graph, state, flood, connected }: { graph: Graph; state?: SimulationState; flood: boolean; connected: boolean }) {
+  const lifecycle = useMemo(() => sessionLifecycle(state, connected), [state, connected]);
   const [search, setSearch] = useState('');
   const [selectedId, setSelectedId] = useState('');
   const [showReference, setShowReference] = useState(false);
@@ -126,12 +128,12 @@ function MapDetails({ graph, state, flood }: { graph: Graph; state?: SimulationS
   const reference = useQuery({ queryKey: ['reference', 'status'], queryFn: ({ signal }) => api.referenceStatus(signal), enabled: flood, retry: false, staleTime: 30_000 });
   const polygons = useSusceptibilityReference(reference.data?.dataset_version, flood && showReference);
   return <>
-    {flood ? <><FloodMap graph={graph} scenario={state?.scenario_state} shelters={shelters} candidates={[]} selectedAgentId={selectedId} onSelectAgent={setSelectedId} onPickPosition={() => undefined} incidents={incidents.data?.incidents} selectedIncidentId={selectedIncident} onSelectIncident={setSelectedIncident} reference={polygons.data} showReference={showReference} onShowReference={setShowReference} />
+    {flood ? <><FloodMap referenceAvailable={['cached', 'stale'].includes(reference.data?.availability ?? '')} lifecycle={lifecycle} graph={graph} scenario={state?.scenario_state} shelters={shelters} candidates={[]} selectedAgentId={selectedId} onSelectAgent={setSelectedId} onPickPosition={() => undefined} incidents={incidents.data?.incidents} selectedIncidentId={selectedIncident} onSelectIncident={setSelectedIncident} reference={polygons.data} showReference={showReference} onShowReference={setShowReference} />
       <p className="muted">Lluvia, exposición, agentes y refugios: sintéticos. Las declaraciones ciudadanas y la referencia territorial se muestran como capas independientes y no modifican esta ejecución.</p>
       {state?.scenario_state && <p className="muted">{state.scenario_state.data_provenance.disclaimer} Modelo: {state.scenario_state.data_provenance.model}.</p>}
       <details><summary>Reportes ciudadanos y otras observaciones</summary>{incidents.isError ? <ErrorState error={incidents.error} onRetry={() => void incidents.refetch()} /> : <ul>{incidents.data?.incidents.map(incident => <li key={incident.incident_id}>{incidentTypeLabels[incident.incident_type]} · {incidentSourceLabels[incident.source_type]} · {incidentStatusLabels[incident.verification_status]} · {incident.description}</li>)}</ul>}</details>
       <ReferencePanel status={reference.data} collection={polygons.data} loading={reference.isPending || polygons.isFetching} error={reference.error ?? polygons.error} retry={() => { void reference.refetch(); if (showReference) void polygons.refetch(); }} csrf="" />
-    </> : <WorldMap graph={graph} world={snapshot} selected={selected} />}
+    </> : <WorldMap graph={graph} world={snapshot} selected={selected} lifecycle={lifecycle} onSelect={setSelectedId} />}
     <div className="escape-details"><Card className="escape-map-card"><h2>Refugios ficticios</h2><p className="muted">Puntos del escenario; no son instalaciones oficiales de emergencia. La envolvente urbana no implica cobertura vial completa.</p><ul className="escape-shelters">{shelters.map(shelter => <li key={shelter.id}><strong>{shelter.id}</strong><span>{shelter.occupancy} / {shelter.capacity} ocupadas<br />{shelter.reserved ?? 0} reservadas · {shelter.available ?? Math.max(0, shelter.capacity - shelter.occupancy - (shelter.reserved ?? 0))} libres</span></li>)}</ul></Card>
       {snapshot && !flood && <Survivors world={snapshot} search={search} onSearch={setSearch} matching={matching} onSelect={setSelectedId} selected={selected} position={position} graph={graph} warnings={warnings} />}
       {state?.scenario_state && <Card className="escape-map-card"><h2>Agentes de inundación</h2><div className="escape-table"><table><thead><tr><th>ID</th><th>Estado</th><th>Refugio</th><th>Ruta</th></tr></thead><tbody>{state.scenario_state.agents.map(agent => <tr key={agent.id}><td>{agent.id}</td><td>{({ moving: 'En movimiento', waiting: 'Esperando', isolated: 'Aislado', evacuated: 'Evacuado' })[agent.state]}</td><td>{agent.target_shelter_id || 'Sin asignación'}</td><td><button className="text-link" onClick={() => setSelectedId(agent.id)}>Ver ruta de {agent.id}</button></td></tr>)}</tbody></table></div></Card>}

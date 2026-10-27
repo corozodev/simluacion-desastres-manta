@@ -26,3 +26,5 @@ export type IncidentFilterDraft = {
   status: '' | Incident['verification_status'];
   age: '' | '1' | '24' | '168';
 };
+
+export const incidentTypeGlyphs: Record<Incident['incident_type'], string> = { flooded_road: '≈', road_closed: '⊘', landslide: '▲', fallen_tree: '♧', bridge_damage: '⌁', other: '!' };

@@ -25,9 +25,11 @@ it('explora las 13.452 aristas sin activar una ejecución ni mezclar posiciones'
   const client = setup();
   await screen.findByLabelText('Profundidad del grafo');
   await userEvent.selectOptions(screen.getByLabelText('Profundidad del grafo'), 'FULL_MANTA');
-  await waitFor(() => expect(document.querySelectorAll('.escape-road')).toHaveLength(13452));
+  await waitFor(() => expect(screen.getByText(/9.179 nodos|9179 nodos/)).toBeInTheDocument());
   expect(document.querySelectorAll('.escape-survivor, .escape-zombie, .escape-planned-route')).toHaveLength(0);
   expect(screen.getByText('Solo geografía')).toBeInTheDocument();
+  expect(document.querySelectorAll('.escape-road')).toHaveLength(2);
+  expect([...document.querySelectorAll('.escape-road')].reduce((count, path) => count + (path.getAttribute('d')?.match(/M/g)?.length ?? 0), 0)).toBe(master.edges.length);
   expect(start).not.toHaveBeenCalled();
   client.clear();
 }, 15000);

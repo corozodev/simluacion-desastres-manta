@@ -211,3 +211,11 @@
 .flood-reference-panel ul { padding-left: 20px; }
 @media(max-width:700px) { .flood-reference-provenance { grid-template-columns: minmax(0,1fr); } }
 .flood-reference-panel { min-width: 0; overflow-wrap: anywhere; }
+.flood-index-low { --swatch: var(--color-floodLow); }
+.flood-index-medium { --swatch: var(--color-floodMedium); }
+.flood-index-high { --swatch: var(--color-floodHigh); }
+.flood-exposure-zone { fill: var(--swatch); stroke: var(--swatch); }
+.flood-roads-caution { stroke: var(--color-roadRestricted); }
+.flood-roads-blocked { stroke: var(--color-roadClosed); }
+.flood-shelter-available { fill: var(--color-shelterAvailable); }
+.incident-type-glyph { font-size: 10px; paint-order: stroke; stroke: var(--color-background); stroke-width: 3px; }
