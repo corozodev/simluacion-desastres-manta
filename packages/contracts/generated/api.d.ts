@@ -928,7 +928,10 @@ export interface components {
             graph_profile: "BASE" | "FULL_MANTA";
             /** @default 20261026 */
             seed: number;
-            /** @default 150 */
+            /**
+             * @description Duración personalizada; official exige exactamente 150.
+             * @default 150
+             */
             max_ticks: number;
             /** @default 2000 */
             tick_interval_ms: number;
@@ -1100,6 +1103,9 @@ export interface components {
             max_memory_bytes: number;
             min_tick_interval_ms: number;
             max_tick_interval_ms: number;
+            min_ticks?: number;
+            /** @enum {integer} */
+            official_max_ticks?: 150;
             max_ticks: number;
             max_survivors: number;
         };
@@ -1228,6 +1234,8 @@ export interface components {
             /** @enum {string} */
             state: "passable" | "caution" | "blocked";
             risk_score: number;
+            /** @description Profundidad máxima simulada muestreada sobre la geometría vial; no medición. */
+            depth_m?: number;
             risk_source: string;
             updated_at_simulation_step: number;
             cost_multiplier: number;
@@ -1266,6 +1274,8 @@ export interface components {
             simulation_total_duration: number;
         };
         SimulationPerformance: {
+            hydraulic_step_latency_ms?: number;
+            evacuation_step_latency_ms?: number;
             /** @description Duración de procesamiento del último paso en milisegundos de reloj real. */
             simulation_step_latency_ms: number;
             /** @description Duración de procesamiento acumulada en milisegundos de reloj real; no determinista. */
@@ -1300,6 +1310,7 @@ export interface components {
             agents: components["schemas"]["FloodAgent"][];
             evacuation_metrics: components["schemas"]["EvacuationMetrics"];
             performance: components["schemas"]["SimulationPerformance"];
+            hydraulic?: components["schemas"]["HydraulicSnapshot"];
             data_provenance: components["schemas"]["DataProvenance"];
         };
         StepRequest: {
@@ -1437,6 +1448,12 @@ export interface components {
             capacity: number;
         };
         LabRunConfig: {
+            /**
+             * @default rainfall_runoff_2d
+             * @enum {string}
+             */
+            hydraulic_model: "rainfall_runoff_2d" | "compound_flood_2d";
+            hydrology?: components["schemas"]["HydrologyConfig"];
             /** @enum {string} */
             mode: "competition" | "full";
             /** Format: int64 */
@@ -1444,6 +1461,7 @@ export interface components {
             /** @enum {string} */
             rainfall_profile: "storm" | "constant" | "pulse";
             rainfall_intensity: number;
+            /** @description Duración en turnos; independiente del intervalo de reproducción. */
             simulation_duration: number;
             /** @enum {string} */
             evacuation_behavior: "preventive" | "late" | "adaptive";
@@ -1458,7 +1476,7 @@ export interface components {
         };
         LabAction: {
             /** @enum {string} */
-            action: "pause" | "resume" | "restart" | "repeat" | "speed";
+            action: "pause" | "resume" | "restart" | "repeat" | "speed" | "cancel";
             expected_run_id: string;
             interval_ms?: number;
         };
@@ -1496,6 +1514,7 @@ export interface components {
             config: components["schemas"]["LabRunConfig"];
         };
         LabCatalog: {
+            duration_limits?: components["schemas"]["DurationLimits"];
             modes: components["schemas"]["GraphPreset"][];
             presets: components["schemas"]["LabPreset"][];
             default_config: components["schemas"]["LabRunConfig"];
@@ -1540,9 +1559,11 @@ export interface components {
             results: components["schemas"]["LabComparisonResult"][];
         };
         LabState: {
+            /** @description Tiempo real acumulado en ejecución; excluye pausas y no forma parte del determinismo. */
+            runtime_elapsed_ms?: number;
             run_id: string;
             /** @enum {string} */
-            state: "idle" | "running" | "paused" | "finished" | "failed";
+            state: "idle" | "running" | "paused" | "finished" | "failed" | "cancelled";
             /** @enum {string} */
             mode: "competition" | "full";
             graph_version: string;
@@ -1827,6 +1848,81 @@ export interface components {
             simulation_step_ms: number;
             planning_calls: number;
             reference: components["schemas"]["ReferenceProviderMetrics"];
+        };
+        DurationLimits: {
+            min_ticks: number;
+            max_ticks: number;
+            default_ticks: number;
+        };
+        /** @description Parámetros experimentales sobre terreno sintético. El índice 0–1 se traduce a 0–120 mm/h de escenario, sin calibración meteorológica. Tiempo físico independiente de la reproducción. */
+        HydrologyConfig: {
+            /** @default 60 */
+            seconds_per_turn: number;
+            /** @default 0 */
+            antecedent_rain_hours: number;
+            /** @default 0 */
+            initial_saturation: number;
+            /** @default 0 */
+            initial_water_depth_m: number;
+            /** @default 0 */
+            sea_level_m: number;
+            /** @default 0 */
+            channel_inflow_m3_s: number;
+            /**
+             * @description Resolución solicitada; se engrosa si excede 4096 celdas. Ver resolución efectiva en hydraulic.grid.
+             * @default 200
+             */
+            cell_size_m: number;
+            /** @default 8 */
+            infiltration_mm_h: number;
+            /** @default 6 */
+            drainage_mm_h: number;
+            /** @default 0.1 */
+            caution_depth_m: number;
+            /**
+             * @description Debe superar caution_depth_m.
+             * @default 0.3
+             */
+            blocked_depth_m: number;
+            /**
+             * @description Debe ser menor que caution_depth_m.
+             * @default 0.03
+             */
+            hysteresis_m: number;
+        };
+        /** @description Malla regular; origen en la esquina suroeste de la celda cero, filas hacia el norte. Descriptor compacto, sin topología vial. */
+        HydraulicGrid: {
+            origin: components["schemas"]["GeoPoint"];
+            rows: number;
+            cols: number;
+            cell_size_m: number;
+            lat_step: number;
+            lng_step: number;
+        };
+        HydraulicMassBalance: {
+            initial_storage_m3: number;
+            rainfall_m3: number;
+            channel_inflow_m3: number;
+            sea_inflow_m3: number;
+            infiltration_m3: number;
+            drainage_m3: number;
+            sea_outflow_m3: number;
+            stored_m3: number;
+            /** @description Inicial + entradas − salidas − almacenamiento; redondeo numérico permitido. */
+            residual_m3: number;
+        };
+        HydraulicSnapshot: {
+            /** @enum {string} */
+            model: "rainfall_runoff_2d" | "compound_flood_2d";
+            terrain_source: string;
+            grid: components["schemas"]["HydraulicGrid"];
+            /** @description Profundidades simuladas por celda en metros, orden de filas. Longitud rows multiplicado por cols. */
+            depths_m: number[];
+            rainfall_mm_h: number;
+            hydrological_time_seconds: number;
+            flooded_area_m2: number;
+            max_depth_m: number;
+            mass_balance: components["schemas"]["HydraulicMassBalance"];
         };
     };
     responses: {
@@ -4203,3 +4299,8 @@ export type LabGeographicReference = components['schemas']['LabGeographicReferen
 export type ReferenceZoneUse = components['schemas']['ReferenceZoneUse'];
 export type ReferenceUse = components['schemas']['ReferenceUse'];
 export type LabTelemetry = components['schemas']['LabTelemetry'];
+export type DurationLimits = components['schemas']['DurationLimits'];
+export type HydrologyConfig = components['schemas']['HydrologyConfig'];
+export type HydraulicGrid = components['schemas']['HydraulicGrid'];
+export type HydraulicMassBalance = components['schemas']['HydraulicMassBalance'];
+export type HydraulicSnapshot = components['schemas']['HydraulicSnapshot'];
