@@ -89,6 +89,9 @@ type urbanFloodScenario struct {
 	tracked          map[string]bool
 	activeIncidents  map[string]appliedOverlay
 	appliedIncidents map[string]appliedOverlay
+	overlayMS        float64
+	planningMS       float64
+	planningCalls    uint64
 }
 
 func newThreatScenario(s *Simulator) (threatScenario, error) {
@@ -149,6 +152,8 @@ func (f *urbanFloodScenario) advance(s *Simulator, events *[]world.Event) {
 }
 
 func (f *urbanFloodScenario) updateOverlay(s *Simulator) {
+	started := time.Now()
+	defer func() { f.overlayMS = float64(time.Since(started)) / float64(time.Millisecond) }()
 	conditions := map[string]world.RoadCondition{}
 	previousRoads := map[string]world.RoadCondition{}
 	for _, road := range f.roads {
@@ -311,7 +316,7 @@ func (f *urbanFloodScenario) snapshot(s *Simulator) *world.ScenarioSnapshot {
 		Rainfall: f.model.Rainfall(), FloodZones: f.model.Zones(), RoadConditions: append([]world.RoadCondition{}, f.roads...),
 		ShelterConditions: append([]world.ShelterCondition{}, f.shelters...), Agents: []world.FloodAgent{}, Performance: f.performance,
 		DataProvenance: world.DataProvenance{GraphSource: s.graph.Source, Model: "synthetic-surface-exposure-v1", ElevationSource: "unavailable",
-			Disclaimer: "Los escenarios de inundación emplean parámetros sintéticos y no constituyen pronósticos hidrológicos ni recomendaciones oficiales de evacuación"},
+			Disclaimer: "Los escenarios de inundación emplean parámetros sintéticos y no constituyen pronósticos hidrológicos ni recomendaciones oficiales de evacuación", GeographicReference: f.cfg.GeographicReference.Clone()},
 	}
 	m := &w.EvacuationMetrics
 	m.TotalAgents, m.RerouteCount, m.SimulationTotalDuration = len(s.survivors), f.reroutes, elapsed

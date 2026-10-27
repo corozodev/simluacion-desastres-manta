@@ -4,6 +4,7 @@ package flood
 
 import (
 	"bytes"
+	"corodev/evacuation/internal/world"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -27,16 +28,17 @@ type ZoneConfig struct {
 }
 
 type Config struct {
-	RainfallProfile          string         `json:"rainfall_profile"`
-	RainfallIntensity        float64        `json:"rainfall_intensity"`
-	SimulationDuration       float64        `json:"simulation_duration"`
-	TimeStep                 float64        `json:"time_step"`
-	FloodGrowthRate          float64        `json:"flood_growth_rate"`
-	DrainageFactor           float64        `json:"drainage_factor"`
-	RoadRiskThresholds       RoadThresholds `json:"road_risk_thresholds"`
-	ShelterExposureThreshold float64        `json:"shelter_exposure_threshold"`
-	EvacuationBehavior       string         `json:"evacuation_behavior"`
-	Zones                    []ZoneConfig   `json:"zones,omitempty"`
+	RainfallProfile          string              `json:"rainfall_profile"`
+	RainfallIntensity        float64             `json:"rainfall_intensity"`
+	SimulationDuration       float64             `json:"simulation_duration"`
+	TimeStep                 float64             `json:"time_step"`
+	FloodGrowthRate          float64             `json:"flood_growth_rate"`
+	DrainageFactor           float64             `json:"drainage_factor"`
+	RoadRiskThresholds       RoadThresholds      `json:"road_risk_thresholds"`
+	ShelterExposureThreshold float64             `json:"shelter_exposure_threshold"`
+	EvacuationBehavior       string              `json:"evacuation_behavior"`
+	Zones                    []ZoneConfig        `json:"zones,omitempty"`
+	GeographicReference      *world.ReferenceUse `json:"geographic_reference,omitempty"`
 }
 
 func DefaultConfig() Config {
@@ -131,5 +133,19 @@ func (c Config) WithDefaults() (Config, error) {
 		centers[z.CenterNode] = true
 	}
 	c.Zones = append([]ZoneConfig(nil), c.Zones...)
+	if r := c.GeographicReference; r != nil {
+		if r.Category != "official_reference" || r.DatasetVersion == "" || r.SourceURL == "" || r.ConsultedAt == "" || !finite(r.Strength) || r.Strength < 0 || r.Strength > 1 || len(r.Zones) > 32 {
+			return Config{}, fmt.Errorf("invalid geographic reference")
+		}
+		seen := map[string]bool{}
+		for _, z := range r.Zones {
+			rank, ok := map[string]int{"NONE": 0, "BAJA": 0, "MEDIA": 1, "ALTA": 2}[z.Susceptibility]
+			if !ok || seen[z.ZoneID] || z.ZoneID == "" || !finite(z.Factor) || z.Factor != 1+r.Strength*float64(rank) {
+				return Config{}, fmt.Errorf("invalid reference experiment weight")
+			}
+			seen[z.ZoneID] = true
+		}
+		c.GeographicReference = r.Clone()
+	}
 	return c, nil
 }

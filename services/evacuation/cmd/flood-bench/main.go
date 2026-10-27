@@ -23,6 +23,7 @@ import (
 	"corodev/evacuation/internal/application"
 	"corodev/evacuation/internal/diagnostics"
 	"corodev/evacuation/internal/graph"
+	"corodev/evacuation/internal/reference"
 	"corodev/evacuation/internal/simulation"
 	"corodev/evacuation/internal/world"
 )
@@ -93,6 +94,8 @@ type benchmarkReport struct {
 	ExpectedTimelineSHA256      string                      `json:"expected_timeline_sha256,omitempty"`
 	ValidationPassed            bool                        `json:"validation_passed"`
 	Failures                    []string                    `json:"failures"`
+	GeographicReference         *world.ReferenceUse         `json:"geographic_reference,omitempty"`
+	OperationalStats            simulation.OperationalStats `json:"operational_stats"`
 }
 
 func usage() (syscall.Rusage, error) {
@@ -252,6 +255,8 @@ func run() error {
 	output := flag.String("output", "", "required private JSON report (written with mode 0600)")
 	seedOverride := flag.String("seed", "", "optional signed integer seed, including zero")
 	expectHash := flag.String("expect-hash", "", "optional expected deterministic timeline SHA-256")
+	referencePath := flag.String("reference", "", "optional validated official bundle; never fetches online")
+	strength := flag.Float64("reference-strength", .25, "dimensionless experimental weight, 0 to 1")
 	flag.Parse()
 	if *output == "" || flag.NArg() != 0 {
 		return errors.New("-output is required; no positional arguments accepted")
@@ -296,6 +301,18 @@ func run() error {
 	key, err := application.EphemeralKey()
 	if err != nil {
 		return err
+	}
+	if *referencePath != "" {
+		bundle, e := reference.Read(*referencePath)
+		if e != nil {
+			return e
+		}
+		if cfg.Flood == nil {
+			return errors.New("reference requires flood config")
+		}
+		if e = reference.Configure(bundle.Susceptibility, cfg.Flood, g, cfg.Seed, *strength); e != nil {
+			return e
+		}
 	}
 	app, err := application.New(g, cfg, "127.0.0.1:0", key, nil, nil)
 	if err != nil {
@@ -382,6 +399,11 @@ func run() error {
 	report.Resources = resourceUsage{WallSeconds: wall, ProcessCPUSeconds: processCPU, AverageCPUOneCorePercent: processCPU / wall * 100, PeakRSSKiBLinux: finalUsage.Maxrss,
 		Note: "Linux ru_maxrss is KiB and includes the whole process lifetime; CPU is percent of one core. Three forced-GC samples characterize retained heap; they do not prove a long-term memory bound. TotalAlloc is cumulative allocation, not retained memory."}
 	report.ValidationPassed = len(report.Failures) == 0 && report.CompletedStep == cfg.Turns
+	report.GeographicReference = cfg.Flood.GeographicReference.Clone()
+	report.OperationalStats = app.Simulator.OperationalStats()
+	if report.GeographicReference != nil {
+		report.Phase = "4D"
+	}
 	if err := writePrivate(*output, report); err != nil {
 		return err
 	}

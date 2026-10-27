@@ -23,7 +23,14 @@ func (s *Simulator) prepare(ctx context.Context, events []world.Event) {
 		return
 	}
 	started := time.Now()
-	defer func() { s.diagnostic.planning = append(s.diagnostic.planning, time.Since(started)) }()
+	defer func() {
+		elapsed := time.Since(started)
+		s.diagnostic.planning = append(s.diagnostic.planning, elapsed)
+		if f, ok := s.scenario.(*urbanFloodScenario); ok {
+			f.planningMS = float64(elapsed) / float64(time.Millisecond)
+			f.planningCalls++
+		}
+	}()
 	before := s.observable(events).Clone()
 	// These are invalidated observable routes, not private engine cache misses.
 	danger := s.hordeBlockedNodes()

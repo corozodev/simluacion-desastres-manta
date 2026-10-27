@@ -82,6 +82,13 @@ func New(g *world.Graph, seed int64, cfg Config) (*Model, error) {
 		if generated {
 			factor = .85 + .30*rng.Float64()
 		}
+		if cfg.GeographicReference != nil {
+			for _, r := range cfg.GeographicReference.Zones {
+				if r.ZoneID == z.ID {
+					factor *= r.Factor
+				}
+			}
+		}
 		m.foci = append(m.foci, focus{config: z, center: center, factor: factor, radius: z.RadiusMinM})
 	}
 	// Precompute centre-to-polyline distances once. The per-step road loop never
@@ -91,7 +98,11 @@ func New(g *world.Graph, seed int64, cfg Config) (*Model, error) {
 		if len(geometry) == 0 {
 			geometry = []world.GeoPoint{m.nodes[edge.From], m.nodes[edge.To]}
 		}
-		r := road{condition: world.RoadCondition{EdgeID: edge.ID, State: "passable", RiskSource: "synthetic_urban_flood", CostMultiplier: 1}}
+		source := "synthetic_urban_flood"
+		if cfg.GeographicReference != nil {
+			source += "+official_reference_experiment"
+		}
+		r := road{condition: world.RoadCondition{EdgeID: edge.ID, State: "passable", RiskSource: source, CostMultiplier: 1}}
 		for i, f := range m.foci {
 			d := polylineDistance(f.center, geometry)
 			if d <= f.config.RadiusMaxM {
@@ -115,6 +126,7 @@ func New(g *world.Graph, seed int64, cfg Config) (*Model, error) {
 func (m *Model) Config() Config {
 	c := m.config
 	c.Zones = append([]ZoneConfig(nil), c.Zones...)
+	c.GeographicReference = c.GeographicReference.Clone()
 	return c
 }
 

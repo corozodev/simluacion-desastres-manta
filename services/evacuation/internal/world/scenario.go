@@ -75,10 +75,40 @@ type SimulationPerformance struct {
 }
 
 type DataProvenance struct {
-	GraphSource     string `json:"graph_source"`
-	Model           string `json:"model"`
-	ElevationSource string `json:"elevation_source"`
-	Disclaimer      string `json:"disclaimer"`
+	GraphSource         string        `json:"graph_source"`
+	Model               string        `json:"model"`
+	ElevationSource     string        `json:"elevation_source"`
+	Disclaimer          string        `json:"disclaimer"`
+	GeographicReference *ReferenceUse `json:"geographic_reference,omitempty"`
+}
+
+// ReferenceUse records categorical official reference data and explicitly
+// experimental weights. It never represents measured water or an active event.
+type ReferenceZoneUse struct {
+	ZoneID         string   `json:"zone_id"`
+	Susceptibility string   `json:"susceptibility"`
+	Factor         float64  `json:"factor"`
+	FeatureIDs     []string `json:"feature_ids"`
+}
+type ReferenceUse struct {
+	Category       string             `json:"category"`
+	DatasetVersion string             `json:"dataset_version"`
+	SourceURL      string             `json:"source_url"`
+	ConsultedAt    string             `json:"consulted_at"`
+	Strength       float64            `json:"strength"`
+	Zones          []ReferenceZoneUse `json:"zones"`
+}
+
+func (r *ReferenceUse) Clone() *ReferenceUse {
+	if r == nil {
+		return nil
+	}
+	c := *r
+	c.Zones = append([]ReferenceZoneUse{}, r.Zones...)
+	for i := range c.Zones {
+		c.Zones[i].FeatureIDs = append([]string{}, r.Zones[i].FeatureIDs...)
+	}
+	return &c
 }
 
 // Clone owns every mutable slice, including each agent's planned route.
@@ -87,6 +117,7 @@ func (s *ScenarioSnapshot) Clone() *ScenarioSnapshot {
 		return nil
 	}
 	copy := *s
+	copy.DataProvenance.GeographicReference = s.DataProvenance.GeographicReference.Clone()
 	copy.FloodZones = append([]FloodZone{}, s.FloodZones...)
 	copy.RoadConditions = append([]RoadCondition{}, s.RoadConditions...)
 	copy.ShelterConditions = append([]ShelterCondition{}, s.ShelterConditions...)
