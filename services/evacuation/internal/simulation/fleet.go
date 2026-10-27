@@ -256,6 +256,10 @@ func (s *Simulator) fleetPassengerStep(v *world.RescueVehicle, from, to string, 
 		record := s.diagnostic.records[id]
 		if from != to {
 			record.Moves++
+			if s.diagnostic.previous[id] == to {
+				record.Reversals++
+			}
+			s.diagnostic.previous[id] = from
 		}
 		if z, mechanism, bitten := s.collision(from, to); bitten {
 			person.Status, person.VehicleID, person.TargetShelterID = world.Bitten, "", ""

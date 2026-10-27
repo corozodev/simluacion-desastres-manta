@@ -126,6 +126,9 @@ func TestFleetReassignsShelterAtomically(t *testing.T) {
 	if w.Survivors[0].TargetShelterID != "H2" || w.Shelters[0].Reserved != 0 || w.Shelters[1].Reserved != 1 {
 		t.Fatal("reservation not reassigned atomically")
 	}
+	if s.diagnostic.records["S"].Reversals != 1 {
+		t.Fatal("passenger reversal missing from per-agent diagnostics")
+	}
 	w = step(t, s)
 	if w.Survivors[0].Status != world.Evacuated || w.Survivors[0].CurrentNode != "A" {
 		t.Fatal("alternate shelter delivery failed")
