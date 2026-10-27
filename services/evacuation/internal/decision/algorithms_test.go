@@ -203,3 +203,23 @@ func TestRunnerProbabilityHonorsClosuresAndRetainsTrappedMass(t *testing.T) {
 		t.Fatal("canceled probability work")
 	}
 }
+
+func TestOnboardSurvivorNeverReceivesWalkingDecision(t *testing.T) {
+	for _, algorithm := range append(algorithms(), decision.LegacyCurrent) {
+		t.Run(algorithm, func(t *testing.T) {
+			w := diamond()
+			s := survivor("A")
+			s.VehicleID = "TRUCK-1"
+			e := decision.NewWithOptions(decision.Options{Algorithm: algorithm, Prediction: true})
+			if got := e.NextStep(context.Background(), w, s); got.NextNode != "A" || len(got.Route) != 1 || got.TargetShelterID != "" {
+				t.Fatal("onboard passenger walked", got)
+			}
+			if got := e.Candidates(context.Background(), w, s); len(got) > 0 {
+				t.Fatal("onboard passenger reserved walking route", got)
+			}
+			if got := e.Escape(context.Background(), w, s); got.NextNode != "A" {
+				t.Fatal("onboard passenger escaped on foot", got)
+			}
+		})
+	}
+}

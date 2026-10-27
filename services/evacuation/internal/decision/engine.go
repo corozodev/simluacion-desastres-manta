@@ -142,7 +142,7 @@ func wait(s world.Survivor) world.DecisionResult {
 // Without an assignment it selects from shared candidate plans. Neither path
 // reserves capacity or mutates the authoritative world.
 func (e *DeterministicEngine) NextStep(ctx context.Context, w world.WorldSnapshot, s world.Survivor) world.DecisionResult {
-	if ctx.Err() != nil || s.Status != world.Active || w.Graph == nil || world.AgentWaiting(w, s.ID) {
+	if ctx.Err() != nil || s.Status != world.Active || s.VehicleID != "" || w.Graph == nil || world.AgentWaiting(w, s.ID) {
 		return wait(s)
 	}
 	b := e.prepare(ctx, w)
@@ -172,7 +172,7 @@ func (e *DeterministicEngine) NextStep(ctx context.Context, w world.WorldSnapsho
 // Candidates computes at most one route per refuge. Occupancy is authoritative;
 // previous reservations are deliberately ignored while D reallocates the cohort.
 func (e *DeterministicEngine) Candidates(ctx context.Context, w world.WorldSnapshot, s world.Survivor) []world.DecisionResult {
-	if ctx.Err() != nil || s.Status != world.Active || w.Graph == nil || world.AgentWaiting(w, s.ID) {
+	if ctx.Err() != nil || s.Status != world.Active || s.VehicleID != "" || w.Graph == nil || world.AgentWaiting(w, s.ID) {
 		return nil
 	}
 	b := e.prepare(ctx, w)
@@ -185,7 +185,7 @@ func (e *DeterministicEngine) Candidates(ctx context.Context, w world.WorldSnaps
 // Escape is a one-edge emergency without a refuge target. Hard restrictions and
 // forecast weights are shared with normal routing.
 func (e *DeterministicEngine) Escape(ctx context.Context, w world.WorldSnapshot, s world.Survivor) world.DecisionResult {
-	if ctx.Err() != nil || s.Status != world.Active || w.Graph == nil || world.AgentWaiting(w, s.ID) {
+	if ctx.Err() != nil || s.Status != world.Active || s.VehicleID != "" || w.Graph == nil || world.AgentWaiting(w, s.ID) {
 		return wait(s)
 	}
 	b := e.prepare(ctx, w)
