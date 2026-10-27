@@ -247,6 +247,60 @@ void main() {
     },
   );
 
+  testWidgets(
+    'static map symbols preserve statuses and observation data at narrow width',
+    (tester) async {
+      final graph = Graph.fromJson(
+        jsonDecode(
+              File(
+                '../../packages/contracts/examples/graph.json',
+              ).readAsStringSync(),
+            )
+            as Map<String, dynamic>,
+      );
+      final data = worldJson();
+      (data['survivors'] as List).add({
+        'id': 'S-bitten',
+        'current_node': 'N-0001',
+        'status': 'bitten',
+        'target_shelter_id': '',
+        'planned_route': <String>[],
+      });
+      data['zombies'] = [
+        {
+          'id': 'horde',
+          'type': 'horde',
+          'current_node': 'N-0000',
+          'movement_state': 'resting',
+          'awake': true,
+          'path': <String>['N-0000'],
+        },
+      ];
+      final world = WorldSnapshot.fromJson(data);
+      final before = jsonEncode(data);
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: SizedBox(
+              width: 280,
+              child: RouteMap(
+                graph: graph,
+                world: world,
+                survivor: world.survivors.first,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      expect(tester.takeException(), isNull);
+      expect(find.byType(RouteMap), findsOneWidget);
+      expect(jsonEncode(data), before);
+      await tester.pumpWidget(const SizedBox.shrink());
+      expect(tester.binding.transientCallbackCount, 0);
+    },
+  );
+
   test('world repository rejects inconsistent reservations', () async {
     final invalid = worldJson();
     final shelters = invalid['shelters'] as List;

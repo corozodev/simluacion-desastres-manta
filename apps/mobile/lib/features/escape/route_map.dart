@@ -271,27 +271,49 @@ class _MapPainter extends CustomPainter {
     for (final zombie in world?.zombies ?? <Zombie>[]) {
       final point = nodes[zombie.currentNode];
       if (point != null) {
-        canvas.drawCircle(
-          point,
-          zombie.type == 'horde' ? 4 : 2.5,
-          Paint()..color = SpookyTokens.error,
-        );
+        _person(canvas, point, SpookyTokens.error, zombie: true);
+        if (zombie.type == 'horde') _label(canvas, point, 'H');
       }
     }
     for (final shelter in world?.shelters ?? graph.shelters) {
       final point = nodes[shelter.nodeId];
       if (point != null) {
-        canvas.drawRect(
-          Rect.fromCenter(center: point, width: 7, height: 7),
-          Paint()..color = SpookyTokens.success,
+        final shelterPath = Path()
+          ..moveTo(point.dx - 5, point.dy)
+          ..lineTo(point.dx, point.dy - 5)
+          ..lineTo(point.dx + 5, point.dy)
+          ..lineTo(point.dx + 4, point.dy + 5)
+          ..lineTo(point.dx - 4, point.dy + 5)
+          ..close();
+        canvas.drawPath(
+          shelterPath,
+          Paint()..color = SpookyTokens.shelterAvailable,
         );
       }
+    }
+    for (final person in world?.survivors ?? <Survivor>[]) {
+      final point = nodes[person.currentNode];
+      if (point == null) continue;
+      _person(
+        canvas,
+        point,
+        person.status == 'evacuated'
+            ? SpookyTokens.shelterAvailable
+            : person.status == 'bitten'
+            ? SpookyTokens.warning
+            : SpookyTokens.accent,
+      );
+      if (person.status == 'evacuated') _label(canvas, point, '✓');
+      if (person.status == 'bitten') _label(canvas, point, '×');
     }
     if (survivor != null && nodes[survivor!.currentNode] != null) {
       canvas.drawCircle(
         nodes[survivor!.currentNode]!,
-        4.5,
-        Paint()..color = SpookyTokens.primary,
+        8,
+        Paint()
+          ..color = SpookyTokens.primary
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.5,
       );
     }
     if (marker != null) {
@@ -313,6 +335,49 @@ class _MapPainter extends CustomPainter {
           ..strokeWidth = 1.5,
       );
     }
+  }
+
+  // Static counterparts of the web symbols. Canvas needs no asset loader,
+  // animation timer or session management; positions remain repository data.
+  void _person(
+    Canvas canvas,
+    Offset point,
+    Color color, {
+    bool zombie = false,
+  }) {
+    canvas.drawCircle(point.translate(0, -3), 2.2, Paint()..color = color);
+    final body = Path()
+      ..moveTo(point.dx - 3, point.dy + (zombie ? -1 : 2))
+      ..lineTo(point.dx, point.dy)
+      ..lineTo(point.dx + 3, point.dy + (zombie ? -1 : 2))
+      ..moveTo(point.dx, point.dy)
+      ..lineTo(point.dx, point.dy + 4)
+      ..moveTo(point.dx - 2, point.dy + 6)
+      ..lineTo(point.dx, point.dy + 4)
+      ..lineTo(point.dx + 2, point.dy + 6);
+    canvas.drawPath(
+      body,
+      Paint()
+        ..color = color
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.8
+        ..strokeCap = StrokeCap.round,
+    );
+  }
+
+  void _label(Canvas canvas, Offset point, String value) {
+    final text = TextPainter(
+      text: TextSpan(
+        text: value,
+        style: const TextStyle(
+          color: SpookyTokens.textPrimary,
+          fontSize: 9,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout();
+    text.paint(canvas, point.translate(4, -8));
   }
 
   @override
