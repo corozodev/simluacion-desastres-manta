@@ -1,4 +1,5 @@
 import type { ErrorResponse, HealthResponse, Graph, WorldSnapshot, Survivor, Shelter, Zombie, SimulationInfo, SimulationCatalog, OperatorSession, StartSimulation } from '@corodev/contracts';
+import type { ScenarioSnapshot, EvacuationMetrics, LabState, LabCatalog, LabSession, LabCandidate, LabRunConfig, LabCandidateValidation, LabComparison, LabAction } from '@corodev/contracts';
 import { config } from '../lib/config';
 import { ApiError } from './errors';
 export { ApiError } from './errors';
@@ -16,7 +17,8 @@ function isErrorResponse(value: unknown): value is ErrorResponse {
 }
 
 async function request<T>(path: string, validate: (value: unknown) => value is T, init?: RequestInit, signal?: AbortSignal, baseUrl = config.worldApiBaseUrl): Promise<T> {
-  if (config.error) throw new ApiError(config.error, 'CONFIGURATION_ERROR');
+  if (baseUrl === config.worldApiBaseUrl && config.error) throw new ApiError(config.error, 'CONFIGURATION_ERROR');
+  if (baseUrl === config.floodApiBaseUrl && config.floodError) throw new ApiError(config.floodError, 'CONFIGURATION_ERROR');
   const controller = new AbortController();
   let timedOut = false;
   const onAbort = () => controller.abort();
@@ -36,7 +38,7 @@ async function request<T>(path: string, validate: (value: unknown) => value is T
       }
       throw new ApiError('La API devolvió un error. Inténtalo de nuevo.', 'HTTP_ERROR', response.status, response.headers.get('x-request-id') ?? undefined);
     }
-    if (!validate(value)) throw new ApiError('La respuesta no coincide con el contrato de la API.', 'INVALID_RESPONSE', response.status);
+    if (!validate(value)) throw new ApiError('La respuesta no coincide con el contrato de la API.', 'INVALID_RESPONSE', response.status, response.headers.get('x-request-id') ?? undefined);
     return value;
   } catch (error) {
     if (error instanceof ApiError) throw error;
@@ -123,7 +125,133 @@ function isSession(value: unknown): value is OperatorSession {
     && (!value.authenticated || typeof value.operator === 'string' && typeof value.csrf_token === 'string' && typeof value.expires_at === 'string');
 }
 
+function isEvacuationMetrics(value: unknown): value is EvacuationMetrics {
+  return isObject(value)
+    && ['total_agents', 'evacuated_agents', 'isolated_agents', 'waiting_agents', 'blocked_edges', 'caution_edges', 'shelters_at_capacity', 'reroute_count'].every(key => isNatural(value[key]))
+    && ['average_evacuation_time', 'simulation_total_duration'].every(key => isNumber(value[key]) && Number(value[key]) >= 0)
+    && Number(value.evacuated_agents) + Number(value.isolated_agents) + Number(value.waiting_agents) <= Number(value.total_agents);
+}
+
+function isScenario(value: unknown): value is ScenarioSnapshot {
+  if (!isObject(value) || !isObject(value.performance) || !isObject(value.data_provenance)) return false;
+  const performance = value.performance, provenance = value.data_provenance;
+  return value.scenario_type === 'urban_flood' && isNatural(value.simulation_step) && isNatural(value.world_version)
+    && typeof value.graph_version === 'string'
+    && ['simulation_time', 'simulation_duration', 'time_step', 'rainfall'].every(key => isNumber(value[key]) && Number(value[key]) >= 0)
+    && Number(value.rainfall) <= 1 && Number(value.time_step) > 0
+    && Array.isArray(value.flood_zones) && value.flood_zones.length <= 32 && value.flood_zones.every(zone => isObject(zone)
+      && typeof zone.id === 'string' && isPoint(zone.center) && isNumber(zone.radius_m) && zone.radius_m > 0
+      && isNumber(zone.intensity) && zone.intensity >= 0 && zone.intensity <= 1)
+    && Array.isArray(value.road_conditions) && value.road_conditions.length <= 20000 && value.road_conditions.every(road => isObject(road)
+      && typeof road.edge_id === 'string' && ['passable', 'caution', 'blocked'].includes(String(road.state))
+      && typeof road.risk_source === 'string' && isNumber(road.risk_score) && road.risk_score >= 0 && road.risk_score <= 1
+      && isNatural(road.updated_at_simulation_step) && isNumber(road.cost_multiplier) && road.cost_multiplier >= 1)
+    && Array.isArray(value.shelter_conditions) && value.shelter_conditions.length === 4 && value.shelter_conditions.every(shelter => isObject(shelter)
+      && typeof shelter.shelter_id === 'string' && ['available', 'full', 'exposed', 'inaccessible'].includes(String(shelter.state))
+      && isNumber(shelter.risk_score) && shelter.risk_score >= 0 && shelter.risk_score <= 1 && isNatural(shelter.updated_at_simulation_step))
+    && Array.isArray(value.agents) && value.agents.length <= 200 && value.agents.every(agent => isObject(agent)
+      && typeof agent.id === 'string' && typeof agent.current_node === 'string' && typeof agent.target_shelter_id === 'string'
+      && ['moving', 'waiting', 'isolated', 'evacuated'].includes(String(agent.state))
+      && ['preventive', 'late', 'adaptive'].includes(String(agent.behavior)) && isStrings(agent.planned_route)
+      && (agent.evacuation_time === undefined || isNumber(agent.evacuation_time) && agent.evacuation_time >= 0))
+    && isEvacuationMetrics(value.evacuation_metrics) && value.evacuation_metrics.total_agents === value.agents.length
+    && ['simulation_step_latency_ms', 'simulation_total_duration_ms'].every(key => isNumber(performance[key]) && Number(performance[key]) >= 0)
+    && ['graph_source', 'model', 'elevation_source', 'disclaimer'].every(key => typeof provenance[key] === 'string');
+}
+
+function isCandidate(value: unknown): value is LabCandidate {
+  return isPoint(value) && isObject(value) && typeof value.id === 'string' && value.id.length > 0 && value.id.length <= 64
+    && typeof value.label === 'string' && value.label.length > 0 && value.label.length <= 120
+    && isNatural(value.capacity) && value.capacity >= 1 && value.capacity <= 200;
+}
+
+function isLabConfig(value: unknown): value is LabRunConfig {
+  return isObject(value) && ['competition', 'full'].includes(String(value.mode)) && Number.isSafeInteger(value.seed)
+    && ['storm', 'constant', 'pulse'].includes(String(value.rainfall_profile))
+    && isNumber(value.rainfall_intensity) && value.rainfall_intensity >= 0 && value.rainfall_intensity <= 1
+    && isNumber(value.simulation_duration) && value.simulation_duration >= 1 && value.simulation_duration <= 10000
+    && ['preventive', 'late', 'adaptive'].includes(String(value.evacuation_behavior))
+    && isNatural(value.agents) && value.agents >= 1 && value.agents <= 200
+    && isNatural(value.interval_ms) && value.interval_ms <= 5000
+    && Array.isArray(value.shelters) && value.shelters.length === 4 && value.shelters.every(isCandidate);
+}
+
+function isLabComparison(value: unknown): value is LabComparison {
+  if (!isObject(value) || typeof value.id !== 'string' || !['running', 'finished', 'failed'].includes(String(value.state))
+    || !isNatural(value.progress) || value.progress > 2 || typeof value.message !== 'string' || !Array.isArray(value.results) || value.results.length > 2) return false;
+  const results = value.results;
+  if (!results.every(result => isObject(result) && ['original', 'custom'].includes(String(result.strategy))
+    && ['competition', 'full'].includes(String(result.mode)) && Number.isSafeInteger(result.seed)
+    && ['graph_version', 'origins_hash', 'config_hash'].every(key => typeof result[key] === 'string')
+    && isNatural(result.total_agents) && result.total_agents > 0 && isEvacuationMetrics(result.evacuation_metrics)
+    && result.total_agents === result.evacuation_metrics.total_agents
+    && isNumber(result.evacuated_percentage) && Math.abs(result.evacuated_percentage - result.evacuation_metrics.evacuated_agents / result.total_agents * 100) < 1e-6
+    && isNumber(result.step_latency_ms) && result.step_latency_ms >= 0)) return false;
+  if (value.state === 'finished') {
+    const [a, b] = results;
+    if (results.length !== 2 || !isObject(a) || !isObject(b) || a.strategy === b.strategy
+      || ['mode', 'seed', 'total_agents', 'origins_hash', 'config_hash'].some(key => a[key] !== b[key])) return false;
+  }
+  return true;
+}
+
+function isLabState(value: unknown): value is LabState {
+  return isObject(value) && typeof value.run_id === 'string' && value.run_id.length > 0
+    && ['idle', 'running', 'paused', 'finished', 'failed'].includes(String(value.state)) && isLabConfig(value.config)
+    && value.mode === value.config.mode && typeof value.graph_version === 'string'
+    && isScenario(value.scenario) && value.graph_version === value.scenario.graph_version
+    && Array.isArray(value.shelters) && value.shelters.length === 4 && value.shelters.every(isShelter)
+    && Array.isArray(value.origins) && value.origins.length === value.config.agents && value.origins.every(origin => isObject(origin)
+      && typeof origin.id === 'string' && typeof origin.node_id === 'string' && isPoint(origin)
+      && isNumber(origin.snap_distance_m) && origin.snap_distance_m >= 0)
+    && Array.isArray(value.timeline) && value.timeline.length <= 1024 && value.timeline.every(entry => isObject(entry)
+      && isNatural(entry.step) && isNumber(entry.simulation_time) && entry.simulation_time >= 0
+      && isEvacuationMetrics(entry.evacuation_metrics) && isNumber(entry.step_latency_ms) && entry.step_latency_ms >= 0)
+    && (value.comparison === undefined || isLabComparison(value.comparison));
+}
+
+function isLabCatalog(value: unknown): value is LabCatalog {
+  return isObject(value) && isLabConfig(value.default_config) && Array.isArray(value.modes) && value.modes.length === 2
+    && value.modes.every(mode => isObject(mode) && ['competition', 'full'].includes(String(mode.id))
+      && ['name', 'graph_version', 'source', 'coverage', 'disabled_reason'].every(key => typeof mode[key] === 'string')
+      && isNatural(mode.nodes) && isNatural(mode.edges) && ['enabled', 'experimental', 'preview_available'].every(key => typeof mode[key] === 'boolean'))
+    && Array.isArray(value.presets) && value.presets.every(preset => isObject(preset)
+      && ['id', 'name', 'description'].every(key => typeof preset[key] === 'string') && isLabConfig(preset.config))
+    && Array.isArray(value.original_shelters) && value.original_shelters.length === 4 && value.original_shelters.every(isCandidate)
+    && isNumber(value.max_snap_distance_m) && value.max_snap_distance_m > 0 && typeof value.disclaimer === 'string';
+}
+
+function isLabValidation(value: unknown): value is LabCandidateValidation {
+  return isObject(value) && typeof value.valid === 'boolean' && Array.isArray(value.candidates) && value.candidates.length <= 4
+    && value.candidates.every(candidate => isObject(candidate) && typeof candidate.id === 'string' && typeof candidate.label === 'string'
+      && isNumber(candidate.lat) && isNumber(candidate.lng) && isNumber(candidate.capacity)
+      && typeof candidate.node_id === 'string' && isNumber(candidate.snapped_lat) && isNumber(candidate.snapped_lng)
+      && isNumber(candidate.snap_distance_m) && candidate.snap_distance_m >= 0 && typeof candidate.valid === 'boolean' && typeof candidate.message === 'string')
+    && (!value.valid || value.candidates.length === 4 && value.candidates.every(candidate => isObject(candidate) && candidate.valid));
+}
+
+function labRequest<T>(path: string, validate: (value: unknown) => value is T, init?: RequestInit, signal?: AbortSignal): Promise<T> {
+  return request(path, validate, init, signal, config.floodApiBaseUrl);
+}
+
+function labMutation<T>(path: string, validate: (value: unknown) => value is T, body: unknown, csrf: string): Promise<T> {
+  return labRequest(path, validate, { method: 'POST', credentials: 'include', headers: { 'X-CSRF-Token': csrf }, body: JSON.stringify(body) });
+}
+
 export const api = {
+  floodCatalog: (signal?: AbortSignal) => labRequest('/lab/catalog', isLabCatalog, undefined, signal),
+  floodState: (signal?: AbortSignal) => labRequest('/lab/state', isLabState, undefined, signal),
+  floodSession: (signal?: AbortSignal) => labRequest<LabSession>('/lab/session', (value): value is LabSession => isObject(value)
+    && typeof value.enabled === 'boolean' && typeof value.authenticated === 'boolean' && typeof value.csrf_token === 'string', { credentials: 'include' }, signal),
+  floodGraph: (signal?: AbortSignal, options?: { runId?: string; mode?: string }) => {
+    const query = new URLSearchParams(options?.mode ? { mode: options.mode } : options?.runId ? { run_id: options.runId } : {});
+    return labRequest<Graph>(`/lab/graph${query.size ? `?${query}` : ''}`, isGraph, undefined, signal);
+  },
+  startFlood: (runConfig: LabRunConfig, expectedRunId: string, csrf: string) => labMutation('/lab/runs', isLabState, { config: runConfig, expected_run_id: expectedRunId }, csrf),
+  floodAction: (action: LabAction['action'], expectedRunId: string, csrf: string, intervalMs?: number) => labMutation('/lab/actions', isLabState,
+    { action, expected_run_id: expectedRunId, ...(intervalMs === undefined ? {} : { interval_ms: intervalMs }) }, csrf),
+  validateFloodCandidates: (mode: LabRunConfig['mode'], candidates: LabCandidate[], csrf: string) => labMutation('/lab/candidates/validate', isLabValidation, { mode, candidates }, csrf),
+  compareFlood: (runConfig: LabRunConfig, expectedRunId: string, csrf: string) => labMutation('/lab/comparisons', isLabState, { config: runConfig, expected_run_id: expectedRunId }, csrf),
   world: (signal?: AbortSignal) => request<WorldSnapshot>('/estado', isWorld, undefined, signal),
   graph: (signal?: AbortSignal, options?: { runId?: string; mode?: string }) => {
     const query = new URLSearchParams(options?.mode ? { mode: options.mode } : options?.runId ? { run_id: options.runId } : {});

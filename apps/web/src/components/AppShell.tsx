@@ -1,15 +1,19 @@
 import { Cloud, MapPinned, Menu, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { Link, NavLink, Outlet } from 'react-router-dom';
+import { Link, NavLink, Outlet, useSearchParams } from 'react-router-dom';
 import { brand } from '@corodev/design-tokens/brand';
-import { useWorld } from '../services/queries';
+import { useFloodState, useWorld } from '../services/queries';
 import { StatusIndicator } from './ui';
 
 export function AppShell() {
   const [menuOpen, setMenuOpen] = useState(false);
   // Escape owns polling; the shell only observes the same query cache.
   const world = useWorld(false);
-  const status = world.isError ? 'offline' : world.isPending ? 'checking' : 'online';
+  const flood = useFloodState(false);
+  const [search] = useSearchParams();
+  const floodSelected = search.get('scenario') === 'urban_flood';
+  const active = floodSelected ? flood : world;
+  const status = active.isError ? 'offline' : active.isPending ? 'checking' : 'online';
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => { if (event.key === 'Escape') setMenuOpen(false); };
     window.addEventListener('keydown', onKey);
