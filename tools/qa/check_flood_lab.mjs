@@ -77,7 +77,7 @@ try {
   const labBinary = path.join(temporary, 'flood-lab'), zombieBinary = path.join(temporary, 'zombie');
   await build('./cmd/flood-lab', labBinary);
   await build('./cmd/server', zombieBinary);
-  const lab = await start(labBinary, ['-listen', '127.0.0.1:0', '-origin', origin, '-data-dir', 'data'], {}, record => record.event === 'ready');
+  const lab = await start(labBinary, ['-listen', '127.0.0.1:0', '-origin', origin, '-data-dir', 'data', '-incident-dir', path.join(temporary, 'incidents')], {}, record => record.event === 'ready');
   const zombie = await start(zombieBinary, [], {
     API_KEY: randomBytes(32).toString('hex'), LISTEN_ADDR: '127.0.0.1:0', SIM_AUTOSTART: 'false', CORS_ORIGINS: origin,
   }, record => record.msg === 'backend ready');
@@ -163,7 +163,7 @@ try {
     await expect(page.getByRole('img', { name: /^Red urbana de inundación simulada/ })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Iniciar tormenta', exact: true })).toBeEnabled();
     report.checks.scenario_switch_and_synthetic_label = true;
-    for (const label of ['Exposición a inundación', 'Calles transitables', 'Calles con precaución', 'Calles bloqueadas', 'Rutas de evacuación', 'Agentes', 'Refugios', 'Incidentes (Fase 4C)']) {
+    for (const label of ['Exposición a inundación', 'Calles transitables', 'Calles con precaución', 'Calles bloqueadas', 'Rutas de evacuación', 'Agentes', 'Refugios', 'Novedades georreferenciadas']) {
       const checkbox = page.getByRole('checkbox', { name: label, exact: true });
       await expect(checkbox).toBeVisible();
       const wasChecked = await checkbox.isChecked();
