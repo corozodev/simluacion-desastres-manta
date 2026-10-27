@@ -1953,6 +1953,630 @@
         },
         "comparison": {
           "$ref": "#/definitions/LabComparison"
+        },
+        "incident_applications": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/IncidentApplication"
+          }
+        }
+      }
+    },
+    "IncidentBounds": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "min_latitude",
+        "min_longitude",
+        "max_latitude",
+        "max_longitude"
+      ],
+      "properties": {
+        "min_latitude": {
+          "type": "number",
+          "minimum": -90,
+          "maximum": 90
+        },
+        "min_longitude": {
+          "type": "number",
+          "minimum": -180,
+          "maximum": 180
+        },
+        "max_latitude": {
+          "type": "number",
+          "minimum": -90,
+          "maximum": 90
+        },
+        "max_longitude": {
+          "type": "number",
+          "minimum": -180,
+          "maximum": 180
+        }
+      }
+    },
+    "IncidentEvidenceMetadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "attachment_count",
+        "storage_status"
+      ],
+      "properties": {
+        "attachment_count": {
+          "type": "integer",
+          "enum": [
+            0
+          ]
+        },
+        "storage_status": {
+          "type": "string",
+          "enum": [
+            "not_supported"
+          ]
+        }
+      }
+    },
+    "IncidentServiceInfo": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "enabled",
+        "schema_version",
+        "bounds",
+        "max_description_length",
+        "max_snap_distance_m",
+        "verification_notice",
+        "photo_uploads_enabled"
+      ],
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "schema_version": {
+          "type": "integer",
+          "enum": [
+            1
+          ]
+        },
+        "bounds": {
+          "$ref": "#/definitions/IncidentBounds"
+        },
+        "max_description_length": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "max_snap_distance_m": {
+          "type": "number",
+          "minimum": 0
+        },
+        "verification_notice": {
+          "type": "string"
+        },
+        "photo_uploads_enabled": {
+          "type": "boolean"
+        }
+      }
+    },
+    "IncidentLocation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "latitude",
+        "longitude"
+      ],
+      "properties": {
+        "latitude": {
+          "type": "number",
+          "minimum": -90,
+          "maximum": 90
+        },
+        "longitude": {
+          "type": "number",
+          "minimum": -180,
+          "maximum": 180
+        },
+        "edge_id_hint": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        }
+      }
+    },
+    "IncidentEdgeMatch": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "edge_id",
+        "road_type",
+        "distance_m",
+        "from_node_id",
+        "to_node_id",
+        "latitude",
+        "longitude"
+      ],
+      "properties": {
+        "edge_id": {
+          "type": "string"
+        },
+        "road_type": {
+          "type": "string"
+        },
+        "distance_m": {
+          "type": "number",
+          "minimum": 0
+        },
+        "from_node_id": {
+          "type": "string"
+        },
+        "to_node_id": {
+          "type": "string"
+        },
+        "latitude": {
+          "type": "number",
+          "minimum": -90,
+          "maximum": 90
+        },
+        "longitude": {
+          "type": "number",
+          "minimum": -180,
+          "maximum": 180
+        }
+      }
+    },
+    "IncidentResolution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "matched",
+        "ambiguous",
+        "candidates",
+        "message",
+        "graph_version",
+        "max_snap_distance_m"
+      ],
+      "properties": {
+        "matched": {
+          "type": "boolean"
+        },
+        "ambiguous": {
+          "type": "boolean"
+        },
+        "candidates": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/IncidentEdgeMatch"
+          },
+          "maxItems": 5
+        },
+        "message": {
+          "type": "string"
+        },
+        "graph_version": {
+          "type": "string"
+        },
+        "max_snap_distance_m": {
+          "type": "number",
+          "minimum": 0
+        }
+      }
+    },
+    "IncidentCreate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "incident_type",
+        "latitude",
+        "longitude",
+        "description",
+        "severity_reported",
+        "road_passability_reported",
+        "event_time",
+        "location_method"
+      ],
+      "properties": {
+        "incident_type": {
+          "type": "string",
+          "enum": [
+            "flooded_road",
+            "road_closed",
+            "landslide",
+            "fallen_tree",
+            "bridge_damage",
+            "other"
+          ]
+        },
+        "latitude": {
+          "type": "number",
+          "minimum": -90,
+          "maximum": 90
+        },
+        "longitude": {
+          "type": "number",
+          "minimum": -180,
+          "maximum": 180
+        },
+        "description": {
+          "type": "string",
+          "minLength": 5,
+          "maxLength": 500
+        },
+        "severity_reported": {
+          "type": "string",
+          "enum": [
+            "low",
+            "moderate",
+            "high",
+            "unknown"
+          ]
+        },
+        "road_passability_reported": {
+          "type": "string",
+          "enum": [
+            "passable",
+            "restricted",
+            "blocked",
+            "unknown"
+          ]
+        },
+        "event_time": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "location_method": {
+          "type": "string",
+          "enum": [
+            "manual",
+            "device"
+          ]
+        },
+        "edge_id_hint": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "evidence_metadata": {
+          "$ref": "#/definitions/IncidentEvidenceMetadata"
+        }
+      }
+    },
+    "Incident": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "incident_id",
+        "incident_type",
+        "latitude",
+        "longitude",
+        "description",
+        "severity_reported",
+        "road_passability_reported",
+        "event_time",
+        "received_at",
+        "source_type",
+        "verification_status",
+        "evidence_metadata",
+        "affected_edge_ids",
+        "graph_version",
+        "snap_distance_m",
+        "location_method",
+        "location_precision_m",
+        "expires_at",
+        "updated_at"
+      ],
+      "properties": {
+        "schema_version": {
+          "type": "integer",
+          "enum": [
+            1
+          ]
+        },
+        "incident_id": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{32}$"
+        },
+        "incident_type": {
+          "type": "string",
+          "enum": [
+            "flooded_road",
+            "road_closed",
+            "landslide",
+            "fallen_tree",
+            "bridge_damage",
+            "other"
+          ]
+        },
+        "latitude": {
+          "type": "number",
+          "minimum": -90,
+          "maximum": 90
+        },
+        "longitude": {
+          "type": "number",
+          "minimum": -180,
+          "maximum": 180
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "severity_reported": {
+          "type": "string",
+          "enum": [
+            "low",
+            "moderate",
+            "high",
+            "unknown"
+          ]
+        },
+        "road_passability_reported": {
+          "type": "string",
+          "enum": [
+            "passable",
+            "restricted",
+            "blocked",
+            "unknown"
+          ]
+        },
+        "event_time": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "received_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "source_type": {
+          "type": "string",
+          "enum": [
+            "citizen",
+            "synthetic",
+            "official"
+          ]
+        },
+        "verification_status": {
+          "type": "string",
+          "enum": [
+            "pending",
+            "corroborated",
+            "verified",
+            "rejected",
+            "expired"
+          ]
+        },
+        "evidence_metadata": {
+          "$ref": "#/definitions/IncidentEvidenceMetadata"
+        },
+        "affected_edge_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 5
+        },
+        "graph_version": {
+          "type": "string"
+        },
+        "snap_distance_m": {
+          "type": "number",
+          "minimum": 0
+        },
+        "location_method": {
+          "type": "string",
+          "enum": [
+            "manual",
+            "device"
+          ]
+        },
+        "location_precision_m": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Resolución aproximada de las coordenadas públicas redondeadas; no representa exactitud GPS ni verifica la ubicación declarada."
+        },
+        "expires_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "IncidentList": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "incidents",
+        "total",
+        "limit",
+        "offset",
+        "has_more"
+      ],
+      "properties": {
+        "incidents": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Incident"
+          },
+          "maxItems": 200
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 200
+        },
+        "offset": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "has_more": {
+          "type": "boolean"
+        }
+      }
+    },
+    "IncidentStatusUpdate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "verification_status",
+        "expected_updated_at"
+      ],
+      "properties": {
+        "verification_status": {
+          "type": "string",
+          "enum": [
+            "pending",
+            "corroborated",
+            "verified",
+            "rejected"
+          ]
+        },
+        "expected_updated_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "IncidentApply": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "expected_run_id",
+        "duration_steps",
+        "effect",
+        "experimental_ack"
+      ],
+      "properties": {
+        "expected_run_id": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{32}$"
+        },
+        "duration_steps": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10000
+        },
+        "effect": {
+          "type": "string",
+          "enum": [
+            "blocked",
+            "caution"
+          ]
+        },
+        "experimental_ack": {
+          "type": "boolean",
+          "enum": [
+            true
+          ]
+        }
+      }
+    },
+    "IncidentApplication": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "application_id",
+        "incident_id",
+        "run_id",
+        "affected_edge_ids",
+        "simulation_step",
+        "world_version",
+        "source_type",
+        "verification_status_at_application",
+        "effect",
+        "expires_at_simulation_step",
+        "applied_at"
+      ],
+      "properties": {
+        "application_id": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{32}$"
+        },
+        "incident_id": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{32}$"
+        },
+        "run_id": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{32}$"
+        },
+        "affected_edge_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "maxItems": 5
+        },
+        "simulation_step": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "world_version": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "source_type": {
+          "type": "string",
+          "enum": [
+            "citizen",
+            "synthetic",
+            "official"
+          ]
+        },
+        "verification_status_at_application": {
+          "type": "string",
+          "enum": [
+            "pending",
+            "corroborated",
+            "verified",
+            "rejected",
+            "expired"
+          ]
+        },
+        "effect": {
+          "type": "string",
+          "enum": [
+            "blocked",
+            "caution"
+          ]
+        },
+        "expires_at_simulation_step": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "applied_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "IncidentApplyResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "incident",
+        "application",
+        "state",
+        "already_applied"
+      ],
+      "properties": {
+        "incident": {
+          "$ref": "#/definitions/Incident"
+        },
+        "application": {
+          "$ref": "#/definitions/IncidentApplication"
+        },
+        "state": {
+          "$ref": "#/definitions/LabState"
+        },
+        "already_applied": {
+          "type": "boolean"
         }
       }
     }

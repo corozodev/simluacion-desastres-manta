@@ -609,3 +609,367 @@ class SimulationInfo {
     if (failure != null) 'failure': failure!,
   };
 }
+
+class IncidentBounds {
+  const IncidentBounds({
+    required this.minLatitude,
+    required this.minLongitude,
+    required this.maxLatitude,
+    required this.maxLongitude,
+  });
+
+  final double minLatitude;
+  final double minLongitude;
+  final double maxLatitude;
+  final double maxLongitude;
+
+  factory IncidentBounds.fromJson(Map<String, dynamic> json) => IncidentBounds(
+    minLatitude: (json['min_latitude'] as num).toDouble(),
+    minLongitude: (json['min_longitude'] as num).toDouble(),
+    maxLatitude: (json['max_latitude'] as num).toDouble(),
+    maxLongitude: (json['max_longitude'] as num).toDouble(),
+  );
+
+  Map<String, dynamic> toJson() => {
+    'min_latitude': minLatitude,
+    'min_longitude': minLongitude,
+    'max_latitude': maxLatitude,
+    'max_longitude': maxLongitude,
+  };
+}
+
+class IncidentEvidenceMetadata {
+  const IncidentEvidenceMetadata({
+    required this.attachmentCount,
+    required this.storageStatus,
+  });
+
+  final int attachmentCount;
+  final String storageStatus;
+
+  factory IncidentEvidenceMetadata.fromJson(Map<String, dynamic> json) => IncidentEvidenceMetadata(
+    attachmentCount: json['attachment_count'] as int,
+    storageStatus: json['storage_status'] as String,
+  );
+
+  Map<String, dynamic> toJson() => {
+    'attachment_count': attachmentCount,
+    'storage_status': storageStatus,
+  };
+}
+
+class IncidentServiceInfo {
+  const IncidentServiceInfo({
+    required this.enabled,
+    required this.schemaVersion,
+    required this.bounds,
+    required this.maxDescriptionLength,
+    required this.maxSnapDistanceM,
+    required this.verificationNotice,
+    required this.photoUploadsEnabled,
+  });
+
+  final bool enabled;
+  final int schemaVersion;
+  final IncidentBounds bounds;
+  final int maxDescriptionLength;
+  final double maxSnapDistanceM;
+  final String verificationNotice;
+  final bool photoUploadsEnabled;
+
+  factory IncidentServiceInfo.fromJson(Map<String, dynamic> json) => IncidentServiceInfo(
+    enabled: json['enabled'] as bool,
+    schemaVersion: json['schema_version'] as int,
+    bounds: IncidentBounds.fromJson(Map<String, dynamic>.from(json['bounds'] as Map)),
+    maxDescriptionLength: json['max_description_length'] as int,
+    maxSnapDistanceM: (json['max_snap_distance_m'] as num).toDouble(),
+    verificationNotice: json['verification_notice'] as String,
+    photoUploadsEnabled: json['photo_uploads_enabled'] as bool,
+  );
+
+  Map<String, dynamic> toJson() => {
+    'enabled': enabled,
+    'schema_version': schemaVersion,
+    'bounds': bounds.toJson(),
+    'max_description_length': maxDescriptionLength,
+    'max_snap_distance_m': maxSnapDistanceM,
+    'verification_notice': verificationNotice,
+    'photo_uploads_enabled': photoUploadsEnabled,
+  };
+}
+
+class IncidentLocation {
+  const IncidentLocation({
+    required this.latitude,
+    required this.longitude,
+    this.edgeIdHint,
+  });
+
+  final double latitude;
+  final double longitude;
+  final String? edgeIdHint;
+
+  factory IncidentLocation.fromJson(Map<String, dynamic> json) => IncidentLocation(
+    latitude: (json['latitude'] as num).toDouble(),
+    longitude: (json['longitude'] as num).toDouble(),
+    edgeIdHint: json['edge_id_hint'] == null ? null : json['edge_id_hint'] as String,
+  );
+
+  Map<String, dynamic> toJson() => {
+    'latitude': latitude,
+    'longitude': longitude,
+    if (edgeIdHint != null) 'edge_id_hint': edgeIdHint!,
+  };
+}
+
+class IncidentEdgeMatch {
+  const IncidentEdgeMatch({
+    required this.edgeId,
+    required this.roadType,
+    required this.distanceM,
+    required this.fromNodeId,
+    required this.toNodeId,
+    required this.latitude,
+    required this.longitude,
+  });
+
+  final String edgeId;
+  final String roadType;
+  final double distanceM;
+  final String fromNodeId;
+  final String toNodeId;
+  final double latitude;
+  final double longitude;
+
+  factory IncidentEdgeMatch.fromJson(Map<String, dynamic> json) => IncidentEdgeMatch(
+    edgeId: json['edge_id'] as String,
+    roadType: json['road_type'] as String,
+    distanceM: (json['distance_m'] as num).toDouble(),
+    fromNodeId: json['from_node_id'] as String,
+    toNodeId: json['to_node_id'] as String,
+    latitude: (json['latitude'] as num).toDouble(),
+    longitude: (json['longitude'] as num).toDouble(),
+  );
+
+  Map<String, dynamic> toJson() => {
+    'edge_id': edgeId,
+    'road_type': roadType,
+    'distance_m': distanceM,
+    'from_node_id': fromNodeId,
+    'to_node_id': toNodeId,
+    'latitude': latitude,
+    'longitude': longitude,
+  };
+}
+
+class IncidentResolution {
+  const IncidentResolution({
+    required this.matched,
+    required this.ambiguous,
+    required this.candidates,
+    required this.message,
+    required this.graphVersion,
+    required this.maxSnapDistanceM,
+  });
+
+  final bool matched;
+  final bool ambiguous;
+  final List<IncidentEdgeMatch> candidates;
+  final String message;
+  final String graphVersion;
+  final double maxSnapDistanceM;
+
+  factory IncidentResolution.fromJson(Map<String, dynamic> json) => IncidentResolution(
+    matched: json['matched'] as bool,
+    ambiguous: json['ambiguous'] as bool,
+    candidates: (json['candidates'] as List).map((value) => IncidentEdgeMatch.fromJson(Map<String, dynamic>.from(value as Map))).toList(),
+    message: json['message'] as String,
+    graphVersion: json['graph_version'] as String,
+    maxSnapDistanceM: (json['max_snap_distance_m'] as num).toDouble(),
+  );
+
+  Map<String, dynamic> toJson() => {
+    'matched': matched,
+    'ambiguous': ambiguous,
+    'candidates': candidates.map((value) => value.toJson()).toList(),
+    'message': message,
+    'graph_version': graphVersion,
+    'max_snap_distance_m': maxSnapDistanceM,
+  };
+}
+
+class IncidentCreate {
+  const IncidentCreate({
+    required this.incidentType,
+    required this.latitude,
+    required this.longitude,
+    required this.description,
+    required this.severityReported,
+    required this.roadPassabilityReported,
+    required this.eventTime,
+    required this.locationMethod,
+    this.edgeIdHint,
+    this.evidenceMetadata,
+  });
+
+  final String incidentType;
+  final double latitude;
+  final double longitude;
+  final String description;
+  final String severityReported;
+  final String roadPassabilityReported;
+  final String eventTime;
+  final String locationMethod;
+  final String? edgeIdHint;
+  final IncidentEvidenceMetadata? evidenceMetadata;
+
+  factory IncidentCreate.fromJson(Map<String, dynamic> json) => IncidentCreate(
+    incidentType: json['incident_type'] as String,
+    latitude: (json['latitude'] as num).toDouble(),
+    longitude: (json['longitude'] as num).toDouble(),
+    description: json['description'] as String,
+    severityReported: json['severity_reported'] as String,
+    roadPassabilityReported: json['road_passability_reported'] as String,
+    eventTime: json['event_time'] as String,
+    locationMethod: json['location_method'] as String,
+    edgeIdHint: json['edge_id_hint'] == null ? null : json['edge_id_hint'] as String,
+    evidenceMetadata: json['evidence_metadata'] == null ? null : IncidentEvidenceMetadata.fromJson(Map<String, dynamic>.from(json['evidence_metadata'] as Map)),
+  );
+
+  Map<String, dynamic> toJson() => {
+    'incident_type': incidentType,
+    'latitude': latitude,
+    'longitude': longitude,
+    'description': description,
+    'severity_reported': severityReported,
+    'road_passability_reported': roadPassabilityReported,
+    'event_time': eventTime,
+    'location_method': locationMethod,
+    if (edgeIdHint != null) 'edge_id_hint': edgeIdHint!,
+    if (evidenceMetadata != null) 'evidence_metadata': evidenceMetadata!.toJson(),
+  };
+}
+
+class Incident {
+  const Incident({
+    required this.schemaVersion,
+    required this.incidentId,
+    required this.incidentType,
+    required this.latitude,
+    required this.longitude,
+    required this.description,
+    required this.severityReported,
+    required this.roadPassabilityReported,
+    required this.eventTime,
+    required this.receivedAt,
+    required this.sourceType,
+    required this.verificationStatus,
+    required this.evidenceMetadata,
+    required this.affectedEdgeIds,
+    required this.graphVersion,
+    required this.snapDistanceM,
+    required this.locationMethod,
+    required this.locationPrecisionM,
+    required this.expiresAt,
+    required this.updatedAt,
+  });
+
+  final int schemaVersion;
+  final String incidentId;
+  final String incidentType;
+  final double latitude;
+  final double longitude;
+  final String description;
+  final String severityReported;
+  final String roadPassabilityReported;
+  final String eventTime;
+  final String receivedAt;
+  final String sourceType;
+  final String verificationStatus;
+  final IncidentEvidenceMetadata evidenceMetadata;
+  final List<String> affectedEdgeIds;
+  final String graphVersion;
+  final double snapDistanceM;
+  final String locationMethod;
+  final double locationPrecisionM;
+  final String expiresAt;
+  final String updatedAt;
+
+  factory Incident.fromJson(Map<String, dynamic> json) => Incident(
+    schemaVersion: json['schema_version'] as int,
+    incidentId: json['incident_id'] as String,
+    incidentType: json['incident_type'] as String,
+    latitude: (json['latitude'] as num).toDouble(),
+    longitude: (json['longitude'] as num).toDouble(),
+    description: json['description'] as String,
+    severityReported: json['severity_reported'] as String,
+    roadPassabilityReported: json['road_passability_reported'] as String,
+    eventTime: json['event_time'] as String,
+    receivedAt: json['received_at'] as String,
+    sourceType: json['source_type'] as String,
+    verificationStatus: json['verification_status'] as String,
+    evidenceMetadata: IncidentEvidenceMetadata.fromJson(Map<String, dynamic>.from(json['evidence_metadata'] as Map)),
+    affectedEdgeIds: (json['affected_edge_ids'] as List).map((value) => value as String).toList(),
+    graphVersion: json['graph_version'] as String,
+    snapDistanceM: (json['snap_distance_m'] as num).toDouble(),
+    locationMethod: json['location_method'] as String,
+    locationPrecisionM: (json['location_precision_m'] as num).toDouble(),
+    expiresAt: json['expires_at'] as String,
+    updatedAt: json['updated_at'] as String,
+  );
+
+  Map<String, dynamic> toJson() => {
+    'schema_version': schemaVersion,
+    'incident_id': incidentId,
+    'incident_type': incidentType,
+    'latitude': latitude,
+    'longitude': longitude,
+    'description': description,
+    'severity_reported': severityReported,
+    'road_passability_reported': roadPassabilityReported,
+    'event_time': eventTime,
+    'received_at': receivedAt,
+    'source_type': sourceType,
+    'verification_status': verificationStatus,
+    'evidence_metadata': evidenceMetadata.toJson(),
+    'affected_edge_ids': affectedEdgeIds.map((value) => value).toList(),
+    'graph_version': graphVersion,
+    'snap_distance_m': snapDistanceM,
+    'location_method': locationMethod,
+    'location_precision_m': locationPrecisionM,
+    'expires_at': expiresAt,
+    'updated_at': updatedAt,
+  };
+}
+
+class IncidentList {
+  const IncidentList({
+    required this.incidents,
+    required this.total,
+    required this.limit,
+    required this.offset,
+    required this.hasMore,
+  });
+
+  final List<Incident> incidents;
+  final int total;
+  final int limit;
+  final int offset;
+  final bool hasMore;
+
+  factory IncidentList.fromJson(Map<String, dynamic> json) => IncidentList(
+    incidents: (json['incidents'] as List).map((value) => Incident.fromJson(Map<String, dynamic>.from(value as Map))).toList(),
+    total: json['total'] as int,
+    limit: json['limit'] as int,
+    offset: json['offset'] as int,
+    hasMore: json['has_more'] as bool,
+  );
+
+  Map<String, dynamic> toJson() => {
+    'incidents': incidents.map((value) => value.toJson()).toList(),
+    'total': total,
+    'limit': limit,
+    'offset': offset,
+    'has_more': hasMore,
+  };
+}

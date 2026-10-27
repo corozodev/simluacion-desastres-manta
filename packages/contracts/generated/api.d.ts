@@ -394,6 +394,126 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/incidents/config": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Área y límites del servicio experimental de reportes. */
+        get: operations["getIncidentServiceInfo"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/incidents/resolve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Relaciona coordenadas declaradas con calles OSM; no certifica su veracidad. */
+        post: operations["resolveIncidentLocation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/incidents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Consulta novedades declaradas; no son hechos oficiales confirmados. */
+        get: operations["listIncidents"];
+        put?: never;
+        /** Registra un reporte ciudadano pendiente; fuerza procedencia citizen. */
+        post: operations["createCitizenIncident"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/incidents/{incident_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Detalle público con ubicación aproximada y sin identidad del reportero. */
+        get: operations["getIncident"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/lab/incidents/synthetic": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Genera una novedad sintética sólo con autorización local. */
+        post: operations["createSyntheticIncident"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/lab/incidents/{incident_id}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Actualiza revisión del prototipo; no convierte citizen en official. */
+        post: operations["reviewIncident"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/lab/incidents/{incident_id}/apply": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Aplica explícitamente un reporte a una sola ejecución urban_flood. */
+        post: operations["applyIncidentToExperimentalRun"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -835,6 +955,146 @@ export interface components {
             timeline: components["schemas"]["LabTimelineEntry"][];
             origins: components["schemas"]["LabOrigin"][];
             comparison?: components["schemas"]["LabComparison"];
+            incident_applications?: components["schemas"]["IncidentApplication"][];
+        };
+        IncidentBounds: {
+            min_latitude: number;
+            min_longitude: number;
+            max_latitude: number;
+            max_longitude: number;
+        };
+        IncidentEvidenceMetadata: {
+            /** @enum {integer} */
+            attachment_count: 0;
+            /** @enum {string} */
+            storage_status: "not_supported";
+        };
+        IncidentServiceInfo: {
+            enabled: boolean;
+            /** @enum {integer} */
+            schema_version: 1;
+            bounds: components["schemas"]["IncidentBounds"];
+            max_description_length: number;
+            max_snap_distance_m: number;
+            verification_notice: string;
+            photo_uploads_enabled: boolean;
+        };
+        IncidentLocation: {
+            latitude: number;
+            longitude: number;
+            edge_id_hint?: string;
+        };
+        IncidentEdgeMatch: {
+            edge_id: string;
+            road_type: string;
+            distance_m: number;
+            from_node_id: string;
+            to_node_id: string;
+            latitude: number;
+            longitude: number;
+        };
+        IncidentResolution: {
+            matched: boolean;
+            ambiguous: boolean;
+            candidates: components["schemas"]["IncidentEdgeMatch"][];
+            message: string;
+            graph_version: string;
+            max_snap_distance_m: number;
+        };
+        IncidentCreate: {
+            /** @enum {string} */
+            incident_type: "flooded_road" | "road_closed" | "landslide" | "fallen_tree" | "bridge_damage" | "other";
+            latitude: number;
+            longitude: number;
+            description: string;
+            /** @enum {string} */
+            severity_reported: "low" | "moderate" | "high" | "unknown";
+            /** @enum {string} */
+            road_passability_reported: "passable" | "restricted" | "blocked" | "unknown";
+            /** Format: date-time */
+            event_time: string;
+            /** @enum {string} */
+            location_method: "manual" | "device";
+            edge_id_hint?: string;
+            evidence_metadata?: components["schemas"]["IncidentEvidenceMetadata"];
+        };
+        Incident: {
+            /** @enum {integer} */
+            schema_version: 1;
+            incident_id: string;
+            /** @enum {string} */
+            incident_type: "flooded_road" | "road_closed" | "landslide" | "fallen_tree" | "bridge_damage" | "other";
+            latitude: number;
+            longitude: number;
+            description: string;
+            /** @enum {string} */
+            severity_reported: "low" | "moderate" | "high" | "unknown";
+            /** @enum {string} */
+            road_passability_reported: "passable" | "restricted" | "blocked" | "unknown";
+            /** Format: date-time */
+            event_time: string;
+            /** Format: date-time */
+            received_at: string;
+            /** @enum {string} */
+            source_type: "citizen" | "synthetic" | "official";
+            /** @enum {string} */
+            verification_status: "pending" | "corroborated" | "verified" | "rejected" | "expired";
+            evidence_metadata: components["schemas"]["IncidentEvidenceMetadata"];
+            affected_edge_ids: string[];
+            graph_version: string;
+            snap_distance_m: number;
+            /** @enum {string} */
+            location_method: "manual" | "device";
+            /** @description Resolución aproximada de las coordenadas públicas redondeadas; no representa exactitud GPS ni verifica la ubicación declarada. */
+            location_precision_m: number;
+            /** Format: date-time */
+            expires_at: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        IncidentList: {
+            incidents: components["schemas"]["Incident"][];
+            total: number;
+            limit: number;
+            offset: number;
+            has_more: boolean;
+        };
+        IncidentStatusUpdate: {
+            /** @enum {string} */
+            verification_status: "pending" | "corroborated" | "verified" | "rejected";
+            /** Format: date-time */
+            expected_updated_at: string;
+        };
+        IncidentApply: {
+            expected_run_id: string;
+            duration_steps: number;
+            /** @enum {string} */
+            effect: "blocked" | "caution";
+            /** @enum {boolean} */
+            experimental_ack: true;
+        };
+        IncidentApplication: {
+            application_id: string;
+            incident_id: string;
+            run_id: string;
+            affected_edge_ids: string[];
+            simulation_step: number;
+            world_version: number;
+            /** @enum {string} */
+            source_type: "citizen" | "synthetic" | "official";
+            /** @enum {string} */
+            verification_status_at_application: "pending" | "corroborated" | "verified" | "rejected" | "expired";
+            /** @enum {string} */
+            effect: "blocked" | "caution";
+            expires_at_simulation_step: number;
+            /** Format: date-time */
+            applied_at: string;
+        };
+        IncidentApplyResult: {
+            incident: components["schemas"]["Incident"];
+            application: components["schemas"]["IncidentApplication"];
+            state: components["schemas"]["LabState"];
+            already_applied: boolean;
         };
     };
     responses: {
@@ -1631,6 +1891,662 @@ export interface operations {
             409: components["responses"]["Conflict"];
         };
     };
+    getIncidentServiceInfo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Operación completada. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IncidentServiceInfo"];
+                };
+            };
+            /** @description Datos o asociación geográfica no válidos. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Se requiere autorización del laboratorio. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Incidente no encontrado. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflicto de idempotencia o versión. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Límite de recepción alcanzado. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Almacén persistente no disponible. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    resolveIncidentLocation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IncidentLocation"];
+            };
+        };
+        responses: {
+            /** @description Operación completada. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IncidentResolution"];
+                };
+            };
+            /** @description Datos o asociación geográfica no válidos. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Se requiere autorización del laboratorio. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Incidente no encontrado. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflicto de idempotencia o versión. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Límite de recepción alcanzado. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Almacén persistente no disponible. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    listIncidents: {
+        parameters: {
+            query?: {
+                /** @description minLongitude,minLatitude,maxLongitude,maxLatitude. */
+                bbox?: string;
+                incident_type?: "flooded_road" | "road_closed" | "landslide" | "fallen_tree" | "bridge_damage" | "other";
+                verification_status?: "pending" | "corroborated" | "verified" | "rejected" | "expired";
+                /** @description Fecha declarada de evento mínima. */
+                since?: string;
+                until?: string;
+                received_after?: string;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Operación completada. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IncidentList"];
+                };
+            };
+            /** @description Datos o asociación geográfica no válidos. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Se requiere autorización del laboratorio. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Incidente no encontrado. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflicto de idempotencia o versión. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Límite de recepción alcanzado. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Almacén persistente no disponible. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    createCitizenIncident: {
+        parameters: {
+            query?: never;
+            header: {
+                "Idempotency-Key": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IncidentCreate"];
+            };
+        };
+        responses: {
+            /** @description Repetición idempotente o duplicado detectado. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Incident"];
+                };
+            };
+            /** @description Operación completada. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Incident"];
+                };
+            };
+            /** @description Datos o asociación geográfica no válidos. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Se requiere autorización del laboratorio. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Incidente no encontrado. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflicto de idempotencia o versión. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Límite de recepción alcanzado. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Almacén persistente no disponible. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getIncident: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                incident_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Operación completada. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Incident"];
+                };
+            };
+            /** @description Datos o asociación geográfica no válidos. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Se requiere autorización del laboratorio. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Incidente no encontrado. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflicto de idempotencia o versión. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Límite de recepción alcanzado. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Almacén persistente no disponible. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    createSyntheticIncident: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-CSRF-Token": string;
+                "Idempotency-Key": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IncidentCreate"];
+            };
+        };
+        responses: {
+            /** @description Repetición idempotente o duplicado detectado. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Incident"];
+                };
+            };
+            /** @description Operación completada. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Incident"];
+                };
+            };
+            /** @description Datos o asociación geográfica no válidos. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Se requiere autorización del laboratorio. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Incidente no encontrado. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflicto de idempotencia o versión. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Límite de recepción alcanzado. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Almacén persistente no disponible. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    reviewIncident: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-CSRF-Token": string;
+            };
+            path: {
+                incident_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IncidentStatusUpdate"];
+            };
+        };
+        responses: {
+            /** @description Operación completada. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Incident"];
+                };
+            };
+            /** @description Datos o asociación geográfica no válidos. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Se requiere autorización del laboratorio. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Incidente no encontrado. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflicto de idempotencia o versión. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Límite de recepción alcanzado. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Almacén persistente no disponible. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    applyIncidentToExperimentalRun: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-CSRF-Token": string;
+            };
+            path: {
+                incident_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IncidentApply"];
+            };
+        };
+        responses: {
+            /** @description Operación completada. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IncidentApplyResult"];
+                };
+            };
+            /** @description Datos o asociación geográfica no válidos. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Se requiere autorización del laboratorio. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Incidente no encontrado. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflicto de idempotencia o versión. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Límite de recepción alcanzado. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Almacén persistente no disponible. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
 }
 
 export type GraphNode = components['schemas']['GraphNode'];
@@ -1685,3 +2601,16 @@ export type LabTimelineEntry = components['schemas']['LabTimelineEntry'];
 export type LabComparisonResult = components['schemas']['LabComparisonResult'];
 export type LabComparison = components['schemas']['LabComparison'];
 export type LabState = components['schemas']['LabState'];
+export type IncidentBounds = components['schemas']['IncidentBounds'];
+export type IncidentEvidenceMetadata = components['schemas']['IncidentEvidenceMetadata'];
+export type IncidentServiceInfo = components['schemas']['IncidentServiceInfo'];
+export type IncidentLocation = components['schemas']['IncidentLocation'];
+export type IncidentEdgeMatch = components['schemas']['IncidentEdgeMatch'];
+export type IncidentResolution = components['schemas']['IncidentResolution'];
+export type IncidentCreate = components['schemas']['IncidentCreate'];
+export type Incident = components['schemas']['Incident'];
+export type IncidentList = components['schemas']['IncidentList'];
+export type IncidentStatusUpdate = components['schemas']['IncidentStatusUpdate'];
+export type IncidentApply = components['schemas']['IncidentApply'];
+export type IncidentApplication = components['schemas']['IncidentApplication'];
+export type IncidentApplyResult = components['schemas']['IncidentApplyResult'];
