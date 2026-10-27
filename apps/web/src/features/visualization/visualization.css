@@ -1,0 +1,27 @@
+.visual-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; border: 0; margin: 0 0 14px; padding: 12px 0; border-bottom: 1px solid var(--color-border); }
+.visual-controls legend { font-size: 12px; font-weight: 600; }
+.visual-controls label { display: flex; align-items: center; gap: 7px; font-size: 12px; }
+.visual-controls span { font-size: 11px; color: var(--color-textSecondary); }
+.visual-controls input { accent-color: var(--color-accent); }
+.visual-entity { cursor: pointer; }
+.visual-halo { fill: var(--color-background); fill-opacity: .88; stroke-width: 1.5; }
+.visual-halo-survivor { stroke: var(--color-accent); }
+.visual-halo-zombie { stroke: var(--color-error); }
+.visual-evacuated .visual-halo { stroke: var(--color-success); }
+.visual-bitten .visual-halo, .visual-isolated .visual-halo { stroke: var(--color-warning); stroke-dasharray: 3 2; }
+.visual-bitten use { opacity: .5; }
+.visual-count, .visual-state { fill: var(--color-textPrimary); font: 700 11px var(--font-family-sans); paint-order: stroke; stroke: var(--color-background); stroke-width: 3px; }
+.visual-state { font-size: 12px; }
+.visual-fallback { fill: var(--color-accent); stroke: var(--color-accent); stroke-width: 3; stroke-linecap: round; }
+.visual-fallback-zombie { fill: var(--color-error); stroke: var(--color-error); }
+.visual-entity:focus-visible { outline: none; }
+.visual-entity:focus-visible .visual-halo { stroke: var(--color-focus); stroke-width: 3; }
+.visual-legend { display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: 11px; color: var(--color-textSecondary); padding: 12px 0; }
+.visual-legend span::before { content: ''; display: inline-block; background: var(--swatch); width: 12px; height: 5px; margin-right: 6px; border-radius: 2px; }
+.visual-notice { font-size: 11px; line-height: 1.7; color: var(--color-textSecondary); }
+@media(max-width:600px) { .visual-controls { gap: 14px; }.visual-controls label { min-height: 32px; }.visual-controls span { flex-basis: 100%; } }
+.escape-page { grid-template-columns: minmax(0, 1fr); }
+.escape-page > *, .escape-details > *, .flood-map-panel { min-width: 0; }
+.simulation-control p { overflow-wrap: anywhere; }
+.escape-map > svg { overflow: hidden; }
+.escape-legend-survivor { color: var(--color-accent); }
