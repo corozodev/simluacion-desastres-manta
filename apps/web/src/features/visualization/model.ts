@@ -7,7 +7,7 @@ export type Observation = { id: string; graphVersion: string; scenario: string; 
 export const visualLimits = { maxAnimated: 120, maxIndividual: 240, frameMs: 250, maxInterpolationMs: 1200, staleMs: 5000 } as const;
 
 export function entitiesFromWorld(world?: WorldSnapshot): VisualEntity[] {
-  return [...(world?.survivors ?? []).map(s => ({ key: `survivor:${s.id}`, id: s.id, kind: 'survivor' as const, node: s.current_node, state: s.status, event: world?.events.some(event => event.entity_id === s.id && event.type === 'bitten' && event.turn === world.turn) ? 'bitten' : undefined })),
+  return [...(world?.survivors ?? []).filter(s => !s.vehicle_id).map(s => ({ key: `survivor:${s.id}`, id: s.id, kind: 'survivor' as const, node: s.current_node, state: s.status, event: world?.events.some(event => event.entity_id === s.id && event.type === 'bitten' && event.turn === world.turn) ? 'bitten' : undefined })),
     ...(world?.zombies ?? []).filter(z => z.type !== 'sleeper' || z.awake).map(z => ({ key: `zombie:${z.id}`, id: z.id, kind: 'zombie' as const, node: z.current_node, state: z.movement_state, path: z.path, horde: z.type === 'horde' }))];
 }
 export function entitiesFromFlood(scenario?: ScenarioSnapshot): VisualEntity[] {

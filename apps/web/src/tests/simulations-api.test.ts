@@ -50,4 +50,15 @@ describe('adaptador HTTP privado de simulaciones', () => {
     fetch.mockResolvedValue(json({ ...flood, scenario_state: undefined }));
     await expect(api.simulationState('private-id', 'opaque-token')).rejects.toMatchObject({ code: 'INVALID_RESPONSE' });
   });
+  it('rechaza capacidades vehiculares y predicciones inválidas, conservando el contrato sin extensiones', async () => {
+    const state = managedState();
+    const vehicle = { id: 'V-1', current_node: 'n-1', path: ['n-1'], passenger_ids: ['a', 'b', 'c', 'd', 'e'], target_survivor_id: '', target_shelter_id: '', state: 'transporting', capacity: 4 };
+    const fetch = vi.spyOn(globalThis, 'fetch').mockResolvedValue(json({ ...state, snapshot: { ...state.snapshot, fleet: [vehicle] } }));
+    await expect(api.simulationState('private-id', 'opaque-token')).rejects.toMatchObject({ code: 'INVALID_RESPONSE' });
+    fetch.mockResolvedValue(json({ ...state, runner_forecast: { turn: state.tick, horizon: 2, node_risks: [{ node_id: 'n-1', one_turn_probability: 1.1, two_turn_probability: .2 }], edge_risks: [] } }));
+    await expect(api.simulationState('private-id', 'opaque-token')).rejects.toMatchObject({ code: 'INVALID_RESPONSE' });
+    fetch.mockResolvedValue(json(state));
+    await expect(api.simulationState('private-id', 'opaque-token')).resolves.toMatchObject({ simulation_id: state.simulation_id });
+  });
+
 });

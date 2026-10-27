@@ -13,7 +13,7 @@ export const capabilities: SimulationCapabilities = {
   rounds: [{ id: 'round1', name: 'Ronda 1', survivors: 20, turns: 150 }, { id: 'round2', name: 'Ronda 2', survivors: 80, turns: 150 }],
 };
 export function managedState(snapshot: WorldSnapshot = world, overrides: Partial<SimulationState> = {}): SimulationState {
-  return { simulation_id: 'private-simulation-id', status: 'RUNNING', tick: snapshot.turn, max_ticks: 150, state_version: snapshot.world_version, scenario: 'zombie_outbreak', graph_profile: 'BASE', graph_version: snapshot.graph_version, seed: 20261026, tick_interval_ms: 2000, created_at: '2026-10-27T10:00:00Z', started_at: '2026-10-27T10:00:00Z', updated_at: '2026-10-27T10:00:02Z', expires_at: '2026-10-27T10:15:00Z', config: { survivors: 20, round: 'round1', refuge_ids: graph.shelters.map(shelter => shelter.id) }, snapshot, ...overrides };
+  return { simulation_id: 'private-simulation-id', status: 'RUNNING', tick: snapshot.turn, max_ticks: 150, state_version: snapshot.world_version, scenario: 'zombie_outbreak', graph_profile: 'BASE', graph_version: snapshot.graph_version, seed: 20261026, tick_interval_ms: 2000, created_at: '2026-10-27T10:00:00Z', started_at: '2026-10-27T10:00:00Z', updated_at: '2026-10-27T10:00:02Z', expires_at: '2026-10-27T10:15:00Z', config: { mode: 'experimental', zombie_policy: 'classic_random', evacuation_algorithm: 'legacy_current', survivors: 20, round: 'round1', refuge_ids: graph.shelters.map(shelter => shelter.id) }, snapshot, ...overrides };
 }
 export function created(state = managedState()): SimulationCreated {
   const { snapshot: _snapshot, scenario_state: _scenario, ...metadata } = state;

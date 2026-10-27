@@ -67,7 +67,42 @@ describe('ejecutor independiente bajo demanda', () => {
     await userEvent.click(screen.getByText('Elegir refugios originales activos'));
     await userEvent.click(screen.getByRole('checkbox', { name: new RegExp(graph.shelters[0]!.id) }));
     await userEvent.click(screen.getByRole('button', { name: 'Iniciar simulación' }));
-    await waitFor(() => expect(create).toHaveBeenCalledWith({ scenario: 'zombie_outbreak', graph_profile: 'BASE', seed: 123, max_ticks: 150, tick_interval_ms: 2000, config: { survivors: 12, round: 'round2', refuge_ids: [graph.shelters[0]!.id] } }, expect.any(String)));
+    await waitFor(() => expect(create).toHaveBeenCalledWith({ scenario: 'zombie_outbreak', graph_profile: 'BASE', seed: 123, max_ticks: 150, tick_interval_ms: 2000, config: { mode: 'experimental', zombie_policy: 'classic_random', evacuation_algorithm: 'legacy_current', pro: { runner_prediction: true, shelter_assignment: true, rescue_fleet: false }, survivors: 12, round: 'round2', refuge_ids: [graph.shelters[0]!.id] } }, expect.any(String)));
+  });
+
+  it('configura políticas y funciones PRO reales y bloquea extensiones al cambiar al modo oficial', async () => {
+    const { create } = setup();
+    await screen.findByRole('button', { name: 'Iniciar simulación' });
+    await userEvent.click(screen.getByText('Configuración avanzada'));
+    await userEvent.selectOptions(screen.getByLabelText('Política de zombis'), 'adaptive_exploration');
+    await userEvent.selectOptions(screen.getByLabelText('Algoritmo de evacuación'), 'predictive_temporal_astar');
+    await userEvent.click(screen.getByLabelText('Flota de rescate · experimental'));
+    await userEvent.selectOptions(screen.getByLabelText('Modo de reglas'), 'official');
+    expect(screen.getByLabelText('Política de zombis')).toHaveValue('classic_random');
+    expect(screen.getByLabelText('Política de zombis')).toBeDisabled();
+    expect(screen.getByLabelText('Flota de rescate · experimental')).not.toBeChecked();
+    expect(screen.getByLabelText('Flota de rescate · experimental')).toBeDisabled();
+    expect(screen.getByLabelText('Agentes')).toBeDisabled();
+    expect(screen.getByLabelText('Profundidad del grafo')).toBeDisabled();
+    expect(screen.getByLabelText('Turnos máximos')).toHaveValue(150);
+    expect(screen.getByLabelText('Turnos máximos')).toBeDisabled();
+    await userEvent.click(screen.getByRole('button', { name: 'Iniciar simulación' }));
+    await waitFor(() => expect(create).toHaveBeenCalledWith(expect.objectContaining({ graph_profile: 'BASE', max_ticks: 150, tick_interval_ms: 2000, config: expect.objectContaining({ mode: 'official', zombie_policy: 'classic_random', evacuation_algorithm: 'predictive_temporal_astar', survivors: 20, refuge_ids: [], pro: { runner_prediction: true, shelter_assignment: true, rescue_fleet: false } }) }), expect.any(String)));
+    await screen.findByLabelText('Tu simulación');
+    expect(screen.queryByLabelText('Política de zombis')).not.toBeInTheDocument();
+  });
+
+  it('envía selección experimental y las tres opciones PRO al backend', async () => {
+    const { create } = setup();
+    await screen.findByRole('button', { name: 'Iniciar simulación' });
+    await userEvent.click(screen.getByText('Configuración avanzada'));
+    await userEvent.selectOptions(screen.getByLabelText('Política de zombis'), 'correlated_random_walk');
+    await userEvent.selectOptions(screen.getByLabelText('Algoritmo de evacuación'), 'dynamic_risk_astar');
+    await userEvent.click(screen.getByLabelText('Predicción de corredores'));
+    await userEvent.click(screen.getByLabelText('Asignación coordinada de refugios'));
+    await userEvent.click(screen.getByLabelText('Flota de rescate · experimental'));
+    await userEvent.click(screen.getByRole('button', { name: 'Iniciar simulación' }));
+    await waitFor(() => expect(create).toHaveBeenCalledWith(expect.objectContaining({ config: expect.objectContaining({ mode: 'experimental', zombie_policy: 'correlated_random_walk', evacuation_algorithm: 'dynamic_risk_astar', pro: { runner_prediction: false, shelter_assignment: false, rescue_fleet: true } }) }), expect.any(String)));
   });
 
   it('un doble clic crea una sola ejecución con clave idempotente y guarda sólo credenciales propias en sessionStorage', async () => {

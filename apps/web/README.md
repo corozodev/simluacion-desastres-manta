@@ -36,3 +36,22 @@ FASE 4D añade la novena capa, **Susceptibilidad oficial a inundaciones**, servi
 El toggle de visualización no modifica la simulación. La opción separada **Usar susceptibilidad geográfica como referencia** fija versión y peso adimensional al iniciar. TanStack consulta disponibilidad cada 30 segundos y reutiliza los polígonos por versión con `staleTime:Infinity`; el polling del mundo no vuelve a descargarlos. La lectura HTTP funciona offline. `LAB_REFERENCE_ONLINE=true npm run dev:lab` permite una actualización asíncrona explícita. [Demos A–E y observabilidad](../../docs/datos-oficiales-y-demo.md), `npm run test:references:e2e`.
 
 **SIMULACIÓN — DATOS SINTÉTICOS.** Los escenarios de inundación emplean parámetros sintéticos y no constituyen pronósticos hidrológicos ni recomendaciones oficiales de evacuación.
+
+FASE 7 añade políticas y funciones PRO a **Configuración avanzada** de `/escape`.
+Cada selector viaja en `config` al crear una sesión Go; durante la ejecución sólo
+se permite pausar, reanudar o cancelar. El modo oficial fija BASE, población de la
+ronda, refugios originales y 150 turnos de 2 segundos. Las políticas correlacionada
+y adaptativa y la flota de cinco camionetas pertenecen al modo experimental.
+Las camionetas se dibujan en su último nodo publicado, con pasajeros/capacidad;
+los pasajeros siguen activos hasta su entrega. La capa opcional de predicción
+muestra hasta 64 nodos del pronóstico observable del turno, con probabilidades de
+un modelo no calibrado; no extrapola movimientos ni revela sleepers.
+
+**Laboratorio comparativo** inicia explícitamente dos sesiones independientes y
+secuenciales con iguales condiciones, variando sólo el planificador. Conserva las
+credenciales en memoria y nunca las exporta. La tabla y JSON/CSV muestran medidas
+de POST `/paso` real, resultados parciales/finales y analítica publicada por Go.
+Repetir conserva las configuraciones y semillas originales. Abrir o actualizar la
+página no crea ejecuciones. Cerrar la página pierde la observación de la pareja;
+las sesiones caducan según los límites del servidor. Las pruebas aceleradas usan
+la herramienta local de comparación y no equivalen a rondas HTTP en tiempo real.

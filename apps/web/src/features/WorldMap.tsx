@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import type { GeoPoint, Graph, Shelter, Survivor, WorldSnapshot } from '@corodev/contracts';
+import type { GeoPoint, Graph, RunnerForecast, Shelter, Survivor, WorldSnapshot } from '@corodev/contracts';
 import { mapProjection, mapTiles } from './visualization/projection';
 import { AnimatedEntities } from './visualization/AnimatedEntities';
 import { useVisualization, VisualizationControls } from './visualization/useVisualization';
@@ -38,6 +38,7 @@ export function routeWarnings(graph: Graph, world: WorldSnapshot, survivor: Surv
 export interface WorldMapProps extends MapWorkspaceSlots {
   graph: Graph;
   world?: WorldSnapshot;
+  forecast?: RunnerForecast;
   selected?: Survivor;
   lifecycle?: VisualLifecycle;
   onSelect?: (id: string) => void;
@@ -47,15 +48,15 @@ export interface WorldMapProps extends MapWorkspaceSlots {
   onPickPosition?: (point: GeoPoint) => void;
   onCancelPick?: () => void;
 }
-type WorldLayer = 'roads' | 'survivors' | 'zombies' | 'shelters' | 'routes' | 'origins';
-const layerLabels: Record<WorldLayer, string> = { roads: 'Grafo vial', survivors: 'Supervivientes', zombies: 'Zombis visibles', shelters: 'Refugios', routes: 'Ruta seleccionada', origins: 'Zonas de aparición' };
+type WorldLayer = 'roads' | 'survivors' | 'zombies' | 'shelters' | 'routes' | 'origins' | 'fleet' | 'forecast';
+const layerLabels: Record<WorldLayer, string> = { roads: 'Grafo vial', survivors: 'Supervivientes', zombies: 'Zombis visibles', shelters: 'Refugios', routes: 'Ruta seleccionada', origins: 'Zonas de aparición', fleet: 'Camionetas de rescate', forecast: 'Mostrar predicción de corredores' };
 
-export function WorldMap({ graph, world, selected, lifecycle, onSelect, shelters, pickingPosition = false, previewPosition, onPickPosition, onCancelPick, hud, panel, metrics, selectedShelterId, onSelectShelter }: WorldMapProps) {
+export function WorldMap({ graph, world, forecast, selected, lifecycle, onSelect, shelters, pickingPosition = false, previewPosition, onPickPosition, onCancelPick, hud, panel, metrics, selectedShelterId, onSelectShelter }: WorldMapProps) {
   const observation = useMemo(() => observeWorld(world, lifecycle), [world, lifecycle]);
   const controls = useVisualization(observation);
   const camera = useMapCamera(graph.version, onCancelPick);
   const { view } = camera;
-  const [layers, setLayers] = useState<Record<WorldLayer, boolean>>({ roads: true, survivors: true, zombies: true, shelters: true, routes: true, origins: true });
+  const [layers, setLayers] = useState<Record<WorldLayer, boolean>>({ roads: true, survivors: true, zombies: true, shelters: true, routes: true, origins: true, fleet: true, forecast: false });
   const [tileUnavailable, setTileUnavailable] = useState(false);
   const projection = useMemo(() => mapProjection(graph), [graph]);
   useEffect(() => {
@@ -66,6 +67,7 @@ export function WorldMap({ graph, world, selected, lifecycle, onSelect, shelters
   }, [selectedShelterId, graph.version]);
   const tiles = useMemo(() => mapTiles(projection, view), [projection, view]);
   const visibleObservation = useMemo(() => observation && ({ ...observation, entities: observation.entities.filter(entity => entity.kind === 'survivor' ? layers.survivors : layers.zombies) }), [observation, layers.survivors, layers.zombies]);
+  const forecastNodes = useMemo(() => forecast && forecast.turn === world?.turn ? [...forecast.node_risks].filter(item => item.one_turn_probability > 0).sort((a, b) => b.one_turn_probability - a.one_turn_probability || a.node_id.localeCompare(b.node_id)).slice(0, 64) : [], [forecast, world?.turn]);
   const points = (coordinates: GeoPoint[]) => coordinates.map(coordinate => { const p = projection.point(coordinate); return `${p.x},${p.y}`; }).join(' ');
   const blockedKey = (world?.blocked_edges ?? []).join(',');
   const roads = useMemo(() => {
@@ -100,7 +102,15 @@ export function WorldMap({ graph, world, selected, lifecycle, onSelect, shelters
       {layers.origins && !!graph.coverage?.length && <polygon points={points(graph.coverage)} className="escape-coverage"><title>Envolvente de referencia urbana; no es el límite oficial ni representa todas las calles</title></polygon>}
       {layers.origins && (graph.spawn_zones ?? []).map(zone => <g key={zone.id}><polygon points={points(zone.geometry)} className="escape-spawn-zone"><title>{zone.name} · zona de aparición · {zone.source}</title></polygon>{zone.geometry[0] && <text x={projection.point(zone.geometry[0]).x} y={projection.point(zone.geometry[0]).y - 8} className="escape-zone-label">{zone.name}</text>}</g>)}
       {layers.roads && roads}
+      {layers.forecast && forecastNodes.map(item => {
+        const point = projection.nodes.get(item.node_id);
+        return point ? <circle key={item.node_id} data-forecast-node={item.node_id} cx={point.x} cy={point.y} r={9} className="escape-runner-forecast" opacity={.2 + .6 * item.one_turn_probability}><title>{`Predicción del modelo, no calibrada · ${item.node_id} · próximo turno: ${(item.one_turn_probability * 100).toFixed(1)}% · dos turnos: ${(item.two_turn_probability * 100).toFixed(1)}%`}</title></circle> : null;
+      })}
       <g pointerEvents={pickingPosition ? 'none' : undefined}><AnimatedEntities graph={graph} observation={visibleObservation} project={projection.point} view={view} active={controls.active} clustering={controls.clustering} selected={selected?.id} onSelect={pickingPosition ? undefined : onSelect} /></g>
+      {layers.fleet && world?.fleet?.map(vehicle => {
+        const point = projection.nodes.get(vehicle.current_node);
+        return point ? <g key={vehicle.id} data-vehicle-id={vehicle.id} transform={`translate(${point.x},${point.y})`}><title>{`Camioneta ${vehicle.id} · ${vehicle.passenger_ids.length}/${vehicle.capacity} pasajeros · ${vehicle.state}${vehicle.target_shelter_id ? ` · destino ${vehicle.target_shelter_id}` : ''}`}</title><rect className="escape-rescue-vehicle" x={-9} y={-6} width={18} height={12} rx={3} /><text className="escape-rescue-label" y={3}>{vehicle.passenger_ids.length}/{vehicle.capacity}</text></g> : null;
+      })}
       {layers.routes && selected && <polyline points={points(routeGeometry(graph, selected))} className="escape-planned-route"><title>Ruta publicada de {selected.id}</title></polyline>}
       {layers.shelters && (shelters ?? world?.shelters ?? graph.shelters).map(shelter => {
         const point = projection.nodes.get(shelter.node_id);
@@ -108,7 +118,7 @@ export function WorldMap({ graph, world, selected, lifecycle, onSelect, shelters
       })}
       {preview && <circle data-layer="shelter-preview" cx={preview.x} cy={preview.y} r={10} className="map-preview"><title>Ubicación provisional pendiente de confirmar</title></circle>}
     </svg><MapAttribution /><MapWorkspaceOverlay panel={panel} metrics={metrics} /></div>
-    <figcaption>{layers.survivors && <span className="escape-legend-survivor">● Superviviente</span>}{layers.zombies && <span className="escape-legend-zombie">● Zombi visible</span>}{layers.shelters && <span className="escape-legend-shelter">■ Refugio ficticio</span>}{layers.origins && <span>▱ Zonas de aparición · ┄ Referencia urbana</span>}{layers.routes && <span>— Ruta seleccionada</span>}{layers.roads && <span>Rojo: vía bloqueada</span>}</figcaption>
+    <figcaption>{layers.survivors && <span className="escape-legend-survivor">● Superviviente</span>}{layers.zombies && <span className="escape-legend-zombie">● Zombi visible</span>}{layers.shelters && <span className="escape-legend-shelter">■ Refugio ficticio</span>}{layers.origins && <span>▱ Zonas de aparición · ┄ Referencia urbana</span>}{layers.routes && <span>— Ruta seleccionada</span>}{layers.roads && <span>Rojo: vía bloqueada</span>}{layers.fleet && !!world?.fleet?.length && <span>▣ Camioneta · pasajeros/capacidad</span>}{layers.forecast && <span>◌ Predicción del modelo, no calibrada · hasta 64 nodos</span>}</figcaption>
     {tileUnavailable && <p role="status" className="map-source-note">Fondo no disponible; conservamos la red vectorial OpenStreetMap.</p>}<MapSource graph={graph} />
   </figure>;
 }

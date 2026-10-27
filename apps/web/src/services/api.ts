@@ -71,7 +71,8 @@ function isSurvivor(value: unknown): value is Survivor {
   return isObject(value) && typeof value.id === 'string' && typeof value.current_node === 'string'
     && ['active', 'bitten', 'evacuated'].includes(String(value.status))
     && typeof value.target_shelter_id === 'string' && isStrings(value.planned_route)
-    && (value.spawn_zone_id === undefined || typeof value.spawn_zone_id === 'string');
+    && (value.spawn_zone_id === undefined || typeof value.spawn_zone_id === 'string')
+    && (value.vehicle_id === undefined || typeof value.vehicle_id === 'string');
 }
 function isZombie(value: unknown): value is Zombie {
   return isObject(value) && typeof value.id === 'string' && typeof value.current_node === 'string'
@@ -94,9 +95,30 @@ function isGraph(value: unknown): value is Graph {
       && typeof zone.id === 'string' && typeof zone.name === 'string' && typeof zone.source === 'string'
       && isGeometry(zone.geometry) && isStrings(zone.node_ids) && isNumber(zone.weight) && zone.weight >= 0));
 }
+function isProbability(value: unknown): value is number { return isNumber(value) && value >= 0 && value <= 1; }
+function isForecast(value: unknown): boolean {
+  return isObject(value) && isNatural(value.turn) && (value.horizon === 1 || value.horizon === 2)
+    && Array.isArray(value.node_risks) && value.node_risks.every(node => isObject(node) && typeof node.node_id === 'string' && isProbability(node.one_turn_probability) && isProbability(node.two_turn_probability))
+    && Array.isArray(value.edge_risks) && value.edge_risks.every(edge => isObject(edge) && typeof edge.from === 'string' && typeof edge.to === 'string' && isProbability(edge.probability));
+}
+function isAgentPolicies(value: Record<string, unknown>): boolean {
+  const pro = value.pro;
+  return (value.mode === undefined || ['official', 'experimental'].includes(String(value.mode)))
+    && (value.zombie_policy === undefined || ['classic_random', 'correlated_random_walk', 'adaptive_exploration'].includes(String(value.zombie_policy)))
+    && (value.evacuation_algorithm === undefined || ['legacy_current', 'baseline_shortest_path', 'dynamic_risk_astar', 'predictive_temporal_astar'].includes(String(value.evacuation_algorithm)))
+    && (pro === undefined || isObject(pro) && ['runner_prediction', 'shelter_assignment', 'rescue_fleet'].every(key => pro[key] === undefined || typeof pro[key] === 'boolean'));
+}
+function isAnalytics(value: unknown): boolean {
+  if (!isObject(value)) return false;
+  const prediction = value.prediction;
+  return ['deaths_by_type', 'deaths_by_cause'].every(key => isObject(value[key]) && Object.values(value[key]).every(isNatural))
+    && isNatural(value.replans) && isNatural(value.oscillations) && isNumber(value.mean_arrival_turn) && value.mean_arrival_turn >= 0 && isNumber(value.mean_route_efficiency) && value.mean_route_efficiency >= 0
+    && Array.isArray(value.agents) && value.agents.every(agent => isObject(agent) && typeof agent.id === 'string' && ['arrival_turn', 'moves', 'oscillations', 'replans'].every(key => isNatural(agent[key])) && isNumber(agent.route_efficiency) && agent.route_efficiency >= 0)
+    && isObject(prediction) && ['samples', 'hits', 'misses', 'false_positives'].every(key => isNatural(prediction[key])) && isProbability(prediction.brier_score);
+}
 function isWorld(value: unknown): value is WorldSnapshot {
   if (!isObject(value) || !isObject(value.metrics)) return false;
-  const metrics = value.metrics;
+  const metrics = value.metrics, fleetMetrics = value.fleet_metrics;
   return isNatural(value.turn) && isNatural(value.world_version) && typeof value.graph_version === 'string'
     && Array.isArray(value.zombies) && value.zombies.every(isZombie)
     && Array.isArray(value.survivors) && value.survivors.every(isSurvivor)
@@ -105,7 +127,13 @@ function isWorld(value: unknown): value is WorldSnapshot {
       && ['type', 'entity_id', 'edge_id', 'message'].every(field => typeof event[field] === 'string'))
     && ['evacuated', 'bitten', 'active', 'turns', 'requests_success', 'requests_invalid', 'requests_timeout'].every(field => isNatural(metrics[field]))
     && ['http_p50_ms', 'http_p95_ms', 'http_p99_ms', 'availability'].every(field => isNumber(metrics[field]) && Number(metrics[field]) >= 0)
-    && Number(metrics.availability) <= 1 && (value.simulation === undefined || isSimulation(value.simulation));
+    && Number(metrics.availability) <= 1
+    && (value.fleet === undefined || Array.isArray(value.fleet) && value.fleet.length <= 5 && value.fleet.every(vehicle => isObject(vehicle)
+      && ['id', 'current_node', 'target_survivor_id', 'target_shelter_id', 'state'].every(key => typeof vehicle[key] === 'string')
+      && isStrings(vehicle.path) && isStrings(vehicle.passenger_ids) && isNatural(vehicle.capacity) && vehicle.capacity <= 4
+      && vehicle.passenger_ids.length <= vehicle.capacity && new Set(vehicle.passenger_ids).size === vehicle.passenger_ids.length))
+    && (fleetMetrics === undefined || isObject(fleetMetrics) && ['pickups', 'delivered', 'moves', 'useful_trips'].every(key => isNatural(fleetMetrics[key])))
+    && (value.simulation === undefined || isSimulation(value.simulation));
 }
 
 function isSimulation(value: unknown): value is SimulationInfo {
@@ -360,7 +388,7 @@ function isManagedMetadata(value: unknown): value is SimulationMetadata {
     && ['zombie_outbreak', 'urban_flood'].includes(String(value.scenario)) && ['BASE', 'FULL_MANTA'].includes(String(value.graph_profile))
     && ['graph_version', 'created_at', 'started_at', 'updated_at', 'expires_at'].every(key => typeof value[key] === 'string')
     && ['tick', 'max_ticks', 'state_version', 'tick_interval_ms'].every(key => isNatural(value[key])) && Number.isSafeInteger(value.seed)
-    && isObject(value.config) && isNatural(value.config.survivors) && typeof value.config.round === 'string' && isStrings(value.config.refuge_ids)
+    && isObject(value.config) && isAgentPolicies(value.config) && isNatural(value.config.survivors) && typeof value.config.round === 'string' && isStrings(value.config.refuge_ids)
     && (value.config.custom_shelters === undefined || Array.isArray(value.config.custom_shelters) && value.config.custom_shelters.length === 4 && value.config.custom_shelters.every(shelter => isObject(shelter) && typeof shelter.id === 'string' && typeof shelter.node_id === 'string' && isNatural(shelter.capacity) && shelter.capacity >= 1 && shelter.capacity <= 200))
     && (value.config.rainfall_intensity === undefined || isNumber(value.config.rainfall_intensity) && value.config.rainfall_intensity >= 0 && value.config.rainfall_intensity <= 1)
     && (value.access_token === undefined || typeof value.access_token === 'string' && value.access_token.length > 0);
@@ -372,9 +400,10 @@ function isManagedCreated(value: unknown): value is SimulationCreated {
 }
 function isManagedState(value: unknown): value is SimulationState {
   if (!isObject(value)) return false;
-  const snapshot = value.snapshot, scenario = value.scenario_state;
+  const snapshot = value.snapshot, scenario = value.scenario_state, forecast = value.runner_forecast;
   return isManagedMetadata(value) && isWorld(snapshot)
     && snapshot.graph_version === value.graph_version && snapshot.turn === value.tick
+    && (forecast === undefined || isForecast(forecast) && isObject(forecast) && forecast.turn === value.tick)
     && (value.scenario === 'urban_flood' ? isScenario(scenario) && scenario.graph_version === value.graph_version : scenario === undefined);
 }
 function isManagedResults(value: unknown): value is SimulationResults {
@@ -382,7 +411,8 @@ function isManagedResults(value: unknown): value is SimulationResults {
   const results = value.results;
   return isManagedState(value)
     && ['initial_survivors', 'evacuated', 'bitten', 'active', 'refuges_used'].every(key => isNatural(results[key]))
-    && isNumber(results.survival_rate) && results.survival_rate >= 0 && results.survival_rate <= 1;
+    && isNumber(results.survival_rate) && results.survival_rate >= 0 && results.survival_rate <= 1
+    && (results.analytics === undefined || isAnalytics(results.analytics));
 }
 function isCapabilities(value: unknown): value is SimulationCapabilities {
   if (!isObject(value) || !isObject(value.defaults) || !isObject(value.limits)) return false;
