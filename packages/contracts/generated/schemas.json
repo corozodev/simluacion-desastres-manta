@@ -749,6 +749,9 @@
         "disclaimer": {
           "type": "string",
           "description": "Limitación científica del modelo sintético de inundación."
+        },
+        "geographic_reference": {
+          "$ref": "#/definitions/ReferenceUse"
         }
       }
     },
@@ -1490,6 +1493,9 @@
           "items": {
             "$ref": "#/definitions/LabCandidate"
           }
+        },
+        "geographic_reference": {
+          "$ref": "#/definitions/LabGeographicReference"
         }
       }
     },
@@ -2577,6 +2583,587 @@
         },
         "already_applied": {
           "type": "boolean"
+        }
+      }
+    },
+    "ReferenceProvenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "category",
+        "source",
+        "url",
+        "consulted_at",
+        "attribution",
+        "license",
+        "original_crs",
+        "output_crs",
+        "dataset_version",
+        "temporal_scope",
+        "source_years"
+      ],
+      "properties": {
+        "category": {
+          "type": "string",
+          "enum": [
+            "synthetic",
+            "official_reference",
+            "official_observation",
+            "citizen_report"
+          ]
+        },
+        "source": {
+          "type": "string"
+        },
+        "url": {
+          "type": "string",
+          "format": "uri"
+        },
+        "consulted_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "publication_date": {
+          "type": "string"
+        },
+        "declared_updated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "portal_modified_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "attribution": {
+          "type": "string"
+        },
+        "license": {
+          "type": "string"
+        },
+        "original_crs": {
+          "type": "string"
+        },
+        "output_crs": {
+          "type": "string",
+          "enum": [
+            "EPSG:4326"
+          ]
+        },
+        "dataset_version": {
+          "type": "string"
+        },
+        "temporal_scope": {
+          "type": "string"
+        },
+        "source_years": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        },
+        "declared_update_date": {
+          "type": "string",
+          "description": "Máxima fecha declarada entre registros consultados; no acredita actualización de todo el servicio."
+        }
+      }
+    },
+    "ReferenceGeometry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "coordinates"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "MultiPolygon"
+          ]
+        },
+        "coordinates": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "minItems": 2,
+                "maxItems": 2
+              },
+              "minItems": 4
+            },
+            "minItems": 1
+          },
+          "minItems": 1
+        }
+      }
+    },
+    "ReferenceProperties": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "object_id",
+        "susceptibility"
+      ],
+      "properties": {
+        "object_id": {
+          "type": "string"
+        },
+        "susceptibility": {
+          "type": "string",
+          "enum": [
+            "ALTA",
+            "MEDIA",
+            "BAJA"
+          ]
+        },
+        "source_year": {
+          "type": "integer"
+        }
+      }
+    },
+    "ReferenceFeature": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "id",
+        "properties",
+        "geometry"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "Feature"
+          ]
+        },
+        "id": {
+          "type": "string"
+        },
+        "properties": {
+          "$ref": "#/definitions/ReferenceProperties"
+        },
+        "geometry": {
+          "$ref": "#/definitions/ReferenceGeometry"
+        }
+      }
+    },
+    "ReferenceCollection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "type",
+        "bbox",
+        "features",
+        "provenance",
+        "feature_count",
+        "vertex_count",
+        "generalization_degrees"
+      ],
+      "properties": {
+        "schema_version": {
+          "type": "integer",
+          "enum": [
+            1
+          ]
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "FeatureCollection"
+          ]
+        },
+        "bbox": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 4,
+          "maxItems": 4
+        },
+        "features": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ReferenceFeature"
+          },
+          "maxItems": 500
+        },
+        "provenance": {
+          "$ref": "#/definitions/ReferenceProvenance"
+        },
+        "feature_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "vertex_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "generalization_degrees": {
+          "type": "number",
+          "minimum": 0
+        }
+      }
+    },
+    "OfficialRainEvent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "object_id",
+        "event",
+        "canton",
+        "event_date",
+        "closed_date",
+        "latitude",
+        "longitude"
+      ],
+      "properties": {
+        "object_id": {
+          "type": "string"
+        },
+        "event": {
+          "type": "string"
+        },
+        "canton": {
+          "type": "string"
+        },
+        "event_date": {
+          "type": "string"
+        },
+        "closed_date": {
+          "type": "string"
+        },
+        "latitude": {
+          "type": "number",
+          "minimum": -90,
+          "maximum": 90
+        },
+        "longitude": {
+          "type": "number",
+          "minimum": -180,
+          "maximum": 180
+        },
+        "declared_update_date": {
+          "type": "string"
+        }
+      }
+    },
+    "OfficialRainEvents": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "events",
+        "provenance"
+      ],
+      "properties": {
+        "schema_version": {
+          "type": "integer",
+          "enum": [
+            1
+          ]
+        },
+        "events": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/OfficialRainEvent"
+          },
+          "maxItems": 500
+        },
+        "provenance": {
+          "$ref": "#/definitions/ReferenceProvenance"
+        }
+      }
+    },
+    "ReferenceProviderMetrics": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "queries",
+        "provider_errors",
+        "cache_hits",
+        "cache_misses",
+        "last_query_ms",
+        "total_query_ms",
+        "response_bytes",
+        "last_refresh_ms"
+      ],
+      "properties": {
+        "queries": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "provider_errors": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "cache_hits": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "cache_misses": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "last_query_ms": {
+          "type": "number",
+          "minimum": 0
+        },
+        "total_query_ms": {
+          "type": "number",
+          "minimum": 0
+        },
+        "response_bytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "last_refresh_ms": {
+          "type": "number",
+          "minimum": 0
+        }
+      }
+    },
+    "ReferenceStatus": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "mode",
+        "availability",
+        "refreshing",
+        "provider_status",
+        "message",
+        "feature_count",
+        "vertex_count",
+        "metrics"
+      ],
+      "properties": {
+        "schema_version": {
+          "type": "integer",
+          "enum": [
+            1
+          ]
+        },
+        "mode": {
+          "type": "string",
+          "enum": [
+            "offline",
+            "online",
+            "disabled"
+          ]
+        },
+        "availability": {
+          "type": "string",
+          "enum": [
+            "cached",
+            "stale",
+            "unavailable",
+            "disabled"
+          ]
+        },
+        "refreshing": {
+          "type": "boolean"
+        },
+        "provider_status": {
+          "type": "string",
+          "enum": [
+            "unknown",
+            "ok",
+            "error",
+            "offline"
+          ]
+        },
+        "message": {
+          "type": "string"
+        },
+        "dataset_version": {
+          "type": "string"
+        },
+        "provenance": {
+          "$ref": "#/definitions/ReferenceProvenance"
+        },
+        "feature_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "vertex_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "last_refresh_error": {
+          "type": "string"
+        },
+        "metrics": {
+          "$ref": "#/definitions/ReferenceProviderMetrics"
+        },
+        "event_dataset_version": {
+          "type": "string"
+        }
+      }
+    },
+    "LabGeographicReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "enabled",
+        "strength"
+      ],
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "dataset_version": {
+          "type": "string"
+        },
+        "strength": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        }
+      }
+    },
+    "ReferenceZoneUse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "zone_id",
+        "susceptibility",
+        "factor",
+        "feature_ids"
+      ],
+      "properties": {
+        "zone_id": {
+          "type": "string"
+        },
+        "susceptibility": {
+          "type": "string",
+          "enum": [
+            "ALTA",
+            "MEDIA",
+            "BAJA",
+            "NONE"
+          ]
+        },
+        "factor": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 3
+        },
+        "feature_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "ReferenceUse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "category",
+        "dataset_version",
+        "source_url",
+        "consulted_at",
+        "strength",
+        "zones"
+      ],
+      "properties": {
+        "category": {
+          "type": "string",
+          "enum": [
+            "official_reference"
+          ]
+        },
+        "dataset_version": {
+          "type": "string"
+        },
+        "source_url": {
+          "type": "string",
+          "format": "uri"
+        },
+        "consulted_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "strength": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "zones": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ReferenceZoneUse"
+          }
+        }
+      }
+    },
+    "LabTelemetry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "run_id",
+        "simulation_step",
+        "world_version",
+        "agents",
+        "edges",
+        "overlay_edges",
+        "overlay_update_ms",
+        "replanning_ms",
+        "simulation_step_ms",
+        "planning_calls",
+        "reference"
+      ],
+      "properties": {
+        "run_id": {
+          "type": "string"
+        },
+        "simulation_step": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "world_version": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "agents": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "edges": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "overlay_edges": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "overlay_update_ms": {
+          "type": "number",
+          "minimum": 0
+        },
+        "replanning_ms": {
+          "type": "number",
+          "minimum": 0
+        },
+        "simulation_step_ms": {
+          "type": "number",
+          "minimum": 0
+        },
+        "planning_calls": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "reference": {
+          "$ref": "#/definitions/ReferenceProviderMetrics"
         }
       }
     }

@@ -514,6 +514,91 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/reference/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Disponibilidad y procedencia de referencias oficiales; nunca consulta Internet en esta solicitud */
+        get: operations["getReferenceStatus"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/reference/susceptibility": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Polígonos oficiales en WGS84 desde caché validada, acotados a Manta */
+        get: operations["getSusceptibilityReference"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/reference/rain-events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Eventos históricos oficiales; no generan cierres ni emergencias activas */
+        get: operations["getOfficialRainEvents"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/lab/telemetry": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Métricas operativas separadas de resultados deterministas */
+        get: operations["getLabTelemetry"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/lab/reference/refresh": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Solicita actualización asíncrona acotada; requiere sesión local, Origin y CSRF */
+        post: operations["refreshOfficialReferences"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -683,6 +768,7 @@ export interface components {
             elevation_source: string;
             /** @description Limitación científica del modelo sintético de inundación. */
             disclaimer: string;
+            geographic_reference?: components["schemas"]["ReferenceUse"];
         };
         ScenarioSnapshot: {
             /** @enum {string} */
@@ -854,6 +940,7 @@ export interface components {
             agents: number;
             interval_ms: number;
             shelters: components["schemas"]["LabCandidate"][];
+            geographic_reference?: components["schemas"]["LabGeographicReference"];
         };
         LabRunRequest: {
             config: components["schemas"]["LabRunConfig"];
@@ -1095,6 +1182,141 @@ export interface components {
             application: components["schemas"]["IncidentApplication"];
             state: components["schemas"]["LabState"];
             already_applied: boolean;
+        };
+        ReferenceProvenance: {
+            /** @enum {string} */
+            category: "synthetic" | "official_reference" | "official_observation" | "citizen_report";
+            source: string;
+            /** Format: uri */
+            url: string;
+            /** Format: date-time */
+            consulted_at: string;
+            publication_date?: string;
+            /** Format: date-time */
+            declared_updated_at?: string;
+            /** Format: date-time */
+            portal_modified_at?: string;
+            attribution: string;
+            license: string;
+            original_crs: string;
+            /** @enum {string} */
+            output_crs: "EPSG:4326";
+            dataset_version: string;
+            temporal_scope: string;
+            source_years: number[];
+            /** @description Máxima fecha declarada entre registros consultados; no acredita actualización de todo el servicio. */
+            declared_update_date?: string;
+        };
+        ReferenceGeometry: {
+            /** @enum {string} */
+            type: "MultiPolygon";
+            coordinates: number[][][][];
+        };
+        ReferenceProperties: {
+            object_id: string;
+            /** @enum {string} */
+            susceptibility: "ALTA" | "MEDIA" | "BAJA";
+            source_year?: number;
+        };
+        ReferenceFeature: {
+            /** @enum {string} */
+            type: "Feature";
+            id: string;
+            properties: components["schemas"]["ReferenceProperties"];
+            geometry: components["schemas"]["ReferenceGeometry"];
+        };
+        ReferenceCollection: {
+            /** @enum {integer} */
+            schema_version: 1;
+            /** @enum {string} */
+            type: "FeatureCollection";
+            bbox: number[];
+            features: components["schemas"]["ReferenceFeature"][];
+            provenance: components["schemas"]["ReferenceProvenance"];
+            feature_count: number;
+            vertex_count: number;
+            generalization_degrees: number;
+        };
+        OfficialRainEvent: {
+            object_id: string;
+            event: string;
+            canton: string;
+            event_date: string;
+            closed_date: string;
+            latitude: number;
+            longitude: number;
+            declared_update_date?: string;
+        };
+        OfficialRainEvents: {
+            /** @enum {integer} */
+            schema_version: 1;
+            events: components["schemas"]["OfficialRainEvent"][];
+            provenance: components["schemas"]["ReferenceProvenance"];
+        };
+        ReferenceProviderMetrics: {
+            queries: number;
+            provider_errors: number;
+            cache_hits: number;
+            cache_misses: number;
+            last_query_ms: number;
+            total_query_ms: number;
+            response_bytes: number;
+            last_refresh_ms: number;
+        };
+        ReferenceStatus: {
+            /** @enum {integer} */
+            schema_version: 1;
+            /** @enum {string} */
+            mode: "offline" | "online" | "disabled";
+            /** @enum {string} */
+            availability: "cached" | "stale" | "unavailable" | "disabled";
+            refreshing: boolean;
+            /** @enum {string} */
+            provider_status: "unknown" | "ok" | "error" | "offline";
+            message: string;
+            dataset_version?: string;
+            provenance?: components["schemas"]["ReferenceProvenance"];
+            feature_count: number;
+            vertex_count: number;
+            last_refresh_error?: string;
+            metrics: components["schemas"]["ReferenceProviderMetrics"];
+            event_dataset_version?: string;
+        };
+        LabGeographicReference: {
+            enabled: boolean;
+            dataset_version?: string;
+            strength: number;
+        };
+        ReferenceZoneUse: {
+            zone_id: string;
+            /** @enum {string} */
+            susceptibility: "ALTA" | "MEDIA" | "BAJA" | "NONE";
+            factor: number;
+            feature_ids: string[];
+        };
+        ReferenceUse: {
+            /** @enum {string} */
+            category: "official_reference";
+            dataset_version: string;
+            /** Format: uri */
+            source_url: string;
+            /** Format: date-time */
+            consulted_at: string;
+            strength: number;
+            zones: components["schemas"]["ReferenceZoneUse"][];
+        };
+        LabTelemetry: {
+            run_id: string;
+            simulation_step: number;
+            world_version: number;
+            agents: number;
+            edges: number;
+            overlay_edges: number;
+            overlay_update_ms: number;
+            replanning_ms: number;
+            simulation_step_ms: number;
+            planning_calls: number;
+            reference: components["schemas"]["ReferenceProviderMetrics"];
         };
     };
     responses: {
@@ -2547,6 +2769,210 @@ export interface operations {
             };
         };
     };
+    getReferenceStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Copia local validada o estado operativo */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReferenceStatus"];
+                };
+            };
+            /** @description Consulta fuera del área o inválida */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Copia no disponible; el motor sintético sigue operativo */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getSusceptibilityReference: {
+        parameters: {
+            query?: {
+                /** @description Versión de la copia local; no inicia consultas externas. */
+                version?: string;
+                /** @description minLng,minLat,maxLng,maxLat; debe permanecer dentro de la envolvente del maestro de Manta. Sólo filtra la copia local. */
+                bbox?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Copia local validada o estado operativo */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReferenceCollection"];
+                };
+            };
+            /** @description Copia identificada por ETag sin cambios; sin cuerpo. */
+            304: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Consulta fuera del área o inválida */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Copia no disponible; el motor sintético sigue operativo */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getOfficialRainEvents: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Copia local validada o estado operativo */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OfficialRainEvents"];
+                };
+            };
+            /** @description Consulta fuera del área o inválida */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Copia no disponible; el motor sintético sigue operativo */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getLabTelemetry: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Copia local validada o estado operativo */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LabTelemetry"];
+                };
+            };
+            /** @description Consulta fuera del área o inválida */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Copia no disponible; el motor sintético sigue operativo */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    refreshOfficialReferences: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-CSRF-Token": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Trabajo programado; ninguna simulación espera al proveedor */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReferenceStatus"];
+                };
+            };
+            /** @description Sesión local o CSRF inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Modo online deshabilitado */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
 }
 
 export type GraphNode = components['schemas']['GraphNode'];
@@ -2614,3 +3040,16 @@ export type IncidentStatusUpdate = components['schemas']['IncidentStatusUpdate']
 export type IncidentApply = components['schemas']['IncidentApply'];
 export type IncidentApplication = components['schemas']['IncidentApplication'];
 export type IncidentApplyResult = components['schemas']['IncidentApplyResult'];
+export type ReferenceProvenance = components['schemas']['ReferenceProvenance'];
+export type ReferenceGeometry = components['schemas']['ReferenceGeometry'];
+export type ReferenceProperties = components['schemas']['ReferenceProperties'];
+export type ReferenceFeature = components['schemas']['ReferenceFeature'];
+export type ReferenceCollection = components['schemas']['ReferenceCollection'];
+export type OfficialRainEvent = components['schemas']['OfficialRainEvent'];
+export type OfficialRainEvents = components['schemas']['OfficialRainEvents'];
+export type ReferenceProviderMetrics = components['schemas']['ReferenceProviderMetrics'];
+export type ReferenceStatus = components['schemas']['ReferenceStatus'];
+export type LabGeographicReference = components['schemas']['LabGeographicReference'];
+export type ReferenceZoneUse = components['schemas']['ReferenceZoneUse'];
+export type ReferenceUse = components['schemas']['ReferenceUse'];
+export type LabTelemetry = components['schemas']['LabTelemetry'];
