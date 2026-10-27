@@ -173,6 +173,20 @@ func TestFleetPassengersRemainExposedToNodeAndOppositeCrossings(t *testing.T) {
 	}
 }
 
+func TestFleetAdmissionNeverPrecedesSameNodeBite(t *testing.T) {
+	s := create(t, chain(6), Config{RescueFleet: true, InitialSurvivors: []world.Survivor{survivor("S", "F")}}, decisionFunc(stay))
+	v := &s.fleet[0]
+	v.PassengerIDs = []string{"S"}
+	v.TargetShelterID = "H1"
+	s.survivors[0].VehicleID = v.ID
+	s.survivors[0].TargetShelterID = "H1"
+	s.zombies = []zombieState{{observable: world.Zombie{ID: "Z", Type: world.Walker, Awake: true, CurrentNode: "F", Path: []string{"E", "F"}}}}
+	events := []world.Event{}
+	if s.fleetDeliver(v, &events) || s.survivors[0].Status != world.Bitten || s.shelters[0].Occupancy != 0 || s.fleetMetrics.Delivered != 0 {
+		t.Fatal("vehicle admission bypassed node collision")
+	}
+}
+
 func TestFleetPlannerSeatsAndReproducibility(t *testing.T) {
 	g := chain(9)
 	g.Shelters[0].Capacity = 2

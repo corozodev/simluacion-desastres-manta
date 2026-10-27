@@ -203,6 +203,12 @@ func (s *Simulator) fleetDeliver(v *world.RescueVehicle, events *[]world.Event) 
 		if sh.ID != v.TargetShelterID || sh.NodeID != v.CurrentNode || !s.scenario.admits(sh.ID) {
 			continue
 		}
+		// Admission cannot precede a same-node bite merely because a parked
+		// truck has a shelter target. Moving arrivals were checked per segment.
+		if _, _, bitten := s.collision(v.CurrentNode, v.CurrentNode); bitten {
+			s.fleetPassengerStep(v, v.CurrentNode, v.CurrentNode, events)
+			return false
+		}
 		if sh.Occupancy+len(v.PassengerIDs) > sh.Capacity {
 			return false
 		}
