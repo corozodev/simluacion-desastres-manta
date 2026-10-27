@@ -277,6 +277,11 @@ try {
   assert(stale.status === 409, 'A stale run ID was accepted for incident application');
   check('ErrorResponse', await stale.json());
   report.checks.new_run_clears_overlay_and_stale_run_is_rejected = true;
+  // The API restart precedes the browser's next poll. Wait for the new idle
+  // run and its graph/list instead of scrolling an element from the old run.
+  await expect(page.getByText('Lista para iniciar', { exact: true })).toBeVisible();
+  await expect(page.getByTestId('flood-map')).toBeVisible();
+  await expect(page.getByRole('button', { name: `Seleccionar incidente ${incident.incident_id}`, exact: true })).toBeVisible();
   await page.setViewportSize({ width: 390, height: 844 });
   await page.getByRole('button', { name: `Seleccionar incidente ${incident.incident_id}`, exact: true }).scrollIntoViewIfNeeded();
   await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);

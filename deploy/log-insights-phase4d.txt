@@ -1,0 +1,30 @@
+# Plantillas para CloudWatch Logs Insights sobre el stream de un futuro
+# flood-lab desplegado expresamente. No se aplicaron ni ejecutaron en AWS.
+# Seleccionar un grupo/intervalo concretos antes de consultar; se factura el
+# volumen escaneado. El proceso actual de producción sigue siendo zombie.
+# JSON de stdout: event="lab_metrics", metrics={...}. Una muestra cada 30 s.
+
+# Últimos tiempos y cantidades, sin posiciones ni credenciales.
+fields @timestamp, metrics.run_id, metrics.simulation_step, metrics.agents,
+       metrics.edges, metrics.overlay_edges, metrics.overlay_update_ms,
+       metrics.replanning_ms, metrics.simulation_step_ms
+| filter event = "lab_metrics"
+| sort @timestamp desc
+| limit 100
+
+# Distribución de muestras, no percentiles de todos los pasos de simulación.
+filter event = "lab_metrics"
+| stats avg(metrics.simulation_step_ms) as sampled_step_avg_ms,
+        pct(metrics.simulation_step_ms,95) as sampled_step_p95_ms,
+        max(metrics.overlay_update_ms) as sampled_overlay_max_ms,
+        max(metrics.replanning_ms) as sampled_planning_max_ms by bin(5m)
+
+# Contadores acumulativos del proceso: no sumar muestras repetidas.
+# Los máximos permiten inspección; para deltas considerar reinicios y ventanas.
+filter event = "lab_metrics"
+| stats max(metrics.reference.queries) as provider_queries,
+        max(metrics.reference.provider_errors) as provider_errors,
+        max(metrics.reference.cache_hits) as cache_hits,
+        max(metrics.reference.cache_misses) as cache_misses,
+        max(metrics.reference.response_bytes) as provider_decoded_bytes,
+        max(metrics.reference.last_refresh_ms) as sampled_refresh_ms by bin(1h)

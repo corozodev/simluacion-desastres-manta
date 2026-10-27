@@ -75,7 +75,7 @@ try {
     ENABLE_FULL_MODE: 'false', ENABLE_EXPANDED_MODE: 'false',
     ADMIN_OPERATOR: '', ADMIN_ACCESS_HASH: '', ADMIN_ALLOW_INSECURE_LOOPBACK: 'false',
   } });
-  launch(path.join(temporary, 'flood-lab'), ['-listen', `127.0.0.1:${ports.flood}`, '-origin', origin, '-data-dir', 'data', '-incident-dir', process.env.LAB_INCIDENT_DIR || 'private/incidents'], { cwd: backend, env: process.env });
+  launch(path.join(temporary, 'flood-lab'), ['-listen', `127.0.0.1:${ports.flood}`, '-origin', origin, '-data-dir', 'data', '-incident-dir', process.env.LAB_INCIDENT_DIR || 'private/incidents', '-reference-cache', process.env.LAB_REFERENCE_CACHE || 'private/reference.json', ...(process.env.LAB_REFERENCE_ONLINE === 'true' ? ['-reference-online'] : [])], { cwd: backend, env: process.env });
   await Promise.all([ready(`http://127.0.0.1:${ports.world}/healthz`), ready(`http://127.0.0.1:${ports.flood}/lab/catalog`)]);
   launch(process.execPath, [path.join(root, 'node_modules/vite/bin/vite.js'), '--host', '127.0.0.1', '--port', String(ports.web), '--strictPort'], {
     cwd: path.join(root, 'apps/web'), env: {

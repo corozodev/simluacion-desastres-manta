@@ -1,0 +1,20 @@
+{
+  "name": "Referencia categórica — corredor de lluvia sintético",
+  "scenario_type": "urban_flood",
+  "seed": 42,
+  "survivors": 80,
+  "concurrency": 16,
+  "use_spawn_zones": true,
+  "flood": {
+    "rainfall_profile": "storm",
+    "rainfall_intensity": 0.8,
+    "simulation_duration": 150,
+    "time_step": 1,
+    "flood_growth_rate": 0.08,
+    "drainage_factor": 0.025,
+    "road_risk_thresholds": { "caution": 0.3, "blocked": 0.65, "hysteresis": 0.08, "caution_penalty": 2 },
+    "shelter_exposure_threshold": 0.55,
+    "evacuation_behavior": "preventive",
+    "zones": [ { "id": "synthetic-reference-corridor", "center_node": "OSM-363647979", "radius_min_m": 150, "radius_max_m": 800 } ]
+  }
+}
