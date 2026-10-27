@@ -2,11 +2,11 @@
 
 FASE 2 de Track A: backend Go con simulación determinista, planificación dinámica, predicción observable de runners, reservas y clientes React/Flutter. La fuente urbana OSM de Manta tiene **9.179 nodos y 13.452 aristas**; el grafo operativo tiene **300 nodos y 383 aristas**, y el experimental **1.000 nodos y 1.599 aristas**. Los cuatro sectores son zonas de aparición con polígonos municipales: Tarqui, Los Esteros, Barbasquillo y Jocay. La navegación puede salir de ellas. Los cuatro refugios son ficticios. Los turnos duran dos segundos en modo normal y se ejecutan sin esperas en modo acelerado. Entrega prevista por el equipo: **28 de octubre de 2026, 10:00 Ecuador (UTC−05:00)**.
 
-Se conservan la API mock, las pantallas demo y el tema compartido. **FASE 3A.2 está desplegada en AWS:** el stack de Ohio alcanzó CREATE_COMPLETE tras la aprobación expresa del change set revisado. [Abrir Escape](https://sistemamanta.lexinnovate.com/escape) · [API HTTPS](https://api.sistemamanta.lexinnovate.com/healthz). EC2/Docker/Caddy sirven Go; S3 privado y CloudFront sirven React. Budget, DNS públicos, certificados y endpoints están comprobados. El historial Git es local; el propietario aplazó su publicación. Consulta [despliegue y límites](docs/despliegue-aws.md).
+**React y Flutter utilizan únicamente el backend Go de evacuación.** La entrada es `/escape`; se retiraron los modos, adaptadores y pantallas que dependían del servidor de demostración. Ambos clientes observan `/healthz`, `/grafo` y `/estado`, sin recibir la clave de `/paso`. [Abrir Escape en AWS](https://sistemamanta.lexinnovate.com/escape) · [API HTTPS](https://api.sistemamanta.lexinnovate.com/healthz). La infraestructura de Ohio sigue siendo la aprobada en FASE 3A.2; consulta [el informe FASE 3B.1](docs/informe-fase3b1.md).
 
 ## Inicio local
 
-Requiere Node.js ≥22.12, npm ≥10, Go ≥1.23 y Python 3. Flutter/Dart solo se necesitan para móvil. Los scripts detectan Go en `/usr/local/go/bin/go`; aceptan `GO_BIN`. Flutter debe estar en PATH o `FLUTTER_BIN`.
+Requiere Node.js ≥22.12, npm ≥10, Go ≥1.23 y Python 3. Flutter/Dart sólo se necesitan para móvil. Los scripts detectan Go en `/usr/local/go/bin/go`; aceptan `GO_BIN`. Flutter debe estar en PATH o `FLUTTER_BIN`.
 
 Desde `corodev-spooky`:
 
@@ -16,33 +16,27 @@ npm run contracts:generate
 npm run tokens:generate
 ```
 
-Terminal 1, motor y simulación normal. La clave solo vive en el servidor:
+Terminal 1, servidor Go y simulación normal. La clave sólo vive en el servidor:
 
 ```sh
 export API_KEY="$(python3 -c 'import secrets; print(secrets.token_urlsafe(32))')"
 npm run dev:backend
 ```
 
-Terminal 2, mock para conservar las pantallas demo:
+Terminal 2, React observando ese Go local:
 
 ```sh
-npm run dev:api
+VITE_WORLD_API_BASE_URL=http://127.0.0.1:8080 npm run dev:web
 ```
 
-Terminal 3, React observa el backend real mientras las demos usan el mock:
+Abre `http://localhost:5173/escape`. La raíz y las rutas retiradas redirigen a Escape. Sin un override explícito, web y móvil utilizan la API HTTPS de AWS. No hay fallback de datos cuando Go falla: se presenta el error y se permite reintentar. `npm run dev:api` es un alias del servidor Go.
+
+El cliente consulta el estado cada dos segundos. Go conserva el snapshot final después de 150 turnos; reiniciar el proceso reinicia el escenario y pierde la RAM. Los puertos locales de desarrollo no cambian los puertos públicos de AWS.
 
 ```sh
-VITE_WORLD_API_BASE_URL=http://localhost:8080 npm run dev:web
-```
-
-Abre `http://localhost:5173/escape`: grafo, turno, contadores, refugios, conexión y búsqueda de sobrevivientes. El estado se consulta cada dos segundos. Go escucha en `127.0.0.1:8080`; el mock, en `127.0.0.1:3001`. El backend conserva el snapshot final después de 150 turnos. Reiniciar el proceso reinicia el escenario; `Ctrl+C` lo cierra.
-
-Para fixtures sintéticas de desarrollo, inicia solo mock y web sin `VITE_WORLD_API_BASE_URL`. Su fuente se identifica como sintética; no representa Manta real.
-
-```sh
-curl http://localhost:8080/healthz
-curl http://localhost:8080/estado
-curl http://localhost:8080/grafo
+curl http://127.0.0.1:8080/healthz
+curl http://127.0.0.1:8080/estado
+curl http://127.0.0.1:8080/grafo
 ```
 
 ## Simulación y medición
@@ -106,13 +100,21 @@ python3 tools/geo/urban_manta.py --download
 
 ## Flutter
 
+El cliente inicia directamente Escape y utiliza `https://api.sistemamanta.lexinnovate.com` por defecto:
+
 ```sh
 cd apps/mobile
 flutter pub get
-flutter run --dart-define=API_MODE=mock --dart-define=API_BASE_URL=http://10.0.2.2:3001 --dart-define=WORLD_API_BASE_URL=http://10.0.2.2:8080
+flutter run
 ```
 
-Para emulador Android, iniciar cada servicio desde la raíz en interfaces accesibles: `HOST=0.0.0.0 npm run dev:api` y `LISTEN_ADDR=0.0.0.0:8080 npm run dev:backend`. En Flutter web/escritorio usar `localhost`; en dispositivo físico, la IP LAN. Escape permite consultar un sobreviviente y conserva navegación, Riverpod/Dio, tema y repositorio demo. Sin `WORLD_API_BASE_URL` se utiliza el mismo mock HTTP. No se necesitan credenciales privilegiadas en el cliente.
+Para una instancia Go local en emulador Android:
+
+```sh
+flutter run --dart-define=WORLD_API_BASE_URL=http://10.0.2.2:8080
+```
+
+Iniciar Go con `LISTEN_ADDR=0.0.0.0:8080 npm run dev:backend` para permitir el acceso desde el emulador o la LAN. Flutter web/escritorio puede utilizar `http://127.0.0.1:8080`; un dispositivo físico necesita una dirección accesible. El override contiene una URL pública de observación, nunca credenciales.
 
 Desde la raíz, con Flutter en PATH o `FLUTTER_BIN`:
 
@@ -120,9 +122,11 @@ Desde la raíz, con Flutter en PATH o `FLUTTER_BIN`:
 npm run mobile:check
 npm run mobile:test
 npm run mobile:build
+# Requiere una instancia Go accesible mediante WORLD_API_BASE_URL:
+npm run mobile:integration
 ```
 
-Un APK compilado no demuestra una sesión en dispositivo. iOS no está preparado. Se conserva la [configuración Android previa](docs/development/local-setup.md).
+El APK debug actualizado está en `apps/mobile/build/app/outputs/flutter-apk/app-debug.apk`, excluido de Git. Un APK compilado no demuestra una sesión en dispositivo; iOS no está preparado.
 
 ## Variables Go
 
@@ -140,7 +144,7 @@ Un APK compilado no demuestra una sesión en dispositivo. iOS no está preparado
 | `RISK_WEIGHT` / `PREDICTION_WEIGHT` | `0.6` / `12`, riesgos estimados, no garantías |
 | `CORS_ORIGINS` | `http://localhost:5173,http://127.0.0.1:5173` |
 
-Go no carga `.env` automáticamente: exportar variables. Web usa `VITE_API_BASE_URL` para demo y `VITE_WORLD_API_BASE_URL` para el mundo; móvil usa `API_BASE_URL` y `WORLD_API_BASE_URL`. URLs públicas sin credenciales.
+Go no carga `.env` automáticamente: exportar variables. Web usa únicamente `VITE_WORLD_API_BASE_URL` y móvil `WORLD_API_BASE_URL`, ambas URLs públicas sin credenciales. El generador Dart selecciona los modelos alcanzables desde las cuatro operaciones Go; el contrato compartido histórico se conserva.
 
 ## Estructura y continuidad
 
@@ -154,7 +158,7 @@ Go no carga `.env` automáticamente: exportar variables. Web usa `VITE_API_BASE_
 | `packages/contracts`, `packages/design-tokens` | Contratos e identidad compartidos |
 | `tools/{codegen,geo,qa,scripts}` | Generación, importación, QA y comandos |
 
-Leer [diagnóstico geográfico](docs/diagnostico-geografico.md), [diagnóstico de supervivencia](docs/diagnostico-supervivencia.md), [arquitectura](docs/arquitectura.md), [informe FASE 2](docs/informe-fase2.md), [AWS](docs/despliegue-aws.md) y [costos estimados](docs/costos.md). El [informe histórico FASE 1](docs/informe-fase1.md) permanece intacto. FASE 3A.2 desplegó el change set aprobado y verificó la API externa; las evidencias distinguen mediciones públicas y pruebas locales previas. No se inició FASE 3B.
+Leer [diagnóstico geográfico](docs/diagnostico-geografico.md), [diagnóstico de supervivencia](docs/diagnostico-supervivencia.md), [arquitectura](docs/arquitectura.md), [informe FASE 2](docs/informe-fase2.md), [AWS](docs/despliegue-aws.md) y [costos estimados](docs/costos.md). El [informe histórico FASE 1](docs/informe-fase1.md) permanece intacto. FASE 3A.2 desplegó el change set aprobado y verificó la API externa; las evidencias distinguen mediciones públicas y pruebas locales previas. No se inició FASE 3B.2.
 
 
 ## Comparaciones controladas
@@ -197,8 +201,16 @@ Los pesos de aparición se editan en `scenarios/urban/*.json`; los valores inici
 
 **Estimación: 22,96 USD/mes**; reserva 24 USD. Budget existente **30 USD**, HEALTHY, avisos reales 85%/100% y previsto 100%, con email. Último gasto informado **0,00 USD**, con fecha de actualización anterior al despliegue y posible retraso: no representa una factura final ni recursos sin costo. El Budget no detiene cargos. [Costos](docs/costos.md).
 
-La simulación existente termina en 150 turnos y conserva el snapshot final. Un reinicio vuelve a la semilla y pierde la RAM; no se añadió reproducción automática. Se verificó un reinicio controlado para coordinar la prueba del navegador. React avanzó de turno y 60 marcadores cambiaron posición; zoom/selección y ancho móvil pasaron sin errores de red/JavaScript. Al cierre ambos dominios también respondieron 200 por HTTPS con DNS normal del equipo, sin overrides. Las pantallas demo conservan el mock local; no se desplegó un servicio demo adicional. Flutter mantiene su APK local sin prueba física nueva.
+La simulación existente termina en 150 turnos y conserva el snapshot final. Un reinicio vuelve a la semilla y pierde la RAM; no se añadió reproducción automática. Se verificó un reinicio controlado para coordinar la prueba del navegador. React avanzó de turno y 60 marcadores cambiaron posición; zoom/selección y ancho móvil pasaron sin errores de red/JavaScript. Al cierre ambos dominios también respondieron 200 por HTTPS con DNS normal del equipo, sin overrides. FASE 3B.1 retiró posteriormente esas pantallas y sus adaptadores de ambos clientes; Flutter mantiene su APK local sin prueba física nueva.
 
 Se conservaron los artefactos y resultados locales previos, sin repetir la batería de pruebas o los experimentos de FASE 2. [Informe de despliegue](docs/despliegue-aws.md), [evidencia consolidada](deploy/validation-phase3a2-deployment.json) y [probe público](deploy/validation-phase3a-public.json). La API_KEY se generó en EC2 y sólo se compartió cifrada con el cliente externo autorizado; nunca se publica en React, Flutter, comandos o logs.
 
-Git conserva commits reales con fechas auténticas; sin remoto o push, por decisión del propietario. La evidencia privada, parámetros, credenciales, bundles y builds permanecen excluidos. La entrega de alertas Budget y una captura auténtica de consola siguen sin confirmar; su configuración sí se verificó por API. No se inició FASE 3B.
+Git conserva commits reales con fechas auténticas y está publicado en [corozodev/simluacion-desastres-manta](https://github.com/corozodev/simluacion-desastres-manta), usando el remoto configurado por el propietario. La evidencia privada, parámetros, credenciales, bundles y builds permanecen excluidos. La entrega de alertas Budget y una captura auténtica de consola siguen sin confirmar; su configuración sí se verificó por API. No se inició FASE 3B.2.
+
+## Integración y diagnóstico FASE 3B.1
+
+La retirada del servidor anterior se aplicó en React y Flutter, incluyendo configuración, pantallas, navegación y modelos Dart generados sin uso. Se conserva la apariencia de Escape y el contrato Go. Las referencias del servicio histórico y los informes FASE 1/2 permanecen en su ámbito original; ningún cliente los importa ni consulta.
+
+El diagnóstico distingue el procesamiento Go, la duración dentro de Caddy, el HTTPS desde EC2 y el cliente de Ecuador. Con el snapshot final estable, reutilizar conexiones redujo la mediana del cliente de aproximadamente 361 a 113–115 ms. El navegador ya utiliza conexiones persistentes; esto corrige la metodología del probe y no demuestra una aceleración del motor. La cola del lote posterior conservó un máximo de 606 ms: no se garantiza un máximo externo de 500 ms.
+
+Se usaron hooks existentes y registros Caddy sanitizados temporales, sin OTel nuevo, agente, IAM o infraestructura adicional. No se reinició el backend de producción ni se cambió el algoritmo. Las cifras, controles, archivos publicados y commits están en [docs/informe-fase3b1.md](docs/informe-fase3b1.md) y la [metodología de latencia](docs/latencia-aws-fase3b1.md). No se inicia FASE 3B.2 automáticamente.

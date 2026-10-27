@@ -8,6 +8,8 @@ Se conserva el monolito modular. La fuente urbana OSM se separa en maestro (`man
 
 `internal/diagnostics` conserva mediciones privadas separadas de `WorldSnapshot`; sus archivos pueden incluir sleepers iniciales y no se publican. `internal/evaluation` ejecuta comparaciones por HTTP real con el motor histórico congelado, hashes de condiciones iniciales y remapeos geográficos.
 
+FASE 3B.1 dejó React y Flutter exclusivamente sobre la API Go y retiró sus adaptadores/pantallas del servidor anterior; véase [informe](informe-fase3b1.md). No cambió el motor ni añadió OTel o infraestructura.
+
 El despliegue AWS de FASE 3A.2 está en [despliegue](despliegue-aws.md) y [diagrama SVG](arquitectura.svg): stack CREATE_COMPLETE, Go/Docker/Caddy en EC2 y React en S3 privado/CloudFront. La imagen validada con 200 sobrevivientes se reutilizó sin cambiar el motor. La API HTTPS externa está comprobada; polling permanece cada dos segundos. La simulación termina tras 150 turnos y conserva el snapshot final. WebSocket se pospone. La descripción modular original sigue debajo.
 
 # Arquitectura de evacuación

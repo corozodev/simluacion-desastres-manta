@@ -1,0 +1,1376 @@
+{
+  "phase": "3B.1",
+  "recorded_at": "2026-10-26T19:50:32.127027-05:00",
+  "timezone": "America/Guayaquil",
+  "status": "clients_deployed_diagnostics_complete_code_pushed",
+  "latest_owner_scope": "Both React and Flutter exclusively use the existing Go evacuation API; remove prior client modes, adapters and demo screens",
+  "urls": {
+    "frontend": "https://sistemamanta.lexinnovate.com/escape",
+    "api": "https://api.sistemamanta.lexinnovate.com"
+  },
+  "clients": {
+    "entry": "/escape",
+    "default_api_origin": "https://api.sistemamanta.lexinnovate.com",
+    "observation_paths": [
+      "/healthz",
+      "/grafo",
+      "/estado"
+    ],
+    "movement_api_keys_in_clients": false,
+    "secondary_server_runtime_dependencies": false,
+    "synthetic_runtime_fallback": false,
+    "retired_routes_redirect_to_escape": [
+      "/",
+      "/items",
+      "/demo",
+      "/diagnostics"
+    ],
+    "web_world_poll_interval_seconds": 2,
+    "shell_owns_extra_polling_timer": false,
+    "mobile_generated_models": "Reachable from Go operations; shared OpenAPI unchanged",
+    "legacy_source_service_removed_from_repository": false,
+    "legacy_source_service_imported_by_clients": false
+  },
+  "frontend_publication": {
+    "asset_hashes": {
+      "assets/index-DLBbSW1S.js": "c2b859e04ad1b8df56b28bfbc9fec3c9ba735c244025a00a4599dcc6cee09dcb",
+      "assets/index-DkK3GLRG.css": "a6392b4ed8d8dc8a0872148d3e051f1f6363f55cdd96d4749a3d897cb811580c",
+      "index.html": "d6f3c2b63f91fc89fadf2162e46564eb31cc4437404f5df38eca99493dc0a1de"
+    },
+    "existing_s3_and_cloudfront_reused": true,
+    "previous_assets_deleted": false,
+    "index_version_preserved_for_rollback": true,
+    "index_cache_control": "no-cache",
+    "assets_cache_control": "public,max-age=31536000,immutable",
+    "invalidation_status": "Completed"
+  },
+  "public_browser": {
+    "recorded_at": "2026-10-27T00:42:39.509Z",
+    "finished_at": "2026-10-27T00:42:45.686Z",
+    "complete": true,
+    "dns_method": "ordinary system DNS; no overrides or proxy",
+    "tls_verification": true,
+    "mocked_responses": false,
+    "checks": {
+      "go": {
+        "service": "corodev-evacuation",
+        "turn": 150,
+        "world_version": 301,
+        "nodes": 300,
+        "edges": 383,
+        "evacuated": 132,
+        "bitten": 41,
+        "active": 27,
+        "ui_counters_match": true,
+        "advance_required": false
+      },
+      "map": {
+        "zoom": true,
+        "reset": true,
+        "search": true,
+        "position_matches_go": true
+      },
+      "mobile": {
+        "width": 390,
+        "no_horizontal_overflow": true,
+        "navigation_opens_closes": true,
+        "settling_ms": 400
+      },
+      "protocol": {
+        "observed": [
+          "h2",
+          "h3"
+        ],
+        "api_connection_ids": [
+          59
+        ],
+        "api_reused_response_count": 8,
+        "method": "CDP observed browser transport; no comparison to HTTP1 tooling"
+      },
+      "no_privileged_headers_or_routes": true
+    },
+    "violations": {
+      "credentials": 0,
+      "privileged_route": 0,
+      "unexpected_request": 0
+    },
+    "failed_requests": 0,
+    "javascript_errors": 0,
+    "console_errors": 0,
+    "production_protocol": "API HTTP/2 connection reuse; CloudFront HTTP/2 and HTTP/3 observed",
+    "screenshots_authentic_private": true
+  },
+  "latency_methodology": {
+    "client_binary_sha256": "21e5d351dc91fcd01aa83967caa883a6abdc65d9ff1c9bf59278c88644ede0c9",
+    "diagnostic_binary_sha256": "68a7490b0981e5bebc1b7c6856cb7e1fc73eba5c25632289b14eec4fbf7aac29",
+    "same_client_binary_before_after": true,
+    "protocol": "HTTP/1.1 for both new/reuse modes; browser HTTP/2 is separately observed",
+    "workers": 1,
+    "pacing": "100ms between logical operations",
+    "external_operations_per_mode": 100,
+    "near_operations_per_mode": 200,
+    "stable_production_turn": 150,
+    "active_survivors": 27,
+    "survivors_total": 200,
+    "http_timeout_seconds": 10,
+    "duration_threshold_ms": 500,
+    "percentiles": "nearest rank, status-inclusive attempt statistics and separate logical-operation statistics",
+    "logical_step": "GET /estado + POST /paso + any 409 reattempts; operation latency includes snapshot and retry transport",
+    "setup_requests_excluded_and_recorded": true,
+    "all_final_performance_http_post_statuses": {
+      "200": 2000
+    },
+    "all_final_performance_post_errors": 0,
+    "all_final_performance_post_timeouts": 0,
+    "success_is_not_a_latency_sla": true,
+    "invalid_initial_alpn_instrument_trial_preserved": true,
+    "invalid_instrument_trial_excluded_from_latency_comparison": true
+  },
+  "latency": {
+    "external_before": {
+      "recorded_at": "2026-10-27T00:20:32.799019261Z",
+      "endpoint": "/paso",
+      "vantage": "Owner workstation Ecuador outside target EC2",
+      "workers": 1,
+      "operation_interval": "100ms",
+      "protocol": "HTTP/1.1 in both modes",
+      "complete": true,
+      "connect_ip_override": "",
+      "modes": {
+        "new": {
+          "attempt_all_status_latency": {
+            "count": 100,
+            "p50_ms": 361.493764,
+            "p95_ms": 371.410744,
+            "p99_ms": 386.220434,
+            "max_ms": 390.243066
+          },
+          "attempt_availability": 1,
+          "attempt_stages_observed_only": {
+            "dns": {
+              "count": 100,
+              "p50_ms": 4.940247,
+              "p95_ms": 9.37328,
+              "p99_ms": 16.551899,
+              "max_ms": 17.426166
+            },
+            "tcp": {
+              "count": 100,
+              "p50_ms": 113.468633,
+              "p95_ms": 116.077815,
+              "p99_ms": 119.124876,
+              "max_ms": 122.416377
+            },
+            "tls": {
+              "count": 100,
+              "p50_ms": 126.312078,
+              "p95_ms": 132.824367,
+              "p99_ms": 134.76378,
+              "max_ms": 144.586872
+            },
+            "ttfb": {
+              "count": 100,
+              "p50_ms": 361.263415,
+              "p95_ms": 371.083051,
+              "p99_ms": 386.027179,
+              "max_ms": 390.091562
+            }
+          },
+          "attempt_success_latency": {
+            "count": 100,
+            "p50_ms": 361.493764,
+            "p95_ms": 371.410744,
+            "p99_ms": 386.220434,
+            "max_ms": 390.243066
+          },
+          "attempted_operations": 100,
+          "conflicts_409": 0,
+          "decision_attempts": 100,
+          "endpoint_attempts": 100,
+          "failures": 0,
+          "final_turn": 150,
+          "initial_turn": 150,
+          "logical_operation_failures": 0,
+          "logical_operation_latency_including_snapshot_retries": {
+            "count": 100,
+            "p50_ms": 726.112846,
+            "p95_ms": 742.894987,
+            "p99_ms": 754.633641,
+            "max_ms": 1087.585379
+          },
+          "operation_availability": 1,
+          "over_500ms_attempts": 0,
+          "requested_operations": 100,
+          "reused_connections": 0,
+          "status_counts": {
+            "200": 100
+          },
+          "successful_attempts": 100,
+          "successful_operations": 100,
+          "timeouts": 0,
+          "unstarted_operations": 0
+        },
+        "reuse": {
+          "attempt_all_status_latency": {
+            "count": 100,
+            "p50_ms": 112.529492,
+            "p95_ms": 117.324361,
+            "p99_ms": 121.242904,
+            "max_ms": 123.293402
+          },
+          "attempt_availability": 1,
+          "attempt_stages_observed_only": {
+            "dns": null,
+            "tcp": null,
+            "tls": null,
+            "ttfb": {
+              "count": 100,
+              "p50_ms": 112.416985,
+              "p95_ms": 117.210281,
+              "p99_ms": 121.134282,
+              "max_ms": 123.154712
+            }
+          },
+          "attempt_success_latency": {
+            "count": 100,
+            "p50_ms": 112.529492,
+            "p95_ms": 117.324361,
+            "p99_ms": 121.242904,
+            "max_ms": 123.293402
+          },
+          "attempted_operations": 100,
+          "conflicts_409": 0,
+          "decision_attempts": 100,
+          "endpoint_attempts": 100,
+          "failures": 0,
+          "final_turn": 150,
+          "initial_turn": 150,
+          "logical_operation_failures": 0,
+          "logical_operation_latency_including_snapshot_retries": {
+            "count": 100,
+            "p50_ms": 230.632044,
+            "p95_ms": 239.507605,
+            "p99_ms": 242.429272,
+            "max_ms": 246.278842
+          },
+          "operation_availability": 1,
+          "over_500ms_attempts": 0,
+          "requested_operations": 100,
+          "reused_connections": 100,
+          "status_counts": {
+            "200": 100
+          },
+          "successful_attempts": 100,
+          "successful_operations": 100,
+          "timeouts": 0,
+          "unstarted_operations": 0
+        }
+      }
+    },
+    "external_after": {
+      "recorded_at": "2026-10-27T00:31:00.030229209Z",
+      "endpoint": "/paso",
+      "vantage": "Owner workstation Ecuador outside target EC2",
+      "workers": 1,
+      "operation_interval": "100ms",
+      "protocol": "HTTP/1.1 in both modes",
+      "complete": true,
+      "connect_ip_override": "",
+      "modes": {
+        "new": {
+          "attempt_all_status_latency": {
+            "count": 100,
+            "p50_ms": 361.386809,
+            "p95_ms": 367.755112,
+            "p99_ms": 370.965999,
+            "max_ms": 375.272691
+          },
+          "attempt_availability": 1,
+          "attempt_stages_observed_only": {
+            "dns": {
+              "count": 100,
+              "p50_ms": 4.897489,
+              "p95_ms": 6.760096,
+              "p99_ms": 8.609587,
+              "max_ms": 12.683226
+            },
+            "tcp": {
+              "count": 100,
+              "p50_ms": 113.20421,
+              "p95_ms": 115.756414,
+              "p99_ms": 116.914594,
+              "max_ms": 116.961832
+            },
+            "tls": {
+              "count": 100,
+              "p50_ms": 126.486324,
+              "p95_ms": 130.090908,
+              "p99_ms": 132.863067,
+              "max_ms": 135.279387
+            },
+            "ttfb": {
+              "count": 100,
+              "p50_ms": 361.161651,
+              "p95_ms": 367.586619,
+              "p99_ms": 370.695013,
+              "max_ms": 375.08295
+            }
+          },
+          "attempt_success_latency": {
+            "count": 100,
+            "p50_ms": 361.386809,
+            "p95_ms": 367.755112,
+            "p99_ms": 370.965999,
+            "max_ms": 375.272691
+          },
+          "attempted_operations": 100,
+          "conflicts_409": 0,
+          "decision_attempts": 100,
+          "endpoint_attempts": 100,
+          "failures": 0,
+          "final_turn": 150,
+          "initial_turn": 150,
+          "logical_operation_failures": 0,
+          "logical_operation_latency_including_snapshot_retries": {
+            "count": 100,
+            "p50_ms": 724.327295,
+            "p95_ms": 735.183857,
+            "p99_ms": 739.431041,
+            "max_ms": 828.26131
+          },
+          "operation_availability": 1,
+          "over_500ms_attempts": 0,
+          "requested_operations": 100,
+          "reused_connections": 0,
+          "status_counts": {
+            "200": 100
+          },
+          "successful_attempts": 100,
+          "successful_operations": 100,
+          "timeouts": 0,
+          "unstarted_operations": 0
+        },
+        "reuse": {
+          "attempt_all_status_latency": {
+            "count": 100,
+            "p50_ms": 114.782861,
+            "p95_ms": 205.058502,
+            "p99_ms": 206.146462,
+            "max_ms": 606.390065
+          },
+          "attempt_availability": 1,
+          "attempt_stages_observed_only": {
+            "dns": null,
+            "tcp": null,
+            "tls": null,
+            "ttfb": {
+              "count": 100,
+              "p50_ms": 114.643317,
+              "p95_ms": 204.938833,
+              "p99_ms": 206.044297,
+              "max_ms": 606.284025
+            }
+          },
+          "attempt_success_latency": {
+            "count": 100,
+            "p50_ms": 114.782861,
+            "p95_ms": 205.058502,
+            "p99_ms": 206.146462,
+            "max_ms": 606.390065
+          },
+          "attempted_operations": 100,
+          "conflicts_409": 0,
+          "decision_attempts": 100,
+          "endpoint_attempts": 100,
+          "failures": 0,
+          "final_turn": 150,
+          "initial_turn": 150,
+          "logical_operation_failures": 0,
+          "logical_operation_latency_including_snapshot_retries": {
+            "count": 100,
+            "p50_ms": 234.642605,
+            "p95_ms": 412.823414,
+            "p99_ms": 724.904601,
+            "max_ms": 1213.862472
+          },
+          "operation_availability": 1,
+          "over_500ms_attempts": 1,
+          "requested_operations": 100,
+          "reused_connections": 100,
+          "status_counts": {
+            "200": 100
+          },
+          "successful_attempts": 100,
+          "successful_operations": 100,
+          "timeouts": 0,
+          "unstarted_operations": 0
+        }
+      }
+    },
+    "near_loopback_before": {
+      "recorded_at": "2026-10-27T00:21:36.155337143Z",
+      "endpoint": "/paso",
+      "vantage": "Same EC2 host, final150 snapshot",
+      "workers": 1,
+      "operation_interval": "100ms",
+      "protocol": "HTTP/1.1 in both modes",
+      "complete": true,
+      "connect_ip_override": "",
+      "modes": {
+        "new": {
+          "attempt_all_status_latency": {
+            "count": 200,
+            "p50_ms": 1.040448,
+            "p95_ms": 1.563669,
+            "p99_ms": 2.099743,
+            "max_ms": 2.632307
+          },
+          "attempt_availability": 1,
+          "attempt_stages_observed_only": {
+            "dns": null,
+            "tcp": {
+              "count": 200,
+              "p50_ms": 0.115636,
+              "p95_ms": 0.327955,
+              "p99_ms": 0.506324,
+              "max_ms": 0.638454
+            },
+            "tls": null,
+            "ttfb": {
+              "count": 200,
+              "p50_ms": 0.962362,
+              "p95_ms": 1.464346,
+              "p99_ms": 1.8618,
+              "max_ms": 2.542083
+            }
+          },
+          "attempt_success_latency": {
+            "count": 200,
+            "p50_ms": 1.040448,
+            "p95_ms": 1.563669,
+            "p99_ms": 2.099743,
+            "max_ms": 2.632307
+          },
+          "attempted_operations": 200,
+          "conflicts_409": 0,
+          "decision_attempts": 200,
+          "endpoint_attempts": 200,
+          "failures": 0,
+          "final_turn": 150,
+          "initial_turn": 150,
+          "logical_operation_failures": 0,
+          "logical_operation_latency_including_snapshot_retries": {
+            "count": 200,
+            "p50_ms": 3.288801,
+            "p95_ms": 4.43772,
+            "p99_ms": 5.074546,
+            "max_ms": 6.25332
+          },
+          "operation_availability": 1,
+          "over_500ms_attempts": 0,
+          "requested_operations": 200,
+          "reused_connections": 0,
+          "status_counts": {
+            "200": 200
+          },
+          "successful_attempts": 200,
+          "successful_operations": 200,
+          "timeouts": 0,
+          "unstarted_operations": 0
+        },
+        "reuse": {
+          "attempt_all_status_latency": {
+            "count": 200,
+            "p50_ms": 0.701607,
+            "p95_ms": 1.830616,
+            "p99_ms": 9.659538,
+            "max_ms": 13.851045
+          },
+          "attempt_availability": 1,
+          "attempt_stages_observed_only": {
+            "dns": null,
+            "tcp": null,
+            "tls": null,
+            "ttfb": {
+              "count": 200,
+              "p50_ms": 0.647781,
+              "p95_ms": 1.758573,
+              "p99_ms": 9.418786,
+              "max_ms": 13.777899
+            }
+          },
+          "attempt_success_latency": {
+            "count": 200,
+            "p50_ms": 0.701607,
+            "p95_ms": 1.830616,
+            "p99_ms": 9.659538,
+            "max_ms": 13.851045
+          },
+          "attempted_operations": 200,
+          "conflicts_409": 0,
+          "decision_attempts": 200,
+          "endpoint_attempts": 200,
+          "failures": 0,
+          "final_turn": 150,
+          "initial_turn": 150,
+          "logical_operation_failures": 0,
+          "logical_operation_latency_including_snapshot_retries": {
+            "count": 200,
+            "p50_ms": 2.54306,
+            "p95_ms": 5.852954,
+            "p99_ms": 17.34808,
+            "max_ms": 48.657245
+          },
+          "operation_availability": 1,
+          "over_500ms_attempts": 0,
+          "requested_operations": 200,
+          "reused_connections": 200,
+          "status_counts": {
+            "200": 200
+          },
+          "successful_attempts": 200,
+          "successful_operations": 200,
+          "timeouts": 0,
+          "unstarted_operations": 0
+        }
+      }
+    },
+    "near_loopback_after": {
+      "recorded_at": "2026-10-27T00:31:15.559528857Z",
+      "endpoint": "/paso",
+      "vantage": "Same EC2 host, final150 snapshot",
+      "workers": 1,
+      "operation_interval": "100ms",
+      "protocol": "HTTP/1.1 in both modes",
+      "complete": true,
+      "connect_ip_override": "",
+      "modes": {
+        "new": {
+          "attempt_all_status_latency": {
+            "count": 200,
+            "p50_ms": 1.032437,
+            "p95_ms": 1.925239,
+            "p99_ms": 2.245001,
+            "max_ms": 3.048534
+          },
+          "attempt_availability": 1,
+          "attempt_stages_observed_only": {
+            "dns": null,
+            "tcp": {
+              "count": 200,
+              "p50_ms": 0.124315,
+              "p95_ms": 0.249908,
+              "p99_ms": 0.378384,
+              "max_ms": 0.900821
+            },
+            "tls": null,
+            "ttfb": {
+              "count": 200,
+              "p50_ms": 0.955792,
+              "p95_ms": 1.812205,
+              "p99_ms": 2.009981,
+              "max_ms": 2.831398
+            }
+          },
+          "attempt_success_latency": {
+            "count": 200,
+            "p50_ms": 1.032437,
+            "p95_ms": 1.925239,
+            "p99_ms": 2.245001,
+            "max_ms": 3.048534
+          },
+          "attempted_operations": 200,
+          "conflicts_409": 0,
+          "decision_attempts": 200,
+          "endpoint_attempts": 200,
+          "failures": 0,
+          "final_turn": 150,
+          "initial_turn": 150,
+          "logical_operation_failures": 0,
+          "logical_operation_latency_including_snapshot_retries": {
+            "count": 200,
+            "p50_ms": 3.374415,
+            "p95_ms": 4.617693,
+            "p99_ms": 5.408105,
+            "max_ms": 5.964436
+          },
+          "operation_availability": 1,
+          "over_500ms_attempts": 0,
+          "requested_operations": 200,
+          "reused_connections": 0,
+          "status_counts": {
+            "200": 200
+          },
+          "successful_attempts": 200,
+          "successful_operations": 200,
+          "timeouts": 0,
+          "unstarted_operations": 0
+        },
+        "reuse": {
+          "attempt_all_status_latency": {
+            "count": 200,
+            "p50_ms": 0.706456,
+            "p95_ms": 1.344003,
+            "p99_ms": 1.627911,
+            "max_ms": 1.751937
+          },
+          "attempt_availability": 1,
+          "attempt_stages_observed_only": {
+            "dns": null,
+            "tcp": null,
+            "tls": null,
+            "ttfb": {
+              "count": 200,
+              "p50_ms": 0.649007,
+              "p95_ms": 1.267056,
+              "p99_ms": 1.586545,
+              "max_ms": 1.698437
+            }
+          },
+          "attempt_success_latency": {
+            "count": 200,
+            "p50_ms": 0.706456,
+            "p95_ms": 1.344003,
+            "p99_ms": 1.627911,
+            "max_ms": 1.751937
+          },
+          "attempted_operations": 200,
+          "conflicts_409": 0,
+          "decision_attempts": 200,
+          "endpoint_attempts": 200,
+          "failures": 0,
+          "final_turn": 150,
+          "initial_turn": 150,
+          "logical_operation_failures": 0,
+          "logical_operation_latency_including_snapshot_retries": {
+            "count": 200,
+            "p50_ms": 2.536617,
+            "p95_ms": 3.662927,
+            "p99_ms": 4.046432,
+            "max_ms": 4.393653
+          },
+          "operation_availability": 1,
+          "over_500ms_attempts": 0,
+          "requested_operations": 200,
+          "reused_connections": 200,
+          "status_counts": {
+            "200": 200
+          },
+          "successful_attempts": 200,
+          "successful_operations": 200,
+          "timeouts": 0,
+          "unstarted_operations": 0
+        }
+      }
+    },
+    "near_https_before": {
+      "recorded_at": "2026-10-27T00:22:17.465986205Z",
+      "endpoint": "/paso",
+      "vantage": "Same EC2 host, final150 snapshot",
+      "workers": 1,
+      "operation_interval": "100ms",
+      "protocol": "HTTP/1.1 in both modes",
+      "complete": true,
+      "connect_ip_override": "",
+      "modes": {
+        "new": {
+          "attempt_all_status_latency": {
+            "count": 200,
+            "p50_ms": 8.778418,
+            "p95_ms": 12.589902,
+            "p99_ms": 15.597473,
+            "max_ms": 21.312925
+          },
+          "attempt_availability": 1,
+          "attempt_stages_observed_only": {
+            "dns": {
+              "count": 200,
+              "p50_ms": 0.461085,
+              "p95_ms": 2.18555,
+              "p99_ms": 6.449178,
+              "max_ms": 10.789621
+            },
+            "tcp": {
+              "count": 200,
+              "p50_ms": 0.330276,
+              "p95_ms": 0.627187,
+              "p99_ms": 0.826842,
+              "max_ms": 0.91211
+            },
+            "tls": {
+              "count": 200,
+              "p50_ms": 6.329962,
+              "p95_ms": 7.211127,
+              "p99_ms": 9.958094,
+              "max_ms": 17.198066
+            },
+            "ttfb": {
+              "count": 200,
+              "p50_ms": 8.696377,
+              "p95_ms": 12.441753,
+              "p99_ms": 15.518571,
+              "max_ms": 21.169476
+            }
+          },
+          "attempt_success_latency": {
+            "count": 200,
+            "p50_ms": 8.778418,
+            "p95_ms": 12.589902,
+            "p99_ms": 15.597473,
+            "max_ms": 21.312925
+          },
+          "attempted_operations": 200,
+          "conflicts_409": 0,
+          "decision_attempts": 200,
+          "endpoint_attempts": 200,
+          "failures": 0,
+          "final_turn": 150,
+          "initial_turn": 150,
+          "logical_operation_failures": 0,
+          "logical_operation_latency_including_snapshot_retries": {
+            "count": 200,
+            "p50_ms": 19.465964,
+            "p95_ms": 25.517687,
+            "p99_ms": 29.196488,
+            "max_ms": 32.287742
+          },
+          "operation_availability": 1,
+          "over_500ms_attempts": 0,
+          "requested_operations": 200,
+          "reused_connections": 0,
+          "status_counts": {
+            "200": 200
+          },
+          "successful_attempts": 200,
+          "successful_operations": 200,
+          "timeouts": 0,
+          "unstarted_operations": 0
+        },
+        "reuse": {
+          "attempt_all_status_latency": {
+            "count": 200,
+            "p50_ms": 1.241073,
+            "p95_ms": 2.382604,
+            "p99_ms": 8.846869,
+            "max_ms": 16.750379
+          },
+          "attempt_availability": 1,
+          "attempt_stages_observed_only": {
+            "dns": null,
+            "tcp": null,
+            "tls": null,
+            "ttfb": {
+              "count": 200,
+              "p50_ms": 1.185673,
+              "p95_ms": 2.275593,
+              "p99_ms": 7.834856,
+              "max_ms": 15.935664
+            }
+          },
+          "attempt_success_latency": {
+            "count": 200,
+            "p50_ms": 1.241073,
+            "p95_ms": 2.382604,
+            "p99_ms": 8.846869,
+            "max_ms": 16.750379
+          },
+          "attempted_operations": 200,
+          "conflicts_409": 0,
+          "decision_attempts": 200,
+          "endpoint_attempts": 200,
+          "failures": 0,
+          "final_turn": 150,
+          "initial_turn": 150,
+          "logical_operation_failures": 0,
+          "logical_operation_latency_including_snapshot_retries": {
+            "count": 200,
+            "p50_ms": 4.257893,
+            "p95_ms": 6.981323,
+            "p99_ms": 20.862306,
+            "max_ms": 40.57443
+          },
+          "operation_availability": 1,
+          "over_500ms_attempts": 0,
+          "requested_operations": 200,
+          "reused_connections": 200,
+          "status_counts": {
+            "200": 200
+          },
+          "successful_attempts": 200,
+          "successful_operations": 200,
+          "timeouts": 0,
+          "unstarted_operations": 0
+        }
+      }
+    },
+    "near_https_after": {
+      "recorded_at": "2026-10-27T00:31:56.751608683Z",
+      "endpoint": "/paso",
+      "vantage": "Same EC2 host, final150 snapshot",
+      "workers": 1,
+      "operation_interval": "100ms",
+      "protocol": "HTTP/1.1 in both modes",
+      "complete": true,
+      "connect_ip_override": "",
+      "modes": {
+        "new": {
+          "attempt_all_status_latency": {
+            "count": 200,
+            "p50_ms": 8.944242,
+            "p95_ms": 12.53148,
+            "p99_ms": 23.472806,
+            "max_ms": 43.134187
+          },
+          "attempt_availability": 1,
+          "attempt_stages_observed_only": {
+            "dns": {
+              "count": 200,
+              "p50_ms": 0.459311,
+              "p95_ms": 2.312529,
+              "p99_ms": 4.094762,
+              "max_ms": 4.728116
+            },
+            "tcp": {
+              "count": 200,
+              "p50_ms": 0.339181,
+              "p95_ms": 0.517784,
+              "p99_ms": 0.954523,
+              "max_ms": 2.295089
+            },
+            "tls": {
+              "count": 200,
+              "p50_ms": 6.31505,
+              "p95_ms": 7.659292,
+              "p99_ms": 15.978943,
+              "max_ms": 26.903077
+            },
+            "ttfb": {
+              "count": 200,
+              "p50_ms": 8.846568,
+              "p95_ms": 12.389543,
+              "p99_ms": 23.209273,
+              "max_ms": 42.114654
+            }
+          },
+          "attempt_success_latency": {
+            "count": 200,
+            "p50_ms": 8.944242,
+            "p95_ms": 12.53148,
+            "p99_ms": 23.472806,
+            "max_ms": 43.134187
+          },
+          "attempted_operations": 200,
+          "conflicts_409": 0,
+          "decision_attempts": 200,
+          "endpoint_attempts": 200,
+          "failures": 0,
+          "final_turn": 150,
+          "initial_turn": 150,
+          "logical_operation_failures": 0,
+          "logical_operation_latency_including_snapshot_retries": {
+            "count": 200,
+            "p50_ms": 19.577966,
+            "p95_ms": 28.116323,
+            "p99_ms": 62.145886,
+            "max_ms": 104.559456
+          },
+          "operation_availability": 1,
+          "over_500ms_attempts": 0,
+          "requested_operations": 200,
+          "reused_connections": 0,
+          "status_counts": {
+            "200": 200
+          },
+          "successful_attempts": 200,
+          "successful_operations": 200,
+          "timeouts": 0,
+          "unstarted_operations": 0
+        },
+        "reuse": {
+          "attempt_all_status_latency": {
+            "count": 200,
+            "p50_ms": 1.309432,
+            "p95_ms": 2.087877,
+            "p99_ms": 2.651996,
+            "max_ms": 3.518147
+          },
+          "attempt_availability": 1,
+          "attempt_stages_observed_only": {
+            "dns": null,
+            "tcp": null,
+            "tls": null,
+            "ttfb": {
+              "count": 200,
+              "p50_ms": 1.256641,
+              "p95_ms": 2.015386,
+              "p99_ms": 2.578427,
+              "max_ms": 3.447028
+            }
+          },
+          "attempt_success_latency": {
+            "count": 200,
+            "p50_ms": 1.309432,
+            "p95_ms": 2.087877,
+            "p99_ms": 2.651996,
+            "max_ms": 3.518147
+          },
+          "attempted_operations": 200,
+          "conflicts_409": 0,
+          "decision_attempts": 200,
+          "endpoint_attempts": 200,
+          "failures": 0,
+          "final_turn": 150,
+          "initial_turn": 150,
+          "logical_operation_failures": 0,
+          "logical_operation_latency_including_snapshot_retries": {
+            "count": 200,
+            "p50_ms": 4.456394,
+            "p95_ms": 5.955984,
+            "p99_ms": 7.11787,
+            "max_ms": 7.30599
+          },
+          "operation_availability": 1,
+          "over_500ms_attempts": 0,
+          "requested_operations": 200,
+          "reused_connections": 200,
+          "status_counts": {
+            "200": 200
+          },
+          "successful_attempts": 200,
+          "successful_operations": 200,
+          "timeouts": 0,
+          "unstarted_operations": 0
+        }
+      }
+    },
+    "internal_aws": {
+      "go": "go1.26.1",
+      "gomaxprocs": 2,
+      "simulation_concurrency": 16,
+      "http_benchmark_concurrency": 1,
+      "requests": 1000,
+      "http_failures": 0,
+      "stable_snapshot": {
+        "active": 27,
+        "direct_engine_next_step": {
+          "count": 1000,
+          "total_ms": 77.95315999999984,
+          "p50_ms": 0.077497,
+          "p95_ms": 0.077723,
+          "p99_ms": 0.09261
+        },
+        "direct_snapshot_clone": {
+          "count": 1000,
+          "total_ms": 120.25199500000004,
+          "p50_ms": 0.04567,
+          "p95_ms": 0.388439,
+          "p99_ms": 0.592782
+        },
+        "loopback_http": {
+          "count": 1000,
+          "total_ms": 405.00737899999984,
+          "p50_ms": 0.308262,
+          "p95_ms": 0.929644,
+          "p99_ms": 1.273535
+        },
+        "server_observed": {
+          "engine_next_step": {
+            "count": 1000,
+            "total_ms": 89.23434799999998,
+            "p50_ms": 0.084333,
+            "p95_ms": 0.107818,
+            "p99_ms": 0.221252
+          },
+          "handler": {
+            "count": 1000,
+            "total_ms": 248.60805099999985,
+            "p50_ms": 0.185253,
+            "p95_ms": 0.548922,
+            "p99_ms": 0.806154
+          },
+          "snapshot_clone": {
+            "count": 1000,
+            "total_ms": 123.44074999999995,
+            "p50_ms": 0.065052,
+            "p95_ms": 0.386984,
+            "p99_ms": 0.555804
+          }
+        },
+        "turn": 150,
+        "world_version": 301
+      },
+      "dynamic_simulation": {
+        "engine_stats": {
+          "cache_hits": 17172,
+          "builds": 151,
+          "searches": 349,
+          "predictions": 151,
+          "reused_searches": 0
+        },
+        "interval": "accelerated isolated process, no sleep",
+        "limitations": "planning includes initial preparation and reservation reconciliation; publication includes initialization; turn includes internal HTTP/diagnostics; engine_next_step includes cache-key calculation and plan selection, not only a map read",
+        "metrics": {
+          "evacuated": 132,
+          "bitten": 41,
+          "active": 27,
+          "turns": 150,
+          "requests_success": 6113,
+          "requests_invalid": 0,
+          "requests_timeout": 0,
+          "http_p50_ms": 4.158991,
+          "http_p95_ms": 8.397054,
+          "http_p99_ms": 10.109102,
+          "availability": 1
+        },
+        "server_observed": {
+          "engine_next_step": {
+            "count": 6113,
+            "total_ms": 669.0259540000009,
+            "p50_ms": 0.091278,
+            "p95_ms": 0.141508,
+            "p99_ms": 0.441015
+          },
+          "handler": {
+            "count": 6113,
+            "total_ms": 2958.620223000006,
+            "p50_ms": 0.266816,
+            "p95_ms": 1.355175,
+            "p99_ms": 3.280705
+          },
+          "snapshot_clone": {
+            "count": 6113,
+            "total_ms": 1973.5346300000037,
+            "p50_ms": 0.125752,
+            "p95_ms": 0.98319,
+            "p99_ms": 3.020486
+          }
+        },
+        "simulation_concurrency": 16,
+        "timings": {
+          "planning": {
+            "count": 151,
+            "total_ms": 1508.2323960000003,
+            "p50_ms": 7.921923,
+            "p95_ms": 23.598351,
+            "p99_ms": 32.1451
+          },
+          "publication": {
+            "count": 302,
+            "total_ms": 194.64740599999993,
+            "p50_ms": 0.559646,
+            "p95_ms": 1.167681,
+            "p99_ms": 3.561149
+          },
+          "turn": {
+            "count": 150,
+            "total_ms": 3958.6688759999997,
+            "p50_ms": 20.426095,
+            "p95_ms": 66.311022,
+            "p99_ms": 97.099446
+          }
+        },
+        "turns": 150
+      },
+      "scope": "Isolated process on same EC2; original production process and round unchanged"
+    },
+    "caddy": {
+      "recorded_at": "2026-10-27T00:39:07.769997+00:00",
+      "scope": "Production Caddy temporary logging window; /paso200; near and Ecuador, new and reuse HTTP1.1 mixed",
+      "record_count": 1237,
+      "route_counts": {
+        "/healthz": 30,
+        "/grafo": 4,
+        "/estado": 600,
+        "/paso": 600,
+        "unclassified": 1,
+        "other": 2
+      },
+      "unclassified_status_counts": {
+        "308": 1
+      },
+      "unclassified_logger_names": [
+        "http.log.access.latency"
+      ],
+      "step_status_counts": {
+        "200": 600
+      },
+      "duration": {
+        "count": 600,
+        "p50_ms": 0.872059,
+        "p95_ms": 1.729336,
+        "p99_ms": 2.979813,
+        "max_ms": 11.063267999999999
+      },
+      "upstream_round_trip": {
+        "count": 600,
+        "p50_ms": 0.774823,
+        "p95_ms": 1.617845,
+        "p99_ms": 2.702254,
+        "max_ms": 10.641637000000001
+      },
+      "duration_minus_upstream": {
+        "count": 600,
+        "p50_ms": 0.09254499999999999,
+        "p95_ms": 0.13294800000000007,
+        "p99_ms": 0.24252999999999947,
+        "max_ms": 1.024702
+      },
+      "negative_residual_count": 0,
+      "window_start_epoch": 1793060952.9120173,
+      "window_end_epoch": 1793061359.4403596,
+      "request_headers_cookies_queries_identity_removed": true,
+      "actual_api_key_absent": true,
+      "log_bytes": 305218,
+      "note": "Duration excludes client DNS/TCP/TLS setup; not independent CPU measurement. Residual includes ordinary proxy work, not isolated logging overhead. Unclassified auto-handler records explicitly counted, not included in /paso timing."
+    }
+  },
+  "interpretation": {
+    "dominant_external_component": "Ecuador-to-Ohio network transport and TCP/TLS setup; no evidence of algorithm saturation in these samples",
+    "diagnostic_client_keepalive_is_not_new_browser_optimization": true,
+    "after_external_reuse_over_150ms": 31,
+    "after_external_reuse_over_500ms": 1,
+    "after_external_reuse_max_ms": 606.390065,
+    "external_tail_exact_network_mechanism_proven": false,
+    "caddy_residual_is_not_cpu_or_logging_cost": true,
+    "logging_overhead_near_reuse_median_delta_ms": 0.06835899999999984,
+    "logging_overhead_delta_is_noisy_not_causal_estimate": true,
+    "temporary_caddy_log_bytes": 305218
+  },
+  "conflicts_409": {
+    "controlled_reproduction": {
+      "recorded_at": "2026-10-27T00:25:28.015329+00:00",
+      "method": "Controlled stale-version fault injection; isolated from performance/availability samples; no world mutation",
+      "vantage": "Owner workstation Ecuador",
+      "initial_turn": 150,
+      "final_turn": 150,
+      "current_payload_status": 200,
+      "stale_turn_status": 409,
+      "stale_error_code": "CONFLICT",
+      "request_id_matches": true,
+      "retry_current_payload_status": 200,
+      "key_in_report": false
+    },
+    "stable_benchmark_conflicts": 0,
+    "historical_phase3a": {
+      "successful_attempts": 30,
+      "attempts": 41,
+      "conflicts": 11,
+      "attempt_availability": 0.7317073170731707,
+      "logical_operations_completed": 30,
+      "logical_operation_availability": 1,
+      "exact_cause_of_each_historical_conflict_not_recorded": true
+    },
+    "contract_changed": false,
+    "production_round_restarted_to_generate_conflicts": false
+  },
+  "observability": {
+    "otel_added": false,
+    "reason": "Existing Observe hook, planning/turn diagnostics, httptrace and bounded sanitized Caddy logs supplied the required measurements",
+    "production_dependencies_added": false,
+    "cloudwatch_agent_installed": false,
+    "otlp_export_enabled": false,
+    "new_iam_permissions": false,
+    "caddy_logs": "Temporary on existing private data volume; original configuration restored using SIGUSR1",
+    "caddy_local_sanitization_checks": 20,
+    "caddy_route_allowlist": [
+      "/healthz",
+      "/grafo",
+      "/estado",
+      "/paso",
+      "other"
+    ],
+    "request_headers_cookies_queries_and_response_headers_excluded": true,
+    "actual_api_key_absent_in_real_access_logs": true,
+    "enable": {
+      "checks": {
+        "candidate_validated": true,
+        "same_pid": true,
+        "same_started_at": true,
+        "same_restart_count": true,
+        "same_bind_inode": true,
+        "successful_reload_message": true,
+        "health_monitor_all_200": true,
+        "round_not_restarted": true
+      },
+      "health_samples": 30
+    },
+    "restore": {
+      "checks": {
+        "original_config_restored": true,
+        "same_bind_inode": true,
+        "same_pid": true,
+        "same_started_at": true,
+        "no_container_restart": true,
+        "health_monitor_all200": true,
+        "go_start_unchanged": true,
+        "go_turn_still150": true
+      },
+      "health_samples": 26,
+      "original_config_sha256": "44132806ac075aba67c3fe6deb4b892e8ff5deb803caf6e002dec8acac159a1a"
+    },
+    "idle_keepalive_connections_may_retire_on_reload": true,
+    "cloudwatch": "Existing backend JSON logs, internal simulation final summaries and standard EC2 metrics; Caddy durations remained local diagnostic data",
+    "cpu_latest_5min_average_percent": 0.575,
+    "cpu_max_5min_average_percent": 2.496484620956509,
+    "cpu_credit_balance_latest": 36.95276568333333,
+    "memory_cloudwatch_time_series_available": false,
+    "memory_source": "One existing host/Docker observation; not a CloudWatch series",
+    "temporary_access_log_removed_after_verified_export": true,
+    "cloudwatch_verified_queries": {
+      "simulation_summaries": {
+        "matches": 2,
+        "bytes_scanned": 1237
+      },
+      "deployment_event_counts": {
+        "backend_ready": 2,
+        "simulation_finished": 2,
+        "levels": [
+          "INFO"
+        ],
+        "bytes_scanned": 1237
+      },
+      "recent_hour_initially_empty": true
+    }
+  },
+  "validation": {
+    "react_unit": {
+      "passed": 18,
+      "exit": 0
+    },
+    "typescript_eslint_generated_consistency": {
+      "command": "npm run check",
+      "exit": 0
+    },
+    "chromium": {
+      "command": "npm run test:e2e",
+      "passed": 8,
+      "viewports": [
+        "desktop",
+        "mobile"
+      ],
+      "http": "Go-shaped test doubles only, exclusively in tests",
+      "exit": 0
+    },
+    "flutter_analyze": {
+      "issues": 0,
+      "exit": 0
+    },
+    "flutter_unit": {
+      "passed": 13,
+      "integration_skipped_in_unit_suite": 1,
+      "exit": 0
+    },
+    "flutter_apk_debug": {
+      "exit": 0,
+      "path": "apps/mobile/build/app/outputs/flutter-apk/app-debug.apk",
+      "sha256": "ee27cd2277b7f562e17a2d264c6c8afb860634772800bf0ee7a1efa589054687",
+      "bytes": 165613822,
+      "physical_device_verified": false
+    },
+    "real_go_integration": {
+      "command": "PHASE3B_BROWSER_SCREENSHOT_DIR=<private>/after-local-go FLUTTER_BIN=<installed Flutter> npm run test:contracts:http -- --urban --browser --flutter",
+      "dart_integration_passed": 1,
+      "http_contract_auth_errors_400_401_409": "passed",
+      "react_chromium": "passed",
+      "credentials_in_client": "none",
+      "exit": 0,
+      "environment": "local actual Go process, not AWS latency evidence"
+    },
+    "production_web_build": {
+      "command": "VITE_WORLD_API_BASE_URL=https://api.sistemamanta.lexinnovate.com npm run build:web",
+      "exit": 0,
+      "api_url_found_in_asset": true,
+      "legacy_secondary_service_strings_found": false,
+      "artifacts": {
+        "apps/web/dist/assets/index-DLBbSW1S.js": {
+          "sha256": "c2b859e04ad1b8df56b28bfbc9fec3c9ba735c244025a00a4599dcc6cee09dcb",
+          "bytes": 317100
+        },
+        "apps/web/dist/assets/index-DkK3GLRG.css": {
+          "sha256": "a6392b4ed8d8dc8a0872148d3e051f1f6363f55cdd96d4749a3d897cb811580c",
+          "bytes": 68813
+        },
+        "apps/web/dist/index.html": {
+          "sha256": "d6f3c2b63f91fc89fadf2162e46564eb31cc4437404f5df38eca99493dc0a1de",
+          "bytes": 594
+        }
+      }
+    },
+    "client_source_scan": {
+      "runtime_legacy_modes_or_service_urls": "none",
+      "dependency_lock_changes": false
+    },
+    "last_minor_cleanup": "Final check, 18 React tests, 8 Chromium tests and production rebuild rerun successfully after sidebar label/CSS cleanup. Flutter sources unchanged since passed tests/build.",
+    "final_web_checks": {
+      "commands": [
+        "npm run check",
+        "npm run test -w @corodev/web",
+        "npm run test:e2e",
+        "VITE_WORLD_API_BASE_URL=https://api.sistemamanta.lexinnovate.com npm run build:web"
+      ],
+      "all_exit_zero": true,
+      "react_passed": 18,
+      "chromium_passed": 8,
+      "last_label_and_css_cleanup_included": true,
+      "legacy_transport_env_used": false
+    }
+  },
+  "aws_scope": {
+    "region": "us-east-2",
+    "new_cloudformation_change_set": false,
+    "template_or_parameters_changed": false,
+    "new_billable_infrastructure": false,
+    "instance_type_changed": false,
+    "region_changed": false,
+    "ec2_role_changed": false,
+    "backend_image_changed": false,
+    "production_go_restarted": false,
+    "production_world_mutated_by_probe": false,
+    "existing_buckets_used_for_app_and_diagnostic_artifacts": true,
+    "budget_monthly_usd": "30.00",
+    "estimated_monthly_usd_unchanged": "22.96",
+    "observed_budget_spend_usd": "0.0",
+    "budget_source_last_updated_at": "2026-10-26T14:41:50.810000-05:00",
+    "spend_is_delayed_not_final": true
+  },
+  "git": {
+    "remote": "main",
+    "branch": "main",
+    "url": "https://github.com/corozodev/simluacion-desastres-manta.git",
+    "code_commits_pushed": true,
+    "verified_code_head": "f50637f9de739cf967fe9878cb7ebe1684882b5e",
+    "commits_added": [
+      {
+        "sha": "5664214",
+        "scope": "HTTP transport and internal Go diagnostic tools/tests"
+      },
+      {
+        "sha": "8ec49fa",
+        "scope": "Sanitized bounded Caddy diagnostic config and verification"
+      },
+      {
+        "sha": "f50637f",
+        "scope": "React/Flutter use Go exclusively; generated models/brand/tests"
+      }
+    ],
+    "previous_six_commits_preserved": true,
+    "history_rewritten": false,
+    "force_push": false,
+    "stored_remote_url_changed": false,
+    "new_permanent_credentials": false,
+    "private_paths_ignored": true,
+    "preexisting_git_blobs_scanned": 319,
+    "new_code_commits_staged_secret_scan_findings": 0
+  },
+  "limitations": [
+    "No external p95<=150ms or maximum<=500ms guarantee: after keepalive batch p95 205.059ms, maximum606.390ms",
+    "Stable final150 snapshot measurements do not represent active-turn conflict rate; isolated turn profiling is separately labeled",
+    "Finite simulation retains final state and RAM is lost on restart",
+    "No physical mobile-device or iOS verification; Android debug APK built",
+    "No new OTel or CloudWatch memory/per-request metrics; standard CPU is 5-minute averages",
+    "Operator retains AdministratorAccess by explicit prior owner decision; EC2 runtime role unchanged",
+    "Budget spending data still predates deployment; alert delivery and authentic console capture unconfirmed"
+  ],
+  "private_evidence_directory": "deploy/evidence-private/phase3b1-20261026/",
+  "phase3b2_started": false
+}
