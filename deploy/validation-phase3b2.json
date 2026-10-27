@@ -1,0 +1,901 @@
+{
+  "phase": "3B.2",
+  "recorded_at": "2026-10-27T01:57:16.993132+00:00",
+  "deployment": {
+    "status": "prepared_locally_awaiting_explicit_restart_authorization",
+    "aws_mutations": false,
+    "production_restarted": false,
+    "new_aws_resources": false,
+    "full_enabled_by_default": false,
+    "expanded_enabled_by_default": false,
+    "image_id": "sha256:83d45642f9974f1744b54f1c6303c86ef09a1a8b9e3e8d0dee8b1299c6164ffb",
+    "artifacts": {
+      "deploy/releases/phase3b2-20261026/SHA256SUMS": {
+        "sha256": "551ac011e2c297fb498413dae2d5016977388b632491f81091d4e467efd23aef",
+        "bytes": 686
+      },
+      "deploy/releases/phase3b2-20261026/backend-image.tar.gz": {
+        "sha256": "05c807e02b07dfc11a581166ecd03333a0fd61794b7fe18ab897cac628b4ac9d",
+        "bytes": 37189810
+      },
+      "deploy/releases/phase3b2-20261026/deploy/Caddyfile": {
+        "sha256": "44132806ac075aba67c3fe6deb4b892e8ff5deb803caf6e002dec8acac159a1a",
+        "bytes": 300
+      },
+      "deploy/releases/phase3b2-20261026/deploy/rollback.sh": {
+        "sha256": "e96cddeae81d622f07f5cbfee64e7f295eaad8fdfd3e418cf151430ea7e3109e",
+        "bytes": 438
+      },
+      "deploy/releases/phase3b2-20261026/deploy/rollout.sh": {
+        "sha256": "178c0941a6f92f9bd9586a598820b7015b149bd191413e445ce2736c492ee5a6",
+        "bytes": 1290
+      },
+      "deploy/releases/phase3b2-20261026/deploy/start-backend.sh": {
+        "sha256": "f6e027eee4e2fcb75dec4ff4845fb7e3898776fd4010060f6d6ab0941e770753",
+        "bytes": 2418
+      },
+      "deploy/releases/phase3b2-20261026/deploy/start-tls.sh": {
+        "sha256": "bffcec0eca97234f76212d68852cd5302e6d6009ce980af9ecc1fcfadb979af6",
+        "bytes": 992
+      },
+      "deploy/releases/phase3b2-20261026/frontend.tar.gz": {
+        "sha256": "4dbe2c28bda9bd34b4c7ce9c6a3c6dde61cc623b2232a1ea4ba106fc03848357",
+        "bytes": 114358
+      },
+      "deploy/releases/phase3b2-20261026/image-platform.txt": {
+        "sha256": "30a2860611f42f808b7012f033e39aaedf708c7ea934b69e9dd0b3fdcd756996",
+        "bytes": 12
+      },
+      "deploy/releases/phase3b2-20261026/image-reference.txt": {
+        "sha256": "20d8b7781b1278b6d4ab8de13c8716d247f617364fc30953a446e374218f17b6",
+        "bytes": 28
+      },
+      "apps/web/dist/assets/index-BeSfCZlv.css": {
+        "sha256": "59239c7af99ef6f115bf3fb6525e4af88c51dd1fee79def57d7a3eaec251796e",
+        "bytes": 69129
+      },
+      "apps/web/dist/assets/index-CMxX7dcP.js": {
+        "sha256": "2017d2741ab08ca74522975751933d0984c99b96fc686c4043f01acf26e80713",
+        "bytes": 326707
+      },
+      "apps/web/dist/index.html": {
+        "sha256": "e3a8a575e3868e0f9a829c3f92e71df654dad81c225ad06bb9f38d3814b267c5",
+        "bytes": 594
+      }
+    }
+  },
+  "graph_sources": [
+    {
+      "mode": "competition",
+      "file": "manta-v2.json",
+      "sha256": "8ab40819880d7cfda5094ca8a7878e28676404c3f3b48276d095b49c697c58d5",
+      "graph_version": "manta-v2-0ab03290b16a",
+      "nodes": 300,
+      "edges": 383,
+      "shelters": 4,
+      "spawn_zones": 4
+    },
+    {
+      "mode": "full",
+      "file": "manta-master.json",
+      "sha256": "ee1739af6f6166ec8b1763da96d66ab610785552e36b139070dc4da50c560f92",
+      "graph_version": "manta-master-57caa90f3aa7",
+      "nodes": 9179,
+      "edges": 13452,
+      "shelters": 4,
+      "spawn_zones": 4
+    },
+    {
+      "mode": "expanded",
+      "file": "manta-expanded.json",
+      "sha256": "9380726d02bbeaa661867670a71f36ca9019b4687e1b162360209034d6e49288",
+      "graph_version": "manta-expanded-70a6ea98fc50",
+      "nodes": 1000,
+      "edges": 1599,
+      "shelters": 4,
+      "spawn_zones": 4
+    }
+  ],
+  "methodology": {
+    "local_only": true,
+    "cpu_quota": 2,
+    "gomaxprocs": 2,
+    "memory_limit_bytes": 1073741824,
+    "simulator_concurrency": 16,
+    "full_rounds_interval_seconds": 2,
+    "reference_rounds_accelerated": true,
+    "stress_attempts_per_mode": 1000,
+    "stress_clients": 200,
+    "stress_snapshot": "stable initial round3; warmed up; persistent authenticated loopback HTTP",
+    "percentile_method": "nearest-rank; stress includes all attempts; round percentiles from successful simulator requests",
+    "limits": [
+      "Local hardware is not an EC2 or an AWS network measurement.",
+      "Other host validation tasks could contend; measurements have distinct recorded windows.",
+      "CPU/RSS include catalog and process initialization; not the OS, Caddy or total EC2 footprint.",
+      "Reference rounds are accelerated deterministic checks; do not compare average CPU or round-wall durations causally.",
+      "Master latency is exploratory; competition is the official performance reference per owner clarification.",
+      "Two earlier stress series used host-derived GOMAXPROCS=12; failed attempts and interrupted preliminary rounds remain private and are not merged into final percentiles."
+    ]
+  },
+  "rounds": [
+    {
+      "recorded_at": "2026-10-27T01:53:30.625314966Z",
+      "mode": "competition",
+      "round": "round1",
+      "nodes": 300,
+      "edges": 383,
+      "seed": 20261026,
+      "survivors": 20,
+      "interval": "0s",
+      "accelerated": true,
+      "round_elapsed_ms": 371.417399,
+      "metrics": {
+        "evacuated": 20,
+        "bitten": 0,
+        "active": 0,
+        "turns": 150,
+        "requests_success": 495,
+        "requests_invalid": 0,
+        "requests_timeout": 0,
+        "http_p50_ms": 0.808102,
+        "http_p95_ms": 1.590597,
+        "http_p99_ms": 1.918969,
+        "availability": 1
+      },
+      "timings": {
+        "planning": {
+          "count": 151,
+          "total_ms": 171.10740599999994,
+          "p50_ms": 1.281601,
+          "p95_ms": 2.444566,
+          "p99_ms": 2.810265
+        },
+        "publication": {
+          "count": 302,
+          "total_ms": 18.458713,
+          "p50_ms": 0.046985,
+          "p95_ms": 0.149726,
+          "p99_ms": 0.192119
+        },
+        "turn": {
+          "count": 150,
+          "total_ms": 371.3764950000001,
+          "p50_ms": 2.615124,
+          "p95_ms": 4.644926,
+          "p99_ms": 5.242248
+        }
+      },
+      "resource_usage": {
+        "average_cpu_one_core_percent": 135.53047649530308,
+        "note": "Process measurement including catalog load/initialization; Linux ru_maxrss is KiB. CPU percentage is of one core; no network-AWS latency claimed.",
+        "peak_rss_kib_linux": 40820,
+        "process_cpu_seconds": 0.675721,
+        "wall_seconds": 0.498574946
+      },
+      "summary": {
+        "evacuated": 20,
+        "bitten": 0,
+        "active": 0,
+        "stationary_turns": 22,
+        "no_route_turns": 23,
+        "mean_evacuation_turn": 24.75
+      },
+      "cgroup_memory_peak_bytes": 40718336,
+      "docker_oom_killed": false
+    },
+    {
+      "recorded_at": "2026-10-27T01:53:31.417660044Z",
+      "mode": "competition",
+      "round": "round2",
+      "nodes": 300,
+      "edges": 383,
+      "seed": 20261027,
+      "survivors": 80,
+      "interval": "0s",
+      "accelerated": true,
+      "round_elapsed_ms": 1070.185672,
+      "metrics": {
+        "evacuated": 60,
+        "bitten": 0,
+        "active": 20,
+        "turns": 150,
+        "requests_success": 3706,
+        "requests_invalid": 0,
+        "requests_timeout": 0,
+        "http_p50_ms": 0.926278,
+        "http_p95_ms": 2.270792,
+        "http_p99_ms": 2.90212,
+        "availability": 1
+      },
+      "timings": {
+        "planning": {
+          "count": 151,
+          "total_ms": 575.6942250000001,
+          "p50_ms": 3.197108,
+          "p95_ms": 6.126055,
+          "p99_ms": 7.140443
+        },
+        "publication": {
+          "count": 302,
+          "total_ms": 52.61467300000003,
+          "p50_ms": 0.167749,
+          "p95_ms": 0.317368,
+          "p99_ms": 0.355348
+        },
+        "turn": {
+          "count": 150,
+          "total_ms": 1070.1323649999997,
+          "p50_ms": 6.482648,
+          "p95_ms": 10.550077,
+          "p99_ms": 13.715931
+        }
+      },
+      "resource_usage": {
+        "average_cpu_one_core_percent": 130.25115465196362,
+        "note": "Process measurement including catalog load/initialization; Linux ru_maxrss is KiB. CPU percentage is of one core; no network-AWS latency claimed.",
+        "peak_rss_kib_linux": 47360,
+        "process_cpu_seconds": 1.5722369999999999,
+        "wall_seconds": 1.2070810459999999
+      },
+      "summary": {
+        "evacuated": 60,
+        "bitten": 0,
+        "active": 20,
+        "stationary_turns": 1541,
+        "no_route_turns": 3004,
+        "mean_evacuation_turn": 11.766666666666667
+      },
+      "cgroup_memory_peak_bytes": 47575040,
+      "docker_oom_killed": false
+    },
+    {
+      "recorded_at": "2026-10-27T01:53:34.026068198Z",
+      "mode": "competition",
+      "round": "round3",
+      "nodes": 300,
+      "edges": 383,
+      "seed": 20261028,
+      "survivors": 200,
+      "interval": "0s",
+      "accelerated": true,
+      "round_elapsed_ms": 1671.087218,
+      "metrics": {
+        "evacuated": 132,
+        "bitten": 41,
+        "active": 27,
+        "turns": 150,
+        "requests_success": 6113,
+        "requests_invalid": 0,
+        "requests_timeout": 0,
+        "http_p50_ms": 1.104391,
+        "http_p95_ms": 2.783899,
+        "http_p99_ms": 3.610335,
+        "availability": 1
+      },
+      "timings": {
+        "planning": {
+          "count": 151,
+          "total_ms": 872.1268479999998,
+          "p50_ms": 4.568068,
+          "p95_ms": 14.527579,
+          "p99_ms": 18.969746
+        },
+        "publication": {
+          "count": 302,
+          "total_ms": 96.34060800000002,
+          "p50_ms": 0.299157,
+          "p95_ms": 0.553135,
+          "p99_ms": 0.647826
+        },
+        "turn": {
+          "count": 150,
+          "total_ms": 1671.0333029999995,
+          "p50_ms": 9.720998,
+          "p95_ms": 24.540798,
+          "p99_ms": 35.382158
+        }
+      },
+      "resource_usage": {
+        "average_cpu_one_core_percent": 136.25083751461136,
+        "note": "Process measurement including catalog load/initialization; Linux ru_maxrss is KiB. CPU percentage is of one core; no network-AWS latency claimed.",
+        "peak_rss_kib_linux": 45756,
+        "process_cpu_seconds": 2.472391,
+        "wall_seconds": 1.8145877449999999
+      },
+      "summary": {
+        "evacuated": 132,
+        "bitten": 41,
+        "active": 27,
+        "stationary_turns": 4586,
+        "no_route_turns": 3340,
+        "mean_evacuation_turn": 13.037878787878787
+      },
+      "cgroup_memory_peak_bytes": 42426368,
+      "docker_oom_killed": false
+    },
+    {
+      "recorded_at": "2026-10-27T01:53:36.095066496Z",
+      "mode": "expanded",
+      "round": "round1",
+      "nodes": 1000,
+      "edges": 1599,
+      "seed": 20261026,
+      "survivors": 20,
+      "interval": "0s",
+      "accelerated": true,
+      "round_elapsed_ms": 992.933515,
+      "metrics": {
+        "evacuated": 20,
+        "bitten": 0,
+        "active": 0,
+        "turns": 150,
+        "requests_success": 315,
+        "requests_invalid": 0,
+        "requests_timeout": 0,
+        "http_p50_ms": 2.691438,
+        "http_p95_ms": 5.036168,
+        "http_p99_ms": 5.890937,
+        "availability": 1
+      },
+      "timings": {
+        "planning": {
+          "count": 151,
+          "total_ms": 390.63208700000007,
+          "p50_ms": 0.630332,
+          "p95_ms": 10.549779,
+          "p99_ms": 12.85614
+        },
+        "publication": {
+          "count": 302,
+          "total_ms": 39.449445,
+          "p50_ms": 0.083811,
+          "p95_ms": 0.348348,
+          "p99_ms": 0.467417
+        },
+        "turn": {
+          "count": 150,
+          "total_ms": 992.8791930000002,
+          "p50_ms": 4.127383,
+          "p95_ms": 17.237515,
+          "p99_ms": 20.238842
+        }
+      },
+      "resource_usage": {
+        "average_cpu_one_core_percent": 137.65329124841386,
+        "note": "Process measurement including catalog load/initialization; Linux ru_maxrss is KiB. CPU percentage is of one core; no network-AWS latency claimed.",
+        "peak_rss_kib_linux": 44052,
+        "process_cpu_seconds": 1.581666,
+        "wall_seconds": 1.1490215639999999
+      },
+      "summary": {
+        "evacuated": 20,
+        "bitten": 0,
+        "active": 0,
+        "stationary_turns": 0,
+        "no_route_turns": 0,
+        "mean_evacuation_turn": 15.75
+      },
+      "cgroup_memory_peak_bytes": 47534080,
+      "docker_oom_killed": false
+    },
+    {
+      "recorded_at": "2026-10-27T01:53:37.536480513Z",
+      "mode": "expanded",
+      "round": "round2",
+      "nodes": 1000,
+      "edges": 1599,
+      "seed": 20261027,
+      "survivors": 80,
+      "interval": "0s",
+      "accelerated": true,
+      "round_elapsed_ms": 3559.429904,
+      "metrics": {
+        "evacuated": 80,
+        "bitten": 0,
+        "active": 0,
+        "turns": 150,
+        "requests_success": 3454,
+        "requests_invalid": 0,
+        "requests_timeout": 0,
+        "http_p50_ms": 3.924257,
+        "http_p95_ms": 7.477764,
+        "http_p99_ms": 9.80061,
+        "availability": 1
+      },
+      "timings": {
+        "planning": {
+          "count": 151,
+          "total_ms": 1914.0969960000004,
+          "p50_ms": 12.02278,
+          "p95_ms": 24.876141,
+          "p99_ms": 27.839575
+        },
+        "publication": {
+          "count": 302,
+          "total_ms": 89.03063399999986,
+          "p50_ms": 0.279342,
+          "p95_ms": 0.582415,
+          "p99_ms": 0.784707
+        },
+        "turn": {
+          "count": 150,
+          "total_ms": 3559.367623000001,
+          "p50_ms": 22.249027,
+          "p95_ms": 46.21199,
+          "p99_ms": 52.49484
+        }
+      },
+      "resource_usage": {
+        "average_cpu_one_core_percent": 143.7127490831918,
+        "note": "Process measurement including catalog load/initialization; Linux ru_maxrss is KiB. CPU percentage is of one core; no network-AWS latency claimed.",
+        "peak_rss_kib_linux": 43568,
+        "process_cpu_seconds": 5.366244,
+        "wall_seconds": 3.734006923
+      },
+      "summary": {
+        "evacuated": 80,
+        "bitten": 0,
+        "active": 0,
+        "stationary_turns": 386,
+        "no_route_turns": 386,
+        "mean_evacuation_turn": 43.175
+      },
+      "cgroup_memory_peak_bytes": 44806144,
+      "docker_oom_killed": false
+    },
+    {
+      "recorded_at": "2026-10-27T01:53:41.603868159Z",
+      "mode": "expanded",
+      "round": "round3",
+      "nodes": 1000,
+      "edges": 1599,
+      "seed": 20261028,
+      "survivors": 200,
+      "interval": "0s",
+      "accelerated": true,
+      "round_elapsed_ms": 5314.439165,
+      "metrics": {
+        "evacuated": 189,
+        "bitten": 11,
+        "active": 0,
+        "turns": 150,
+        "requests_success": 6339,
+        "requests_invalid": 0,
+        "requests_timeout": 0,
+        "http_p50_ms": 4.085311,
+        "http_p95_ms": 9.607638,
+        "http_p99_ms": 12.981838,
+        "availability": 1
+      },
+      "timings": {
+        "planning": {
+          "count": 151,
+          "total_ms": 2575.2151279999994,
+          "p50_ms": 12.419082,
+          "p95_ms": 54.311687,
+          "p99_ms": 62.512121
+        },
+        "publication": {
+          "count": 302,
+          "total_ms": 165.64011800000003,
+          "p50_ms": 0.536308,
+          "p95_ms": 0.896072,
+          "p99_ms": 1.076333
+        },
+        "turn": {
+          "count": 150,
+          "total_ms": 5314.378852000001,
+          "p50_ms": 25.473686,
+          "p95_ms": 111.981248,
+          "p99_ms": 130.664597
+        }
+      },
+      "resource_usage": {
+        "average_cpu_one_core_percent": 147.12827594792236,
+        "note": "Process measurement including catalog load/initialization; Linux ru_maxrss is KiB. CPU percentage is of one core; no network-AWS latency claimed.",
+        "peak_rss_kib_linux": 41772,
+        "process_cpu_seconds": 8.111811000000001,
+        "wall_seconds": 5.513427618
+      },
+      "summary": {
+        "evacuated": 189,
+        "bitten": 11,
+        "active": 0,
+        "stationary_turns": 800,
+        "no_route_turns": 205,
+        "mean_evacuation_turn": 30.92063492063492
+      },
+      "cgroup_memory_peak_bytes": 47869952,
+      "docker_oom_killed": false
+    },
+    {
+      "recorded_at": "2026-10-27T01:38:28.055729272Z",
+      "mode": "full",
+      "round": "round1",
+      "nodes": 9179,
+      "edges": 13452,
+      "seed": 20261026,
+      "survivors": 20,
+      "interval": "2s",
+      "accelerated": false,
+      "round_elapsed_ms": 300160.019643,
+      "metrics": {
+        "evacuated": 20,
+        "bitten": 0,
+        "active": 0,
+        "turns": 150,
+        "requests_success": 604,
+        "requests_invalid": 0,
+        "requests_timeout": 0,
+        "http_p50_ms": 20.427675,
+        "http_p95_ms": 48.668653,
+        "http_p99_ms": 59.875708,
+        "availability": 1
+      },
+      "timings": {
+        "planning": {
+          "count": 151,
+          "total_ms": 6537.155891,
+          "p50_ms": 20.297828,
+          "p95_ms": 99.086625,
+          "p99_ms": 142.528927
+        },
+        "publication": {
+          "count": 302,
+          "total_ms": 422.56582099999974,
+          "p50_ms": 0.83413,
+          "p95_ms": 4.440235,
+          "p99_ms": 6.064461
+        },
+        "turn": {
+          "count": 150,
+          "total_ms": 13143.755193000005,
+          "p50_ms": 71.29096,
+          "p95_ms": 182.961338,
+          "p99_ms": 213.907768
+        }
+      },
+      "resource_usage": {
+        "average_cpu_one_core_percent": 6.226974144361974,
+        "note": "Process measurement including catalog load/initialization; Linux ru_maxrss is KiB. CPU percentage is of one core; no network-AWS latency claimed.",
+        "peak_rss_kib_linux": 134544,
+        "process_cpu_seconds": 18.717947,
+        "wall_seconds": 300.594583598
+      },
+      "summary": {
+        "evacuated": 20,
+        "bitten": 0,
+        "active": 0,
+        "stationary_turns": 0,
+        "no_route_turns": 0,
+        "mean_evacuation_turn": 30.2
+      },
+      "cgroup_memory_peak_bytes": 173940736,
+      "docker_oom_killed": false
+    },
+    {
+      "recorded_at": "2026-10-27T01:43:28.958742334Z",
+      "mode": "full",
+      "round": "round2",
+      "nodes": 9179,
+      "edges": 13452,
+      "seed": 20261027,
+      "survivors": 80,
+      "interval": "2s",
+      "accelerated": false,
+      "round_elapsed_ms": 300139.445972,
+      "metrics": {
+        "evacuated": 80,
+        "bitten": 0,
+        "active": 0,
+        "turns": 150,
+        "requests_success": 2572,
+        "requests_invalid": 0,
+        "requests_timeout": 0,
+        "http_p50_ms": 28.032292,
+        "http_p95_ms": 76.170009,
+        "http_p99_ms": 134.891126,
+        "availability": 1
+      },
+      "timings": {
+        "planning": {
+          "count": 151,
+          "total_ms": 12124.315554999996,
+          "p50_ms": 61.57658,
+          "p95_ms": 219.062832,
+          "p99_ms": 526.186359
+        },
+        "publication": {
+          "count": 302,
+          "total_ms": 368.8988419999999,
+          "p50_ms": 0.906165,
+          "p95_ms": 2.752905,
+          "p99_ms": 4.499543
+        },
+        "turn": {
+          "count": 150,
+          "total_ms": 23016.123639999998,
+          "p50_ms": 92.828731,
+          "p95_ms": 413.71684,
+          "p99_ms": 911.605045
+        }
+      },
+      "resource_usage": {
+        "average_cpu_one_core_percent": 11.235126030859274,
+        "note": "Process measurement including catalog load/initialization; Linux ru_maxrss is KiB. CPU percentage is of one core; no network-AWS latency claimed.",
+        "peak_rss_kib_linux": 150612,
+        "process_cpu_seconds": 33.766366,
+        "wall_seconds": 300.542832428
+      },
+      "summary": {
+        "evacuated": 80,
+        "bitten": 0,
+        "active": 0,
+        "stationary_turns": 0,
+        "no_route_turns": 0,
+        "mean_evacuation_turn": 32.15
+      },
+      "cgroup_memory_peak_bytes": 193536000,
+      "docker_oom_killed": false
+    },
+    {
+      "recorded_at": "2026-10-27T01:48:30.023940624Z",
+      "mode": "full",
+      "round": "round3",
+      "nodes": 9179,
+      "edges": 13452,
+      "seed": 20261028,
+      "survivors": 200,
+      "interval": "2s",
+      "accelerated": false,
+      "round_elapsed_ms": 300101.074592,
+      "metrics": {
+        "evacuated": 175,
+        "bitten": 0,
+        "active": 25,
+        "turns": 150,
+        "requests_success": 16515,
+        "requests_invalid": 0,
+        "requests_timeout": 0,
+        "http_p50_ms": 27.775647,
+        "http_p95_ms": 64.347301,
+        "http_p99_ms": 84.670262,
+        "availability": 1
+      },
+      "timings": {
+        "planning": {
+          "count": 151,
+          "total_ms": 41263.15131100001,
+          "p50_ms": 249.970406,
+          "p95_ms": 439.306922,
+          "p99_ms": 489.740496
+        },
+        "publication": {
+          "count": 302,
+          "total_ms": 575.7041989999999,
+          "p50_ms": 1.756813,
+          "p95_ms": 3.497062,
+          "p99_ms": 4.852583
+        },
+        "turn": {
+          "count": 150,
+          "total_ms": 81134.99553500002,
+          "p50_ms": 460.360016,
+          "p95_ms": 904.611931,
+          "p99_ms": 1018.759765
+        }
+      },
+      "resource_usage": {
+        "average_cpu_one_core_percent": 40.716863206994816,
+        "note": "Process measurement including catalog load/initialization; Linux ru_maxrss is KiB. CPU percentage is of one core; no network-AWS latency claimed.",
+        "peak_rss_kib_linux": 150296,
+        "process_cpu_seconds": 122.465721,
+        "wall_seconds": 300.773957899
+      },
+      "summary": {
+        "evacuated": 175,
+        "bitten": 0,
+        "active": 25,
+        "stationary_turns": 888,
+        "no_route_turns": 0,
+        "mean_evacuation_turn": 72.94285714285714
+      },
+      "cgroup_memory_peak_bytes": 182968320,
+      "docker_oom_killed": false
+    }
+  ],
+  "http_stress": [
+    {
+      "recorded_at": "2026-10-27T01:38:26.99019007Z",
+      "mode": "competition",
+      "nodes": 300,
+      "edges": 383,
+      "gomaxprocs": 2,
+      "http": {
+        "elapsed_ms": 271.875357,
+        "error_target_met": true,
+        "failure_rate": 0,
+        "individual_target_met": true,
+        "invalid": 0,
+        "latency": {
+          "count": 1000,
+          "total_ms": 41443.82421400001,
+          "p50_ms": 28.945082,
+          "p95_ms": 131.719599,
+          "p99_ms": 138.768279
+        },
+        "max_ms": 159.241684,
+        "method": "real authenticated loopback HTTP /paso; stable initial snapshot; 200 survivors for round3; persistent HTTP; nearest-rank over ALL attempts",
+        "over_500ms": 0,
+        "p95_target_met": true,
+        "requests": 1000,
+        "success": 1000,
+        "timeouts": 0,
+        "workers": 200
+      },
+      "resource_usage": {
+        "average_cpu_one_core_percent": 122.51123609451665,
+        "note": "Process measurement including catalog load/initialization; Linux ru_maxrss is KiB. CPU percentage is of one core; no network-AWS latency claimed.",
+        "peak_rss_kib_linux": 55552,
+        "process_cpu_seconds": 0.776011,
+        "wall_seconds": 0.633420268
+      },
+      "cgroup_memory_peak_bytes": 70836224
+    },
+    {
+      "recorded_at": "2026-10-27T01:38:23.031290833Z",
+      "mode": "full",
+      "nodes": 9179,
+      "edges": 13452,
+      "gomaxprocs": 2,
+      "http": {
+        "elapsed_ms": 2403.920792,
+        "error_target_met": false,
+        "failure_rate": 0.239,
+        "individual_target_met": false,
+        "invalid": 0,
+        "latency": {
+          "count": 1000,
+          "total_ms": 394786.3135460001,
+          "p50_ms": 388.181114,
+          "p95_ms": 657.005811,
+          "p99_ms": 774.090743
+        },
+        "max_ms": 1053.478815,
+        "method": "real authenticated loopback HTTP /paso; stable initial snapshot; 200 survivors for round3; persistent HTTP; nearest-rank over ALL attempts",
+        "over_500ms": 279,
+        "p95_target_met": false,
+        "requests": 1000,
+        "success": 761,
+        "timeouts": 239,
+        "workers": 200
+      },
+      "resource_usage": {
+        "average_cpu_one_core_percent": 165.83864390633397,
+        "note": "Process measurement including catalog load/initialization; Linux ru_maxrss is KiB. CPU percentage is of one core; no network-AWS latency claimed.",
+        "peak_rss_kib_linux": 204824,
+        "process_cpu_seconds": 6.506495,
+        "wall_seconds": 3.923388932
+      },
+      "cgroup_memory_peak_bytes": 214261760
+    },
+    {
+      "recorded_at": "2026-10-27T01:47:28.431377887Z",
+      "mode": "expanded",
+      "nodes": 1000,
+      "edges": 1599,
+      "gomaxprocs": 2,
+      "http": {
+        "elapsed_ms": 364.862893,
+        "error_target_met": true,
+        "failure_rate": 0,
+        "individual_target_met": true,
+        "invalid": 0,
+        "latency": {
+          "count": 1000,
+          "total_ms": 56443.97855599994,
+          "p50_ms": 45.866861,
+          "p95_ms": 126.194823,
+          "p99_ms": 162.024453
+        },
+        "max_ms": 179.108413,
+        "method": "real authenticated loopback HTTP /paso; stable initial snapshot; 200 survivors for round3; persistent HTTP; nearest-rank over ALL attempts",
+        "over_500ms": 0,
+        "p95_target_met": true,
+        "requests": 1000,
+        "success": 1000,
+        "timeouts": 0,
+        "workers": 200
+      },
+      "resource_usage": {
+        "average_cpu_one_core_percent": 140.7804836427863,
+        "note": "Process measurement including catalog load/initialization; Linux ru_maxrss is KiB. CPU percentage is of one core; no network-AWS latency claimed.",
+        "peak_rss_kib_linux": 56732,
+        "process_cpu_seconds": 0.991931,
+        "wall_seconds": 0.704594113
+      },
+      "cgroup_memory_peak_bytes": 67215360
+    }
+  ],
+  "browser": {
+    "phase": "3B.2",
+    "recorded_at": "2026-10-27T01:40:47.763Z",
+    "source": "Local real Go HTTP and Chromium; not production or AWS hardware",
+    "checks": {
+      "unauthenticated_start_401": true,
+      "preview_does_not_activate_or_mix_positions": true,
+      "full_preview_13452_roads_zoom_reset_mobile": true,
+      "authenticated_full_start_and_active_lock": true,
+      "full_run_150_turns_and_retained_snapshot": true,
+      "logout_returns_read_only": true
+    },
+    "browser": {
+      "full_preview_load_to_render_ms": 1087.6214409999998,
+      "full_preview_zoom_reset_ms": 678.1955670000002,
+      "full_preview_js_heap_used_bytes": 83799292,
+      "dom_nodes": 27113,
+      "javascript_errors": [],
+      "privileged_movement_requests": 0
+    },
+    "accelerated_run_interval_ms": 10
+  },
+  "production_read_only_check": {
+    "recorded_at": "2026-10-27T01:48:21.929103+00:00",
+    "method": "Ordinary DNS and verified HTTPS; public read-only GET requests",
+    "mutations": false,
+    "health": {
+      "http_status": 200,
+      "sha256": "d2a271b7d6bd73de060de64e60eb7e523da7be1f40757e2d22a6c0c96c196933"
+    },
+    "state": {
+      "http_status": 200,
+      "sha256": "61aab42d5bdb6caabb17a59bf62ba36122f4a5c9faf1564456c02d667f342267",
+      "turn": 150,
+      "world_version": 301,
+      "graph_version": "manta-v2-0ab03290b16a",
+      "metrics": {
+        "evacuated": 132,
+        "bitten": 41,
+        "active": 27,
+        "turns": 150,
+        "requests_success": 6113,
+        "requests_invalid": 0,
+        "requests_timeout": 0,
+        "http_p50_ms": 4.226452,
+        "http_p95_ms": 8.635304,
+        "http_p99_ms": 10.807972,
+        "availability": 1
+      }
+    },
+    "frontend": {
+      "http_status": 200,
+      "sha256": "d6f3c2b63f91fc89fadf2162e46564eb31cc4437404f5df38eca99493dc0a1de"
+    }
+  },
+  "contract": {
+    "exact_original_paso_operation": true,
+    "exact_original_step_request": true,
+    "exact_original_step_response": true,
+    "source_geography_scenarios_algorithms_phase2_reports_unchanged": true
+  },
+  "validation": {
+    "go_unit": "passed",
+    "go_race_all_packages": "passed",
+    "go_race_extra_control_cases": "passed",
+    "go_vet_build": "passed",
+    "contracts_codegen_typescript_eslint": "passed",
+    "react_unit_tests": 22,
+    "historical_service_tests": 40,
+    "chromium_existing_tests": 8,
+    "real_go_chromium_multigraph": "passed",
+    "real_go_chromium_competition": "passed",
+    "flutter_analyze": "passed",
+    "flutter_unit_tests": 13,
+    "flutter_conditional_skip_in_default_suite": 1,
+    "flutter_real_go_http": "passed separately",
+    "flutter_debug_apk": "built",
+    "geographic_unit_tests": 10,
+    "docker_hardened_competition_200_survivors": "passed",
+    "full_stress_reference_targets": "not_met; diagnostic, not an official full-graph requirement"
+  }
+}
