@@ -1,5 +1,7 @@
 # Despliegue AWS — FASE 3A.2
 
+Este documento conserva el despliegue histórico del 26 de octubre. El estado posterior está en [FASE 5 en AWS y retirada programada](despliegue-fase5-y-caducidad.md): `m7i-flex.large`, plan FREE, Budget 50 USD y autokill a partir del 31 de octubre de 2026, 01:46 de Ecuador.
+
 **Actualización FASE 3B.1:** React y Flutter consumen únicamente Go; se retiraron las pantallas y adaptadores del servicio anterior. El frontend actualizado está publicado y el APK debug construido. La infraestructura y el backend productivo permanecen iguales; el diagnóstico Caddy temporal terminó con su configuración original restaurada. [Estado y pruebas actuales](informe-fase3b1.md). El resto conserva la entrega y evidencias de FASE 3A.2.
 
 El propietario autorizó expresamente `phase3a2-20261026T211726Z`. Se ejecutó exclusivamente ese change set y el stack `corodev-phase2` alcanzó **CREATE_COMPLETE el 26 de octubre de 2026 a las 18:04:43 de Ecuador**. Los 14 recursos terminaron correctamente. Se reutilizaron la imagen, el bundle y el build React previamente validados, sin reconstruir infraestructura, repetir pruebas locales o modificar motores, grafos, simulador o contratos.

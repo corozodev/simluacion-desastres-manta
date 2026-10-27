@@ -1,0 +1,761 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "Owner-authorized four-day CoroDev expiration. Stop EC2, delete the exact stack, retained S3 versions and its dedicated ACM certificate, then remove this helper. Preserve the external budget and shared VPC/subnet.",
+  "Metadata": {
+    "AWSToolsMetrics": {
+      "AWSAgentToolkit": "aws-cloudformation@3"
+    }
+  },
+  "Parameters": {
+    "TargetStackName": {
+      "Type": "String",
+      "AllowedValues": [
+        "corodev-phase2"
+      ]
+    },
+    "TargetStackArn": {
+      "Type": "String"
+    },
+    "InstanceId": {
+      "Type": "String"
+    },
+    "WebBucket": {
+      "Type": "String"
+    },
+    "ArtifactBucket": {
+      "Type": "String"
+    },
+    "CertificateArn": {
+      "Type": "String"
+    },
+    "WebDomain": {
+      "Type": "String"
+    },
+    "ExpiresAtUtc": {
+      "Type": "String"
+    },
+    "ScheduleAtUtc": {
+      "Type": "String"
+    },
+    "ScheduleAtExpression": {
+      "Type": "String"
+    },
+    "AuthorizationUntilUtc": {
+      "Type": "String"
+    },
+    "ElasticIpAllocationArn": {
+      "Type": "String"
+    },
+    "NetworkInterfaceArn": {
+      "Type": "String"
+    },
+    "SecurityGroupId": {
+      "Type": "String"
+    },
+    "DistributionId": {
+      "Type": "String"
+    },
+    "OriginAccessControlId": {
+      "Type": "String"
+    },
+    "AlarmArn": {
+      "Type": "String"
+    }
+  },
+  "Resources": {
+    "WorkerRole": {
+      "Type": "AWS::IAM::Role",
+      "DeletionPolicy": "Retain",
+      "UpdateReplacePolicy": "Retain",
+      "Metadata": {
+        "com.aws.cloudformation.Context": {
+          "why": "Deletes the exact approved deployment. Retain until helper deletion completes, then the running worker revokes its own policy and attempts final role removal.",
+          "must": [
+            "Scope destructive actions to recorded resources",
+            "Do not invalidate the caller role during CloudFormation deletion",
+            "All permissions expire even if final role removal is denied"
+          ]
+        }
+      },
+      "Properties": {
+        "RoleName": {
+          "Fn::Sub": "${AWS::StackName}-worker"
+        },
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com"
+              },
+              "Action": "sts:AssumeRole"
+            }
+          ]
+        },
+        "Policies": [
+          {
+            "PolicyName": "ApprovedDeploymentExpiry",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "cloudformation:DescribeStacks",
+                    "cloudformation:DeleteStack",
+                    "cloudformation:DescribeStackEvents",
+                    "cloudformation:ListStackResources"
+                  ],
+                  "Resource": [
+                    {
+                      "Ref": "TargetStackArn"
+                    },
+                    {
+                      "Fn::Sub": "arn:${AWS::Partition}:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/${AWS::StackName}/*"
+                    }
+                  ]
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "ec2:DescribeInstances",
+                    "ec2:DescribeAddresses",
+                    "ec2:DescribeSecurityGroups",
+                    "ec2:DescribeNetworkInterfaces",
+                    "ec2:DescribeVolumes",
+                    "ec2:DescribeInstanceAttribute",
+                    "ec2:DescribeInstanceCreditSpecifications",
+                    "ec2:DescribeLaunchTemplates"
+                  ],
+                  "Resource": "*"
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "ssm:DescribeAssociation",
+                    "ssm:ListAssociations"
+                  ],
+                  "Resource": "*"
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "ec2:StopInstances",
+                    "ec2:TerminateInstances"
+                  ],
+                  "Resource": {
+                    "Fn::Sub": "arn:${AWS::Partition}:ec2:${AWS::Region}:${AWS::AccountId}:instance/${InstanceId}"
+                  }
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "ec2:ReleaseAddress"
+                  ],
+                  "Resource": {
+                    "Ref": "ElasticIpAllocationArn"
+                  }
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "ec2:DisassociateAddress"
+                  ],
+                  "Resource": [
+                    {
+                      "Ref": "ElasticIpAllocationArn"
+                    },
+                    {
+                      "Ref": "NetworkInterfaceArn"
+                    }
+                  ]
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "ec2:DeleteSecurityGroup"
+                  ],
+                  "Resource": {
+                    "Fn::Sub": "arn:${AWS::Partition}:ec2:${AWS::Region}:${AWS::AccountId}:security-group/${SecurityGroupId}"
+                  }
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "s3:ListBucket",
+                    "s3:ListBucketVersions",
+                    "s3:ListBucketMultipartUploads",
+                    "s3:DeleteBucket",
+                    "s3:DeleteBucketPolicy",
+                    "s3:GetBucketPolicy",
+                    "s3:GetBucketLocation",
+                    "s3:GetBucketTagging"
+                  ],
+                  "Resource": [
+                    {
+                      "Fn::Sub": "arn:${AWS::Partition}:s3:::${WebBucket}"
+                    },
+                    {
+                      "Fn::Sub": "arn:${AWS::Partition}:s3:::${ArtifactBucket}"
+                    }
+                  ]
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "s3:DeleteObject",
+                    "s3:DeleteObjectVersion",
+                    "s3:AbortMultipartUpload"
+                  ],
+                  "Resource": [
+                    {
+                      "Fn::Sub": "arn:${AWS::Partition}:s3:::${WebBucket}/*"
+                    },
+                    {
+                      "Fn::Sub": "arn:${AWS::Partition}:s3:::${ArtifactBucket}/*"
+                    }
+                  ]
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "cloudfront:GetDistribution",
+                    "cloudfront:GetDistributionConfig",
+                    "cloudfront:UpdateDistribution",
+                    "cloudfront:DeleteDistribution",
+                    "cloudfront:ListTagsForResource"
+                  ],
+                  "Resource": {
+                    "Fn::Sub": "arn:${AWS::Partition}:cloudfront::${AWS::AccountId}:distribution/${DistributionId}"
+                  }
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "cloudfront:DescribeFunction",
+                    "cloudfront:GetFunction",
+                    "cloudfront:DeleteFunction",
+                    "cloudfront:ListTagsForResource"
+                  ],
+                  "Resource": {
+                    "Fn::Sub": "arn:${AWS::Partition}:cloudfront::${AWS::AccountId}:function/${TargetStackName}-spa"
+                  }
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "cloudfront:GetOriginAccessControl",
+                    "cloudfront:GetOriginAccessControlConfig",
+                    "cloudfront:DeleteOriginAccessControl"
+                  ],
+                  "Resource": {
+                    "Fn::Sub": "arn:${AWS::Partition}:cloudfront::${AWS::AccountId}:origin-access-control/${OriginAccessControlId}"
+                  }
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "iam:GetRole",
+                    "iam:DeleteRole",
+                    "iam:ListRolePolicies",
+                    "iam:GetRolePolicy",
+                    "iam:DeleteRolePolicy",
+                    "iam:ListAttachedRolePolicies",
+                    "iam:DetachRolePolicy",
+                    "iam:ListInstanceProfilesForRole",
+                    "iam:TagRole",
+                    "iam:UntagRole"
+                  ],
+                  "Resource": [
+                    {
+                      "Fn::Sub": "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/${AWS::StackName}-worker"
+                    },
+                    {
+                      "Fn::Sub": "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/${AWS::StackName}-scheduler"
+                    },
+                    {
+                      "Fn::Sub": "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/deploy-cli-ec2-${TargetStackName}"
+                    }
+                  ]
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "iam:GetInstanceProfile",
+                    "iam:RemoveRoleFromInstanceProfile",
+                    "iam:DeleteInstanceProfile"
+                  ],
+                  "Resource": {
+                    "Fn::Sub": "arn:${AWS::Partition}:iam::${AWS::AccountId}:instance-profile/deploy-cli-ec2-${TargetStackName}"
+                  }
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "logs:CreateLogStream",
+                    "logs:PutLogEvents",
+                    "logs:DescribeLogStreams",
+                    "logs:DeleteLogGroup",
+                    "logs:DeleteDataProtectionPolicy"
+                  ],
+                  "Resource": [
+                    {
+                      "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/corodev/${TargetStackName}/backend:*"
+                    },
+                    {
+                      "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-worker:*"
+                    }
+                  ]
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "logs:ListTagsForResource"
+                  ],
+                  "Resource": [
+                    {
+                      "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/corodev/${TargetStackName}/backend"
+                    },
+                    {
+                      "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-worker"
+                    }
+                  ]
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "logs:DescribeLogGroups"
+                  ],
+                  "Resource": "*"
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "cloudwatch:DescribeAlarms",
+                    "cloudwatch:DeleteAlarms",
+                    "cloudwatch:ListTagsForResource"
+                  ],
+                  "Resource": {
+                    "Ref": "AlarmArn"
+                  }
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "acm:DescribeCertificate",
+                    "acm:DeleteCertificate"
+                  ],
+                  "Resource": {
+                    "Ref": "CertificateArn"
+                  }
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "lambda:GetFunction",
+                    "lambda:GetFunctionConfiguration",
+                    "lambda:DeleteFunction",
+                    "lambda:GetFunctionEventInvokeConfig",
+                    "lambda:DeleteFunctionEventInvokeConfig",
+                    "lambda:ListTags"
+                  ],
+                  "Resource": {
+                    "Fn::Sub": "arn:${AWS::Partition}:lambda:${AWS::Region}:${AWS::AccountId}:function:${AWS::StackName}-worker"
+                  }
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "scheduler:GetSchedule",
+                    "scheduler:DeleteSchedule"
+                  ],
+                  "Resource": {
+                    "Fn::Sub": "arn:${AWS::Partition}:scheduler:${AWS::Region}:${AWS::AccountId}:schedule/${AWS::StackName}/*"
+                  }
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "scheduler:GetScheduleGroup",
+                    "scheduler:DeleteScheduleGroup",
+                    "scheduler:ListTagsForResource"
+                  ],
+                  "Resource": {
+                    "Fn::Sub": "arn:${AWS::Partition}:scheduler:${AWS::Region}:${AWS::AccountId}:schedule-group/${AWS::StackName}"
+                  }
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "sqs:DeleteQueue",
+                    "sqs:GetQueueAttributes",
+                    "sqs:ListQueueTags",
+                    "sqs:SendMessage"
+                  ],
+                  "Resource": {
+                    "Fn::Sub": "arn:${AWS::Partition}:sqs:${AWS::Region}:${AWS::AccountId}:${AWS::StackName}-failures"
+                  }
+                },
+                {
+                  "Effect": "Deny",
+                  "Action": [
+                    "acm:DeleteCertificate",
+                    "cloudformation:DeleteStack",
+                    "cloudfront:DeleteDistribution",
+                    "cloudfront:DeleteFunction",
+                    "cloudfront:DeleteOriginAccessControl",
+                    "cloudfront:UpdateDistribution",
+                    "cloudwatch:DeleteAlarms",
+                    "ec2:DeleteSecurityGroup",
+                    "ec2:DisassociateAddress",
+                    "ec2:ReleaseAddress",
+                    "ec2:StopInstances",
+                    "ec2:TerminateInstances",
+                    "iam:DeleteInstanceProfile",
+                    "iam:DeleteRole",
+                    "iam:DeleteRolePolicy",
+                    "iam:DetachRolePolicy",
+                    "iam:RemoveRoleFromInstanceProfile",
+                    "iam:TagRole",
+                    "iam:UntagRole",
+                    "lambda:DeleteFunction",
+                    "lambda:DeleteFunctionEventInvokeConfig",
+                    "logs:DeleteDataProtectionPolicy",
+                    "logs:DeleteLogGroup",
+                    "s3:AbortMultipartUpload",
+                    "s3:DeleteBucket",
+                    "s3:DeleteBucketPolicy",
+                    "s3:DeleteObject",
+                    "s3:DeleteObjectVersion",
+                    "scheduler:DeleteSchedule",
+                    "scheduler:DeleteScheduleGroup",
+                    "sqs:DeleteQueue"
+                  ],
+                  "Resource": "*",
+                  "Condition": {
+                    "DateLessThan": {
+                      "aws:CurrentTime": {
+                        "Ref": "ExpiresAtUtc"
+                      }
+                    }
+                  }
+                },
+                {
+                  "Effect": "Deny",
+                  "Action": "*",
+                  "Resource": "*",
+                  "Condition": {
+                    "DateGreaterThanEquals": {
+                      "aws:CurrentTime": {
+                        "Ref": "AuthorizationUntilUtc"
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "WorkerLogs": {
+      "Type": "AWS::Logs::LogGroup",
+      "DependsOn": "WorkerRole",
+      "Properties": {
+        "LogGroupName": {
+          "Fn::Sub": "/aws/lambda/${AWS::StackName}-worker"
+        },
+        "RetentionInDays": 7
+      }
+    },
+    "Failures": {
+      "Type": "AWS::SQS::Queue",
+      "DependsOn": "WorkerRole",
+      "Properties": {
+        "QueueName": {
+          "Fn::Sub": "${AWS::StackName}-failures"
+        },
+        "SqsManagedSseEnabled": true,
+        "MessageRetentionPeriod": 1209600
+      }
+    },
+    "Worker": {
+      "Type": "AWS::Lambda::Function",
+      "DependsOn": "WorkerLogs",
+      "Metadata": {
+        "com.aws.cloudformation.Context": {
+          "why": "Stateless bounded reconciler waits for CloudFront/CloudFormation across scheduled invocations, then removes retained versions and itself.",
+          "must": [
+            "Never mutate before the immutable deadline",
+            "Never accept resource IDs from invocation input",
+            "Preserve the external account budget and shared network"
+          ]
+        }
+      },
+      "Properties": {
+        "FunctionName": {
+          "Fn::Sub": "${AWS::StackName}-worker"
+        },
+        "Runtime": "python3.13",
+        "Handler": "index.handler",
+        "Role": {
+          "Fn::GetAtt": [
+            "WorkerRole",
+            "Arn"
+          ]
+        },
+        "MemorySize": 256,
+        "Timeout": 300,
+        "ReservedConcurrentExecutions": 1,
+        "Code": {
+          "ZipFile": "\"\"\"Reconcile expiration of one exact CoroDev deployment; never runs early.\"\"\"\nimport datetime as dt\nimport json\nimport logging\nimport os\nimport time\n\nimport boto3\nfrom botocore.config import Config\nfrom botocore.exceptions import ClientError\n\nLOGGER = logging.getLogger(__name__)\nLOGGER.setLevel(logging.INFO)\nSDK_CONFIG = Config(retries={\"mode\": \"standard\", \"total_max_attempts\": 4}, connect_timeout=5, read_timeout=15)\nCLIENTS = {}\n\n\ndef client(service, region=None):\n    key = (service, region or os.environ[\"AWS_REGION\"])\n    if key not in CLIENTS:\n        CLIENTS[key] = boto3.client(service, region_name=key[1], config=SDK_CONFIG)\n    return CLIENTS[key]\n\n\ndef now():\n    return dt.datetime.now(dt.timezone.utc)\n\n\ndef configuration():\n    config = json.loads(os.environ[\"TARGET_CONFIGURATION\"])\n    account = os.environ[\"AWS_ACCOUNT_ID\"]\n    region = os.environ[\"AWS_REGION\"]\n    expected = f\"arn:aws:cloudformation:{region}:{account}:stack/{config['stack_name']}/\"\n    if not config[\"stack_arn\"].startswith(expected):\n        raise ValueError(\"Unexpected target stack scope\")\n    if config[\"stack_name\"] != \"corodev-phase2\" or len(config[\"buckets\"]) != 2:\n        raise ValueError(\"Only the approved CoroDev deployment is supported\")\n    if not all(name.startswith(config[\"stack_name\"] + \"-\") for name in config[\"buckets\"]):\n        raise ValueError(\"Unexpected bucket scope\")\n    if not config[\"certificate_arn\"].startswith(f\"arn:aws:acm:us-east-1:{account}:certificate/\"):\n        raise ValueError(\"Unexpected certificate scope\")\n    return config\n\n\ndef stack_status(arn):\n    try:\n        return client(\"cloudformation\").describe_stacks(StackName=arn)[\"Stacks\"][0][\"StackStatus\"]\n    except ClientError as error:\n        # CloudFormation does not model a distinct StackNotFound exception.\n        if error.response[\"Error\"][\"Code\"] == \"ValidationError\" and \"does not exist\" in error.response[\"Error\"][\"Message\"]:\n            return \"DELETE_COMPLETE\"\n        raise\n\n\ndef stop_instance(instance_id):\n    ec2 = client(\"ec2\")\n    try:\n        reservations = ec2.describe_instances(InstanceIds=[instance_id])[\"Reservations\"]\n        states = [i[\"State\"][\"Name\"] for r in reservations for i in r[\"Instances\"]]\n        if any(state in (\"running\", \"pending\") for state in states):\n            ec2.stop_instances(InstanceIds=[instance_id])\n    except ClientError as error:\n        # EC2 exposes these idempotent absence/state errors through ClientError.\n        if error.response[\"Error\"][\"Code\"] not in (\"InvalidInstanceID.NotFound\", \"IncorrectInstanceState\"):\n            raise\n\n\ndef empty_and_delete_bucket(bucket, account, context):\n    s3 = client(\"s3\")\n    try:\n        for page in s3.get_paginator(\"list_multipart_uploads\").paginate(Bucket=bucket, ExpectedBucketOwner=account):\n            for upload in page.get(\"Uploads\", []):\n                s3.abort_multipart_upload(Bucket=bucket, Key=upload[\"Key\"], UploadId=upload[\"UploadId\"], ExpectedBucketOwner=account)\n        # Include every historical version and delete marker, not just current objects.\n        for page in s3.get_paginator(\"list_object_versions\").paginate(Bucket=bucket, ExpectedBucketOwner=account):\n            objects = [{\"Key\": item[\"Key\"], \"VersionId\": item[\"VersionId\"]} for group in (\"Versions\", \"DeleteMarkers\") for item in page.get(group, [])]\n            for offset in range(0, len(objects), 1000):\n                result = s3.delete_objects(Bucket=bucket, Delete={\"Objects\": objects[offset:offset + 1000], \"Quiet\": True}, ExpectedBucketOwner=account)\n                if result.get(\"Errors\"):\n                    raise RuntimeError(\"S3 rejected deletion of one or more approved versions\")\n            if context.get_remaining_time_in_millis() < 15000:\n                return False\n        for page in s3.get_paginator(\"list_objects_v2\").paginate(Bucket=bucket, ExpectedBucketOwner=account):\n            objects = [{\"Key\": item[\"Key\"]} for item in page.get(\"Contents\", [])]\n            if objects:\n                result = s3.delete_objects(Bucket=bucket, Delete={\"Objects\": objects, \"Quiet\": True}, ExpectedBucketOwner=account)\n                if result.get(\"Errors\"):\n                    raise RuntimeError(\"S3 rejected deletion of approved current objects\")\n        s3.delete_bucket(Bucket=bucket, ExpectedBucketOwner=account)\n        return True\n    except ClientError as error:\n        if error.response[\"Error\"][\"Code\"] in (\"NoSuchBucket\", \"404\"):\n            return True\n        if error.response[\"Error\"][\"Code\"] == \"BucketNotEmpty\":\n            return False\n        raise\n\n\ndef delete_certificate(config):\n    acm = client(\"acm\", \"us-east-1\")\n    try:\n        certificate = acm.describe_certificate(CertificateArn=config[\"certificate_arn\"])[\"Certificate\"]\n        if certificate.get(\"InUseBy\"):\n            return False\n        if sorted(certificate[\"SubjectAlternativeNames\"]) != [config[\"web_domain\"]]:\n            raise ValueError(\"Certificate identity changed; refusing deletion\")\n        acm.delete_certificate(CertificateArn=config[\"certificate_arn\"])\n        return True\n    except acm.exceptions.ResourceNotFoundException:\n        return True\n    except acm.exceptions.ResourceInUseException:\n        return False\n\n\ndef handler(event, context):\n    config = configuration()\n    expiry = dt.datetime.fromisoformat(config[\"expires_at_utc\"].replace(\"Z\", \"+00:00\"))\n    status = stack_status(config[\"stack_arn\"])\n    plan = {\"target_stack\": config[\"stack_name\"], \"expires_at_utc\": config[\"expires_at_utc\"], \"status\": status, \"buckets\": config[\"buckets\"], \"instance_id\": config[\"instance_id\"]}\n    # The event never supplies resource IDs, deadlines, or a bypass flag.\n    if event.get(\"mode\") == \"plan\":\n        return {**plan, \"dry_run\": True, \"eligible\": now() >= expiry}\n    if event.get(\"mode\") != \"execute\":\n        raise ValueError(\"Expected plan or execute mode\")\n    if now() < expiry:\n        return {\"phase\": \"waiting_for_deadline\", \"expires_at_utc\": config[\"expires_at_utc\"]}\n    if status != \"DELETE_COMPLETE\":\n        stop_instance(config[\"instance_id\"])\n        if status != \"DELETE_IN_PROGRESS\":\n            client(\"cloudformation\").delete_stack(StackName=config[\"stack_arn\"])\n        LOGGER.info(json.dumps({\"event\": \"autokill_stack_deletion\", \"status\": status, \"stack\": config[\"stack_name\"]}))\n        return {\"phase\": \"deleting_stack\"}\n    for bucket in config[\"buckets\"]:\n        if not empty_and_delete_bucket(bucket, os.environ[\"AWS_ACCOUNT_ID\"], context):\n            return {\"phase\": \"emptying_retained_buckets\"}\n    if not delete_certificate(config):\n        return {\"phase\": \"waiting_for_certificate_detachment\"}\n    LOGGER.info(json.dumps({\"event\": \"autokill_project_deleted\", \"stack\": config[\"stack_name\"]}))\n    # Delete the helper only after all project resources and retained data are gone.\n    helper = os.environ[\"HELPER_STACK_ID\"]\n    client(\"cloudformation\").delete_stack(StackName=helper)\n    # Retain the caller role while CloudFormation deletes the helper. Removing\n    # it in that operation invalidates CloudFormation's temporary credentials.\n    # An invocation already in flight survives deletion of its Lambda function.\n    while context.get_remaining_time_in_millis() > 15000:\n        if stack_status(helper) == \"DELETE_COMPLETE\":\n            iam = client(\"iam\")\n            role = os.environ[\"WORKER_ROLE_NAME\"]\n            iam.delete_role_policy(RoleName=role, PolicyName=\"ApprovedDeploymentExpiry\")\n            try:\n                iam.delete_role(RoleName=role)\n                return {\"phase\": \"deleted\", \"role_cleanup\": \"deleted\"}\n            except ClientError as error:\n                if error.response[\"Error\"][\"Code\"] not in (\"AccessDenied\", \"AccessDeniedException\", \"InvalidClientTokenId\", \"NoSuchEntity\"):\n                    raise\n                # If revocation propagates before the final request, only an\n                # inert, policy-free IAM role remains; it has no usage charges.\n                return {\"phase\": \"deleted\", \"role_cleanup\": \"inert_or_already_deleted\"}\n        time.sleep(3)\n    return {\"phase\": \"deleting_helper\", \"role_cleanup\": \"check_if_provider_delays_exceed_function_timeout\"}\n"
+        },
+        "Environment": {
+          "Variables": {
+            "AWS_ACCOUNT_ID": {
+              "Ref": "AWS::AccountId"
+            },
+            "HELPER_STACK_ID": {
+              "Ref": "AWS::StackId"
+            },
+            "WORKER_ROLE_NAME": {
+              "Ref": "WorkerRole"
+            },
+            "TARGET_CONFIGURATION": {
+              "Fn::Sub": "{\"stack_name\": \"${TargetStackName}\", \"stack_arn\": \"${TargetStackArn}\", \"instance_id\": \"${InstanceId}\", \"buckets\": [\"${WebBucket}\", \"${ArtifactBucket}\"], \"certificate_arn\": \"${CertificateArn}\", \"web_domain\": \"${WebDomain}\", \"expires_at_utc\": \"${ExpiresAtUtc}\"}"
+            }
+          }
+        }
+      }
+    },
+    "WorkerRetries": {
+      "Type": "AWS::Lambda::EventInvokeConfig",
+      "Properties": {
+        "FunctionName": {
+          "Ref": "Worker"
+        },
+        "Qualifier": "$LATEST",
+        "MaximumRetryAttempts": 2,
+        "MaximumEventAgeInSeconds": 3600,
+        "DestinationConfig": {
+          "OnFailure": {
+            "Destination": {
+              "Fn::GetAtt": [
+                "Failures",
+                "Arn"
+              ]
+            }
+          }
+        }
+      }
+    },
+    "Group": {
+      "Type": "AWS::Scheduler::ScheduleGroup",
+      "DependsOn": "WorkerRole",
+      "Properties": {
+        "Name": {
+          "Ref": "AWS::StackName"
+        }
+      }
+    },
+    "SchedulerRole": {
+      "Type": "AWS::IAM::Role",
+      "DependsOn": "WorkerRole",
+      "Metadata": {
+        "com.aws.cloudformation.Context": {
+          "why": "Scheduler may invoke only this reconciler or stop the recorded EC2 as a separate billing failsafe.",
+          "must": [
+            "Restrict trust to the exact scheduler group and account"
+          ]
+        }
+      },
+      "Properties": {
+        "RoleName": {
+          "Fn::Sub": "${AWS::StackName}-scheduler"
+        },
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "scheduler.amazonaws.com"
+              },
+              "Action": "sts:AssumeRole",
+              "Condition": {
+                "StringEquals": {
+                  "aws:SourceAccount": {
+                    "Ref": "AWS::AccountId"
+                  }
+                },
+                "ArnEquals": {
+                  "aws:SourceArn": {
+                    "Fn::Sub": "arn:${AWS::Partition}:scheduler:${AWS::Region}:${AWS::AccountId}:schedule-group/${AWS::StackName}"
+                  }
+                }
+              }
+            }
+          ]
+        },
+        "Policies": [
+          {
+            "PolicyName": "InvokeExpiryAndStopOnly",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "lambda:InvokeFunction"
+                  ],
+                  "Resource": {
+                    "Fn::GetAtt": [
+                      "Worker",
+                      "Arn"
+                    ]
+                  }
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "ec2:StopInstances"
+                  ],
+                  "Resource": {
+                    "Fn::Sub": "arn:${AWS::Partition}:ec2:${AWS::Region}:${AWS::AccountId}:instance/${InstanceId}"
+                  }
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "sqs:SendMessage"
+                  ],
+                  "Resource": {
+                    "Fn::GetAtt": [
+                      "Failures",
+                      "Arn"
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "CleanupSchedule": {
+      "Type": "AWS::Scheduler::Schedule",
+      "Metadata": {
+        "com.aws.cloudformation.Context": {
+          "why": "Runs once per minute starting at expiry until complete; no laptop or EC2 uptime dependency.",
+          "must": [
+            "The first invocation is after the approved four-day deadline",
+            "Deletion is irreversible and includes S3 historical versions"
+          ]
+        }
+      },
+      "Properties": {
+        "Name": "cleanup",
+        "GroupName": {
+          "Ref": "Group"
+        },
+        "ScheduleExpression": "rate(1 minute)",
+        "StartDate": {
+          "Ref": "ScheduleAtUtc"
+        },
+        "EndDate": {
+          "Ref": "AuthorizationUntilUtc"
+        },
+        "FlexibleTimeWindow": {
+          "Mode": "OFF"
+        },
+        "State": "ENABLED",
+        "Target": {
+          "RoleArn": {
+            "Fn::GetAtt": [
+              "SchedulerRole",
+              "Arn"
+            ]
+          },
+          "RetryPolicy": {
+            "MaximumEventAgeInSeconds": 86400,
+            "MaximumRetryAttempts": 24
+          },
+          "DeadLetterConfig": {
+            "Arn": {
+              "Fn::GetAtt": [
+                "Failures",
+                "Arn"
+              ]
+            }
+          },
+          "Arn": {
+            "Fn::GetAtt": [
+              "Worker",
+              "Arn"
+            ]
+          },
+          "Input": "{\"mode\":\"execute\"}"
+        }
+      }
+    },
+    "StopSchedule": {
+      "Type": "AWS::Scheduler::Schedule",
+      "Properties": {
+        "Name": "stop-instance",
+        "GroupName": {
+          "Ref": "Group"
+        },
+        "ScheduleExpression": {
+          "Fn::Sub": "at(${ScheduleAtExpression})"
+        },
+        "ScheduleExpressionTimezone": "UTC",
+        "FlexibleTimeWindow": {
+          "Mode": "OFF"
+        },
+        "State": "ENABLED",
+        "Target": {
+          "RoleArn": {
+            "Fn::GetAtt": [
+              "SchedulerRole",
+              "Arn"
+            ]
+          },
+          "RetryPolicy": {
+            "MaximumEventAgeInSeconds": 86400,
+            "MaximumRetryAttempts": 24
+          },
+          "DeadLetterConfig": {
+            "Arn": {
+              "Fn::GetAtt": [
+                "Failures",
+                "Arn"
+              ]
+            }
+          },
+          "Arn": "arn:aws:scheduler:::aws-sdk:ec2:stopInstances",
+          "Input": {
+            "Fn::Sub": "{\"InstanceIds\":[\"${InstanceId}\"]}"
+          }
+        }
+      }
+    }
+  },
+  "Outputs": {
+    "WorkerName": {
+      "Value": {
+        "Ref": "Worker"
+      }
+    },
+    "ScheduleGroup": {
+      "Value": {
+        "Ref": "Group"
+      }
+    },
+    "ExpiresAtUtc": {
+      "Value": {
+        "Ref": "ExpiresAtUtc"
+      }
+    }
+  }
+}

@@ -4,7 +4,7 @@ FASE 2 de Track A: backend Go con simulación determinista, planificación diná
 
 **FASE 5: sesiones independientes bajo demanda.** Abrir React `/escape` carga el mapa y las capacidades sin ejecutar turnos. **Iniciar simulación** crea una sesión privada de zombies o inundación urbana sintética; Go avanza sus turnos y permite pausar, reanudar, cancelar y reiniciar. La recarga recupera la misma ejecución mediante una credencial en `sessionStorage`. Flutter conserva los endpoints Go anteriores y no recibe la clave de `/paso`. Consulta [arquitectura, API, pruebas y límites FASE 5](docs/informe-fase5.md).
 
-[Abrir Escape en AWS](https://sistemamanta.lexinnovate.com/escape) · [API HTTPS](https://api.sistemamanta.lexinnovate.com/healthz). Esas URLs corresponden al despliegue anterior: esta fase se implementa y valida localmente, sin publicar ni modificar AWS.
+[Abrir Escape en AWS](https://sistemamanta.lexinnovate.com/escape) · [API HTTPS](https://api.sistemamanta.lexinnovate.com/healthz). **FASE 5 desplegada el 27 de octubre:** `m7i-flex.large`, 2 vCPU / 8 GiB, cuatro sesiones activas con hasta una FULL_MANTA. El propietario mantuvo el plan FREE y elevó el Budget a 50 USD. **Retirada AWS programada a partir del 31 de octubre, 01:46 de Ecuador**, incluidos disco y versiones S3. Ver [despliegue, comprobaciones, alcance y cancelación](docs/despliegue-fase5-y-caducidad.md).
 
 ## Inicio local
 
@@ -172,7 +172,7 @@ Go no carga `.env` automáticamente: exportar variables. Web usa únicamente `VI
 | `packages/contracts`, `packages/design-tokens` | Contratos e identidad compartidos |
 | `tools/{codegen,geo,qa,scripts}` | Generación, importación, QA y comandos |
 
-Leer [diagnóstico geográfico](docs/diagnostico-geografico.md), [diagnóstico de supervivencia](docs/diagnostico-supervivencia.md), [arquitectura](docs/arquitectura.md), [informe FASE 2](docs/informe-fase2.md), [AWS](docs/despliegue-aws.md) y [costos estimados](docs/costos.md). El [informe histórico FASE 1](docs/informe-fase1.md) permanece intacto. FASE 3A.2 desplegó el change set aprobado y verificó la API externa; las evidencias distinguen mediciones públicas y pruebas locales previas. FASE 3B.2 añade catálogo y selector local; el rollout AWS requiere autorización separada.
+Leer [diagnóstico geográfico](docs/diagnostico-geografico.md), [diagnóstico de supervivencia](docs/diagnostico-supervivencia.md), [arquitectura](docs/arquitectura.md), [informe FASE 2](docs/informe-fase2.md), [AWS histórico](docs/despliegue-aws.md), [AWS FASE 5 y caducidad](docs/despliegue-fase5-y-caducidad.md) y [costos estimados](docs/costos.md). El [informe histórico FASE 1](docs/informe-fase1.md) permanece intacto. Las evidencias distinguen mediciones públicas y pruebas locales de cada entrega.
 
 
 ## Comparaciones controladas

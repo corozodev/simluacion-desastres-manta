@@ -2,6 +2,8 @@
 
 Implementación local del 27 de octubre de 2026. No se realizaron acciones AWS, despliegues, publicación ni cambios de credenciales. El comportamiento descrito corresponde al código local; la instancia pública requiere su despliegue autorizado posterior.
 
+**Actualización operativa posterior:** el propietario autorizó el cambio de EC2 y la retirada en cuatro días. Se desplegó esta versión en AWS el mismo 27 de octubre, conservando el plan FREE y usando `m7i-flex.large`. El [informe de despliegue y caducidad](despliegue-fase5-y-caducidad.md) documenta los recursos, límites y pruebas de esa operación posterior. Las mediciones y afirmaciones de esta entrega local se conservan con su alcance original.
+
 ## Resultado y diagnóstico
 
 `cmd/server` preparaba un runtime global y lanzaba su bucle de simulación al arrancar. React `/escape` observaba `/estado`; abrir la página no originaba el trabajo, pero todos los visitantes veían el mismo mundo global. El motor real `urban_flood` ya estaba implementado en Go y disponía de API experimental y laboratorio; esta fase integra ese motor, sin inventar otro.

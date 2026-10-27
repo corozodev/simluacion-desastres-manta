@@ -20,7 +20,7 @@ Parameters:
   InstanceType:
     Type: String
     Default: t3.small
-    AllowedValues: [t3.small, t3.medium]
+    AllowedValues: [t3.small, t3.medium, m7i-flex.large, m7i.xlarge]
   WebIngressCidr:
     Type: String
     Default: 127.0.0.1/32
@@ -78,6 +78,7 @@ Rules:
         AssertDescription: A new budget requires a real notification recipient and explicit approval.
 Conditions:
   CreateBudget: !Equals [!Ref CreateProjectBudget, 'true']
+  BurstableBackend: !Or [!Equals [!Ref InstanceType, t3.small], !Equals [!Ref InstanceType, t3.medium]]
 Resources:
   CostBudget:
     Type: AWS::Budgets::Budget
@@ -161,13 +162,17 @@ Resources:
         - {IpProtocol: tcp, FromPort: 80, ToPort: 80, CidrIp: 0.0.0.0/0}
   Backend:
     Type: AWS::EC2::Instance
+    Metadata:
+      com.aws.cloudformation.Context:
+        why: Resize the existing x86 host for independent simulations while preserving its EBS disk and stable address.
+        must: [Preserve physical instance and root data during resize, Never enable T3 credit options on M7i]
     # Verify the selected existing budget before execution. Docker's host-side
     # log driver uses the instance role; the Go container does not need IMDS.
     Properties:
       ImageId: !Ref AmiId
       InstanceType: !Ref InstanceType
       IamInstanceProfile: !Ref BackendProfile
-      CreditSpecification: {CPUCredits: standard}
+      CreditSpecification: !If [BurstableBackend, {CPUCredits: standard}, !Ref 'AWS::NoValue']
       MetadataOptions: {HttpTokens: required, HttpPutResponseHopLimit: 1, HttpEndpoint: enabled}
       BlockDeviceMappings:
         - DeviceName: /dev/xvda
