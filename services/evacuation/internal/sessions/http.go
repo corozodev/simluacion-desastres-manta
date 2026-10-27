@@ -260,10 +260,25 @@ func decodeCreate(w http.ResponseWriter, r *http.Request) (CreateRequest, error)
 		if json.Unmarshal(config, &fields) != nil {
 			return req, invalid()
 		}
-		allowedConfig := map[string]bool{"survivors": true, "round": true, "refuge_ids": true, "rainfall_intensity": true, "custom_shelters": true}
+		allowedConfig := map[string]bool{"survivors": true, "round": true, "refuge_ids": true, "rainfall_intensity": true, "custom_shelters": true, "mode": true, "zombie_policy": true, "evacuation_algorithm": true, "pro": true}
 		for k, v := range fields {
-			if !allowedConfig[k] || bytes.Equal(bytes.TrimSpace(v), []byte("null")) {
+			if !allowedConfig[k] || bytes.Equal(bytes.TrimSpace(v), []byte("null")) || (k == "mode" || k == "zombie_policy" || k == "evacuation_algorithm") && bytes.Equal(bytes.TrimSpace(v), []byte(`""`)) {
 				return req, invalid()
+			}
+		}
+	}
+	if config, ok := raw["config"]; ok {
+		var fields map[string]json.RawMessage
+		_ = json.Unmarshal(config, &fields)
+		if pro, ok := fields["pro"]; ok {
+			var options map[string]json.RawMessage
+			if json.Unmarshal(pro, &options) != nil {
+				return req, invalid()
+			}
+			for k, v := range options {
+				if (k != "runner_prediction" && k != "shelter_assignment" && k != "rescue_fleet") || bytes.Equal(bytes.TrimSpace(v), []byte("null")) {
+					return req, invalid()
+				}
 			}
 		}
 	}

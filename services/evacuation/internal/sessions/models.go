@@ -26,12 +26,26 @@ type CustomShelter struct {
 	Capacity int    `json:"capacity"`
 }
 
+type ProInput struct {
+	RunnerPrediction  *bool `json:"runner_prediction,omitempty"`
+	ShelterAssignment *bool `json:"shelter_assignment,omitempty"`
+	RescueFleet       *bool `json:"rescue_fleet,omitempty"`
+}
+type ProOptions struct {
+	RunnerPrediction  bool `json:"runner_prediction"`
+	ShelterAssignment bool `json:"shelter_assignment"`
+	RescueFleet       bool `json:"rescue_fleet"`
+}
 type InputConfig struct {
-	Survivors         *int            `json:"survivors,omitempty"`
-	Round             string          `json:"round,omitempty"`
-	RefugeIDs         []string        `json:"refuge_ids,omitempty"`
-	CustomShelters    []CustomShelter `json:"custom_shelters,omitempty"`
-	RainfallIntensity *float64        `json:"rainfall_intensity,omitempty"`
+	Mode                string          `json:"mode,omitempty"`
+	ZombiePolicy        string          `json:"zombie_policy,omitempty"`
+	EvacuationAlgorithm string          `json:"evacuation_algorithm,omitempty"`
+	Pro                 *ProInput       `json:"pro,omitempty"`
+	Survivors           *int            `json:"survivors,omitempty"`
+	Round               string          `json:"round,omitempty"`
+	RefugeIDs           []string        `json:"refuge_ids,omitempty"`
+	CustomShelters      []CustomShelter `json:"custom_shelters,omitempty"`
+	RainfallIntensity   *float64        `json:"rainfall_intensity,omitempty"`
 }
 
 type CreateRequest struct {
@@ -44,14 +58,22 @@ type CreateRequest struct {
 }
 
 type Config struct {
-	Survivors         int             `json:"survivors"`
-	Round             string          `json:"round"`
-	RefugeIDs         []string        `json:"refuge_ids"`
-	CustomShelters    []CustomShelter `json:"custom_shelters,omitempty"`
-	RainfallIntensity *float64        `json:"rainfall_intensity,omitempty"`
+	Mode                string          `json:"mode,omitempty"`
+	ZombiePolicy        string          `json:"zombie_policy,omitempty"`
+	EvacuationAlgorithm string          `json:"evacuation_algorithm,omitempty"`
+	Pro                 *ProOptions     `json:"pro,omitempty"`
+	Survivors           int             `json:"survivors"`
+	Round               string          `json:"round"`
+	RefugeIDs           []string        `json:"refuge_ids"`
+	CustomShelters      []CustomShelter `json:"custom_shelters,omitempty"`
+	RainfallIntensity   *float64        `json:"rainfall_intensity,omitempty"`
 }
 
 func (c Config) clone() Config {
+	if c.Pro != nil {
+		p := *c.Pro
+		c.Pro = &p
+	}
 	c.RefugeIDs = append([]string{}, c.RefugeIDs...)
 	c.CustomShelters = append([]CustomShelter(nil), c.CustomShelters...)
 	if c.RainfallIntensity != nil {
@@ -91,15 +113,17 @@ func (i Metadata) clone() Metadata {
 }
 
 type Results struct {
-	InitialSurvivors int     `json:"initial_survivors"`
-	Evacuated        int     `json:"evacuated"`
-	Bitten           int     `json:"bitten"`
-	Active           int     `json:"active"`
-	SurvivalRate     float64 `json:"survival_rate"`
-	RefugesUsed      int     `json:"refuges_used"`
+	Analytics        *Analytics `json:"analytics,omitempty"`
+	InitialSurvivors int        `json:"initial_survivors"`
+	Evacuated        int        `json:"evacuated"`
+	Bitten           int        `json:"bitten"`
+	Active           int        `json:"active"`
+	SurvivalRate     float64    `json:"survival_rate"`
+	RefugesUsed      int        `json:"refuges_used"`
 }
 
 type State struct {
+	RunnerForecast *RunnerForecast `json:"runner_forecast,omitempty"`
 	Metadata
 	Snapshot      world.WorldSnapshot     `json:"snapshot"`
 	ScenarioState *world.ScenarioSnapshot `json:"scenario_state,omitempty"`

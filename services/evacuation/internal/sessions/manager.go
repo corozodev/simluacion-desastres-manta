@@ -34,6 +34,9 @@ type execution struct {
 	mu                   sync.RWMutex
 	info                 Metadata
 	snapshot             world.WorldSnapshot
+	analytics            *Analytics
+	forecast             *RunnerForecast
+	audit                predictionAudit
 	tokenHash            [32]byte
 	lastAccess, pausedAt time.Time
 	nextTick             time.Time
@@ -147,6 +150,9 @@ func reservation(profile string) int64 {
 }
 
 func (m *Manager) validate(req CreateRequest) error {
+	if err := validatePolicies(req); err != nil {
+		return err
+	}
 	mode := profileMode(req.GraphProfile)
 	if req.Scenario != "zombie_outbreak" && req.Scenario != "urban_flood" || mode == "" {
 		return invalid()
@@ -194,6 +200,9 @@ func (m *Manager) prepare(req CreateRequest) (*execution, error) {
 	interval := int(m.options.DefaultTickInterval.Milliseconds())
 	if req.TickIntervalMS != nil {
 		interval = *req.TickIntervalMS
+	}
+	if req.Config.Mode == "official" {
+		maxTicks, interval = 150, 2000
 	}
 	cfg.Turns = maxTicks
 	if req.Config.Survivors != nil {
@@ -286,8 +295,18 @@ func (m *Manager) prepare(req CreateRequest) (*execution, error) {
 	if err != nil {
 		return nil, err
 	}
-	engine := decision.NewWithOptions(m.options.Engine)
-	app, err := application.NewWithOptions(g, cfg, "127.0.0.1:0", key, nil, m.options.Logger, application.Options{Engine: engine, Planner: coordination.New(engine, coordination.Options{}), AllowShelterSubset: true})
+	policies := resolvedPolicies(req.Config)
+	cfg.ZombiePolicy = policies.ZombiePolicy
+	cfg.RescueFleet = policies.Pro.RescueFleet
+	engineOptions := m.options.Engine
+	engineOptions.Algorithm = policies.EvacuationAlgorithm
+	engineOptions.Prediction = policies.Pro.RunnerPrediction
+	// Flood sessions preserve the historical engine and ignore zombie-only defaults.
+	if req.Scenario == "urban_flood" {
+		engineOptions = m.options.Engine
+	}
+	engine := decision.NewWithOptions(engineOptions)
+	app, err := application.NewWithOptions(g, cfg, "127.0.0.1:0", key, nil, m.options.Logger, application.Options{Engine: engine, Planner: coordination.New(engine, coordination.Options{DisableAssignment: req.Scenario != "urban_flood" && !policies.Pro.ShelterAssignment}), AllowShelterSubset: true})
 	if err != nil {
 		return nil, err
 	}
@@ -295,7 +314,13 @@ func (m *Manager) prepare(req CreateRequest) (*execution, error) {
 	ctx, cancel := context.WithCancel(m.ctx)
 	snap, _ := app.Store.LoadCompact()
 	run := &execution{app: app, ctx: ctx, cancel: cancel, wake: make(chan struct{}, 1), done: make(chan struct{}), snapshot: snap, lastAccess: now, reserved: reservation(req.GraphProfile)}
+	if req.Scenario == "zombie_outbreak" {
+		config.Mode, config.ZombiePolicy, config.EvacuationAlgorithm, config.Pro = policies.Mode, policies.ZombiePolicy, policies.EvacuationAlgorithm, policies.Pro
+	}
 	run.info = Metadata{SimulationID: id, Status: Running, MaxTicks: maxTicks, StateVersion: 1, Scenario: req.Scenario, GraphProfile: req.GraphProfile, GraphVersion: g.Version, Seed: seed, TickIntervalMS: interval, CreatedAt: now, StartedAt: now, UpdatedAt: now, Config: config}
+	if req.Scenario == "zombie_outbreak" && policies.Pro.RunnerPrediction {
+		run.forecast, _ = forecast(ctx, app.Simulator.Snapshot())
+	}
 	run.info.ExpiresAt = m.expiryLocked(run)
 	run.nextTick = now.Add(time.Duration(interval) * time.Millisecond)
 	return run, nil
@@ -469,9 +494,9 @@ func (m *Manager) GetSnapshot(id, token string, results bool) (State, error) {
 	}
 	w := s.snapshot.Clone()
 	w.Graph = nil
-	state := State{Metadata: s.info.clone(), Snapshot: w, ScenarioState: w.Scenario}
+	state := State{Metadata: s.info.clone(), Snapshot: w, ScenarioState: w.Scenario, RunnerForecast: s.forecast.clone()}
 	if results {
-		r := &Results{InitialSurvivors: s.info.Config.Survivors, Evacuated: w.Metrics.Evacuated, Bitten: w.Metrics.Bitten, Active: w.Metrics.Active}
+		r := &Results{Analytics: s.analytics.clone(), InitialSurvivors: s.info.Config.Survivors, Evacuated: w.Metrics.Evacuated, Bitten: w.Metrics.Bitten, Active: w.Metrics.Active}
 		if r.InitialSurvivors > 0 {
 			r.SurvivalRate = float64(r.InitialSurvivors-r.Bitten) / float64(r.InitialSurvivors)
 		}
@@ -578,7 +603,10 @@ func (m *Manager) Restart(ctx context.Context, id, token, key, actor string) (Me
 		return Metadata{}, err
 	}
 	<-s.done // release the previous engine reservation before reserving restart
-	req := CreateRequest{Scenario: i.Scenario, GraphProfile: i.GraphProfile, Seed: &i.Seed, MaxTicks: &i.MaxTicks, TickIntervalMS: &i.TickIntervalMS, Config: InputConfig{Survivors: &i.Config.Survivors, Round: i.Config.Round, RefugeIDs: i.Config.RefugeIDs, CustomShelters: i.Config.CustomShelters, RainfallIntensity: i.Config.RainfallIntensity}}
+	req := CreateRequest{Scenario: i.Scenario, GraphProfile: i.GraphProfile, Seed: &i.Seed, MaxTicks: &i.MaxTicks, TickIntervalMS: &i.TickIntervalMS, Config: InputConfig{Survivors: &i.Config.Survivors, Round: i.Config.Round, RefugeIDs: i.Config.RefugeIDs, CustomShelters: i.Config.CustomShelters, RainfallIntensity: i.Config.RainfallIntensity, Mode: i.Config.Mode, ZombiePolicy: i.Config.ZombiePolicy, EvacuationAlgorithm: i.Config.EvacuationAlgorithm, Pro: replayPro(i.Config.Pro)}}
+	if i.Config.Mode == "official" {
+		req.Config.RefugeIDs = nil
+	}
 	return m.CreateAndStart(ctx, req, key, actor+"/restart/"+id)
 }
 

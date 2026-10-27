@@ -85,7 +85,7 @@ func NewWithOptions(g *world.Graph, cfg simulation.Config, address, key string, 
 		host = "::1"
 	}
 	baseURL := "http://" + net.JoinHostPort(host, port)
-	client, err := simulation.NewHTTPDecisionClient(baseURL, key, 500*time.Millisecond)
+	client, err := simulation.NewHTTPDecisionClient(baseURL, key, 400*time.Millisecond)
 	if err != nil {
 		_ = listener.Close()
 		return nil, err

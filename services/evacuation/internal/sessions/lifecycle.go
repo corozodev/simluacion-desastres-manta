@@ -1,6 +1,7 @@
 package sessions
 
 import (
+	"corodev/evacuation/internal/decision"
 	"time"
 
 	"corodev/evacuation/internal/world"
@@ -27,6 +28,13 @@ func (m *Manager) run(s *execution) {
 		}
 		// Terminal sessions retain only compact observable state, not HTTP
 		// listeners, decision caches, diagnostics, PRNGs or mutable engines.
+		if s.app != nil {
+			report := PublicAnalytics(s.app.Simulator.Diagnostics())
+			s.mu.Lock()
+			report.Prediction = s.audit.Quality
+			s.analytics = report
+			s.mu.Unlock()
+		}
 		s.cancel()
 		_ = s.app.Close()
 		s.app = nil
@@ -111,12 +119,33 @@ func (m *Manager) advanceTurn(s *execution) (Metadata, bool) {
 	if status != Running {
 		return Metadata{}, false
 	}
+	before := s.app.Simulator.Snapshot()
+	var predicted decision.ProbabilityPrediction
+	enabled := s.info.Scenario == "zombie_outbreak" && s.info.Config.Pro != nil && s.info.Config.Pro.RunnerPrediction
+	if enabled {
+		_, predicted = forecast(s.ctx, before)
+	}
 	err := s.app.Simulator.Step(s.ctx)
+	var nextForecast *RunnerForecast
+	if enabled {
+		after := s.app.Simulator.Snapshot()
+		s.audit.observe(predicted, after)
+		nextForecast, _ = forecast(s.ctx, after)
+	}
+	var analytics *Analytics
+	if err != nil || before.Turn+1 >= s.info.MaxTicks {
+		analytics = PublicAnalytics(s.app.Simulator.Diagnostics())
+		analytics.Prediction = s.audit.Quality
+	}
 	snap, _ := s.app.Store.LoadCompact()
 	now := m.options.Clock.Now()
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.snapshot = snap
+	s.forecast = nextForecast
+	if analytics != nil {
+		s.analytics = analytics
+	}
 	s.info.Tick = snap.Turn
 	s.info.StateVersion++
 	s.info.UpdatedAt = now
