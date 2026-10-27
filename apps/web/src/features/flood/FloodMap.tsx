@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from 'react';
-import type { GeoPoint, Graph, GraphEdge, Incident, LabCandidate, LabCandidateValidation, ScenarioSnapshot, Shelter } from '@corodev/contracts';
+import type { GeoPoint, Graph, GraphEdge, Incident, LabCandidate, LabCandidateValidation, ScenarioSnapshot, Shelter, ReferenceCollection } from '@corodev/contracts';
 import { Button } from '../../components/ui';
 import { config } from '../../lib/config';
 import { incidentSourceLabels, incidentStatusGlyphs, incidentStatusLabels, incidentTypeLabels } from './incidentPresentation';
@@ -38,11 +38,14 @@ export interface FloodMapProps {
   incidents?: Incident[];
   selectedIncidentId?: string;
   onSelectIncident?: (id: string) => void;
+  reference?: ReferenceCollection;
+  showReference?: boolean;
+  onShowReference?: (show: boolean) => void;
 }
 
 // Native SVG retains the existing map's pan/zoom behavior. Street geometry is
 // indexed once and batched into at most three paths, including the master graph.
-export function FloodMap({ graph, scenario, shelters, candidates, validation, selectedAgentId, onSelectAgent, pickingCandidate, onPickPosition, incidents = [], selectedIncidentId, onSelectIncident }: FloodMapProps) {
+export function FloodMap({ graph, scenario, shelters, candidates, validation, selectedAgentId, onSelectAgent, pickingCandidate, onPickPosition, incidents = [], selectedIncidentId, onSelectIncident, reference, showReference = false, onShowReference }: FloodMapProps) {
   const [view, setView] = useState(initialView);
   const [layers, setLayers] = useState<Record<Layer, boolean>>({ exposure: true, passable: true, caution: true, blocked: true, routes: true, agents: true, shelters: true, incidents: true });
   const [selectedEdgeId, setSelectedEdgeId] = useState('');
@@ -82,6 +85,7 @@ export function FloodMap({ graph, scenario, shelters, candidates, validation, se
     });
     return { point, inverse, normalized, scale, nodes, byPair, roads, grid, edges: new Map(graph.edges.map(edge => [edge.id, edge])) };
   }, [graph]);
+  const referencePaths = useMemo(() => reference?.features.map(feature => ({ id: feature.id, category: feature.properties.susceptibility, path: feature.geometry.coordinates.map(polygon => polygon.map(ring => ring.map((coordinate, i) => { const p = model.point({ lng: coordinate[0]!, lat: coordinate[1]! }); return `${i ? 'L' : 'M'}${p.x.toFixed(2)},${p.y.toFixed(2)}`; }).join('') + 'Z').join('')).join('') })) ?? [], [reference, model]);
   const conditions = useMemo(() => new Map(scenario?.road_conditions.map(road => [road.edge_id, road]) ?? []), [scenario?.road_conditions]);
   const shelterConditions = useMemo(() => new Map(scenario?.shelter_conditions.map(shelter => [shelter.shelter_id, shelter]) ?? []), [scenario?.shelter_conditions]);
   const roadPaths = useMemo(() => {
@@ -149,7 +153,7 @@ export function FloodMap({ graph, scenario, shelters, candidates, validation, se
   }, [graph.edges, selectedEdgeId]);
   const selectedCondition = selectedEdge ? conditions.get(selectedEdge.id) : undefined;
   return <div className="flood-map-panel">
-    <fieldset className="flood-layers"><legend>Capas cartográficas</legend>{(Object.keys(layerLabels) as Layer[]).map(layer => <label key={layer}><input type="checkbox" checked={layers[layer]} onChange={event => setLayers(previous => ({ ...previous, [layer]: event.target.checked }))} />{layerLabels[layer]}</label>)}</fieldset>
+    <fieldset className="flood-layers"><legend>Capas cartográficas</legend>{(Object.keys(layerLabels) as Layer[]).map(layer => <label key={layer}><input type="checkbox" checked={layers[layer]} onChange={event => setLayers(previous => ({ ...previous, [layer]: event.target.checked }))} />{layerLabels[layer]}</label>)}<label><input type="checkbox" checked={showReference} onChange={event => onShowReference?.(event.target.checked)} />Susceptibilidad oficial a inundaciones</label></fieldset>
     {pickingCandidate !== undefined && <p className="flood-pick-notice" role="status">Haz clic en el mapa para reemplazar el candidato {pickingCandidate + 1}. También puedes introducir coordenadas en el formulario.</p>}
     <figure className="escape-map flood-map"><div className="escape-map-controls" role="group" aria-label="Controles del mapa de inundación">
       <Button variant="secondary" aria-label="Acercar mapa de inundación" onClick={() => zoom(.75)}>+</Button><Button variant="secondary" aria-label="Alejar mapa de inundación" onClick={() => zoom(1 / .75)}>−</Button><Button variant="secondary" onClick={() => setView(initialView)}>Restablecer mapa de inundación</Button>
@@ -162,6 +166,7 @@ export function FloodMap({ graph, scenario, shelters, candidates, validation, se
       onClick={event => { if (moved.current) { moved.current = false; return; } const rect = event.currentTarget.getBoundingClientRect(); selectAt({ x: view.x + (event.clientX - rect.left) / (rect.width || 900) * view.width, y: view.y + (event.clientY - rect.top) / (rect.height || 480) * view.height }); }}>
       <title id="flood-map-title">Red urbana de inundación simulada</title><desc id="flood-map-description">Geometría OpenStreetMap, focos de exposición sintética, calles por estado, agentes, rutas y cuatro refugios de laboratorio. Navega con flechas, +, − y 0. Haz clic para inspeccionar una calle o elegir la ubicación de un candidato.</desc>
       <g data-layer="osm-base" aria-hidden="true">{tiles.map(tile => <image key={tile.key} href={tile.url} x={tile.x} y={tile.y} width={tile.size + .1} height={tile.size + .1} className="flood-osm-tile" onError={() => setTileUnavailable(true)} />)}</g>
+      {showReference && <g data-layer="official-susceptibility" pointerEvents="none">{referencePaths.map(feature => <path key={feature.id} data-reference-id={feature.id} d={feature.path} fillRule="evenodd" className={`flood-reference-polygon reference-${feature.category}`}><title>Susceptibilidad estructural {feature.category} · SNGR / CONAGE 2024 · no es inundación actual</title></path>)}</g>}
       {layers.exposure && <g data-layer="exposure">{scenario?.flood_zones.map(zone => { const center = model.point(zone.center); const north = model.point({ lat: zone.center.lat + zone.radius_m / 111195, lng: zone.center.lng }); const radius = Math.abs(center.y - north.y); return <circle key={zone.id} cx={center.x} cy={center.y} r={radius} fillOpacity={.10 + zone.intensity * .3} className="flood-exposure-zone"><title>{zone.id} · exposición sintética {(zone.intensity * 100).toFixed(1)}%</title></circle>; })}</g>}
       {(['passable', 'caution', 'blocked'] as RoadState[]).map(state => layers[state] && <path key={state} d={roadPaths[state]} data-road-state={state} className={`flood-roads flood-roads-${state}`} aria-label={`${layerLabels[state]} de la red OSM`} />)}
       {layers.routes && routePath && <path data-layer="routes" d={routePath} className="flood-route"><title>Ruta publicada de {selectedAgentId}</title></path>}

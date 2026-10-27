@@ -1,6 +1,7 @@
 import type { ErrorResponse, HealthResponse, Graph, WorldSnapshot, Survivor, Shelter, Zombie, SimulationInfo, SimulationCatalog, OperatorSession, StartSimulation } from '@corodev/contracts';
 import type { ScenarioSnapshot, EvacuationMetrics, LabState, LabCatalog, LabSession, LabCandidate, LabRunConfig, LabCandidateValidation, LabComparison, LabAction } from '@corodev/contracts';
 import type { Incident, IncidentCreate, IncidentList, IncidentServiceInfo, IncidentLocation, IncidentResolution, IncidentApplication, IncidentApplyResult, IncidentStatusUpdate } from '@corodev/contracts';
+import type { ReferenceStatus, ReferenceCollection, ReferenceProvenance, OfficialRainEvents, LabTelemetry } from '@corodev/contracts';
 import { config } from '../lib/config';
 import { ApiError } from './errors';
 export { ApiError } from './errors';
@@ -317,7 +318,51 @@ function labMutation<T>(path: string, validate: (value: unknown) => value is T, 
   return labRequest(path, validate, { method: 'POST', credentials: 'include', headers: { 'X-CSRF-Token': csrf }, body: JSON.stringify(body) });
 }
 
+function isProvenance(value: unknown): value is ReferenceProvenance {
+  return isObject(value) && ['synthetic', 'official_reference', 'official_observation', 'citizen_report'].includes(String(value.category))
+    && ['source', 'url', 'attribution', 'license', 'original_crs', 'dataset_version', 'temporal_scope'].every(key => typeof value[key] === 'string')
+    && isDate(value.consulted_at) && value.output_crs === 'EPSG:4326' && Array.isArray(value.source_years) && value.source_years.every(isNatural)
+    && (value.portal_modified_at === undefined || isDate(value.portal_modified_at));
+}
+function isReferenceStatus(value: unknown): value is ReferenceStatus {
+  if (!isObject(value) || !isObject(value.metrics)) return false;
+  const metrics = value.metrics;
+  return isObject(value) && value.schema_version === 1 && ['offline', 'online', 'disabled'].includes(String(value.mode))
+    && ['cached', 'stale', 'unavailable', 'disabled'].includes(String(value.availability)) && typeof value.refreshing === 'boolean'
+    && ['unknown', 'ok', 'error', 'offline'].includes(String(value.provider_status)) && typeof value.message === 'string'
+    && isNatural(value.feature_count) && isNatural(value.vertex_count) && isObject(value.metrics)
+    && ['queries', 'provider_errors', 'cache_hits', 'cache_misses', 'last_query_ms', 'total_query_ms', 'response_bytes', 'last_refresh_ms'].every(key => isNumber(metrics[key]) && metrics[key] >= 0)
+    && (value.provenance === undefined || isProvenance(value.provenance) && value.provenance.category === 'official_reference' && value.dataset_version === value.provenance.dataset_version);
+}
+function isReferenceCollection(value: unknown): value is ReferenceCollection {
+  if (!isObject(value) || value.schema_version !== 1 || value.type !== 'FeatureCollection' || !isProvenance(value.provenance) || value.provenance.category !== 'official_reference'
+    || !Array.isArray(value.features) || value.features.length > 500 || value.feature_count !== value.features.length || !isNatural(value.vertex_count)
+    || !isNumber(value.generalization_degrees) || !Array.isArray(value.bbox) || value.bbox.length !== 4 || !value.bbox.every(isNumber)) return false;
+  let vertices = 0;
+  const valid = value.features.every(feature => isObject(feature) && feature.type === 'Feature' && typeof feature.id === 'string' && isObject(feature.properties)
+    && feature.properties.object_id === feature.id && ['ALTA', 'MEDIA', 'BAJA'].includes(String(feature.properties.susceptibility))
+    && isObject(feature.geometry) && feature.geometry.type === 'MultiPolygon' && Array.isArray(feature.geometry.coordinates) && feature.geometry.coordinates.length > 0
+    && feature.geometry.coordinates.every(polygon => Array.isArray(polygon) && polygon.length > 0 && polygon.every(ring => Array.isArray(ring) && ring.length >= 4
+      && JSON.stringify(ring[0]) === JSON.stringify(ring.at(-1)) && ring.every(point => { vertices++; return Array.isArray(point) && point.length === 2 && isNumber(point[0]) && Math.abs(point[0]) <= 180 && isNumber(point[1]) && Math.abs(point[1]) <= 90; }))));
+  return valid && vertices === value.vertex_count && vertices <= 120000;
+}
+function isRainEvents(value: unknown): value is OfficialRainEvents {
+  return isObject(value) && value.schema_version === 1 && isProvenance(value.provenance) && value.provenance.category === 'official_observation'
+    && Array.isArray(value.events) && value.events.length <= 500 && value.events.every(event => isObject(event)
+      && ['object_id', 'event', 'canton', 'event_date', 'closed_date'].every(key => typeof event[key] === 'string')
+      && isNumber(event.latitude) && Math.abs(event.latitude) <= 90 && isNumber(event.longitude) && Math.abs(event.longitude) <= 180);
+}
+
 export const api = {
+  referenceStatus: (signal?: AbortSignal) => labRequest('/v1/reference/status', isReferenceStatus, undefined, signal),
+  susceptibilityReference: async (version: string, signal?: AbortSignal) => {
+    const value = await labRequest(`/v1/reference/susceptibility?${new URLSearchParams({ version })}`, isReferenceCollection, undefined, signal);
+    if (value.provenance.dataset_version !== version) throw new ApiError('La versión de referencia cambió. Actualiza su procedencia.', 'REFERENCE_CHANGED');
+    return value;
+  },
+  rainEvents: (signal?: AbortSignal) => labRequest('/v1/reference/rain-events', isRainEvents, undefined, signal),
+  refreshReference: (csrf: string) => labMutation('/lab/reference/refresh', isReferenceStatus, {}, csrf),
+  labTelemetry: (signal?: AbortSignal) => labRequest<LabTelemetry>('/lab/telemetry', (value): value is LabTelemetry => isObject(value) && typeof value.run_id === 'string' && ['simulation_step', 'world_version', 'agents', 'edges', 'overlay_edges', 'overlay_update_ms', 'replanning_ms', 'simulation_step_ms', 'planning_calls'].every(key => isNumber(value[key]) && value[key] >= 0) && isObject(value.reference), undefined, signal),
   incidentInfo: (signal?: AbortSignal) => incidentRequest('/v1/incidents/config', isIncidentInfo, undefined, signal),
   incidents: (filters: IncidentFilters = {}, signal?: AbortSignal) => {
     const query = new URLSearchParams();

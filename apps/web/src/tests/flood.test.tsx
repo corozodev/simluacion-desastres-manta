@@ -39,7 +39,8 @@ describe('capas y selección del mapa de inundación', () => {
   it('mantiene ocho capas independientes, exposición y rutas publicadas sin representar resultados de muerte', async () => {
     setup();
     const map = screen.getByRole('img', { name: /^Red urbana de inundación simulada/ });
-    expect(screen.getAllByRole('checkbox')).toHaveLength(8);
+    expect(screen.getAllByRole('checkbox')).toHaveLength(9);
+    expect(screen.getByRole('checkbox', { name: 'Susceptibilidad oficial a inundaciones' })).not.toBeChecked();
     expect(map.querySelectorAll('[data-road-state]')).toHaveLength(3);
     expect(map.querySelector('.flood-exposure-zone')).toBeInTheDocument();
     expect(map.querySelector('[data-layer="routes"]')).toBeInTheDocument();

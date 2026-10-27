@@ -36,3 +36,10 @@ export function useIncidentDetail(id?: string) {
 export function useIncidentInfo() {
   return useQuery({ queryKey: ['incidents', 'config'], queryFn: ({ signal }) => api.incidentInfo(signal), retry: false, staleTime: Infinity });
 }
+
+export function useReferenceStatus() {
+  return useQuery({ queryKey: ['reference', 'status'], queryFn: ({ signal }) => api.referenceStatus(signal), retry: false, refetchInterval: 30000, staleTime: 10000 });
+}
+export function useSusceptibilityReference(version?: string, enabled = false) {
+  return useQuery({ queryKey: ['reference', 'polygons', version ?? ''], queryFn: ({ signal }) => api.susceptibilityReference(version ?? '', signal), retry: false, enabled: Boolean(version) && enabled, staleTime: Infinity });
+}
