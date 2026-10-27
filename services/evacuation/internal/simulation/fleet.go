@@ -146,9 +146,14 @@ func (s *Simulator) fleetPickup(v *world.RescueVehicle, claimed map[string]bool)
 				need += 4 - float64(distance)
 			}
 		}
-		// Nearby exposure, travel saved after boarding, pickup ETA and viable
-		// shelter distance determine utility. ID order breaks exact ties.
-		score := 4*need + 2*(walkingETA-deliveryETA) - pickupETA
+		// The full pickup + delivery ETA matters: depot round trips without
+		// exposure or positive time saved are not useful rescue journeys.
+		// ID order breaks exact ties, and nonpositive utility stays idle.
+		saved := walkingETA - pickupETA - deliveryETA
+		score := 4*need + 2*saved - .25*pickupETA
+		if score <= 0 {
+			continue
+		}
 		if score > bestScore || score == bestScore && candidate.ID < v.TargetSurvivorID {
 			bestScore = score
 			v.TargetSurvivorID, v.TargetShelterID = candidate.ID, sh

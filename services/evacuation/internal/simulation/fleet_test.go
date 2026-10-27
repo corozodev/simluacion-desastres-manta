@@ -150,6 +150,16 @@ func TestFleetNoRouteHordeAndDeadTargets(t *testing.T) {
 	}
 }
 
+func TestFleetAvoidsUnnecessaryDepotRoundTrip(t *testing.T) {
+	s := create(t, chain(10), Config{RescueFleet: true, InitialSurvivors: []world.Survivor{survivor("S", "A")}}, decisionFunc(stay))
+	w := step(t, s)
+	for _, v := range w.Fleet {
+		if v.CurrentNode != "J" || len(v.Path) != 1 || v.TargetSurvivorID != "" {
+			t.Fatal("unthreatened depot round trip has no positive time saving")
+		}
+	}
+}
+
 func TestFleetPassengersRemainExposedToNodeAndOppositeCrossings(t *testing.T) {
 	for _, test := range []struct {
 		from, to  string
