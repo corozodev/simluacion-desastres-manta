@@ -43,6 +43,15 @@ func (zombieScenario) finishStep(*Simulator, time.Duration)        {}
 func (zombieScenario) snapshot(*Simulator) *world.ScenarioSnapshot { return nil }
 
 func normalizeScenario(cfg Config) (Config, error) {
+	if cfg.ZombiePolicy == "" {
+		cfg.ZombiePolicy = ClassicRandom
+	}
+	if cfg.ZombiePolicy != ClassicRandom && cfg.ZombiePolicy != CorrelatedRandomWalk && cfg.ZombiePolicy != AdaptiveExploration {
+		return cfg, fmt.Errorf("unsupported zombie_policy %q", cfg.ZombiePolicy)
+	}
+	if cfg.ScenarioType == "urban_flood" && (cfg.ZombiePolicy != ClassicRandom || cfg.RescueFleet) {
+		return cfg, fmt.Errorf("zombie policies and rescue fleet require zombie scenario")
+	}
 	switch cfg.ScenarioType {
 	case "", "zombie":
 		if cfg.Flood != nil {

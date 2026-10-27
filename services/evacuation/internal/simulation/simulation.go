@@ -19,31 +19,34 @@ import (
 type zombieState struct {
 	observable world.Zombie
 	awakeTurns int // Hidden cadence is not input to decision engines.
+	memory     movementMemory
 }
 
 // Simulator is the single writer. Snapshot reads are served by the independent
 // immutable Store, so HTTP decisions never need the turn mutex.
 type Simulator struct {
-	mu         sync.Mutex
-	graph      *world.Graph
-	index      *graph.Index
-	store      *world.Store
-	config     Config
-	client     DecisionClient
-	rng        *rand.Rand
-	turn       int
-	version    uint64
-	zombies    []zombieState
-	survivors  []world.Survivor
-	shelters   []world.Shelter
-	blocked    map[string]bool
-	proximity  map[string][]string
-	events     []ScheduledEvent
-	metrics    world.Metrics
-	latencies  []time.Duration
-	planner    world.TurnPlanner
-	diagnostic diagnosticState
-	scenario   threatScenario
+	mu           sync.Mutex
+	graph        *world.Graph
+	index        *graph.Index
+	store        *world.Store
+	config       Config
+	client       DecisionClient
+	rng          *rand.Rand
+	turn         int
+	version      uint64
+	zombies      []zombieState
+	survivors    []world.Survivor
+	shelters     []world.Shelter
+	blocked      map[string]bool
+	proximity    map[string][]string
+	events       []ScheduledEvent
+	metrics      world.Metrics
+	latencies    []time.Duration
+	planner      world.TurnPlanner
+	diagnostic   diagnosticState
+	scenario     threatScenario
+	fleet        []world.RescueVehicle
+	fleetMetrics world.RescueFleetMetrics
 }
 
 func New(g *world.Graph, store *world.Store, cfg Config, client DecisionClient) (*Simulator, error) {
@@ -102,6 +105,7 @@ func New(g *world.Graph, store *world.Store, cfg Config, client DecisionClient) 
 		return nil, err
 	}
 	s.initDiagnostics()
+	s.initializeFleet()
 	s.publish(nil)
 	return s, nil
 }
@@ -157,6 +161,9 @@ func (s *Simulator) initialize(cfg Config) error {
 		}
 		if v.Status != world.Active {
 			return fmt.Errorf("initial survivors must be active")
+		}
+		if v.VehicleID != "" {
+			return fmt.Errorf("initial survivors cannot already be passengers")
 		}
 		v.PlannedRoute = append([]string{}, v.PlannedRoute...)
 	}
@@ -262,6 +269,7 @@ func (s *Simulator) Step(ctx context.Context) error {
 		events = append(events, world.Event{Turn: s.turn, Type: event.Type, EdgeID: event.EdgeID, Message: "Scheduled road state applied"})
 	}
 	s.scenario.advance(s, &events)
+	s.moveFleet(&events)
 	s.version++
 	s.prepare(ctx, events)
 	s.publish(events) // Every HTTP request in this turn observes this exact world.
@@ -270,7 +278,7 @@ func (s *Simulator) Step(ctx context.Context) error {
 	hordeBlocked := s.hordeBlockedNodes()
 	for i := range s.survivors {
 		v := &s.survivors[i]
-		if v.Status != world.Active {
+		if v.Status != world.Active || v.VehicleID != "" {
 			continue
 		}
 		from := v.CurrentNode
@@ -311,7 +319,7 @@ func (s *Simulator) Step(ctx context.Context) error {
 		for j := range s.shelters {
 			shelter := &s.shelters[j]
 			ownsReservation := s.planner != nil && v.TargetShelterID == shelter.ID
-			spaceAvailable := s.planner == nil || ownsReservation || shelter.Capacity-shelter.Occupancy-shelter.Reserved > 0
+			spaceAvailable := s.planner == nil && !s.config.RescueFleet || ownsReservation || shelter.Capacity-shelter.Occupancy-shelter.Reserved > 0
 			if shelter.NodeID == next && shelter.Occupancy < shelter.Capacity && spaceAvailable && s.scenario.admits(shelter.ID) {
 				shelter.Occupancy++
 				if ownsReservation && shelter.Reserved > 0 {
@@ -331,7 +339,7 @@ func (s *Simulator) Step(ctx context.Context) error {
 			}
 		}
 	}
-	if s.planner != nil {
+	if s.planner != nil || s.config.RescueFleet {
 		s.reconcileReservations()
 	}
 	// Final failure labels use post-admission occupancy. Decision diagnostics
@@ -401,7 +409,7 @@ func (s *Simulator) decisions(ctx context.Context) []decision {
 		}()
 	}
 	for i, v := range s.survivors {
-		if v.Status == world.Active {
+		if v.Status == world.Active && v.VehicleID == "" {
 			jobs <- i
 		}
 	}
@@ -440,6 +448,11 @@ func (s *Simulator) observable(events []world.Event) world.WorldSnapshot {
 		Turn: s.turn, WorldVersion: s.version, GraphVersion: s.graph.Version, Graph: s.graph,
 		Survivors: s.survivors, Shelters: s.shelters, Events: events, Metrics: s.metrics,
 		Zombies: []world.Zombie{}, BlockedEdges: []string{},
+	}
+	if s.config.RescueFleet {
+		w.Fleet = s.fleet
+		metrics := s.fleetMetrics
+		w.FleetMetrics = &metrics
 	}
 	for _, z := range s.zombies {
 		if z.observable.Awake {

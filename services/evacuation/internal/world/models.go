@@ -70,12 +70,33 @@ type Zombie struct {
 }
 
 type Survivor struct {
+	VehicleID       string   `json:"vehicle_id,omitempty"`
 	ID              string   `json:"id"`
 	CurrentNode     string   `json:"current_node"`
 	Status          string   `json:"status"`
 	TargetShelterID string   `json:"target_shelter_id"`
 	PlannedRoute    []string `json:"planned_route"`
 	SpawnZoneID     string   `json:"spawn_zone_id,omitempty"`
+}
+
+// RescueVehicle publishes actual traversal only. A passenger remains active and
+// at the vehicle node until delivered; planned routes are never movement proof.
+type RescueVehicle struct {
+	ID               string   `json:"id"`
+	CurrentNode      string   `json:"current_node"`
+	Path             []string `json:"path"`
+	PassengerIDs     []string `json:"passenger_ids"`
+	TargetSurvivorID string   `json:"target_survivor_id"`
+	TargetShelterID  string   `json:"target_shelter_id"`
+	State            string   `json:"state"`
+	Capacity         int      `json:"capacity"`
+}
+
+type RescueFleetMetrics struct {
+	Pickups     int `json:"pickups"`
+	Delivered   int `json:"delivered"`
+	Moves       int `json:"moves"`
+	UsefulTrips int `json:"useful_trips"`
 }
 
 type Shelter struct {
@@ -110,17 +131,19 @@ type Metrics struct {
 }
 
 type WorldSnapshot struct {
-	ScenarioType string          `json:"scenario_type,omitempty"`
-	Turn         int             `json:"turn"`
-	WorldVersion uint64          `json:"world_version"`
-	GraphVersion string          `json:"graph_version"`
-	Zombies      []Zombie        `json:"zombies"`
-	Survivors    []Survivor      `json:"survivors"`
-	Shelters     []Shelter       `json:"shelters"`
-	BlockedEdges []string        `json:"blocked_edges"`
-	Events       []Event         `json:"events"`
-	Metrics      Metrics         `json:"metrics"`
-	Simulation   *SimulationInfo `json:"simulation,omitempty"`
+	Fleet        []RescueVehicle     `json:"fleet,omitempty"`
+	FleetMetrics *RescueFleetMetrics `json:"fleet_metrics,omitempty"`
+	ScenarioType string              `json:"scenario_type,omitempty"`
+	Turn         int                 `json:"turn"`
+	WorldVersion uint64              `json:"world_version"`
+	GraphVersion string              `json:"graph_version"`
+	Zombies      []Zombie            `json:"zombies"`
+	Survivors    []Survivor          `json:"survivors"`
+	Shelters     []Shelter           `json:"shelters"`
+	BlockedEdges []string            `json:"blocked_edges"`
+	Events       []Event             `json:"events"`
+	Metrics      Metrics             `json:"metrics"`
+	Simulation   *SimulationInfo     `json:"simulation,omitempty"`
 	// Graph is local decision input; GET /grafo publishes it separately.
 	Graph *Graph `json:"-"`
 	// Scenario is served separately by /v1/scenario to keep /estado compact.

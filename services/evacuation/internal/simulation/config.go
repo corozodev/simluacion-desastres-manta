@@ -23,6 +23,9 @@ type ScheduledEvent struct {
 }
 
 type Config struct {
+	// ZombiePolicy is private run configuration. Empty preserves classic_random.
+	ZombiePolicy string `json:"zombie_policy,omitempty"`
+	RescueFleet  bool   `json:"rescue_fleet,omitempty"`
 	// SpawnExcludedNodeIDs freezes the original shelter exclusions when a
 	// session chooses a shelter subset. It keeps comparison populations and
 	// RNG consumption identical without changing the historical round files.

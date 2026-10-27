@@ -92,6 +92,17 @@ func (g *Graph) Clone() *Graph {
 
 func (w WorldSnapshot) Clone() WorldSnapshot {
 	copy := w
+	if w.Fleet != nil {
+		copy.Fleet = append([]RescueVehicle{}, w.Fleet...)
+		for i := range copy.Fleet {
+			copy.Fleet[i].Path = append([]string{}, w.Fleet[i].Path...)
+			copy.Fleet[i].PassengerIDs = append([]string{}, w.Fleet[i].PassengerIDs...)
+		}
+	}
+	if w.FleetMetrics != nil {
+		metrics := *w.FleetMetrics
+		copy.FleetMetrics = &metrics
+	}
 	copy.Scenario = w.Scenario.Clone()
 	if w.Simulation != nil {
 		info := *w.Simulation

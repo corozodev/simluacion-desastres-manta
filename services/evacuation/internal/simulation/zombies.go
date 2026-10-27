@@ -28,7 +28,7 @@ func (s *Simulator) moveZombies(events *[]world.Event) {
 		switch z.Type {
 		case world.Walker, world.Sleeper:
 			if state.awakeTurns%2 == 0 {
-				s.wander(z, 1)
+				s.wander(state, 1)
 			}
 		case world.Runner:
 			detection := s.distances(z.CurrentNode, 3)
@@ -45,12 +45,15 @@ func (s *Simulator) moveZombies(events *[]world.Event) {
 				}
 			}
 			if len(best) == 0 {
-				s.wander(z, 2)
+				s.wander(state, 2)
 			} else {
 				if len(best) > 3 {
 					best = best[:3]
 				}
 				z.Path = append([]string{}, best...)
+				if len(best) > 1 {
+					s.rememberMovement(state, best[len(best)-2])
+				}
 				z.CurrentNode = best[len(best)-1]
 				if len(best) > 1 {
 					z.MovementState = "chasing"
@@ -58,19 +61,23 @@ func (s *Simulator) moveZombies(events *[]world.Event) {
 			}
 		case world.Horde:
 			if s.config.HordeMoveEvery > 0 && state.awakeTurns%s.config.HordeMoveEvery == 0 {
-				s.wander(z, 1)
+				s.wander(state, 1)
 			}
 		}
 	}
 }
 
-func (s *Simulator) wander(z *world.Zombie, steps int) {
+func (s *Simulator) wander(state *zombieState, steps int) {
+	z := &state.observable
+	policy := s.movementPolicy()
 	for i := 0; i < steps; i++ {
 		neighbors := s.index.Neighbors(z.CurrentNode, s.blocked)
 		if len(neighbors) == 0 {
 			return
 		}
-		z.CurrentNode = neighbors[s.rng.Intn(len(neighbors))].To
+		from := z.CurrentNode
+		z.CurrentNode = neighbors[policy.choose(s, state, neighbors)].To
+		s.rememberMovement(state, from)
 		z.Path = append(z.Path, z.CurrentNode)
 		z.MovementState = "moving"
 	}

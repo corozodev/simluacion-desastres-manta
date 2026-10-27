@@ -32,6 +32,25 @@ func (s *Simulator) prepare(ctx context.Context, events []world.Event) {
 		}
 	}()
 	before := s.observable(events).Clone()
+	// Passengers reserve real shelter seats but do not receive pedestrian plans.
+	// Charge their seats as effective occupancy only in the planner input.
+	passengerReservations := map[string]int{}
+	if s.config.RescueFleet {
+		walking := make([]world.Survivor, 0, len(before.Survivors))
+		for _, person := range before.Survivors {
+			if person.Status == world.Active && person.VehicleID != "" {
+				if person.TargetShelterID != "" {
+					passengerReservations[person.TargetShelterID]++
+				}
+				continue
+			}
+			walking = append(walking, person)
+		}
+		before.Survivors = walking
+		for i := range before.Shelters {
+			before.Shelters[i].Occupancy += passengerReservations[before.Shelters[i].ID]
+		}
+	}
 	// These are invalidated observable routes, not private engine cache misses.
 	danger := s.hordeBlockedNodes()
 	for _, z := range before.Zombies {
@@ -58,10 +77,14 @@ func (s *Simulator) prepare(ctx context.Context, events []world.Event) {
 	for _, sh := range s.shelters {
 		shelters[sh.ID] = sh
 	}
-	assigned := map[string]int{}
+	assigned := passengerReservations
 	for i := range s.survivors {
 		v := &s.survivors[i]
 		if v.Status != world.Active {
+			continue
+		}
+		if v.VehicleID != "" {
+			v.PlannedRoute = []string{v.CurrentNode}
 			continue
 		}
 		if s.scenario.waiting(v.ID) {
