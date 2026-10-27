@@ -228,3 +228,9 @@ El maestro se evalúa por compatibilidad, comportamiento y costo, sin exigirle e
 Los escenarios de inundación emplean parámetros sintéticos y no constituyen pronósticos hidrológicos ni recomendaciones oficiales de evacuación.
 
 La [guía del modelo y contrato React 4B](docs/urban-flood.md) incluye parámetros, límites, procedencia y reproducción. El [informe FASE 4A](docs/informe-fase4a.md) registra pruebas, mediciones, archivos y riesgos. No se despliega esta fase automáticamente.
+
+## Laboratorio interactivo React — FASE 4B
+
+`npm run dev:lab` arranca React y los dos servicios locales. Abrir `http://127.0.0.1:5173/escape`, cambiar **Escenarios → Inundaciones urbanas** y pulsar **Iniciar tormenta**. El laboratorio permite pausar/continuar el motor, cambiar parámetros y grafo, validar cuatro refugios candidatos y ejecutar su comparación A/B con orígenes congelados.
+
+Conserva el escenario zombie y añade ocho capas, inspección de calles, rutas, métricas y timeline. El maestro usa la geografía real revisada; las calles de inundación se agrupan en tres paths SVG. No se modifica el servidor publicado ni se despliega esta fase automáticamente. Ver [uso y contratos](docs/laboratorio-inundaciones.md), [resultados y capturas](docs/informe-fase4b.md).

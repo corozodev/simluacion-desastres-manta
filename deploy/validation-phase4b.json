@@ -1,0 +1,387 @@
+{
+  "phase": "4B",
+  "recorded_at_utc": "2026-10-27T03:36:27.047745+00:00",
+  "client_date": "2026-10-26",
+  "client_timezone": "America/Guayaquil",
+  "baseline_commit": "bff6107",
+  "scope": "Local React and Go laboratory only; no AWS deployment, no production restart, no push",
+  "implementation_commits": [
+    "776fc528c4ff4cbbbf2f127a4fd88a9e16b2c4a6 feat(contracts): define flood laboratory controls and comparisons",
+    "73a12b95e3bbd37a8eac8e2c3eff65b40a82ecf9 feat(flood-lab): control local runs and compare frozen shelter strategies",
+    "a0c42d0b9bd55982f7b2671742476782e0e04d42 feat(web): visualize flood runs candidates layers and shelter comparisons",
+    "3d2d60f40cf8329dd39c3a783634511598657793 test(flood-lab): add local launcher and real browser validation"
+  ],
+  "sources_sha256": {
+    "apps/web/.env.example": "53cb03d95da0777f52ff8649ee3f1d69b887ca75913a50392a37fc60305a7c42",
+    "apps/web/src/app/App.tsx": "e6ea82199114e84e7d029a17adfbdd5ea3a05c9214ea2aa9bec81e675aff1174",
+    "apps/web/src/components/AppShell.tsx": "2bfc92a959b1f4f4b9fdd507c76e1df286c41351c1e5da955eab7ca6ea9a889c",
+    "apps/web/src/components/ui.tsx": "491ed0a47f58dbae815a1c7a5742d373f1ed4063a74cffc991f294b6b3ecffa9",
+    "apps/web/src/features/Escape.tsx": "7b4270c04e39a3d40a9a07a865947bef727755db1b6b47661caa732c03c5f1fd",
+    "apps/web/src/features/ScenarioScreen.tsx": "0f9fe3a7ad3e1f7ee6497565ea2ffee7d8b69a48a158b7737bc322ba165b1214",
+    "apps/web/src/features/SimulationControl.tsx": "8390cd2f97853b645d1b75e62b7c1ddec15a0710dcab1b9a1958a73151576b15",
+    "apps/web/src/features/WorldMap.tsx": "b843d0559f8e695419c52f46aadaef2d6291f1fa6deffce3d8a70b173e3300ae",
+    "apps/web/src/features/flood/FloodLab.tsx": "4dec3c7a54a516c5704eea38e29f585e2764de76169aa372a23f1fd41f341707",
+    "apps/web/src/features/flood/FloodMap.tsx": "2c82d140ba9b115a23d6f06560435960ec0cacfab366709de2f5a23acab3f913",
+    "apps/web/src/features/flood/flood.css": "1ad54dcaf7e06871c61f621016be0e80d2b52ed0b304826ca87c87d068b50416",
+    "apps/web/src/lib/config.ts": "02a0b7c1eb625ed7a88d0f6b8c2a24ac01e3f37e8ba59e6739c6202566462aea",
+    "apps/web/src/main.tsx": "5bf24db7baf5e4f8fd07ee83f37c7464cd3a92ef59534992f9fd2c1e2365ba67",
+    "apps/web/src/services/api.ts": "b116984ba2d19bcefb24d0f52598355b49e0b96bc01b5a08d3a1a4d023615fa5",
+    "apps/web/src/services/errors.ts": "fcf5d2e3195d30b7e26ccd04ec707231515edca20d9baf94214e825f6d1dd544",
+    "apps/web/src/services/queries.ts": "a4bc468904b229a2214f5f113d519b38d7052ead7390d9a1c5d5af4cb2f49052",
+    "apps/web/src/styles/global.css": "8b96dddcd700e8b7696df5923156ca5fba78749dff2016f6dc98514a51df4a1a",
+    "apps/web/src/tests/App.test.tsx": "94a0e8a4764cd1b7420343f4e3967b4e2b7cb6d95916ce8a52c84e73a668df4a",
+    "apps/web/src/tests/api.test.ts": "c49d93941a258ceb92686f929f6e0df2d63ff5d8704f8f2ec72b21c31360297a",
+    "apps/web/src/tests/flood-api.test.ts": "d816ccf565cc76f16479c569368709ada7aa1dd1a775d946165029bae39ebeba",
+    "apps/web/src/tests/flood.test.tsx": "d4ee577ca3f4c7fdd1b7af27ce5204d64654b066f77074381dbc7132bfd8d711",
+    "apps/web/src/tests/multigraph.test.tsx": "8b0cec049b6b6b3528d92c3918f605aafbd9145ccf2df517e700a10c7caef483",
+    "apps/web/src/tests/setup.ts": "675e473d1041326dc6e83dfb4e62391b025617f98522a56caa71cbcfbb601af5",
+    "apps/web/src/tests/world.test.tsx": "f21abd8b891692ab43a0a7ebea343e6f69cf248d780cecfe7a8edaee06ad2b96",
+    "package.json": "7dffea96841edf66e55f922e87c4eeec10c6836a13d3a59afe64e5e4520b511f",
+    "packages/contracts/generated/api.d.ts": "920a6ca0e1957cc53aaf716a090c4a149ff81c1cab07b7071bcba65eddcd083a",
+    "packages/contracts/generated/schemas.json": "a208f57ccbaf918838626c90c9a250d80a321fe1d4069284903bdaa37b7f7895",
+    "packages/contracts/openapi.yaml": "e7b8f314f98a5b938910b83be9be6d4792fd03c3f99a79cc567d41c42892e489",
+    "services/evacuation/cmd/bench/main.go": "283fc8381fb0c5ef2ac4ba414417dcfa8320c1bde1f9152e84bd94bea6924389",
+    "services/evacuation/cmd/diagnose/main.go": "8ee5ced94ee7a8c4159756c5d6bb3e3546bf2ca570a56aa40d02957dce071d84",
+    "services/evacuation/cmd/evaluate/main.go": "52cf5531360e50d17d46719c04712b066c8b697bdb311b710cfff41f4f3ca3e2",
+    "services/evacuation/cmd/flood-bench/main.go": "b7cd5ca12a4c8c8502317209c6a390f0212c53cc447630fbb907cf5b0b081c89",
+    "services/evacuation/cmd/flood-bench/main_test.go": "5e185677ecdfb173a6461a8d1415a26e544a394ff6fdeebb8eb2d32dce966fad",
+    "services/evacuation/cmd/flood-lab/main.go": "b5fc08ce8d2de3ed5b2a72292e8c0454db217a6942126e6b26b1a01bb473413e",
+    "services/evacuation/cmd/flood-server/main.go": "857ae14ed07f5a988b2c808bfe037a549ab7f3cd18adcfabf813e9aea886cf88",
+    "services/evacuation/cmd/latency/main.go": "569da0f616437615bc37a099d72dd17e2887039761c4061ba20f2fa5cd649a8f",
+    "services/evacuation/cmd/latency/main_test.go": "a771f1d0746d6d87acec270e39e2b9f9ba6f7dfee5cfdd783df13287ab855b14",
+    "services/evacuation/cmd/multigraph-bench/main.go": "2811b636ab43919a17a313c96a33613e1abe5ac344f869dbff8f08fca31bd195",
+    "services/evacuation/cmd/operator-key/main.go": "4dd22d9da516d5936cc05aefbe683e4cd3a4bd8e64fb5701571960ca0aeb56f8",
+    "services/evacuation/cmd/server/main.go": "76eb503c26c25acdd3f7936f62bfe7f07928b868e64a2c5e570635edeb880910",
+    "services/evacuation/cmd/sim/main.go": "fcca4bf85cc70fe55841b88173eca0151e8298be6baf289c5e62b777b26797aa",
+    "services/evacuation/internal/application/application.go": "2c60dd32d8b632edc50f561a095bd0d216a1a1a7c7dec42727a0c827980f070f",
+    "services/evacuation/internal/application/flood_test.go": "7366710e419134fda63bb08e8443008a2993138ac86782b5862053be27c3fb46",
+    "services/evacuation/internal/application/integration_test.go": "e5ad7e68bcda809bf3b276f65e2c7c3b33d1d4ca9e60ece2b110e2be91650022",
+    "services/evacuation/internal/catalog/catalog.go": "1eed87b6e47d9c870a06df355549f90243a23c2fcc5d5fb0ac34feec97093610",
+    "services/evacuation/internal/catalog/catalog_test.go": "1862c9b662e4890c2c674ebc7459ef3c93a92fd1a903f999cf4b522cb9b3d8a9",
+    "services/evacuation/internal/control/control_test.go": "ff1b20b01efc569dbd9e794a0852e621e0de0ecd78cab097b708a120487aa981",
+    "services/evacuation/internal/control/http.go": "fb93cf207322f5e2cf39789f78bee392fe9d5ddebcdeb4e007eb593235ecbe17",
+    "services/evacuation/internal/control/manager.go": "7c69f1a24a583bf42aa941439bf10f75dd573fdc79f151d698b2cdfe9eea4329",
+    "services/evacuation/internal/control/session.go": "ea26bcc468d022e6a58290800aadfc64e3d704ade1694980dd148d66e9e3e50e",
+    "services/evacuation/internal/coordination/flood_test.go": "2739811111ec530584c8c78bf441e35f33f1b7c4061dcb98db6737856b730b2b",
+    "services/evacuation/internal/coordination/planner.go": "5cd1859542f0f05bd32d938ad7e98ad010853b98cc9fc2be1f7a2532e3410c9f",
+    "services/evacuation/internal/coordination/planner_test.go": "11556f4403045ad12d827cf08a4410a62d135773cc9b1777c9ee63cbcde4e25e",
+    "services/evacuation/internal/decision/engine.go": "8835cc3f02c8d4153c03a2740d6e2f20f42a29d647a44b10a950105205004fbf",
+    "services/evacuation/internal/decision/engine_test.go": "cfc61ab613c2e2a37ac24ee91f33fcdb4d4c69cd7544c0243a28bf599a0d5e6b",
+    "services/evacuation/internal/decision/flood_test.go": "f0494b314f7333fcde00b83d5af9538f5962efe212031faa23235511a3ee21c9",
+    "services/evacuation/internal/decision/phase2_test.go": "7d77b76a1ca6c0d6e4c1e24e35b15c4eb33fae48cbef515aa1795c2295e04702",
+    "services/evacuation/internal/decision/predictor.go": "c7c192cfe9dd7f5bae6712363d17f9d1baac3ba4859379d7c70e8083e30b8e58",
+    "services/evacuation/internal/diagnostics/report.go": "264b5717441b96c21c464ca31bef5380a90bd45da05424a99a9c3ce4cab1a770",
+    "services/evacuation/internal/evaluation/phase1/engine.go": "e760ccb1e7b8c28622b309904c2cf109c653efba37f15427271510f9d2e34cc4",
+    "services/evacuation/internal/evaluation/run.go": "763c5760731bf63418c49499ee5f937de909ec23d6d731f59b0c66280d96f7cf",
+    "services/evacuation/internal/evaluation/run_test.go": "a12ea8b214573677a9f97471e1ba625c5d364b8fcbd60d645b102ae101980a71",
+    "services/evacuation/internal/flood/config.go": "8594da25b25a28fe5d698e0e6002c107de3e400c4d7a91c1b2feba04a8e8a32b",
+    "services/evacuation/internal/flood/model.go": "7dc6110e7bad416acca69f6b0a799278a8a12be063d2894ff3150e9c84c36ee1",
+    "services/evacuation/internal/flood/model_test.go": "c06dc9f4fc562fab7ae95470d5a6f7a484d37a53fdb4f610a07d89af639e0f2d",
+    "services/evacuation/internal/floodlab/comparison.go": "7d9384cdea2df65ba3ec5c463643dda1a989a0fb787d6fe89e79817739af4852",
+    "services/evacuation/internal/floodlab/http.go": "f3309cb6be70a1e064ba91f0ae1512e2edf50fa6e5b241471b8aa1211b4107d9",
+    "services/evacuation/internal/floodlab/manager.go": "9326f722b1ae9fcc63d17db48da76f3112ec3bb3ed29981ccdb8048db57fa7e5",
+    "services/evacuation/internal/floodlab/manager_test.go": "e27a928f7cbd1ce2fb73574f68beefa89677381973e804cad02b9c6ab473e7db",
+    "services/evacuation/internal/floodlab/models.go": "2dedac7856f12106198bab709febd689aaaa1eb5132749ba490ab1e8139e81e7",
+    "services/evacuation/internal/floodlab/validation.go": "9aba9bf08293dbe1334f171b7706f0278bdfa46a141f41132414b47c9d582713",
+    "services/evacuation/internal/graph/graph.go": "26c80292c0db2f72c6fc77b47c09a3d8d126060f3a78ed527ecdffd0c9807171",
+    "services/evacuation/internal/graph/graph_test.go": "b189d507f2c9ae9907673ba3341958ba3867e233a80bcc9f854296029b5eb405",
+    "services/evacuation/internal/graph/urban_test.go": "f6168b184cdeeeb8a939b8c32e56f9f4371b83630d807246f089021c3082042f",
+    "services/evacuation/internal/httpapi/api.go": "1d25ef12d3a90b359243a4696cbe948e1d8b14645ef978787c18481b6d287d46",
+    "services/evacuation/internal/httpapi/api_test.go": "eee227d12da52492fe5576943e0891a5efbeb6cbf485664b8b1d99351f74f2a1",
+    "services/evacuation/internal/simulation/client.go": "c84ce2070089ff9f719d3bc433c141560d1853bd97df8f78fc635c80a6f8a9fb",
+    "services/evacuation/internal/simulation/client_test.go": "c41ced2bfa269c74b29745c32648e82f2b01f26767c5977e1b2a35cea12b175a",
+    "services/evacuation/internal/simulation/config.go": "5819e59aa5bc89afb4b258070a911391a33488291936ddf605e337d3f279d7a2",
+    "services/evacuation/internal/simulation/diagnostics.go": "a4c47870b7a0cc8a10ac7be468006a5b5c2ca049a324f7036defb04e24f403d7",
+    "services/evacuation/internal/simulation/phase2_test.go": "3dec198f2416b7969def57bf56b4cddd0932ab0032673edc498270abe3a1a24c",
+    "services/evacuation/internal/simulation/planner.go": "e74da5e4f7e761ea6b28679945e748500137afeefbb1ce8429761dbe5c355a76",
+    "services/evacuation/internal/simulation/scenario.go": "2055ca1c82eb24f9519ad88a6a25c7a1a78fe0769a5abfe276eb68946db4653c",
+    "services/evacuation/internal/simulation/scenario_test.go": "3c47804d76f8b528ba7cfc3832d6fe42991ab010f4f9cf5fa0f926ec532e41ac",
+    "services/evacuation/internal/simulation/simulation.go": "82f1916e867243f6e919d08eb1122d2b978f6cd9563ea58fbe6478c78c805978",
+    "services/evacuation/internal/simulation/simulation_test.go": "61f470a95b79db95a5621da1e30bf161131cd91b2e2f9d23048bf07e7104c4bf",
+    "services/evacuation/internal/simulation/spawn.go": "0984c598fd2f0cfe02b8a87cb68525cc9ef46b18fb1f67c5181f5660a1ca4474",
+    "services/evacuation/internal/simulation/zombies.go": "79aa9d3f25f59361276e8b512971e26ac9b051d8f766cccb9a7c52729ddee6bf",
+    "services/evacuation/internal/world/models.go": "bce114180b10aac318762c3bcfa1c50406aa30443697459908aa900da14caa94",
+    "services/evacuation/internal/world/scenario.go": "5587cb3782b84396604910f0d7f566fb2aa8d1fa9bf0987ba61ec146062330d6",
+    "services/evacuation/internal/world/scenario_test.go": "a537b5e0e22c2f9906f528e49bca7cdc4eb52ec3d0966610adee187ce1c7163a",
+    "services/evacuation/internal/world/store.go": "d46b9736fcfb299dcaba204e7e24adc3e7d0cd12679a02c778f978a92d9cca6b",
+    "services/evacuation/internal/world/store_test.go": "34b77de4a9c3b788dda40d39667042db89d1e8c602c41bdf5701044315a94565",
+    "tools/qa/check_flood_lab.mjs": "5915e127c4b82d3b74329116febe1a2d6d0bd8e9be6768585dfe89cae780400e",
+    "tools/scripts/dev_lab.mjs": "f9356c2c0a753ea652b9333e6a12041e3eee6b82b47d0e29186baf918a9b5b32"
+  },
+  "go_tests": {
+    "go-test": {
+      "top_level_passed": 145,
+      "with_subtests_passed": 239,
+      "failed": 0,
+      "packages_passed": 14
+    },
+    "go-race": {
+      "top_level_passed": 145,
+      "with_subtests_passed": 239,
+      "failed": 0,
+      "packages_passed": 14
+    }
+  },
+  "other_checks": {
+    "npm_install": "PASS; no new dependencies",
+    "openapi_codegen_tokens_generated_consistency": "PASS",
+    "typescript_eslint": "PASS",
+    "react_tests_passed": 35,
+    "new_react_tests": 13,
+    "historical_mock_tests_passed": 40,
+    "playwright_zombie_tests_passed": 8,
+    "graph_python_tests_passed": 10,
+    "web_build": "PASS",
+    "go_vet_build": "PASS",
+    "http_zombie_contract_real_browser_flutter": "PASS",
+    "http_flood_4a_contract": "PASS",
+    "flutter_analyze": "PASS",
+    "flutter_unit_tests_passed": 13,
+    "flutter_conditional_integration_skipped": 1,
+    "flutter_real_http_integration_passed": 1,
+    "flutter_debug_apk": "PASS; no new physical device test"
+  },
+  "validation_note": "A legacy React interaction test hit its unchanged 5000 ms timeout while Go race and Flutter builds ran concurrently. Full React suite passed in an isolated rerun; no timeout increase or assertion removal. New QA fixtures were subsequently tightened to exact GeoPoint fields and all 13 new tests passed again.",
+  "preserved_contracts": {
+    "existing_paths_unchanged": 14,
+    "existing_schemas_unchanged": 37,
+    "zombie_files_unchanged": [
+      "apps/web/src/features/Escape.tsx",
+      "apps/web/src/features/WorldMap.tsx",
+      "apps/web/src/features/SimulationControl.tsx",
+      "services/evacuation/internal/control",
+      "services/evacuation/internal/simulation",
+      "services/evacuation/data",
+      "services/evacuation/scenarios"
+    ]
+  },
+  "real_browser": {
+    "phase": "4B",
+    "recorded_at": "2026-10-27T03:31:44.062Z",
+    "source": "Local real Go HTTP, React and Chromium; not AWS or a hydrological validation",
+    "raster_tiles": "Disabled during headless QA; screenshots show real OSM street vectors from the checked-in graph.",
+    "checks": {
+      "reviewed_base_and_master_graphs": true,
+      "mutations_require_session_origin_csrf": true,
+      "candidate_count_duplicate_and_far_snap_validation": true,
+      "scenario_switch_and_synthetic_label": true,
+      "eight_independent_layer_controls": true,
+      "ui_map_pick_remove_restore_and_reject_candidates": true,
+      "pause_ack_stops_backend_clock": true,
+      "edge_click_and_agent_route_inspection": true,
+      "rain_evolution_blocks_visible_streets": true,
+      "resume_and_same_seed_replay": true,
+      "ui_original_vs_four_alternative_shelters": true,
+      "master_changes_real_engine_and_keeps_compact_dom": true,
+      "return_to_zombie_preserves_world": true
+    },
+    "browser": {
+      "inspected_route_agent": "S-0001",
+      "master_origin_snap_distance_max_m": 0,
+      "master_start_to_paused_ms": 811.7327150000001,
+      "master_payload_bytes": 4543303,
+      "master_nodes": 9179,
+      "master_edges": 13452,
+      "master_dom_nodes": 673,
+      "master_js_heap_used_bytes": 66554992,
+      "javascript_errors": [],
+      "failed_api_requests": [],
+      "api_http_errors": [],
+      "cancelled_queries_during_run_switch": [
+        {
+          "path": "/estado",
+          "failure": "net::ERR_ABORTED"
+        },
+        {
+          "path": "/grafo",
+          "failure": "net::ERR_ABORTED"
+        },
+        {
+          "path": "/grafo",
+          "failure": "net::ERR_ABORTED"
+        },
+        {
+          "path": "/simulation/catalog",
+          "failure": "net::ERR_ABORTED"
+        },
+        {
+          "path": "/lab/catalog",
+          "failure": "net::ERR_ABORTED"
+        },
+        {
+          "path": "/lab/session",
+          "failure": "net::ERR_ABORTED"
+        },
+        {
+          "path": "/lab/graph",
+          "failure": "net::ERR_ABORTED"
+        }
+      ],
+      "movement_credentials_sent": 0,
+      "raster_tile_requests": 0,
+      "screenshots": [
+        "flood-desktop-paused.png",
+        "flood-desktop-exposure.png",
+        "flood-comparison-desktop.png",
+        "flood-mobile.png",
+        "flood-mobile-viewport.png",
+        "flood-mobile-map.png",
+        "flood-master-desktop.png"
+      ]
+    },
+    "comparison": {
+      "id": "f2587bd7dcd0ddd9fe8c4bbd98e2b829",
+      "state": "finished",
+      "progress": 2,
+      "message": "Comparación terminada con los mismos agentes, orígenes y parámetros de amenaza.",
+      "results": [
+        {
+          "strategy": "original",
+          "mode": "competition",
+          "seed": 42,
+          "graph_version": "manta-v2-0ab03290b16a-lab-ef25b3d3463f",
+          "total_agents": 20,
+          "evacuated_percentage": 85,
+          "evacuation_metrics": {
+            "total_agents": 20,
+            "evacuated_agents": 17,
+            "isolated_agents": 0,
+            "waiting_agents": 0,
+            "average_evacuation_time": 19.41176470588235,
+            "blocked_edges": 0,
+            "caution_edges": 54,
+            "shelters_at_capacity": 0,
+            "reroute_count": 16,
+            "simulation_total_duration": 80
+          },
+          "step_latency_ms": 4.954907400000001,
+          "origins_hash": "15e97d0f868946c6c06443f70a43c12bb4e13945504ee5804b94a3365b150adf",
+          "config_hash": "ec084ecc4a291ed557cb04827d4559d5e729e3fc387c325e9fdaa2fd7f2f89eb"
+        },
+        {
+          "strategy": "custom",
+          "mode": "competition",
+          "seed": 42,
+          "graph_version": "manta-v2-0ab03290b16a-lab-dba2ee5b0964",
+          "total_agents": 20,
+          "evacuated_percentage": 100,
+          "evacuation_metrics": {
+            "total_agents": 20,
+            "evacuated_agents": 20,
+            "isolated_agents": 0,
+            "waiting_agents": 0,
+            "average_evacuation_time": 19.95,
+            "blocked_edges": 0,
+            "caution_edges": 54,
+            "shelters_at_capacity": 0,
+            "reroute_count": 0,
+            "simulation_total_duration": 80
+          },
+          "step_latency_ms": 3.836748762500002,
+          "origins_hash": "15e97d0f868946c6c06443f70a43c12bb4e13945504ee5804b94a3365b150adf",
+          "config_hash": "ec084ecc4a291ed557cb04827d4559d5e729e3fc387c325e9fdaa2fd7f2f89eb"
+        }
+      ]
+    },
+    "passed": true
+  },
+  "launcher_smoke": {
+    "url": "http://127.0.0.1:5190/escape",
+    "launcher": "npm run dev:lab",
+    "scenario": "paused",
+    "step": 19,
+    "metrics": {
+      "total_agents": 80,
+      "evacuated_agents": 50,
+      "isolated_agents": 0,
+      "waiting_agents": 0,
+      "average_evacuation_time": 6.12,
+      "blocked_edges": 81,
+      "caution_edges": 53,
+      "shelters_at_capacity": 0,
+      "reroute_count": 65,
+      "simulation_total_duration": 19
+    },
+    "errors": [],
+    "failed": [],
+    "tiles": "disabled for automated QA"
+  },
+  "build_assets": {
+    "apps/web/dist/assets/FloodLab-06FyWao-.js": {
+      "bytes": 42874,
+      "gzip_bytes": 13020,
+      "sha256": "daf4f86dad59160e18a2652ccc99fb593d5be343a84bc8d3b43a7345b832bfb0"
+    },
+    "apps/web/dist/assets/FloodLab-DqCVV0Pj.css": {
+      "bytes": 15792,
+      "gzip_bytes": 3215,
+      "sha256": "f9d3caf210dfd391ae8d813afd676e33f926aae4920d0575eafc227af9a78feb"
+    },
+    "apps/web/dist/assets/index-CB0A3eCx.css": {
+      "bytes": 70109,
+      "gzip_bytes": 12336,
+      "sha256": "c25abbf576fbe79bc94a16138ce92ee770754d70721ed0337eec97fc3b085d45"
+    },
+    "apps/web/dist/assets/index-DAdf9tWE.js": {
+      "bytes": 338901,
+      "gzip_bytes": 104597,
+      "sha256": "2a7ea3b74a945a4959b5c866d6431f2839ac1488e9b08ad6c0be8e6582d9b410"
+    }
+  },
+  "captures": {
+    "flood-desktop-paused.png": {
+      "path": "deploy/evidence-private/phase4b-20261026/flood-desktop-paused.png",
+      "sha256": "e23a09f5bb379e6158347a69607f10a4e379773a0f21daf46263c959b9b0da66",
+      "bytes": 569138
+    },
+    "flood-desktop-exposure.png": {
+      "path": "deploy/evidence-private/phase4b-20261026/flood-desktop-exposure.png",
+      "sha256": "7946e965477c55085e7ad53cecdd4c60c09c3634ddf5d17a24df0bc4fb6ca616",
+      "bytes": 578052
+    },
+    "flood-comparison-desktop.png": {
+      "path": "deploy/evidence-private/phase4b-20261026/flood-comparison-desktop.png",
+      "sha256": "12a1f61202270f539005e48a8f7aefdfbcc1a725f3b39710a940e4ad73bdbae1",
+      "bytes": 530489
+    },
+    "flood-mobile.png": {
+      "path": "deploy/evidence-private/phase4b-20261026/flood-mobile.png",
+      "sha256": "6afec1538d91e523d16e8e1d286d58dc7373e8c0a29747385b437697e2556670",
+      "bytes": 499953
+    },
+    "flood-mobile-viewport.png": {
+      "path": "deploy/evidence-private/phase4b-20261026/flood-mobile-viewport.png",
+      "sha256": "d56ca7e6a40bdda4db68d58744c7494e236be7a1604ccde2fc18c165a1838dd1",
+      "bytes": 73095
+    },
+    "flood-mobile-map.png": {
+      "path": "deploy/evidence-private/phase4b-20261026/flood-mobile-map.png",
+      "sha256": "dff74cfaafdbebc15303d60ab876f71ed80b8e1e7c1b05db4483e14d95e3bc4a",
+      "bytes": 57656
+    },
+    "flood-master-desktop.png": {
+      "path": "deploy/evidence-private/phase4b-20261026/flood-master-desktop.png",
+      "sha256": "2d0e464577b8b5815940a7a58a1b05f0d86345155c22b8e9ae58e4bf69261250",
+      "bytes": 733563
+    }
+  },
+  "limits": [
+    "Synthetic exposure; no hydrological forecast or official evacuation advice.",
+    "Local loopback-only controller, HttpOnly session/CSRF and matching frontend/API hostnames; no remote production administration introduced.",
+    "User-provided facility coordinates and labels are candidates; no invented or verified facility directory.",
+    "Public raster tiles disabled during automated browser QA; screenshots use checked-in real OSM vectors.",
+    "Master start-to-pause timing includes backend preparation, network/UI checks and pause acknowledgement; not isolated frame paint, sustained frame rate or an SLA.",
+    "Core 4A graph-copy and memory limits remain; no new zombie algorithm performance claim.",
+    "A/B shown uses 20 agents, seed42 and80simulatedunits; 85% vs100% applies only to that experiment and mean times condition on evacuation.",
+    "Incidents layer reserved empty for phase4C."
+  ],
+  "preexisting_changes_excluded": [
+    "deploy/validation-phase3b2.json",
+    "docs/informe-fase3b2.md",
+    "docs/operacion-multigrafo.md",
+    "docs/revision-rollout-fase3b2.md",
+    "deploy/validation-phase3b2-rollout.json"
+  ],
+  "final_build_recorded_at_utc": "2026-10-27T03:41:20.117787+00:00",
+  "post_browser_copy_note": "After the final real-browser run, three presentation-only sentences were clarified; behavior and contracts unchanged. Final TypeScript and production web build passed again."
+}
