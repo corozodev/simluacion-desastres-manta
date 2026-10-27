@@ -178,6 +178,9 @@ func run() error {
 						return err
 					}
 					a := sessions.PublicAnalytics(r.Diagnostics)
+					if p := r.ProbabilityAudit; p != nil {
+						a.Prediction = sessions.PredictionQuality{Samples: p.Samples, Hits: p.Hits, Misses: p.Misses, FalsePositives: p.FalsePositives, BrierScore: p.BrierScore}
+					}
 					var mem runtime.MemStats
 					runtime.ReadMemStats(&mem)
 
