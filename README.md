@@ -234,3 +234,11 @@ La [guía del modelo y contrato React 4B](docs/urban-flood.md) incluye parámetr
 `npm run dev:lab` arranca React y los dos servicios locales. Abrir `http://127.0.0.1:5173/escape`, cambiar **Escenarios → Inundaciones urbanas** y pulsar **Iniciar tormenta**. El laboratorio permite pausar/continuar el motor, cambiar parámetros y grafo, validar cuatro refugios candidatos y ejecutar su comparación A/B con orígenes congelados.
 
 Conserva el escenario zombie y añade ocho capas, inspección de calles, rutas, métricas y timeline. El maestro usa la geografía real revisada; las calles de inundación se agrupan en tres paths SVG. No se modifica el servidor publicado ni se despliega esta fase automáticamente. Ver [uso y contratos](docs/laboratorio-inundaciones.md), [resultados y capturas](docs/informe-fase4b.md).
+
+## Reportes ciudadanos georreferenciados — FASE 4C
+
+Flutter permite **Nueva novedad** desde el mapa: marcador manual o GPS Android con permiso explícito, revisión, confirmación y reintento idempotente. Go guarda el reporte en un directorio privado persistente; React muestra una capa separada con tipo, procedencia, estado y antigüedad. **Reporte ciudadano pendiente de verificación** permanece visible aunque un operador aplique el incidente al laboratorio.
+
+La acción **Aplicar incidente a simulación** requiere sesión local/CSRF, ejecución experimental esperada y confirmación explícita. Añade un overlay temporal, replanifica sin avanzar el paso y conserva auditoría, sin alterar el grafo base ni el escenario zombie. No ofrece navegación real de emergencia ni convierte reportes en hechos oficiales.
+
+`npm run dev:lab` conserva los reportes en `services/evacuation/private/incidents`. `FLUTTER_BIN=/ruta/flutter/bin/flutter npm run test:incidents:e2e` reproduce Flutter → Go → reinicio → React → cierre y desvío verificable. Ver [guía y endpoints](docs/incidentes-ciudadanos.md), [resultados y límites](docs/informe-fase4c.md) y [decisión de persistencia/costo](docs/decisions/ADR-004-incidentes-persistencia.md). No se realiza push ni despliegue automático.

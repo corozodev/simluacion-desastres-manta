@@ -1,0 +1,427 @@
+{
+  "phase": "4C",
+  "recorded_at_utc": "2026-10-27T04:15:02.873057+00:00",
+  "client_date": "2026-10-26",
+  "client_timezone": "America/Guayaquil",
+  "baseline_commit": "8d9cf3d",
+  "scope": "Local Flutter, Go persistence and React laboratory; no push, AWS calls, deployment or production restart.",
+  "implementation_commits": [
+    "316a6e3924eabadc72acab56f5658b7f719dd0b3 feat(contracts): define versioned citizen incidents and lab application",
+    "d41f275c99949fe7d846d8774756915696dcc81f feat(incidents): persist reports and audit isolated flood overlays",
+    "eed3b3af3b7175b62b400a77a27d3ef48a48a5db feat(mobile): submit reviewed reports with manual location and safe retries",
+    "e2260d09b168d9701f8c495ebb9df15fc88067c1 feat(web): inspect citizen reports and confirm experimental applications",
+    "5b4b46a1d7fdc95c4ce3f88c8edc69987d79d5ad test(incidents): verify Flutter persistence and React rerouting end to end"
+  ],
+  "contract_compatibility": {
+    "existing_paths_preserved": 22,
+    "existing_schemas_preserved": 52,
+    "new_paths": 7,
+    "new_schemas": 13,
+    "optional_labstate_incident_applications": true,
+    "step_contract_unchanged": true
+  },
+  "checks": {
+    "npm_install": true,
+    "contracts_validate": true,
+    "contracts_generate": true,
+    "tokens_generate": true,
+    "generated_check": true,
+    "typecheck": true,
+    "eslint": true,
+    "web_build": true,
+    "go_vet": true,
+    "go_build": true,
+    "go_race_all": true,
+    "go_race_changed_packages_after_final_validation_adjustment": true,
+    "no_new_dependencies": true
+  },
+  "tests": {
+    "go": {
+      "top_level": 158,
+      "including_subtests": 252,
+      "packages": 15,
+      "failures": 0,
+      "new_top_level": 13,
+      "command": "go test -count=1 -json ./..."
+    },
+    "react": {
+      "passed": 49,
+      "new": 14
+    },
+    "historical_service": {
+      "passed": 40
+    },
+    "flutter": {
+      "analyze_issues": 0,
+      "passed": 23,
+      "new": 10,
+      "conditional_skipped": 2,
+      "real_world_http_integration": 1,
+      "real_incident_http_integration": 1
+    },
+    "playwright_zombie_regressions": 8,
+    "python_graph": 10,
+    "real_zombie_http_contracts": true,
+    "real_flood4a_http_contracts": true,
+    "real_flood4b_checks": {
+      "reviewed_base_and_master_graphs": true,
+      "mutations_require_session_origin_csrf": true,
+      "candidate_count_duplicate_and_far_snap_validation": true,
+      "scenario_switch_and_synthetic_label": true,
+      "eight_independent_layer_controls": true,
+      "ui_map_pick_remove_restore_and_reject_candidates": true,
+      "pause_ack_stops_backend_clock": true,
+      "edge_click_and_agent_route_inspection": true,
+      "rain_evolution_blocks_visible_streets": true,
+      "resume_and_same_seed_replay": true,
+      "ui_original_vs_four_alternative_shelters": true,
+      "master_changes_real_engine_and_keeps_compact_dom": true,
+      "return_to_zombie_preserves_world": true
+    },
+    "real_incidents4c_checks": {
+      "actual_flutter_repository_post_and_replay": true,
+      "incident_survives_process_restart": true,
+      "application_requires_local_session_origin_and_csrf": true,
+      "react_pending_marker_provenance_and_detail": true,
+      "react_server_filters_type_status_and_age": true,
+      "explicit_react_application_closes_road_and_replans_without_movement": true,
+      "application_idempotent_without_extra_effects": true,
+      "base_graph_and_zombie_scenario_unchanged": true,
+      "new_run_clears_overlay_and_stale_run_is_rejected": true,
+      "mobile_390_no_horizontal_overflow": true,
+      "existing_zombie_react_screen_remains_usable": true
+    },
+    "corrected_checker_label": "4B expected the provisional layer name; updated to Novedades georreferenciadas and the full checker passed."
+  },
+  "launcher": {
+    "passed": true,
+    "checked_at": "2026-10-27T04:13:50.430Z",
+    "three_services_ready": true,
+    "incident_service_enabled": true,
+    "temporary_store": true
+  },
+  "incident_pipeline": {
+    "recorded_at": "2026-10-27T04:11:04.109Z",
+    "source": "Local real Flutter repository, durable Go HTTP, React and Chromium; checked-in OSM geometry, synthetic agents and test observation, no GPS/AWS.",
+    "isolation_scope": "One explicitly identified experimental run per Manager. Browser operator cookies share that local run; independent Managers are verified by Go tests.",
+    "incident": {
+      "incident_id": "e844bb5905a7b6b2c4a31c004f58cfd0",
+      "source_type": "citizen",
+      "verification_status": "pending",
+      "affected_edge_ids": [
+        "E-352a14c06d34b4e3"
+      ],
+      "received_at": "2026-10-27T04:11:12.891116069Z",
+      "event_time": "2026-10-27T04:11:12.887921Z",
+      "location_precision_m": 20
+    },
+    "routing": {
+      "fixture": {
+        "agent_id": "S-0004",
+        "edge_id": "E-352a14c06d34b4e3",
+        "latitude": -0.9536529,
+        "longitude": -80.75476025,
+        "original_route": [
+          "OSM-347399451",
+          "OSM-8270336144",
+          "OSM-10929726953",
+          "OSM-11107105834",
+          "OSM-347399444",
+          "OSM-12521017481",
+          "OSM-11107156018",
+          "OSM-365277463",
+          "OSM-365273351",
+          "OSM-11043223486",
+          "OSM-11113101254",
+          "OSM-11113101261",
+          "OSM-8382605293",
+          "OSM-5069689775",
+          "OSM-5069689810",
+          "OSM-5069690230",
+          "OSM-11121670248",
+          "OSM-7333067932",
+          "OSM-13679435666",
+          "OSM-5308414561",
+          "OSM-11113213215",
+          "OSM-11113213205",
+          "OSM-5308414522",
+          "OSM-4896073980",
+          "OSM-11113045323",
+          "OSM-5069690224",
+          "OSM-5069690117"
+        ],
+        "resolution": {
+          "matched": true,
+          "ambiguous": false,
+          "candidates": [
+            {
+              "edge_id": "E-352a14c06d34b4e3",
+              "road_type": "secondary",
+              "distance_m": 4.378680334524489e-12,
+              "from_node_id": "OSM-347399451",
+              "to_node_id": "OSM-8270336144",
+              "latitude": -0.9536529,
+              "longitude": -80.75476025
+            },
+            {
+              "edge_id": "E-77a368a8d9dc5754",
+              "road_type": "residential",
+              "distance_m": 23.228732640183484,
+              "from_node_id": "OSM-8270336144",
+              "to_node_id": "OSM-8270336377",
+              "latitude": -0.9538002,
+              "longitude": -80.7549084
+            },
+            {
+              "edge_id": "E-926a162f3de9d55f",
+              "road_type": "secondary",
+              "distance_m": 23.228732640183484,
+              "from_node_id": "OSM-8270336144",
+              "to_node_id": "OSM-10929726953",
+              "latitude": -0.9538002,
+              "longitude": -80.7549084
+            }
+          ],
+          "message": "Calle asociada a la ubicación declarada; esta asociación no verifica la novedad.",
+          "graph_version": "manta-master-57caa90f3aa7",
+          "max_snap_distance_m": 50
+        }
+      },
+      "before": {
+        "run_id": "be0aa7bab62a064526d45448fe5f0627",
+        "step": 1,
+        "world_version": 3,
+        "reroute_count": 0,
+        "route": [
+          "OSM-347399451",
+          "OSM-8270336144",
+          "OSM-10929726953",
+          "OSM-11107105834",
+          "OSM-347399444",
+          "OSM-12521017481",
+          "OSM-11107156018",
+          "OSM-365277463",
+          "OSM-365273351",
+          "OSM-11043223486",
+          "OSM-11113101254",
+          "OSM-11113101261",
+          "OSM-8382605293",
+          "OSM-5069689775",
+          "OSM-5069689810",
+          "OSM-5069690230",
+          "OSM-11121670248",
+          "OSM-7333067932",
+          "OSM-13679435666",
+          "OSM-5308414561",
+          "OSM-11113213215",
+          "OSM-11113213205",
+          "OSM-5308414522",
+          "OSM-4896073980",
+          "OSM-11113045323",
+          "OSM-5069690224",
+          "OSM-5069690117"
+        ]
+      },
+      "after": {
+        "step": 1,
+        "world_version": 4,
+        "reroute_count": 1,
+        "route": [
+          "OSM-347399451",
+          "OSM-12038298017",
+          "OSM-8270336378",
+          "OSM-8270336377",
+          "OSM-10929726953",
+          "OSM-11107105834",
+          "OSM-347399444",
+          "OSM-12521017481",
+          "OSM-11107156018",
+          "OSM-365277463",
+          "OSM-365273351",
+          "OSM-11043223486",
+          "OSM-11113101254",
+          "OSM-11113101261",
+          "OSM-8382605293",
+          "OSM-5069689775",
+          "OSM-5069689810",
+          "OSM-5069690230",
+          "OSM-11121670248",
+          "OSM-7333067932",
+          "OSM-13679435666",
+          "OSM-5308414561",
+          "OSM-11113213215",
+          "OSM-11113213205",
+          "OSM-5308414522",
+          "OSM-4896073980",
+          "OSM-11113045323",
+          "OSM-5069690224",
+          "OSM-5069690117"
+        ],
+        "road_condition": {
+          "edge_id": "E-352a14c06d34b4e3",
+          "state": "blocked",
+          "risk_source": "external_event+experimental_incident",
+          "risk_score": 0,
+          "updated_at_simulation_step": 1,
+          "cost_multiplier": 1
+        },
+        "application": {
+          "application_id": "089087acd4a7e6ae1603f9efcc9d25de",
+          "incident_id": "e844bb5905a7b6b2c4a31c004f58cfd0",
+          "run_id": "be0aa7bab62a064526d45448fe5f0627",
+          "affected_edge_ids": [
+            "E-352a14c06d34b4e3"
+          ],
+          "simulation_step": 1,
+          "world_version": 4,
+          "source_type": "citizen",
+          "verification_status_at_application": "pending",
+          "effect": "blocked",
+          "expires_at_simulation_step": 22,
+          "applied_at": "2026-10-27T04:11:16.908985243Z"
+        }
+      }
+    }
+  },
+  "browser": {
+    "errors": [],
+    "console_errors": [],
+    "failed_requests": [],
+    "normal_cancelled_get_requests": [
+      {
+        "path": "/lab/catalog",
+        "failure": "net::ERR_ABORTED"
+      },
+      {
+        "path": "/lab/session",
+        "failure": "net::ERR_ABORTED"
+      },
+      {
+        "path": "/lab/graph",
+        "failure": "net::ERR_ABORTED"
+      },
+      {
+        "path": "/grafo",
+        "failure": "net::ERR_ABORTED"
+      },
+      {
+        "path": "/grafo",
+        "failure": "net::ERR_ABORTED"
+      },
+      {
+        "path": "/simulation/catalog",
+        "failure": "net::ERR_ABORTED"
+      }
+    ],
+    "http_errors": [],
+    "movement_credential_leaks": [],
+    "raster_requests": []
+  },
+  "architecture": {
+    "persistence": "Single writer atomic versioned JSON with fsync, 0700/0600, flock. Reports and receipts survive process restart; worlds remain in RAM.",
+    "access_control": "Existing local HttpOnly SameSiteStrict session + exact Origin + CSRF. Loopback only; no remote operator identity.",
+    "application": "Expected run ID and explicit experimental acknowledgement. Durable receipt before simulator overlay/prepare/publish; no step or movement advance.",
+    "ttl_hours": 24,
+    "retention_days": 7,
+    "max_records": 10000,
+    "max_receipts": 10000,
+    "max_idempotency_hashes": 20000,
+    "photos_enabled": false,
+    "new_aws_resources": 0
+  },
+  "limitations": [
+    "Academic local prototype; no emergency navigation or automatic acceptance as facts.",
+    "No physical Android GPS/permission test; native channel and denial covered with doubles, Android build passed.",
+    "Draft retained only during app session; no fully offline queue or restart recovery.",
+    "One shared run per Manager; no private world per browser cookie.",
+    "No high availability, automated backup, volume-loss recovery or restored simulation overlays.",
+    "Public coordinates rounded to four decimals; 20 m is display quantization, not GPS accuracy or guaranteed anonymity.",
+    "Later rejection does not revoke an applied overlay; it expires by simulation steps.",
+    "No official ingestion, reporter identity, semantic PII detector or real corroboration.",
+    "AWS deployment needs a writable persistent bind mount, authentication and backup decisions; existing root DeleteOnTermination is true."
+  ],
+  "sources_sha256": {
+    "README.md": "ad87d0658db061961434d056b459c9f6cb002060efa4f6a1dc0de7523bf4da5a",
+    "apps/mobile/README.md": "c561a7d22cf75ce0fc2aadb43d1bee9076ae00cfa502030516b354a6a211de46",
+    "apps/mobile/android/app/src/main/AndroidManifest.xml": "7d874b66020fd3be6c282ab95f1e1e2054a193e8ba70ecacdeb2346c97f37433",
+    "apps/mobile/android/app/src/main/kotlin/dev/corodev/spooky/MainActivity.kt": "28ad4d48f1ce86c3f69bb0181bff634886854095fc28293c0ed6963a3e794932",
+    "apps/mobile/lib/core/api/generated/models.dart": "d643520c2e9a2a6397e4df936141ac58c036baa4757f637c23ec9e1a0880a71f",
+    "apps/mobile/lib/core/api/incident_repository.dart": "8c2946d68ef055c8e3941207a8bb5d15242cefe6015e1cee790203ef1ee9a694",
+    "apps/mobile/lib/core/config/api_config.dart": "39baae9947961d8745e2790cc52deac9a8972bd421148b321830ebf1e5629853",
+    "apps/mobile/lib/core/location/device_location.dart": "a0be93e6e41aaa235acf596bcf3329e779342b7eadf45b488f2aedfc898c13a6",
+    "apps/mobile/lib/features/escape/escape_screen.dart": "64853c329ad54b495c6e733ae82b912f9295c99af82704c9fd83b9978049c6e2",
+    "apps/mobile/lib/features/escape/route_map.dart": "92b5c463b19227ab956be07208eb7bdbde65d482b95d489b7ed6faab208a2aa6",
+    "apps/mobile/lib/features/incidents/incident_draft.dart": "ed4f5ba3c80bcaaff46be7a3c439119a35b904bfdf87b86918ac7b843df10050",
+    "apps/mobile/lib/features/incidents/incident_report_screen.dart": "65af08ce4cc7750566cb072cbe76fd0219addcac3c765e50c9a29502aaca2ebe",
+    "apps/mobile/test/incidents_test.dart": "dc6143d5ceea5cc81a71a2029aa3c782b4bac7c9a93fc7eac4dfa0ea0ccec6d1",
+    "apps/mobile/test/world_incidents_http_integration_test.dart": "55599148acda4103b687eb5edf85e846c3194d449e776b67495c5e4e34cda665",
+    "apps/web/.env.example": "b6eee2f38d5f7882b74b0e6ad1ee279c769bfd5a76141ef3182ac2cf1742cbc6",
+    "apps/web/README.md": "4c933203a519de8b2586deda78daad0fed58169c86ea06d0aabcff84bc959fe2",
+    "apps/web/src/features/flood/FloodLab.tsx": "28e77001349dd0088b6986ecc28d90346ab93418f93f09eb668bde79e064dd06",
+    "apps/web/src/features/flood/FloodMap.tsx": "1a79ba0f3c83e5f225451f5840c7acf2be432832a42c6aab2c5d63c55aaab5a2",
+    "apps/web/src/features/flood/IncidentPanel.tsx": "a3b91a30a42212922fe233f44b9f7f1e0ce3f2385e718df92c3d2af032584b8f",
+    "apps/web/src/features/flood/flood.css": "2c3528446a956ccef55f04e89554b89a08dbd5e50dd2d3a958fe1aa7995b849c",
+    "apps/web/src/features/flood/incidentPresentation.ts": "c2063bead7242c560c9fe44fa97fba922f517751d4a911ae42b9b390bdc430e9",
+    "apps/web/src/lib/config.ts": "b8defa847602dbc70ec87e9a6c7853b1570f8c17274f9816589353f9abbc5561",
+    "apps/web/src/services/api.ts": "e958f9609c2ec050931b8097808e43d2bf7da95b74881d538d33a0fa09a748ae",
+    "apps/web/src/services/queries.ts": "e864849a99324411a0e6d13608953d87bc4c044d07e225fe553f19d833124b73",
+    "apps/web/src/tests/incidents.test.tsx": "1381be3740270a66a4b529fdd881733e93e8d0e299dbc2489b2a7bbc9dcaeeb4",
+    "docs/decisions/ADR-004-incidentes-persistencia.md": "5bc9316c18b4b7b34e4329959b7389d0851e07cd1c19b33b8e7048055bbfc65a",
+    "docs/incidentes-ciudadanos.md": "8abb2bc6ac7e61a16eaf7725b8a163de6fef260fa4c2544aca294d47266346cd",
+    "docs/informe-fase4c.md": "09b30011245702cbb16332f28c79ffbb48a3f3b232b9c10afe4ba5ac41e0d3a9",
+    "package.json": "8c8c5c68e08d46310908537984a0cd66a4eac2910816455000816ead9dee9586",
+    "packages/contracts/generated/api.d.ts": "3e321931481bf854e528dfded3b5f3da4bbc4a94f0395cc923bf272e2f62aac1",
+    "packages/contracts/generated/schemas.json": "c366e355c8b6fcd3c4d83aa9fc751235a18b33b8a453de55f85892cff3cda0af",
+    "packages/contracts/openapi.yaml": "8d3d36ab6ce9c7e95319f776a0f42a8524810da26ba276f7ac3bfe7184931662",
+    "services/evacuation/cmd/flood-lab/main.go": "36f30d06371c102cacd488ab1b5708cdd0f8ef876b4e9f92d13f7b1a203cc139",
+    "services/evacuation/internal/floodlab/http.go": "c62c9455884a231474a88602bdb65ab6be043a5d10191f2fa9aead3b67feb4a7",
+    "services/evacuation/internal/floodlab/incident_http.go": "57c206275220ceb1cc4a7d0308e2ae8710cbb6d5d4623850ac42e8dc36c61f2f",
+    "services/evacuation/internal/floodlab/incident_manager.go": "6ae08efb5c3a9efba968c1c80315aab7059dcec5aeb02d048e5cdfba2026decb",
+    "services/evacuation/internal/floodlab/incident_test.go": "65df396c0ebc4ed953dbc1c9a0c67d7e0fa4bdb9aab706a89d0bc4cee8bb24b7",
+    "services/evacuation/internal/floodlab/manager.go": "9e58d493976af5abaf41379ccfc2530d9632fa502260a4c4308229fe7d5a6e5b",
+    "services/evacuation/internal/floodlab/models.go": "8621cbe7974bd0e60a3b92d68a78adb2f3732cee69c89fd11c7f9f10ed41bee9",
+    "services/evacuation/internal/incidents/models.go": "9aae50849f5a9e8f527a3a43d2f9ff75a66030544505f6d07718e7783963b017",
+    "services/evacuation/internal/incidents/snap.go": "5ac70f00ae66d9a022ee70aa6b12b62743c65346185fb41e1b0a3f4cedf29b59",
+    "services/evacuation/internal/incidents/store.go": "bb9c98f73dbc7b6cd5153725b3c6c302c77a07c3c82dd04ff6649b75adca3128",
+    "services/evacuation/internal/incidents/store_test.go": "122f1b1d14ff8590e0fc4bfd4a001bd7cb92dd2a94679b601ee4bfcf0c50993e",
+    "services/evacuation/internal/simulation/incidents.go": "3d7ac7fd3df7a5ad0069cb1481d3d1f0956da2baaea83142b457eea933dfc45a",
+    "services/evacuation/internal/simulation/incidents_test.go": "68a88ac04000cc0b6677527ab4ff16aa44feb80a1c7919e931a35ce2c038fc12",
+    "services/evacuation/internal/simulation/scenario.go": "4e1ba76d1fa4d8c205a0eb6ffb28c45bc161c1cb0fa05dcff0320bd7814d80d3",
+    "tools/codegen/contracts.mjs": "7b4a30819b66995853e98d254a16e6b7f0b9a4065ef8ef5e11a07e04bc2dd915",
+    "tools/qa/check_flood_lab.mjs": "1fca4d7544d53af8c4c2755beb67d61fb3d7a531c16e4a9a707bfc219cac640c",
+    "tools/qa/check_incidents_lab.mjs": "1477a6aff01d40414ed16b054b3251172bbe984e81739f3e1e3abe46e81da0ad",
+    "tools/scripts/dev_lab.mjs": "4561df76ab21fc6de39f9fc9da5d4990502e8a7d52e41b699bf4282cdfde757e"
+  },
+  "screenshots_sha256": {
+    "deploy/evidence-private/phase4c-20261026/citizen-applied-route-and-audit.png": "5ee827be1a2e7b77aecae52c242f174a94cbda8fbbfb6c6de1a48b622542797e",
+    "deploy/evidence-private/phase4c-20261026/citizen-detail-mobile-card-390.png": "b7b742d726632b60f61a0c9cdfefac8e30750411abde78cb15059c51caafdcf2",
+    "deploy/evidence-private/phase4c-20261026/citizen-detail-mobile-viewport-390.png": "963f22beb69e4cd65094c70c8bbeb541d55988861410a81b82f4b6ffdda66ed5",
+    "deploy/evidence-private/phase4c-20261026/citizen-pending-before-application.png": "d33825eae44be44594a8e69d514d3aeabafe92114f6f088dc20f5378cb42c8de",
+    "deploy/evidence-private/phase4c-20261026/citizen-report-mobile-390.png": "c2e930988bfd817d3f3b287a3c701ab67df3d767073409db39f529ab023182d5",
+    "deploy/evidence-private/phase4c-20261026/incident-overlay-map.png": "b251323e8b763a41b492da27b0e0f36cac83f61f535e0906fea56138ab03cfeb"
+  },
+  "local_artifacts_sha256": {
+    "deploy/evidence-private/phase4c-20261026/result.json": "0a7df91a125744d8d4831b4743b2a706ed1c0a55d438048c6c692224b953e58e",
+    "deploy/evidence-private/phase4c-20261026/go-test.jsonl": "a49689fbdff16bbdabcb2439573fae1cb817129bb5ac09879ca8e0bf847d2b8b",
+    "deploy/evidence-private/phase4c-20261026/launcher.json": "fa8866301390c29ccf81fff005d7e84fa91ad715565268dd198f55c34afdb483",
+    "deploy/evidence-private/phase4c-20261026/regression-flood4b/browser-lab.json": "f25dcc021e1c5dbef07ccf717893dffdd50484d59e7876c8166064976f2e213e",
+    "apps/mobile/build/app/outputs/flutter-apk/app-debug.apk": "9fc0b11efefdb189e0bb77701ccb646a8d8916e21186fc9ad1b2b594259d8248"
+  },
+  "preserved_source_areas": [
+    "services/evacuation/data",
+    "services/evacuation/scenarios",
+    "services/evacuation/internal/evaluation/phase1",
+    "services/evacuation/internal/httpapi",
+    "services/evacuation/cmd/server",
+    "services/evacuation/cmd/flood-server",
+    "apps/web/src/features/WorldMap.tsx",
+    "apps/web/src/features/Escape.tsx"
+  ],
+  "unrelated_preexisting_changes_excluded": [
+    "deploy/validation-phase3b2.json",
+    "docs/informe-fase3b2.md",
+    "docs/operacion-multigrafo.md",
+    "docs/revision-rollout-fase3b2.md",
+    "deploy/validation-phase3b2-rollout.json"
+  ]
+}
