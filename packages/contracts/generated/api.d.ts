@@ -776,6 +776,70 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** @description Opciones inmutables por sesión zombie. Flota sólo experimental. Omisión conserva predicción y asignación activas, flota apagada. */
+        SimulationProOptions: {
+            runner_prediction?: boolean;
+            shelter_assignment?: boolean;
+            rescue_fleet?: boolean;
+        };
+        RescueVehicle: {
+            id: string;
+            current_node: string;
+            path: string[];
+            passenger_ids: string[];
+            target_survivor_id: string;
+            target_shelter_id: string;
+            state: string;
+            capacity: number;
+        };
+        RescueFleetMetrics: {
+            pickups: number;
+            delivered: number;
+            moves: number;
+            useful_trips: number;
+        };
+        /** @description Probabilidades de un modelo observable limitado, no un futuro cierto ni calibración empírica; no incluye sleepers. */
+        RunnerForecast: {
+            turn: number;
+            horizon: number;
+            node_risks: {
+                node_id: string;
+                one_turn_probability: number;
+                two_turn_probability: number;
+            }[];
+            edge_risks: {
+                from: string;
+                to: string;
+                probability: number;
+            }[];
+        };
+        SimulationAnalytics: {
+            deaths_by_type: {
+                [key: string]: number;
+            };
+            deaths_by_cause: {
+                [key: string]: number;
+            };
+            replans: number;
+            oscillations: number;
+            mean_arrival_turn: number;
+            mean_route_efficiency: number;
+            agents: {
+                id: string;
+                arrival_turn: number;
+                moves: number;
+                oscillations: number;
+                replans: number;
+                route_efficiency: number;
+            }[];
+            prediction: {
+                samples: number;
+                hits: number;
+                misses: number;
+                false_positives: number;
+                brier_score: number;
+            };
+        };
         /** @description Refugio experimental sobre un nodo real transitable y accesible. Reemplaza la ubicación sin modificar la topología ni los orígenes del brote. */
         SimulationCustomShelter: {
             id: string;
@@ -784,6 +848,13 @@ export interface components {
         };
         /** @description Configuración acotada; refuge_ids vacío usa los predeterminados. custom_shelters reemplaza exactamente los cuatro originales, conservando sus IDs; no se combina con una selección parcial de refuge_ids. El snapshot publica sus ubicaciones efectivas sobre la topología estática del perfil. */
         SimulationConfigInput: {
+            /** @enum {string} */
+            mode?: "official" | "experimental";
+            /** @enum {string} */
+            zombie_policy?: "classic_random" | "correlated_random_walk" | "adaptive_exploration";
+            /** @enum {string} */
+            evacuation_algorithm?: "legacy_current" | "baseline_shortest_path" | "dynamic_risk_astar" | "predictive_temporal_astar";
+            pro?: components["schemas"]["SimulationProOptions"];
             survivors?: number;
             /** @enum {string} */
             round?: "round1" | "round2" | "round3";
@@ -793,6 +864,13 @@ export interface components {
             rainfall_intensity?: number;
         };
         SimulationConfig: {
+            /** @enum {string} */
+            mode?: "official" | "experimental";
+            /** @enum {string} */
+            zombie_policy?: "classic_random" | "correlated_random_walk" | "adaptive_exploration";
+            /** @enum {string} */
+            evacuation_algorithm?: "legacy_current" | "baseline_shortest_path" | "dynamic_risk_astar" | "predictive_temporal_astar";
+            pro?: components["schemas"]["SimulationProOptions"];
             survivors: number;
             /** @enum {string} */
             round: "round1" | "round2" | "round3";
@@ -871,6 +949,7 @@ export interface components {
             access_token: string;
         };
         SimulationState: {
+            runner_forecast?: components["schemas"]["RunnerForecast"];
             simulation_id: string;
             /** @enum {string} */
             status: "CREATED" | "RUNNING" | "PAUSED" | "COMPLETED" | "CANCELLED" | "FAILED";
@@ -899,6 +978,7 @@ export interface components {
             scenario_state?: components["schemas"]["ScenarioSnapshot"];
         };
         SimulationResults: {
+            runner_forecast?: components["schemas"]["RunnerForecast"];
             simulation_id: string;
             /** @enum {string} */
             status: "CREATED" | "RUNNING" | "PAUSED" | "COMPLETED" | "CANCELLED" | "FAILED";
@@ -928,6 +1008,7 @@ export interface components {
             results: components["schemas"]["SimulationResultMetrics"];
         };
         SimulationResultMetrics: {
+            analytics?: components["schemas"]["SimulationAnalytics"];
             initial_survivors: number;
             evacuated: number;
             bitten: number;
@@ -1044,6 +1125,7 @@ export interface components {
             status: "active" | "bitten" | "evacuated";
             target_shelter_id: string;
             spawn_zone_id?: string;
+            vehicle_id?: string;
             planned_route: string[];
         };
         WorldEvent: {
@@ -1067,6 +1149,8 @@ export interface components {
             availability: number;
         };
         WorldSnapshot: {
+            fleet?: components["schemas"]["RescueVehicle"][];
+            fleet_metrics?: components["schemas"]["RescueFleetMetrics"];
             /**
              * @description Presente en inundación experimental; ausente en zombie histórico.
              * @enum {string}
@@ -3861,6 +3945,11 @@ export interface operations {
     };
 }
 
+export type SimulationProOptions = components['schemas']['SimulationProOptions'];
+export type RescueVehicle = components['schemas']['RescueVehicle'];
+export type RescueFleetMetrics = components['schemas']['RescueFleetMetrics'];
+export type RunnerForecast = components['schemas']['RunnerForecast'];
+export type SimulationAnalytics = components['schemas']['SimulationAnalytics'];
 export type SimulationCustomShelter = components['schemas']['SimulationCustomShelter'];
 export type SimulationConfigInput = components['schemas']['SimulationConfigInput'];
 export type SimulationConfig = components['schemas']['SimulationConfig'];

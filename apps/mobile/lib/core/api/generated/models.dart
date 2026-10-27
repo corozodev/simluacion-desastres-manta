@@ -2,6 +2,78 @@
 
 // ignore_for_file: always_put_required_named_parameters_first, use_null_aware_elements
 
+class RescueVehicle {
+  const RescueVehicle({
+    required this.id,
+    required this.currentNode,
+    required this.path,
+    required this.passengerIds,
+    required this.targetSurvivorId,
+    required this.targetShelterId,
+    required this.state,
+    required this.capacity,
+  });
+
+  final String id;
+  final String currentNode;
+  final List<String> path;
+  final List<String> passengerIds;
+  final String targetSurvivorId;
+  final String targetShelterId;
+  final String state;
+  final int capacity;
+
+  factory RescueVehicle.fromJson(Map<String, dynamic> json) => RescueVehicle(
+    id: json['id'] as String,
+    currentNode: json['current_node'] as String,
+    path: (json['path'] as List).map((value) => value as String).toList(),
+    passengerIds: (json['passenger_ids'] as List).map((value) => value as String).toList(),
+    targetSurvivorId: json['target_survivor_id'] as String,
+    targetShelterId: json['target_shelter_id'] as String,
+    state: json['state'] as String,
+    capacity: json['capacity'] as int,
+  );
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'current_node': currentNode,
+    'path': path.map((value) => value).toList(),
+    'passenger_ids': passengerIds.map((value) => value).toList(),
+    'target_survivor_id': targetSurvivorId,
+    'target_shelter_id': targetShelterId,
+    'state': state,
+    'capacity': capacity,
+  };
+}
+
+class RescueFleetMetrics {
+  const RescueFleetMetrics({
+    required this.pickups,
+    required this.delivered,
+    required this.moves,
+    required this.usefulTrips,
+  });
+
+  final int pickups;
+  final int delivered;
+  final int moves;
+  final int usefulTrips;
+
+  factory RescueFleetMetrics.fromJson(Map<String, dynamic> json) => RescueFleetMetrics(
+    pickups: json['pickups'] as int,
+    delivered: json['delivered'] as int,
+    moves: json['moves'] as int,
+    usefulTrips: json['useful_trips'] as int,
+  );
+
+  Map<String, dynamic> toJson() => {
+    'pickups': pickups,
+    'delivered': delivered,
+    'moves': moves,
+    'useful_trips': usefulTrips,
+  };
+}
+
 class GraphNode {
   const GraphNode({
     required this.id,
@@ -253,6 +325,7 @@ class Survivor {
     required this.status,
     required this.targetShelterId,
     this.spawnZoneId,
+    this.vehicleId,
     required this.plannedRoute,
   });
 
@@ -261,6 +334,7 @@ class Survivor {
   final String status;
   final String targetShelterId;
   final String? spawnZoneId;
+  final String? vehicleId;
   final List<String> plannedRoute;
 
   factory Survivor.fromJson(Map<String, dynamic> json) => Survivor(
@@ -269,6 +343,7 @@ class Survivor {
     status: json['status'] as String,
     targetShelterId: json['target_shelter_id'] as String,
     spawnZoneId: json['spawn_zone_id'] == null ? null : json['spawn_zone_id'] as String,
+    vehicleId: json['vehicle_id'] == null ? null : json['vehicle_id'] as String,
     plannedRoute: (json['planned_route'] as List).map((value) => value as String).toList(),
   );
 
@@ -278,6 +353,7 @@ class Survivor {
     'status': status,
     'target_shelter_id': targetShelterId,
     if (spawnZoneId != null) 'spawn_zone_id': spawnZoneId!,
+    if (vehicleId != null) 'vehicle_id': vehicleId!,
     'planned_route': plannedRoute.map((value) => value).toList(),
   };
 }
@@ -372,6 +448,8 @@ class WorldMetrics {
 
 class WorldSnapshot {
   const WorldSnapshot({
+    this.fleet,
+    this.fleetMetrics,
     this.scenarioType,
     required this.turn,
     required this.worldVersion,
@@ -385,6 +463,8 @@ class WorldSnapshot {
     this.simulation,
   });
 
+  final List<RescueVehicle>? fleet;
+  final RescueFleetMetrics? fleetMetrics;
   final String? scenarioType;
   final int turn;
   final int worldVersion;
@@ -398,6 +478,8 @@ class WorldSnapshot {
   final SimulationInfo? simulation;
 
   factory WorldSnapshot.fromJson(Map<String, dynamic> json) => WorldSnapshot(
+    fleet: json['fleet'] == null ? null : (json['fleet'] as List).map((value) => RescueVehicle.fromJson(Map<String, dynamic>.from(value as Map))).toList(),
+    fleetMetrics: json['fleet_metrics'] == null ? null : RescueFleetMetrics.fromJson(Map<String, dynamic>.from(json['fleet_metrics'] as Map)),
     scenarioType: json['scenario_type'] == null ? null : json['scenario_type'] as String,
     turn: json['turn'] as int,
     worldVersion: json['world_version'] as int,
@@ -412,6 +494,8 @@ class WorldSnapshot {
   );
 
   Map<String, dynamic> toJson() => {
+    if (fleet != null) 'fleet': fleet!.map((value) => value.toJson()).toList(),
+    if (fleetMetrics != null) 'fleet_metrics': fleetMetrics!.toJson(),
     if (scenarioType != null) 'scenario_type': scenarioType!,
     'turn': turn,
     'world_version': worldVersion,

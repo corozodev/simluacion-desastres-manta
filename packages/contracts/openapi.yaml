@@ -1763,6 +1763,98 @@ components:
       name: X-CSRF-Token
       description: Token ligado a la sesión; además se exige Origin permitido.
   schemas:
+    SimulationProOptions:
+      type: object
+      additionalProperties: false
+      description: Opciones inmutables por sesión zombie. Flota sólo experimental. Omisión conserva predicción y asignación activas, flota apagada.
+      properties:
+        runner_prediction: { type: boolean }
+        shelter_assignment: { type: boolean }
+        rescue_fleet: { type: boolean }
+    RescueVehicle:
+      type: object
+      additionalProperties: false
+      required: [ id, current_node, path, passenger_ids, target_survivor_id, target_shelter_id, state, capacity ]
+      properties:
+        id: { type: string, minLength: 1 }
+        current_node: { type: string, minLength: 1 }
+        path: { type: array, maxItems: 3, items: { type: string } }
+        passenger_ids: { type: array, maxItems: 4, uniqueItems: true, items: { type: string } }
+        target_survivor_id: { type: string }
+        target_shelter_id: { type: string }
+        state: { type: string }
+        capacity: { type: integer, minimum: 4, maximum: 4 }
+    RescueFleetMetrics:
+      type: object
+      additionalProperties: false
+      required: [ pickups, delivered, moves, useful_trips ]
+      properties:
+        pickups: { type: integer, minimum: 0 }
+        delivered: { type: integer, minimum: 0 }
+        moves: { type: integer, minimum: 0 }
+        useful_trips: { type: integer, minimum: 0 }
+    RunnerForecast:
+      type: object
+      additionalProperties: false
+      description: Probabilidades de un modelo observable limitado, no un futuro cierto ni calibración empírica; no incluye sleepers.
+      required: [ turn, horizon, node_risks, edge_risks ]
+      properties:
+        turn: { type: integer, minimum: 0 }
+        horizon: { type: integer, minimum: 1, maximum: 2 }
+        node_risks:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required: [ node_id, one_turn_probability, two_turn_probability ]
+            properties:
+              node_id: { type: string }
+              one_turn_probability: { type: number, minimum: 0, maximum: 1 }
+              two_turn_probability: { type: number, minimum: 0, maximum: 1 }
+        edge_risks:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required: [ from, to, probability ]
+            properties:
+              from: { type: string }
+              to: { type: string }
+              probability: { type: number, minimum: 0, maximum: 1 }
+    SimulationAnalytics:
+      type: object
+      additionalProperties: false
+      required: [ deaths_by_type, deaths_by_cause, replans, oscillations, mean_arrival_turn, mean_route_efficiency, agents, prediction ]
+      properties:
+        deaths_by_type: { type: object, additionalProperties: { type: integer, minimum: 0 } }
+        deaths_by_cause: { type: object, additionalProperties: { type: integer, minimum: 0 } }
+        replans: { type: integer, minimum: 0 }
+        oscillations: { type: integer, minimum: 0 }
+        mean_arrival_turn: { type: number, minimum: 0 }
+        mean_route_efficiency: { type: number, minimum: 0 }
+        agents:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required: [ id, arrival_turn, moves, oscillations, replans, route_efficiency ]
+            properties:
+              id: { type: string }
+              arrival_turn: { type: integer, minimum: 0 }
+              moves: { type: integer, minimum: 0 }
+              oscillations: { type: integer, minimum: 0 }
+              replans: { type: integer, minimum: 0 }
+              route_efficiency: { type: number, minimum: 0 }
+        prediction:
+          type: object
+          additionalProperties: false
+          required: [ samples, hits, misses, false_positives, brier_score ]
+          properties:
+            samples: { type: integer, minimum: 0 }
+            hits: { type: integer, minimum: 0 }
+            misses: { type: integer, minimum: 0 }
+            false_positives: { type: integer, minimum: 0 }
+            brier_score: { type: number, minimum: 0, maximum: 1 }
     SimulationCustomShelter:
       type: object
       additionalProperties: false
@@ -1777,6 +1869,10 @@ components:
       additionalProperties: false
       description: Configuración acotada; refuge_ids vacío usa los predeterminados. custom_shelters reemplaza exactamente los cuatro originales, conservando sus IDs; no se combina con una selección parcial de refuge_ids. El snapshot publica sus ubicaciones efectivas sobre la topología estática del perfil.
       properties:
+        mode: { type: string, enum: [ official, experimental ] }
+        zombie_policy: { type: string, enum: [ classic_random, correlated_random_walk, adaptive_exploration ] }
+        evacuation_algorithm: { type: string, enum: [ legacy_current, baseline_shortest_path, dynamic_risk_astar, predictive_temporal_astar ] }
+        pro: { $ref: '#/components/schemas/SimulationProOptions' }
         survivors: { type: integer, minimum: 1, maximum: 200 }
         round: { type: string, enum: [ round1, round2, round3 ] }
         refuge_ids:
@@ -1799,6 +1895,10 @@ components:
       additionalProperties: false
       required: [ survivors, round, refuge_ids ]
       properties:
+        mode: { type: string, enum: [ official, experimental ] }
+        zombie_policy: { type: string, enum: [ classic_random, correlated_random_walk, adaptive_exploration ] }
+        evacuation_algorithm: { type: string, enum: [ legacy_current, baseline_shortest_path, dynamic_risk_astar, predictive_temporal_astar ] }
+        pro: { $ref: '#/components/schemas/SimulationProOptions' }
         survivors: { type: integer, minimum: 1, maximum: 200 }
         round: { type: string, enum: [ round1, round2, round3 ] }
         refuge_ids:
@@ -1877,6 +1977,7 @@ components:
       additionalProperties: false
       required: [ simulation_id, status, tick, max_ticks, state_version, scenario, graph_profile, graph_version, seed, tick_interval_ms, created_at, started_at, updated_at, expires_at, config, snapshot ]
       properties:
+        runner_forecast: { $ref: '#/components/schemas/RunnerForecast' }
         simulation_id: { type: string, minLength: 1 }
         status:
           type: string
@@ -1902,6 +2003,7 @@ components:
       additionalProperties: false
       required: [ simulation_id, status, tick, max_ticks, state_version, scenario, graph_profile, graph_version, seed, tick_interval_ms, created_at, started_at, updated_at, expires_at, config, snapshot, results ]
       properties:
+        runner_forecast: { $ref: '#/components/schemas/RunnerForecast' }
         simulation_id: { type: string, minLength: 1 }
         status:
           type: string
@@ -1928,6 +2030,7 @@ components:
       additionalProperties: false
       required: [ initial_survivors, evacuated, bitten, active, survival_rate, refuges_used ]
       properties:
+        analytics: { $ref: '#/components/schemas/SimulationAnalytics' }
         initial_survivors: { type: integer, minimum: 1 }
         evacuated: { type: integer, minimum: 0 }
         bitten: { type: integer, minimum: 0 }
@@ -2105,6 +2208,7 @@ components:
         status: { type: string, enum: [ active, bitten, evacuated ] }
         target_shelter_id: { type: string }
         spawn_zone_id: { type: string }
+        vehicle_id: { type: string }
         planned_route:
           type: array
           items: { type: string }
@@ -2163,6 +2267,8 @@ components:
           metrics
         ]
       properties:
+        fleet: { type: array, maxItems: 5, items: { $ref: '#/components/schemas/RescueVehicle' } }
+        fleet_metrics: { $ref: '#/components/schemas/RescueFleetMetrics' }
         scenario_type:
           type: string
           enum: [ urban_flood ]
