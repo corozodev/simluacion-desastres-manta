@@ -50,6 +50,8 @@
     "graph:generate": "python3 tools/geo/urban_manta.py",
     "graph:test": "python3 -m unittest discover -s tools/geo -p test_*.py",
     "test:contracts:http": "node tools/qa/check_http_contracts.mjs",
+    "test:contracts:simulations": "node tools/qa/check_simulation_contracts.mjs",
+    "test:simulations:browser": "node tools/qa/check_simulation_browser.mjs",
     "evaluate": "node tools/scripts/go.mjs run ./cmd/evaluate",
     "graph:generate:v1": "python3 tools/geo/import_manta.py",
     "graph:audit": "python3 tools/geo/audit_graph.py"

@@ -158,7 +158,7 @@ try {
     await page.goto(`${origin}/escape`);
     await expect(page.getByRole('heading', { name: 'Escape de Manta Zombie' })).toBeVisible();
     await expect(page.getByRole('img', { name: /Red de evacuación/ })).toBeVisible();
-    await page.getByRole('combobox', { name: 'Escenarios', exact: true }).selectOption({ label: 'Inundaciones urbanas' });
+    await page.goto(`${origin}/flood-lab`);
     await expect(page.getByText('SIMULACIÓN — DATOS SINTÉTICOS', { exact: true })).toBeVisible();
     await expect(page.getByRole('img', { name: /^Red urbana de inundación simulada/ })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Iniciar tormenta', exact: true })).toBeEnabled();
@@ -315,7 +315,7 @@ try {
     report.browser.master_js_heap_used_bytes = metrics.metrics.find(metric => metric.name === 'JSHeapUsedSize')?.value;
     await page.screenshot({ path: path.join(directory, 'flood-master-desktop.png'), fullPage: true });
     report.checks.master_changes_real_engine_and_keeps_compact_dom = true;
-    await page.getByRole('combobox', { name: 'Escenarios', exact: true }).selectOption({ label: 'Apocalipsis zombi' });
+    await page.goto(`${origin}/escape`);
     await expect(page.getByRole('heading', { name: 'Escape de Manta Zombie' })).toBeVisible();
     await expect(page.getByRole('img', { name: /Red de evacuación/ })).toBeVisible();
     if ((await (await fetch(`${zombie}/estado`)).json()).graph_version !== (await (await fetch(`${zombie}/grafo`)).json()).version) throw new Error('Flood laboratory changed the zombie graph');

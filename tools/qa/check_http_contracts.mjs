@@ -36,7 +36,7 @@ try {
   server = spawn(binary, [], {
     cwd: backend,
     stdio: ['ignore', 'pipe', 'pipe'],
-    env: { ...process.env, API_KEY: key, LISTEN_ADDR: '127.0.0.1:0', SIM_INTERVAL: '1h', SIM_TURNS: '150', SCENARIO_PATH: urban ? 'scenarios/urban/round1.json' : 'scenarios/round1.json', GRAPH_PATH: urban ? 'data/manta-v2.json' : 'data/manta-v1.json', CORS_ORIGINS: 'http://localhost:5173,http://127.0.0.1:5174' },
+    env: { ...process.env, API_KEY: key, LISTEN_ADDR: '127.0.0.1:0', SIM_AUTOSTART: 'false', SIM_INTERVAL: '1h', SIM_TURNS: '150', SCENARIO_PATH: urban ? 'scenarios/urban/round1.json' : 'scenarios/round1.json', GRAPH_PATH: urban ? 'data/manta-v2.json' : 'data/manta-v1.json', CORS_ORIGINS: 'http://localhost:5173,http://127.0.0.1:5174' },
   });
   const ready = new Promise((resolve, reject) => {
     let buffer = '';
@@ -65,15 +65,8 @@ try {
   };
   await get('/healthz', 'HealthResponse');
   const graph = await get('/grafo', 'Graph');
-  let state;
-  // The first turn publishes a decision snapshot, then final state. Wait for a
-  // successful request count so the 1h interval provides a stable final snapshot.
-  for (let attempt = 0; attempt < 100; attempt++) {
-    state = await get('/estado', 'WorldSnapshot');
-    if (state.turn === 1 && state.metrics.requests_success > 0) break;
-    await delay(20);
-  }
-  if (state?.turn !== 1 || state.metrics.requests_success === 0) throw new Error('First HTTP simulation turn did not finish');
+  const state = await get('/estado', 'WorldSnapshot');
+  if (state.turn !== 0 || state.metrics.requests_success !== 0 || state.simulation?.state !== 'idle') throw new Error('Legacy runtime executed a turn during startup');
   if (urban) {
     if (graph.spawn_zones?.length !== 4 || !graph.edges.every(edge => edge.geometry?.length >= 2)) throw new Error('Urban graph lacks verified zones or real geometries');
     for (const survivor of state.survivors) {
@@ -124,7 +117,7 @@ try {
     browser = await chromium.launch(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE } : {});
     const page = await browser.newPage({ viewport: { width: 1440, height: 1100 } });
     const credentialLeaks = [], legacyRequests = [], unexpectedApiRequests = [];
-    const publicWorldRoutes = new Set(['/healthz', '/grafo', '/estado', '/simulation/catalog']);
+    const publicWorldRoutes = new Set(['/healthz', '/grafo', '/v1/simulations/capabilities']);
     page.on('request', request => {
       if (request.url().startsWith(baseUrl) && request.headers()['x-api-key']) credentialLeaks.push(request.url());
       const route = new URL(request.url()).pathname;
@@ -143,9 +136,8 @@ try {
     if (await map.getAttribute('viewBox') === zoomedView) throw new Error('Map pan did not change viewport');
     await page.getByRole('button', { name: 'Restablecer mapa', exact: true }).click();
     if (await map.getAttribute('viewBox') !== initialView) throw new Error('Map reset did not restore viewport');
-    await page.getByRole('searchbox', { name: 'Buscar por ID' }).fill(survivor.id);
-    await page.getByRole('cell', { name: survivor.id, exact: true }).waitFor();
-    await page.getByText('Refugio asignado:', { exact: false }).waitFor();
+    await page.getByRole('button', { name: 'Iniciar simulación', exact: true }).waitFor();
+    if (await page.locator('.escape-survivor, .escape-zombie').count()) throw new Error('Exploration displayed actors without creating a session');
     if (urban && await page.locator('.escape-spawn-zone').count() !== 4) throw new Error('Urban spawn polygons missing in browser');
     const screenshotDir = process.env.PHASE3B_BROWSER_SCREENSHOT_DIR;
     if (screenshotDir) {
@@ -161,7 +153,7 @@ try {
     if (credentialLeaks.length) throw new Error('Browser sent movement credentials');
     if (legacyRequests.length) throw new Error('Client requested an obsolete API route');
     if (unexpectedApiRequests.length) throw new Error('Browser requested a non-observation API route');
-    console.log(`React navegador correcto: ${urban ? 'Manta v2' : 'Manta v1'}, geometrías, zoom/desplazamiento, búsqueda y ruta; viewport móvil sin desborde ni credenciales.`);
+    console.log(`React navegador correcto: ${urban ? 'Manta v2' : 'Manta v1'}, exploración sin ejecutar, geometrías y zoom/desplazamiento; viewport móvil sin desborde ni credenciales.`);
   }
 } finally {
   if (browser) await browser.close();
