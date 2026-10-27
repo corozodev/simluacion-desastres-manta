@@ -33,20 +33,17 @@ func (s *Simulator) prepare(ctx context.Context, events []world.Event) {
 	}()
 	before := s.observable(events).Clone()
 	// Passengers reserve real shelter seats but do not receive pedestrian plans.
-	// Charge their seats as effective occupancy only in the planner input.
+	// Keep their observable positions as possible runner prey, and charge their
+	// seats as effective occupancy only in the planner input.
 	passengerReservations := map[string]int{}
 	if s.config.RescueFleet {
-		walking := make([]world.Survivor, 0, len(before.Survivors))
 		for _, person := range before.Survivors {
 			if person.Status == world.Active && person.VehicleID != "" {
 				if person.TargetShelterID != "" {
 					passengerReservations[person.TargetShelterID]++
 				}
-				continue
 			}
-			walking = append(walking, person)
 		}
-		before.Survivors = walking
 		for i := range before.Shelters {
 			before.Shelters[i].Occupancy += passengerReservations[before.Shelters[i].ID]
 		}

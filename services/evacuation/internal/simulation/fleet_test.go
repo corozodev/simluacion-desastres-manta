@@ -222,3 +222,23 @@ func TestFleetPlannerSeatsAndReproducibility(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestFleetPlannerRetainsObservablePassengerPreyAndProtectsSeats(t *testing.T) {
+	s := create(t, chain(9), Config{RescueFleet: true, InitialSurvivors: []world.Survivor{survivor("S", "A")}}, decisionFunc(stay))
+	s.fleet[0].CurrentNode = "A"
+	step(t, s)
+	called := false
+	s.SetPlanner(plannerFunc(func(_ context.Context, observed world.WorldSnapshot) world.WorldSnapshot {
+		called = true
+		if len(observed.Survivors) != 1 || observed.Survivors[0].VehicleID == "" || observed.Survivors[0].CurrentNode != "C" {
+			t.Fatal("planner lost observable onboard prey")
+		}
+		if observed.Shelters[0].Occupancy != 1 {
+			t.Fatal("planner did not protect onboard reserved seat")
+		}
+		return observed
+	}))
+	if !called || s.shelters[0].Occupancy != 0 || s.shelters[0].Reserved != 1 {
+		t.Fatal("planner projection changed authoritative occupancy")
+	}
+}
