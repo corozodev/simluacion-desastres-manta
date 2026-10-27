@@ -23,6 +23,10 @@ type ScheduledEvent struct {
 }
 
 type Config struct {
+	// SpawnExcludedNodeIDs freezes the original shelter exclusions when a
+	// session chooses a shelter subset. It keeps comparison populations and
+	// RNG consumption identical without changing the historical round files.
+	SpawnExcludedNodeIDs   []string         `json:"-"`
 	ScenarioType           string           `json:"scenario_type,omitempty"`
 	Flood                  *flood.Config    `json:"flood,omitempty"`
 	Name                   string           `json:"name"`

@@ -5,15 +5,28 @@ import "sync"
 // Store owns its published data. Copies on both boundaries prevent callers from
 // mutating authoritative snapshots while HTTP requests run concurrently.
 type Store struct {
-	mu       sync.RWMutex
-	snapshot WorldSnapshot
-	ready    bool
+	mu          sync.RWMutex
+	snapshot    WorldSnapshot
+	ready       bool
+	sourceGraph *Graph
 }
 
 func NewStore() *Store { return &Store{} }
 
 func (s *Store) Publish(snapshot WorldSnapshot) {
+	// Topology never changes during a run. Own one defensive copy, and only
+	// clone dynamic entities on each publication.
+	s.mu.RLock()
+	shared := s.snapshot.Graph
+	same := s.sourceGraph == snapshot.Graph
+	s.mu.RUnlock()
+	if !same {
+		shared = snapshot.Graph.Clone()
+	}
+	source := snapshot.Graph
+	snapshot.Graph = nil
 	copy := snapshot.Clone()
+	copy.Graph = shared
 	visible := make([]Zombie, 0, len(copy.Zombies))
 	for _, zombie := range copy.Zombies {
 		if zombie.Type != Sleeper || zombie.Awake {
@@ -23,7 +36,29 @@ func (s *Store) Publish(snapshot WorldSnapshot) {
 	copy.Zombies = visible
 	s.mu.Lock()
 	s.snapshot, s.ready = copy, true
+	s.sourceGraph = source
 	s.mu.Unlock()
+}
+
+// LoadCompact returns independently owned observable state without topology.
+func (s *Store) LoadCompact() (WorldSnapshot, bool) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	w := s.snapshot
+	w.Graph = nil
+	return w.Clone(), s.ready
+}
+
+// LoadForDecision is for trusted read-only decision engines inside this process.
+// Mutable entities are defensive copies; Graph must never be mutated by callers.
+func (s *Store) LoadForDecision() (WorldSnapshot, bool) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	w := s.snapshot
+	w.Graph = nil
+	w = w.Clone()
+	w.Graph = s.snapshot.Graph
+	return w, s.ready
 }
 
 func (s *Store) Load() (WorldSnapshot, bool) {

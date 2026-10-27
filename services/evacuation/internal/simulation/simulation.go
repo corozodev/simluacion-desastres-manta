@@ -113,6 +113,9 @@ func (s *Simulator) initialize(cfg Config) error {
 	for _, shelter := range s.shelters {
 		shelterNodes[shelter.NodeID] = true
 	}
+	for _, node := range cfg.SpawnExcludedNodeIDs {
+		shelterNodes[node] = true
+	}
 	spawn := []string{}
 	for _, n := range nodes {
 		if !shelterNodes[n.ID] {

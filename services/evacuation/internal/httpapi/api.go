@@ -22,12 +22,13 @@ import (
 )
 
 type Options struct {
-	APIKey          string
-	DecisionTimeout time.Duration
-	AllowedOrigins  []string
-	Logger          *slog.Logger
-	Observe         func(RequestTiming)
-	Metadata        func() *world.SimulationInfo
+	AllowShelterSubset bool
+	APIKey             string
+	DecisionTimeout    time.Duration
+	AllowedOrigins     []string
+	Logger             *slog.Logger
+	Observe            func(RequestTiming)
+	Metadata           func() *world.SimulationInfo
 }
 
 // RequestTiming is server-side instrumentation; client HTTP latency is measured
@@ -71,8 +72,8 @@ func New(store *world.Store, engine world.DecisionEngine, g *world.Graph, option
 	if err != nil {
 		return nil, err
 	}
-	if len(g.Shelters) != 4 {
-		return nil, errors.New("competition HTTP graph requires exactly four shelters")
+	if len(g.Shelters) < 1 || len(g.Shelters) > 4 || !options.AllowShelterSubset && len(g.Shelters) != 4 {
+		return nil, errors.New("HTTP graph requires one to four approved shelters")
 	}
 	if options.DecisionTimeout == 0 {
 		options.DecisionTimeout = 450 * time.Millisecond
@@ -183,7 +184,9 @@ func (a *api) serve(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	snapshotStarted := time.Now()
-	snapshot, ready := a.store.Load()
+	// Decision engines are read-only observers. Share the store-owned immutable
+	// topology; cloning the entire master map for every agent is unnecessary.
+	snapshot, ready := a.store.LoadForDecision()
 	timing.SnapshotMS = float64(time.Since(snapshotStarted)) / float64(time.Millisecond)
 	if !ready || snapshot.Graph == nil || snapshot.GraphVersion != a.graphVersion {
 		fail(w, 503, "UNAVAILABLE", "El estado todavía no está disponible.", requestID)

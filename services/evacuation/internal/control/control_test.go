@@ -266,3 +266,33 @@ func TestAdminSessionExpiryRateLimitAndKeyIndependence(t *testing.T) {
 		t.Fatal("movement key accepted by admin")
 	}
 }
+
+func TestDisabledLegacyStartPreservesAuthenticationAndIdleWorld(t *testing.T) {
+	fixture, code := newTestManager(t, false, time.Hour, false)
+	options := fixture.options
+	options.DisableStart = true
+	m, err := New(fixture.catalog, options)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = m.Close() })
+	s, cookie, session := login(t, m, code)
+	before := m.Info()
+	payload := StartRequest{Mode: "competition", Round: "round1", Seed: 42, ExpectedRunID: before.RunID}
+	r, _ := call(t, s.Client(), s.URL, "POST", "/admin/runs", payload, nil, "", origin)
+	if r.StatusCode != 401 {
+		t.Fatal("legacy restriction bypassed authentication", r.StatusCode)
+	}
+	r, body := call(t, s.Client(), s.URL, "POST", "/admin/runs", payload, cookie, session.CSRFToken, origin)
+	if r.StatusCode != 409 || !bytes.Contains(body, []byte(`"code":"RUN_ACTIVE"`)) {
+		t.Fatal("legacy execution bypassed public quotas", r.StatusCode, string(body))
+	}
+	if after := m.Info(); after != before || after.State != "idle" {
+		t.Fatal("refused legacy start changed execution", after)
+	}
+	r, body = call(t, s.Client(), s.URL, "GET", "/estado", nil, nil, "", "")
+	var snapshot world.WorldSnapshot
+	if r.StatusCode != 200 || json.Unmarshal(body, &snapshot) != nil || snapshot.Turn != 0 || snapshot.Simulation == nil || snapshot.Simulation.RunID != before.RunID {
+		t.Fatal("legacy observable compatibility changed", r.StatusCode, string(body))
+	}
+}

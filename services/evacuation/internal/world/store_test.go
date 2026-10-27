@@ -80,3 +80,26 @@ func TestGeographyAndReservationsRemainImmutable(t *testing.T) {
 		t.Fatal("reader mutated stored geographic zone")
 	}
 }
+
+func TestCompactAndDecisionViewsOwnDynamicState(t *testing.T) {
+	store := NewStore()
+	store.Publish(WorldSnapshot{Graph: &Graph{Version: "v1", Nodes: []GraphNode{{ID: "n"}}}, Survivors: []Survivor{{ID: "s", PlannedRoute: []string{"n"}}}, Shelters: []Shelter{{ID: "r", Capacity: 2}}, Scenario: &ScenarioSnapshot{Agents: []FloodAgent{{ID: "s", PlannedRoute: []string{"n"}}}, RoadConditions: []RoadCondition{{EdgeID: "e", State: "passable"}}}})
+	compact, ready := store.LoadCompact()
+	if !ready || compact.Graph != nil {
+		t.Fatal("compact state contains topology")
+	}
+	decision, _ := store.LoadForDecision()
+	nextDecision, _ := store.LoadForDecision()
+	if decision.Graph == nil || decision.Graph != nextDecision.Graph {
+		t.Fatal("decision topology should be shared immutable input")
+	}
+	compact.Survivors[0].PlannedRoute[0] = "tampered"
+	compact.Scenario.Agents[0].PlannedRoute[0] = "tampered"
+	decision.Shelters[0].Occupancy = 999
+	decision.Scenario.RoadConditions[0].State = "blocked"
+	decision.Survivors[0].CurrentNode = "tampered"
+	own, _ := store.Load()
+	if own.Survivors[0].PlannedRoute[0] != "n" || own.Survivors[0].CurrentNode == "tampered" || own.Shelters[0].Occupancy != 0 || own.Scenario.Agents[0].PlannedRoute[0] != "n" || own.Scenario.RoadConditions[0].State != "passable" {
+		t.Fatal("observer changed authoritative data")
+	}
+}

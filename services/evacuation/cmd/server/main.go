@@ -21,6 +21,7 @@ import (
 	"corodev/evacuation/internal/catalog"
 	"corodev/evacuation/internal/control"
 	"corodev/evacuation/internal/decision"
+	"corodev/evacuation/internal/sessions"
 )
 
 func env(name, fallback string) string {
@@ -98,7 +99,14 @@ func run(logger *slog.Logger) error {
 	if err != nil {
 		return err
 	}
-	autoStart, err := boolean("SIM_AUTOSTART", true)
+	autoStart, err := boolean("SIM_AUTOSTART", false)
+	if err != nil {
+		return err
+	}
+	if autoStart {
+		return errors.New("SIM_AUTOSTART=true is disabled; simulations require an explicit start request")
+	}
+	sessionOptions, err := sessions.OptionsFromEnv()
 	if err != nil {
 		return err
 	}
@@ -122,7 +130,15 @@ func run(logger *slog.Logger) error {
 		return err
 	}
 	origins := strings.Split(env("CORS_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173"), ",")
-	m, err := control.New(c, control.Options{APIKey: key, Origins: origins, Logger: logger, Engine: decision.Options{Prediction: prediction, RiskWeight: riskWeight, PredictionWeight: predictionWeight}, Interval: interval, Round: round, Seed: seed, AutoStart: autoStart, Admin: control.AdminOptions{Operator: os.Getenv("ADMIN_OPERATOR"), AccessHash: os.Getenv("ADMIN_ACCESS_HASH"), AllowInsecureLoopback: localAdmin}})
+	sessionOptions.Origins = origins
+	sessionOptions.Logger = logger
+	sessionOptions.Engine = decision.Options{Prediction: prediction, RiskWeight: riskWeight, PredictionWeight: predictionWeight}
+	publicSessions, err := sessions.New(c, sessionOptions)
+	if err != nil {
+		return err
+	}
+	defer publicSessions.Close()
+	m, err := control.New(c, control.Options{DisableStart: true, APIKey: key, Origins: origins, Logger: logger, Engine: decision.Options{Prediction: prediction, RiskWeight: riskWeight, PredictionWeight: predictionWeight}, Interval: interval, Round: round, Seed: seed, AutoStart: autoStart, Admin: control.AdminOptions{Operator: os.Getenv("ADMIN_OPERATOR"), AccessHash: os.Getenv("ADMIN_ACCESS_HASH"), AllowInsecureLoopback: localAdmin}})
 	if err != nil {
 		return err
 	}
@@ -135,7 +151,7 @@ func run(logger *slog.Logger) error {
 	if err != nil {
 		return err
 	}
-	var handler http.Handler = m
+	var legacy http.Handler = m
 	if endpoint := os.Getenv("FLOOD_LAB_UPSTREAM"); endpoint != "" {
 		target, e := url.Parse(endpoint)
 		if e != nil || target.Scheme != "http" || target.Host != "127.0.0.1:8082" || target.User != nil || target.RawQuery != "" || target.Fragment != "" || target.Path != "" {
@@ -144,7 +160,7 @@ func run(logger *slog.Logger) error {
 		proxy := httputil.NewSingleHostReverseProxy(target)
 		director := proxy.Director
 		proxy.Director = func(r *http.Request) { director(r); r.Host = target.Host }
-		handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		legacy = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if strings.HasPrefix(r.URL.Path, "/lab/") || r.URL.Path == "/v1/incidents" || strings.HasPrefix(r.URL.Path, "/v1/incidents/") || strings.HasPrefix(r.URL.Path, "/v1/reference/") {
 				proxy.ServeHTTP(w, r)
 				return
@@ -152,6 +168,13 @@ func run(logger *slog.Logger) error {
 			m.ServeHTTP(w, r)
 		})
 	}
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/metrics" || r.URL.Path == "/v1/simulations" || strings.HasPrefix(r.URL.Path, "/v1/simulations/") {
+			publicSessions.ServeHTTP(w, r)
+			return
+		}
+		legacy.ServeHTTP(w, r)
+	})
 	server := &http.Server{Handler: handler, ReadHeaderTimeout: 2 * time.Second, ReadTimeout: 2 * time.Second, WriteTimeout: 15 * time.Second, IdleTimeout: 30 * time.Second, MaxHeaderBytes: 16 << 10}
 	done := make(chan error, 1)
 	go func() { done <- server.Serve(listener) }()

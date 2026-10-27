@@ -40,10 +40,11 @@ func New(g *world.Graph, cfg simulation.Config, address, key string, origins []s
 }
 
 type Options struct {
-	Engine   world.DecisionEngine
-	Planner  world.TurnPlanner
-	Observe  func(httpapi.RequestTiming)
-	Metadata func() *world.SimulationInfo
+	AllowShelterSubset bool
+	Engine             world.DecisionEngine
+	Planner            world.TurnPlanner
+	Observe            func(httpapi.RequestTiming)
+	Metadata           func() *world.SimulationInfo
 }
 
 // NewWithOptions allows controlled offline evaluations without changing HTTP.
@@ -53,7 +54,7 @@ func NewWithOptions(g *world.Graph, cfg simulation.Config, address, key string, 
 	if engine == nil {
 		engine = decision.New()
 	}
-	handler, err := httpapi.New(store, engine, g, httpapi.Options{APIKey: key, AllowedOrigins: origins, Logger: logger, Observe: options.Observe, Metadata: options.Metadata})
+	handler, err := httpapi.New(store, engine, g, httpapi.Options{APIKey: key, AllowedOrigins: origins, Logger: logger, Observe: options.Observe, Metadata: options.Metadata, AllowShelterSubset: options.AllowShelterSubset})
 	if err != nil {
 		return nil, err
 	}

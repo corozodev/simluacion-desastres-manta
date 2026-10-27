@@ -36,15 +36,17 @@ type StartRequest struct {
 }
 
 type Options struct {
-	APIKey    string
-	Origins   []string
-	Logger    *slog.Logger
-	Engine    decision.Options
-	Interval  time.Duration
-	Round     string
-	Seed      *int64
-	AutoStart bool
-	Admin     AdminOptions
+	// DisableStart prevents a legacy run from bypassing public session quotas.
+	DisableStart bool
+	APIKey       string
+	Origins      []string
+	Logger       *slog.Logger
+	Engine       decision.Options
+	Interval     time.Duration
+	Round        string
+	Seed         *int64
+	AutoStart    bool
+	Admin        AdminOptions
 }
 
 type execution struct {
@@ -187,6 +189,9 @@ func (m *Manager) Info() world.SimulationInfo {
 }
 
 func (m *Manager) Start(req StartRequest, operator string) (world.SimulationInfo, error) {
+	if m.options.DisableStart {
+		return world.SimulationInfo{}, ErrActive
+	}
 	if operator == "" || req.Seed < -9007199254740991 || req.Seed > 9007199254740991 {
 		return world.SimulationInfo{}, ErrInvalid
 	}

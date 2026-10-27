@@ -19,7 +19,7 @@ COPY --from=build /out/healthcheck /usr/local/bin/healthcheck
 COPY --chown=65532:65532 services/evacuation/data ./data
 COPY --chown=65532:65532 services/evacuation/scenarios ./scenarios
 USER 65532:65532
-ENV LISTEN_ADDR=0.0.0.0:8080 SIM_INTERVAL=2s GRAPH_PATH=data/manta-v2.json SCENARIO_PATH=scenarios/urban/round1.json
+ENV LISTEN_ADDR=0.0.0.0:8080 SIM_AUTOSTART=false SIM_INTERVAL=2s GRAPH_PATH=data/manta-v2.json SCENARIO_PATH=scenarios/urban/round1.json
 EXPOSE 8080
 HEALTHCHECK --interval=15s --timeout=3s --start-period=20s --retries=3 CMD ["/usr/local/bin/healthcheck"]
 STOPSIGNAL SIGTERM
