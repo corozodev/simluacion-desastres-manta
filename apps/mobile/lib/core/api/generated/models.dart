@@ -372,6 +372,7 @@ class WorldMetrics {
 
 class WorldSnapshot {
   const WorldSnapshot({
+    this.scenarioType,
     required this.turn,
     required this.worldVersion,
     required this.graphVersion,
@@ -384,6 +385,7 @@ class WorldSnapshot {
     this.simulation,
   });
 
+  final String? scenarioType;
   final int turn;
   final int worldVersion;
   final String graphVersion;
@@ -396,6 +398,7 @@ class WorldSnapshot {
   final SimulationInfo? simulation;
 
   factory WorldSnapshot.fromJson(Map<String, dynamic> json) => WorldSnapshot(
+    scenarioType: json['scenario_type'] == null ? null : json['scenario_type'] as String,
     turn: json['turn'] as int,
     worldVersion: json['world_version'] as int,
     graphVersion: json['graph_version'] as String,
@@ -409,6 +412,7 @@ class WorldSnapshot {
   );
 
   Map<String, dynamic> toJson() => {
+    if (scenarioType != null) 'scenario_type': scenarioType!,
     'turn': turn,
     'world_version': worldVersion,
     'graph_version': graphVersion,

@@ -57,6 +57,7 @@ func (g *Graph) Clone() *Graph {
 
 func (w WorldSnapshot) Clone() WorldSnapshot {
 	copy := w
+	copy.Scenario = w.Scenario.Clone()
 	if w.Simulation != nil {
 		info := *w.Simulation
 		copy.Simulation = &info

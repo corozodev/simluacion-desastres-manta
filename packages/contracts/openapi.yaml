@@ -40,6 +40,28 @@ paths:
                 $ref: '#/components/schemas/WorldSnapshot'
         '503':
           $ref: '#/components/responses/Unavailable'
+  /v1/scenario:
+    get:
+      operationId: getScenarioState
+      tags: [ Evacuation ]
+      summary: Estado experimental de inundación urbana para polling.
+      description: >-
+        Snapshot observable del mismo turno publicado por /estado. No incluye el
+        grafo estático; road_conditions referencia sus aristas mediante edge_id.
+        Las exposiciones son índices sintéticos normalizados, no profundidades
+        del agua ni umbrales certificados de seguridad. El escenario zombie
+        devuelve 404. Consultar graph_version y world_version para sincronizar.
+      responses:
+        '200':
+          description: Estado inmutable de urban_flood.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScenarioSnapshot'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '503':
+          $ref: '#/components/responses/Unavailable'
   /grafo:
     get:
       operationId: getWorldGraph
@@ -604,6 +626,10 @@ components:
           metrics
         ]
       properties:
+        scenario_type:
+          type: string
+          enum: [ urban_flood ]
+          description: Presente en inundación experimental; ausente en zombie histórico.
         turn: { type: integer, minimum: 0 }
         world_version: { type: integer, minimum: 0 }
         graph_version: { type: string }
@@ -627,6 +653,142 @@ components:
         metrics: { $ref: '#/components/schemas/WorldMetrics' }
         simulation:
           $ref: "#/components/schemas/SimulationInfo"
+    FloodZone:
+      type: object
+      additionalProperties: false
+      required: [ id, center, radius_m, intensity ]
+      properties:
+        id: { type: string, minLength: 1 }
+        center: { $ref: '#/components/schemas/GeoPoint' }
+        radius_m: { type: number, minimum: 0 }
+        intensity:
+          type: number
+          minimum: 0
+          maximum: 1
+          description: Exposición sintética normalizada, no profundidad del agua.
+    RoadCondition:
+      type: object
+      additionalProperties: false
+      required: [ edge_id, state, risk_score, risk_source, updated_at_simulation_step, cost_multiplier ]
+      properties:
+        edge_id: { type: string, minLength: 1 }
+        state: { type: string, enum: [ passable, caution, blocked ] }
+        risk_score: { type: number, minimum: 0, maximum: 1 }
+        risk_source: { type: string, minLength: 1 }
+        updated_at_simulation_step: { type: integer, minimum: 0 }
+        cost_multiplier: { type: number, minimum: 1 }
+    ShelterCondition:
+      type: object
+      additionalProperties: false
+      required: [ shelter_id, state, risk_score, updated_at_simulation_step ]
+      properties:
+        shelter_id: { type: string, minLength: 1 }
+        state: { type: string, enum: [ available, full, exposed, inaccessible ] }
+        risk_score: { type: number, minimum: 0, maximum: 1 }
+        updated_at_simulation_step: { type: integer, minimum: 0 }
+    FloodAgent:
+      type: object
+      additionalProperties: false
+      required: [ id, current_node, state, behavior, target_shelter_id, planned_route ]
+      properties:
+        id: { type: string, minLength: 1 }
+        current_node: { type: string, minLength: 1 }
+        state: { type: string, enum: [ waiting, moving, isolated, evacuated ] }
+        behavior: { type: string, enum: [ preventive, late, adaptive ] }
+        target_shelter_id: { type: string }
+        planned_route:
+          type: array
+          items: { type: string }
+        evacuation_time:
+          type: number
+          minimum: 0
+          description: Tiempo simulado de llegada al refugio; ausente hasta evacuar.
+    EvacuationMetrics:
+      type: object
+      additionalProperties: false
+      required: [ total_agents, evacuated_agents, isolated_agents, waiting_agents, average_evacuation_time, blocked_edges, caution_edges, shelters_at_capacity, reroute_count, simulation_total_duration ]
+      properties:
+        total_agents: { type: integer, minimum: 0 }
+        evacuated_agents: { type: integer, minimum: 0 }
+        isolated_agents: { type: integer, minimum: 0 }
+        waiting_agents: { type: integer, minimum: 0 }
+        average_evacuation_time:
+          type: number
+          minimum: 0
+          description: Media entre agentes evacuados, en unidades del reloj simulado; cero si no hay evacuados.
+        blocked_edges: { type: integer, minimum: 0 }
+        caution_edges: { type: integer, minimum: 0 }
+        shelters_at_capacity: { type: integer, minimum: 0 }
+        reroute_count: { type: integer, minimum: 0 }
+        simulation_total_duration:
+          type: number
+          minimum: 0
+          description: Tiempo transcurrido en el reloj simulado, separado del rendimiento del proceso.
+    SimulationPerformance:
+      type: object
+      additionalProperties: false
+      required: [ simulation_step_latency_ms, simulation_total_duration_ms ]
+      properties:
+        simulation_step_latency_ms:
+          type: number
+          minimum: 0
+          description: Duración de procesamiento del último paso en milisegundos de reloj real.
+        simulation_total_duration_ms:
+          type: number
+          minimum: 0
+          description: Duración de procesamiento acumulada en milisegundos de reloj real; no determinista.
+    DataProvenance:
+      type: object
+      additionalProperties: false
+      required: [ graph_source, model, elevation_source, disclaimer ]
+      properties:
+        graph_source: { type: string, minLength: 1 }
+        model: { type: string, minLength: 1 }
+        elevation_source:
+          type: string
+          description: Fuente verificable de elevación o indicación explícita de que no se usaron elevaciones.
+        disclaimer:
+          type: string
+          description: Limitación científica del modelo sintético de inundación.
+    ScenarioSnapshot:
+      type: object
+      additionalProperties: false
+      required: [ scenario_type, simulation_step, world_version, graph_version, simulation_time, simulation_duration, time_step, rainfall, flood_zones, road_conditions, shelter_conditions, agents, evacuation_metrics, performance, data_provenance ]
+      properties:
+        scenario_type: { type: string, enum: [ urban_flood ] }
+        simulation_step: { type: integer, minimum: 0 }
+        world_version: { type: integer, minimum: 0 }
+        graph_version: { type: string, minLength: 1 }
+        simulation_time:
+          type: number
+          minimum: 0
+          description: Reloj simulado; simulation_step multiplicado por time_step.
+        simulation_duration:
+          type: number
+          minimum: 0
+          description: Duración configurada en unidades del reloj simulado.
+        time_step: { type: number, exclusiveMinimum: true, minimum: 0 }
+        rainfall:
+          type: number
+          minimum: 0
+          maximum: 1
+          description: Intensidad sintética normalizada del paso actual; no precipitación medida.
+        flood_zones:
+          type: array
+          items: { $ref: '#/components/schemas/FloodZone' }
+        road_conditions:
+          type: array
+          description: Overlay por ID sobre /grafo, sin duplicar geometrías viales.
+          items: { $ref: '#/components/schemas/RoadCondition' }
+        shelter_conditions:
+          type: array
+          items: { $ref: '#/components/schemas/ShelterCondition' }
+        agents:
+          type: array
+          items: { $ref: '#/components/schemas/FloodAgent' }
+        evacuation_metrics: { $ref: '#/components/schemas/EvacuationMetrics' }
+        performance: { $ref: '#/components/schemas/SimulationPerformance' }
+        data_provenance: { $ref: '#/components/schemas/DataProvenance' }
     StepRequest:
       type: object
       additionalProperties: false

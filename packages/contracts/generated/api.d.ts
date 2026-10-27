@@ -34,6 +34,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/scenario": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Estado experimental de inundación urbana para polling.
+         * @description Snapshot observable del mismo turno publicado por /estado. No incluye el grafo estático; road_conditions referencia sus aristas mediante edge_id. Las exposiciones son índices sintéticos normalizados, no profundidades del agua ni umbrales certificados de seguridad. El escenario zombie devuelve 404. Consultar graph_version y world_version para sincronizar.
+         */
+        get: operations["getScenarioState"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/grafo": {
         parameters: {
             query?: never;
@@ -316,6 +336,11 @@ export interface components {
             availability: number;
         };
         WorldSnapshot: {
+            /**
+             * @description Presente en inundación experimental; ausente en zombie histórico.
+             * @enum {string}
+             */
+            scenario_type?: "urban_flood";
             turn: number;
             world_version: number;
             graph_version: string;
@@ -327,6 +352,91 @@ export interface components {
             events: components["schemas"]["WorldEvent"][];
             metrics: components["schemas"]["WorldMetrics"];
             simulation?: components["schemas"]["SimulationInfo"];
+        };
+        FloodZone: {
+            id: string;
+            center: components["schemas"]["GeoPoint"];
+            radius_m: number;
+            /** @description Exposición sintética normalizada, no profundidad del agua. */
+            intensity: number;
+        };
+        RoadCondition: {
+            edge_id: string;
+            /** @enum {string} */
+            state: "passable" | "caution" | "blocked";
+            risk_score: number;
+            risk_source: string;
+            updated_at_simulation_step: number;
+            cost_multiplier: number;
+        };
+        ShelterCondition: {
+            shelter_id: string;
+            /** @enum {string} */
+            state: "available" | "full" | "exposed" | "inaccessible";
+            risk_score: number;
+            updated_at_simulation_step: number;
+        };
+        FloodAgent: {
+            id: string;
+            current_node: string;
+            /** @enum {string} */
+            state: "waiting" | "moving" | "isolated" | "evacuated";
+            /** @enum {string} */
+            behavior: "preventive" | "late" | "adaptive";
+            target_shelter_id: string;
+            planned_route: string[];
+            /** @description Tiempo simulado de llegada al refugio; ausente hasta evacuar. */
+            evacuation_time?: number;
+        };
+        EvacuationMetrics: {
+            total_agents: number;
+            evacuated_agents: number;
+            isolated_agents: number;
+            waiting_agents: number;
+            /** @description Media entre agentes evacuados, en unidades del reloj simulado; cero si no hay evacuados. */
+            average_evacuation_time: number;
+            blocked_edges: number;
+            caution_edges: number;
+            shelters_at_capacity: number;
+            reroute_count: number;
+            /** @description Tiempo transcurrido en el reloj simulado, separado del rendimiento del proceso. */
+            simulation_total_duration: number;
+        };
+        SimulationPerformance: {
+            /** @description Duración de procesamiento del último paso en milisegundos de reloj real. */
+            simulation_step_latency_ms: number;
+            /** @description Duración de procesamiento acumulada en milisegundos de reloj real; no determinista. */
+            simulation_total_duration_ms: number;
+        };
+        DataProvenance: {
+            graph_source: string;
+            model: string;
+            /** @description Fuente verificable de elevación o indicación explícita de que no se usaron elevaciones. */
+            elevation_source: string;
+            /** @description Limitación científica del modelo sintético de inundación. */
+            disclaimer: string;
+        };
+        ScenarioSnapshot: {
+            /** @enum {string} */
+            scenario_type: "urban_flood";
+            simulation_step: number;
+            world_version: number;
+            graph_version: string;
+            /** @description Reloj simulado; simulation_step multiplicado por time_step. */
+            simulation_time: number;
+            /** @description Duración configurada en unidades del reloj simulado. */
+            simulation_duration: number;
+            time_step: number;
+            /** @description Intensidad sintética normalizada del paso actual; no precipitación medida. */
+            rainfall: number;
+            flood_zones: components["schemas"]["FloodZone"][];
+            /** @description Overlay por ID sobre /grafo, sin duplicar geometrías viales. */
+            road_conditions: components["schemas"]["RoadCondition"][];
+            shelter_conditions: components["schemas"]["ShelterCondition"][];
+            agents: components["schemas"]["FloodAgent"][];
+            evacuation_metrics: components["schemas"]["EvacuationMetrics"];
+            performance: components["schemas"]["SimulationPerformance"];
+            data_provenance: components["schemas"]["DataProvenance"];
         };
         StepRequest: {
             sobrevivienteId: string;
@@ -566,6 +676,28 @@ export interface operations {
                     "application/json": components["schemas"]["WorldSnapshot"];
                 };
             };
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    getScenarioState: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Estado inmutable de urban_flood. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScenarioSnapshot"];
+                };
+            };
+            404: components["responses"]["NotFound"];
             503: components["responses"]["Unavailable"];
         };
     };
@@ -1030,6 +1162,14 @@ export type Survivor = components['schemas']['Survivor'];
 export type WorldEvent = components['schemas']['WorldEvent'];
 export type WorldMetrics = components['schemas']['WorldMetrics'];
 export type WorldSnapshot = components['schemas']['WorldSnapshot'];
+export type FloodZone = components['schemas']['FloodZone'];
+export type RoadCondition = components['schemas']['RoadCondition'];
+export type ShelterCondition = components['schemas']['ShelterCondition'];
+export type FloodAgent = components['schemas']['FloodAgent'];
+export type EvacuationMetrics = components['schemas']['EvacuationMetrics'];
+export type SimulationPerformance = components['schemas']['SimulationPerformance'];
+export type DataProvenance = components['schemas']['DataProvenance'];
+export type ScenarioSnapshot = components['schemas']['ScenarioSnapshot'];
 export type StepRequest = components['schemas']['StepRequest'];
 export type StepResponse = components['schemas']['StepResponse'];
 export type HealthResponse = components['schemas']['HealthResponse'];

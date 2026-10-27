@@ -110,6 +110,7 @@ type Metrics struct {
 }
 
 type WorldSnapshot struct {
+	ScenarioType string          `json:"scenario_type,omitempty"`
 	Turn         int             `json:"turn"`
 	WorldVersion uint64          `json:"world_version"`
 	GraphVersion string          `json:"graph_version"`
@@ -122,6 +123,8 @@ type WorldSnapshot struct {
 	Simulation   *SimulationInfo `json:"simulation,omitempty"`
 	// Graph is local decision input; GET /grafo publishes it separately.
 	Graph *Graph `json:"-"`
+	// Scenario is served separately by /v1/scenario to keep /estado compact.
+	Scenario *ScenarioSnapshot `json:"-"`
 }
 
 // SimulationInfo identifies the run separately from a reusable graph version.
