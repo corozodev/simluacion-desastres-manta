@@ -135,6 +135,16 @@ function FloodWorkspace({ catalog, backend, connected }: { catalog: LabCatalog; 
   const panelShelterStates = useMemo(() => Object.fromEntries(backend.scenario.shelter_conditions.map(condition => [condition.shelter_id, condition.state])), [backend.scenario.shelter_conditions]);
   const currentShelters = preview ? graph.data?.shelters ?? [] : backend.shelters;
   const changeDraft = <K extends keyof LabRunConfig>(key: K, value: LabRunConfig[K]) => { setDraft(previous => ({ ...previous, [key]: value })); setPresetId(''); };
+  const changeHydraulicModel = (model: LabRunConfig['hydraulic_model']) => {
+    setDraft(previous => ({
+      ...previous,
+      hydraulic_model: model,
+      hydrology: model === 'rainfall_runoff_2d' && previous.hydrology
+        ? { ...previous.hydrology, sea_level_m: 0, channel_inflow_m3_s: 0 }
+        : previous.hydrology,
+    }));
+    setPresetId('');
+  };
   const setCandidate = (index: number, candidate: CandidateDraft | undefined) => { cancelPick(); setCandidateDrafts(previous => previous.map((item, i) => i === index ? candidate : item)); setValidation(undefined); };
   const pickPosition = (point: GeoPoint) => {
     if (pickingCandidate === undefined || !authorized || pickValidation.isPending) return;
@@ -171,7 +181,7 @@ function FloodWorkspace({ catalog, backend, connected }: { catalog: LabCatalog; 
   const hud = <div className="flood-workspace-hud">
     <div className="flood-workspace-preparation">      <details className="flood-parameters flood-hud-disclosure"><summary>Configurar tormenta</summary><div className="flood-config-popover"><p className="flood-compact-notice">Los cambios se aplican al iniciar una tormenta nueva.</p><div className="flood-configuration-grid"><label>Cobertura de inundación<select value={draft.mode} onChange={event => { changeDraft('mode', event.target.value as LabRunConfig['mode']); setValidation(undefined); cancelPick(); }}>{catalog.modes.map(mode => <option key={mode.id} value={mode.id}>{mode.id === 'competition' ? `Modo base — ${mode.nodes.toLocaleString('es-EC')} intersecciones` : `Manta completa — maestro urbano (${mode.nodes.toLocaleString('es-EC')} intersecciones)`}</option>)}</select></label>
         <label>Preset de tormenta<select value={presetId} onChange={event => { const preset = catalog.presets.find(item => item.id === event.target.value); setPresetId(event.target.value); if (preset) setDraft(previous => ({ ...preset.config, mode: previous.mode, shelters: previous.shelters, seed: previous.seed, agents: previous.agents, interval_ms: previous.interval_ms, geographic_reference: previous.geographic_reference, simulation_duration: previous.simulation_duration, hydraulic_model: previous.hydraulic_model, hydrology: previous.hydrology })); }}><option value="">Configuración personalizada</option>{catalog.presets.map(preset => <option key={preset.id} value={preset.id}>{preset.name}</option>)}</select></label>
-        <label>Algoritmo hidráulico<select value={draft.hydraulic_model ?? 'rainfall_runoff_2d'} onChange={event => changeDraft('hydraulic_model', event.target.value as LabRunConfig['hydraulic_model'])}><option value="rainfall_runoff_2d">Rainfall–Runoff 2D</option><option value="compound_flood_2d">Compound Flood 2D · experimental</option></select></label>
+        <label>Algoritmo hidráulico<select value={draft.hydraulic_model ?? 'rainfall_runoff_2d'} onChange={event => changeHydraulicModel(event.target.value as LabRunConfig['hydraulic_model'])}><option value="rainfall_runoff_2d">Rainfall–Runoff 2D</option><option value="compound_flood_2d">Compound Flood 2D · experimental</option></select></label>
         <label>Perfil de lluvia<select value={draft.rainfall_profile} onChange={event => changeDraft('rainfall_profile', event.target.value as LabRunConfig['rainfall_profile'])}><option value="storm">Tormenta y drenaje</option><option value="constant">Lluvia constante</option><option value="pulse">Pulso de lluvia</option></select></label>
         <label>Intensidad de lluvia<input type="number" min="0" max="1" step="0.05" value={Number.isFinite(draft.rainfall_intensity) ? draft.rainfall_intensity : ''} onChange={event => changeDraft('rainfall_intensity', numericInput(event.target.value))} /><small>Índice de escenario 0–1; equivale a 0–120 mm/h sintéticos en el nuevo modelo, sin calibración meteorológica.</small></label>
         <label>Comportamiento de evacuación<select value={draft.evacuation_behavior} onChange={event => changeDraft('evacuation_behavior', event.target.value as LabRunConfig['evacuation_behavior'])}><option value="preventive">Preventiva</option><option value="late">Tardía</option><option value="adaptive">Adaptativa</option></select></label>

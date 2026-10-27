@@ -78,6 +78,32 @@ describe('acceso directo al laboratorio', () => {
     expect(screen.getByRole('button', { name: 'Iniciar tormenta' })).toBeEnabled();
   });
 
+  it('limpia los aportes costeros al volver a lluvia y conserva las demás condiciones preparadas', async () => {
+    const { start } = setup();
+    await screen.findByRole('button', { name: 'Iniciar tormenta' });
+    openConfiguration();
+    const model = screen.getByLabelText('Algoritmo hidráulico');
+    fireEvent.change(model, { target: { value: 'compound_flood_2d' } });
+    fireEvent.click(screen.getByText('Configuración avanzada', { selector: 'summary' }));
+    fireEvent.change(screen.getByLabelText('Nivel marítimo experimental (m)'), { target: { value: '1.5' } });
+    fireEvent.change(screen.getByLabelText('Aporte de cauce experimental (m³/s)'), { target: { value: '12' } });
+    fireEvent.change(screen.getByLabelText('Lluvia antecedente (horas)'), { target: { value: '3' } });
+    fireEvent.change(screen.getByLabelText('Saturación inicial (0–1)'), { target: { value: '.75' } });
+    fireEvent.change(screen.getByLabelText('Capacidad de drenaje (mm/h)'), { target: { value: '9' } });
+    fireEvent.change(model, { target: { value: 'rainfall_runoff_2d' } });
+    expect(screen.queryByLabelText('Nivel marítimo experimental (m)')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Aporte de cauce experimental (m³/s)')).not.toBeInTheDocument();
+    expect(screen.getByLabelText('Lluvia antecedente (horas)')).toHaveValue(3);
+    expect(screen.getByLabelText('Saturación inicial (0–1)')).toHaveValue(.75);
+    expect(screen.getByRole('button', { name: 'Iniciar tormenta' })).toBeEnabled();
+    expect(start).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'Iniciar tormenta' }));
+    await waitFor(() => expect(start).toHaveBeenCalledWith(expect.objectContaining({
+      hydraulic_model: 'rainfall_runoff_2d',
+      hydrology: expect.objectContaining({ sea_level_m: 0, channel_inflow_m3_s: 0, antecedent_rain_hours: 3, initial_saturation: .75, drainage_mm_h: 9 }),
+    }), state.run_id));
+  });
+
   it('inicia directamente sin operador, sesión previa ni credenciales automáticas', async () => {
     const { session, start, login } = setup();
     const storm = await screen.findByRole('button', { name: 'Iniciar tormenta' });
