@@ -4,6 +4,8 @@ FASE 2 de Track A: backend Go con simulación determinista, planificación diná
 
 **FASE 5: sesiones independientes bajo demanda.** Abrir React `/escape` carga el mapa y las capacidades sin ejecutar turnos. **Iniciar simulación** crea una sesión privada de zombies o inundación urbana sintética; Go avanza sus turnos y permite pausar, reanudar, cancelar y reiniciar. La recarga recupera la misma ejecución mediante una credencial en `sessionStorage`. Flutter conserva los endpoints Go anteriores y no recibe la clave de `/paso`. Consulta [arquitectura, API, pruebas y límites FASE 5](docs/informe-fase5.md).
 
+**FASE 6A validada localmente:** sprites CC0 a 4 FPS, interpolación de recorridos comprobables, agrupación por zoom, focos de inundación, leyenda y controles de movimiento. Incluye símbolos estáticos Flutter y evidencia desktop/móvil. [Implementación, recursos, pruebas y límites](docs/informe-fase6a.md).
+
 [Abrir Escape en AWS](https://sistemamanta.lexinnovate.com/escape) · [API HTTPS](https://api.sistemamanta.lexinnovate.com/healthz). **FASE 5 desplegada el 27 de octubre:** `m7i-flex.large`, 2 vCPU / 8 GiB, cuatro sesiones activas con hasta una FULL_MANTA. El propietario mantuvo el plan FREE y elevó el Budget a 50 USD. **Retirada AWS programada a partir del 31 de octubre, 01:46 de Ecuador**, incluidos disco y versiones S3. Ver [despliegue, comprobaciones, alcance y cancelación](docs/despliegue-fase5-y-caducidad.md).
 
 ## Inicio local

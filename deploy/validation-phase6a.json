@@ -1,0 +1,366 @@
+{
+  "phase": "6A",
+  "client_date": "2026-10-27",
+  "timezone": "America/Guayaquil",
+  "scope": "Local visualization only; native SVG React and static Canvas Flutter symbols.",
+  "backend_or_openapi_changed": false,
+  "push_or_aws_actions": false,
+  "checks": [
+    {
+      "command": "npm install",
+      "result": "passed"
+    },
+    {
+      "command": "npm run tokens:generate",
+      "result": "passed"
+    },
+    {
+      "command": "npm run check",
+      "result": "passed"
+    },
+    {
+      "command": "npm test",
+      "result": "passed"
+    },
+    {
+      "command": "npm run build:web",
+      "result": "passed"
+    },
+    {
+      "command": "npm run test:contracts:simulations",
+      "result": "passed"
+    },
+    {
+      "command": "npm run test:simulations:browser",
+      "result": "passed"
+    },
+    {
+      "command": "npm run test:e2e",
+      "result": "passed"
+    },
+    {
+      "command": "npm run test:visualization:browser",
+      "result": "passed"
+    },
+    {
+      "command": "npm run test:backend",
+      "result": "passed"
+    },
+    {
+      "command": "npm run test:race",
+      "result": "passed"
+    },
+    {
+      "command": "npm run build:backend",
+      "result": "passed"
+    },
+    {
+      "command": "npm run graph:test",
+      "result": "passed"
+    },
+    {
+      "command": "npm run test:contracts:http -- --flutter --browser",
+      "result": "passed"
+    },
+    {
+      "command": "npm run test:contracts:flood",
+      "result": "passed"
+    },
+    {
+      "command": "npm run test:lab:flood",
+      "result": "passed"
+    },
+    {
+      "command": "npm run test:incidents:e2e",
+      "result": "passed"
+    },
+    {
+      "command": "npm run test:references:e2e",
+      "result": "passed"
+    },
+    {
+      "command": "npm run mobile:check",
+      "result": "passed"
+    },
+    {
+      "command": "npm run mobile:test",
+      "result": "passed"
+    },
+    {
+      "command": "npm run mobile:build",
+      "result": "passed"
+    }
+  ],
+  "totals": {
+    "react_tests": 100,
+    "legacy_service_tests": 40,
+    "playwright_tests": 12,
+    "simulation_http_assertions": 493,
+    "flutter_tests": 24,
+    "flutter_conditionally_skipped": 2,
+    "flutter_real_http_integrations_separately_passed": 2,
+    "geography_tests": 10,
+    "reference_integration_checks": 10
+  },
+  "notes": [
+    "Go reused cached packages where valid; sessions tests ran again.",
+    "Flutter executable /home/naielik/Android/flutter/bin/flutter; no framework upgrades.",
+    "No guaranteed paint FPS; measurements are local browser RAF scheduling intervals over approximately 2.5 seconds.",
+    "Citizen/reference layers use independent existing lab endpoints; unavailability does not stop sessions.",
+    "Skipped ticks, missing paths and ambiguous parallel geometry snap to the last real node.",
+    "FULL_MANTA remains experimental."
+  ],
+  "browser": {
+    "date": "2026-10-27",
+    "note": "Local Chromium RAF scheduling intervals, not guaranteed paint FPS. Real Go snapshots, no synthetic runtime fixtures. Raster disabled.",
+    "measurements": [
+      {
+        "scenario": "zombie_outbreak",
+        "profile": "BASE",
+        "viewport": {
+          "width": 1440,
+          "height": 1100
+        },
+        "samples": 149,
+        "raf_p50_ms": 16.699999999999818,
+        "raf_p95_ms": 16.700000000000273,
+        "dom": 891,
+        "displayed": 12,
+        "js_heap_bytes": 26256268
+      },
+      {
+        "scenario": "urban_flood",
+        "profile": "FULL_MANTA",
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "samples": 147,
+        "raf_p50_ms": 16.69999999999891,
+        "raf_p95_ms": 16.799999999999272,
+        "dom": 940,
+        "displayed": 20,
+        "js_heap_bytes": 62620676
+      }
+    ]
+  },
+  "assets": {
+    "verified_client_date": "2026-10-27",
+    "assets": [
+      {
+        "id": "zombie",
+        "entity": "zombie",
+        "file": "zombie.png",
+        "size_bytes": 19048,
+        "sha256": "4bbf7897869b357d0ac84de0707eb1aa7324ce8cd30f1d6d883350a919c6803b",
+        "frame_width": 64,
+        "frame_height": 64,
+        "frames": 4,
+        "fps": 4,
+        "anchor": [
+          0.5,
+          0.5
+        ],
+        "directions": [
+          "north",
+          "south",
+          "east",
+          "west"
+        ],
+        "direction_rows": {
+          "north": 0,
+          "south": 1,
+          "east": 2,
+          "west": 3
+        },
+        "states": [
+          "idle",
+          "moving"
+        ],
+        "idle_frame": 0,
+        "source": "https://opengameart.org/content/freeart-topdown-zombies",
+        "download": "https://opengameart.org/sites/default/files/FreeArt_Topdown_Zombies_0.zip",
+        "source_sha256": "979cba6b4e64fd10f496ca56f4576ad379e91ef00616c617366bf53d002964b2",
+        "author": "SpriteAttack",
+        "license": "CC0-1.0",
+        "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "license_evidence": "OpenGameArt source page explicitly lists CC0; source archive has no separate license file.",
+        "transformations": [
+          "Decoded ZombieWalk_normal_scaled_fast.gif into transparent RGBA; retained source frames 0, 2, 4, 6 of 8.",
+          "Original arms point up: row north. Copied rotations 180, clockwise 90, counterclockwise 90 for south, east, west.",
+          "Packed four 64px frames per row and four cardinal rows; PNG optimize, no GIF runtime.",
+          "Quantized combined atlas to 256 palette colors using FASTOCTREE without dithering, preserving transparency."
+        ],
+        "fallback": "local SVG/CSS symbol; static on resource error"
+      },
+      {
+        "id": "survivor",
+        "entity": "survivor",
+        "file": "survivor.png",
+        "size_bytes": 5763,
+        "sha256": "2971ad1ab69e3520f54d45e2f309b576b8f9358c2176a1fe0f5fa949a5f73243",
+        "frame_width": 64,
+        "frame_height": 64,
+        "frames": 4,
+        "fps": 4,
+        "anchor": [
+          0.5,
+          1
+        ],
+        "directions": [
+          "north",
+          "south",
+          "east",
+          "west"
+        ],
+        "direction_rows": {
+          "north": 0,
+          "south": 1,
+          "east": 2,
+          "west": 3
+        },
+        "states": [
+          "idle",
+          "moving"
+        ],
+        "idle_frame": 0,
+        "source": "https://opengameart.org/content/simple-animated-character",
+        "download": "https://opengameart.org/sites/default/files/sora.zip",
+        "source_sha256": "d1c10efd5414fdc4bcbe460310143d382109bc38eda92bd33951c19be0b439d0",
+        "author": "Danilo Mattos",
+        "license": "CC0-1.0",
+        "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "license_evidence": "OpenGameArt source page explicitly lists CC0; source archive has no separate license file.",
+        "transformations": [
+          "Packed original transparent 256x64 four-frame sheets as rows north=IdleUpWalking.png, south=IdleDownWalking.png, east=Walking_Right.png, west=Walking_Left.png.",
+          "Excluded attack and ranged states; preserved pixel artwork and transparent frame bounds.",
+          "PNG optimize, no rescaling."
+        ],
+        "fallback": "local SVG/CSS symbol; static on resource error"
+      },
+      {
+        "id": "ripples",
+        "entity": "water-decoration",
+        "file": "ripples.png",
+        "size_bytes": 387,
+        "sha256": "415ed0586051fec942ac71283b52b90443fc67de5947deb57b9a3e5589cd8f0a",
+        "frame_width": 32,
+        "frame_height": 32,
+        "frames": 4,
+        "fps": 4,
+        "anchor": [
+          0.5,
+          0.5
+        ],
+        "directions": [],
+        "direction_rows": {},
+        "states": [
+          "decorative"
+        ],
+        "idle_frame": 0,
+        "source": "https://opengameart.org/content/pixel-art-lake-assets",
+        "download": "https://opengameart.org/sites/default/files/ripples.png",
+        "source_sha256": "d871b4f12dd952af30dd48108d1520592f726e9a4c5c854811ce63f7e3be3541",
+        "author": "AmberFallStudio",
+        "license": "CC0-1.0",
+        "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "license_evidence": "OpenGameArt source page explicitly lists CC0; source archive has no separate license file.",
+        "transformations": [
+          "Preserved original transparent 128x32 four-frame sprite strip.",
+          "PNG optimize, no rescaling."
+        ],
+        "fallback": "local SVG/CSS symbol; static on resource error"
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "path": "deploy/evidence-private/phase6a-20261027/flood-mobile-alternate-viewport-final.png",
+      "bytes": 615022,
+      "sha256": "a815fbcc5f807e333af58a4db19393772e68fcc8818abed408dba42506df7498"
+    },
+    {
+      "path": "deploy/evidence-private/phase6a-20261027/flood-mobile-close-paused.png",
+      "bytes": 65690,
+      "sha256": "b8e78443caa5d2fa70a9cb40230a75f149c9f28f8d916ddfd7989b67dcfba4e9"
+    },
+    {
+      "path": "deploy/evidence-private/phase6a-20261027/flood-mobile-exposure.png",
+      "bytes": 118640,
+      "sha256": "ff28d20019d97dea4ff59a2fffcf7ac9ab71cb1d01df191c7d97c379fa2c6e50"
+    },
+    {
+      "path": "deploy/evidence-private/phase6a-20261027/flood-mobile-overview.png",
+      "bytes": 32032,
+      "sha256": "a7ef88a468b0487ae954f50b1c6638bc3d1f0567b9cda322b163d3d61f324e70"
+    },
+    {
+      "path": "deploy/evidence-private/phase6a-20261027/flood-mobile-page.png",
+      "bytes": 353211,
+      "sha256": "ed0196ca8dedae336e1ac593594c6e79cd9d339e20a5f40f49ebed522b8f901d"
+    },
+    {
+      "path": "deploy/evidence-private/phase6a-20261027/zombie-desktop-alternate-viewport-final.png",
+      "bytes": 212398,
+      "sha256": "5a262b26abe3175a206b1e08ce6f32a4a0186f2745753c7950f6cefaa4efb1f3"
+    },
+    {
+      "path": "deploy/evidence-private/phase6a-20261027/zombie-desktop-close-paused.png",
+      "bytes": 50809,
+      "sha256": "66bcf85daad11d5997e469de3dbb4b799885df074a6ec146fc8eb72358ccaebb"
+    },
+    {
+      "path": "deploy/evidence-private/phase6a-20261027/zombie-desktop-overview.png",
+      "bytes": 66742,
+      "sha256": "c7a6eeb2c767e81d3be4cf82ed879e2afeac2f26d24f23db262bf240a36138b5"
+    },
+    {
+      "path": "deploy/evidence-private/phase6a-20261027/zombie-desktop-page.png",
+      "bytes": 308772,
+      "sha256": "a60b1fa6af444bf1eba2d344215e89f36921687b87fe54a5fb211ab3ef4efece"
+    }
+  ],
+  "modified_files": [
+    "README.md",
+    "apps/mobile/lib/core/theme/tokens.g.dart",
+    "apps/mobile/lib/features/escape/route_map.dart",
+    "apps/mobile/test/world_test.dart",
+    "apps/web/AGENTS.md",
+    "apps/web/public/visualization/ripples.png",
+    "apps/web/public/visualization/survivor.png",
+    "apps/web/public/visualization/zombie.png",
+    "apps/web/src/features/Escape.tsx",
+    "apps/web/src/features/WorldMap.tsx",
+    "apps/web/src/features/flood/FloodLab.tsx",
+    "apps/web/src/features/flood/FloodMap.tsx",
+    "apps/web/src/features/flood/flood.css",
+    "apps/web/src/features/flood/incidentPresentation.ts",
+    "apps/web/src/features/visualization/AnimatedEntities.tsx",
+    "apps/web/src/features/visualization/model.ts",
+    "apps/web/src/features/visualization/observation.ts",
+    "apps/web/src/features/visualization/pointer.ts",
+    "apps/web/src/features/visualization/projection.ts",
+    "apps/web/src/features/visualization/useVisualization.tsx",
+    "apps/web/src/features/visualization/visualization.css",
+    "apps/web/src/tests/flood.test.tsx",
+    "apps/web/src/tests/multigraph.test.tsx",
+    "apps/web/src/tests/visualization.test.tsx",
+    "deploy/validation-phase6a.json",
+    "docs/informe-fase6a.md",
+    "package.json",
+    "packages/design-tokens/generated/tokens.css",
+    "packages/design-tokens/tokens.json",
+    "packages/visualization/README.md",
+    "packages/visualization/catalog.json",
+    "tests/e2e/app.spec.ts",
+    "tools/qa/check_flood_lab.mjs",
+    "tools/qa/check_visualization_browser.mjs"
+  ],
+  "implementation_commits": [
+    "3d162a7 test(visuals): verify lifecycle budgets and real desktop mobile scenarios",
+    "50d71d5 feat(mobile): render static observation symbols without session changes",
+    "5ffb637 feat(web): integrate session sprites, flood legend and map detail controls",
+    "b76b7b6 feat(web): add bounded SVG sprite controller and verified path interpolation",
+    "27a3c4d feat(visuals): add verified CC0 atlases and shared risk palette"
+  ]
+}

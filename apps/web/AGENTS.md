@@ -17,3 +17,15 @@ Las consultas y controles privados usan `Authorization: Bearer` con una credenci
 `WorldMap.tsx` conserva geometrías reales, zonas de aparición y envolvente de referencia urbana. No afirmar cobertura vial completa ni límites municipales oficiales. Mostrar sólo la ruta seleccionada y amenazas publicadas. AppShell comparte la caché de Escape sin otro temporizador de polling.
 
 Los perfiles se previsualizan con `/grafo?mode=…` sin activación. La topología estática se comparte por perfil y la versión del snapshot debe coincidir antes de representar entidades. Los estados privados usan `simulation_id` en su clave de caché, sin tokens; desmontar selección y rutas al cambiar de ejecución. No combinar marcadores de un mundo con otra geografía. Mantener capas de lluvia/exposición sintética, reportes ciudadanos y referencia oficial separadas: las dos últimas son observaciones visuales independientes y no alteran una ejecución histórica.
+
+
+FASE 6A conserva SVG nativo. `features/visualization` es una capa observadora sin
+HTTP, escritura del motor ni temporizadores por entidad. El catálogo portable
+está en `packages/visualization/catalog.json`; colores nuevos provienen de tokens.
+Sólo interpolar ticks consecutivos del mismo ID/grafo/escenario, con polilíneas
+comprobadas; pares de nodos con geometrías paralelas diferentes son ambiguos.
+Ante pausa, terminales, desconexión, ocultación o movimiento reducido, resolver al
+último punto real y limpiar el reloj. Nunca contar integrantes de hordas ni usar
+rutas futuras para inventar movimientos. Las bandas azules son índices sintéticos,
+no clases hidrológicas. Probar `npm run test:visualization:browser` para evidencia
+local BASE/FULL_MANTA; no afirmar FPS de pintura a partir de intervalos RAF.
