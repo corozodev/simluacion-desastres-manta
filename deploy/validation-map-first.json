@@ -1,0 +1,149 @@
+{
+  "date": "2026-10-27",
+  "region": "us-east-2",
+  "implementation_commit": "fa51604",
+  "repository": "https://github.com/corozodev/simluacion-desastres-manta",
+  "scope": {
+    "react": true,
+    "flutter_redesigned": false,
+    "backend_changed": false,
+    "backend_restarted": false,
+    "contracts_changed": false,
+    "new_dependencies": false,
+    "existing_sprites_reused": true,
+    "sprite_assets_changed": false
+  },
+  "publication": {
+    "site": "https://sistemamanta.lexinnovate.com",
+    "routes": [
+      "/escape",
+      "/flood-lab"
+    ],
+    "invalidation_id": "I647AFOQF0NRV12CYJYSRBEEYY",
+    "invalidation_completed": true,
+    "publisher": "deploy/publish-web.sh",
+    "complete_public_assets_uploaded": true,
+    "existing_hashed_assets_preserved": true,
+    "atlas_integrity": [
+      {
+        "file": "zombie.png",
+        "http": 200,
+        "content_type": "image/png",
+        "sha256_matches_catalog": true
+      },
+      {
+        "file": "survivor.png",
+        "http": 200,
+        "content_type": "image/png",
+        "sha256_matches_catalog": true
+      },
+      {
+        "file": "ripples.png",
+        "http": 200,
+        "content_type": "image/png",
+        "sha256_matches_catalog": true
+      }
+    ],
+    "assets": [
+      "/assets/index-CX24jy46.js",
+      "/assets/index-c-coSJwJ.css"
+    ]
+  },
+  "validation": {
+    "react_tests": 146,
+    "mock_api_tests": 40,
+    "playwright_e2e_tests": 12,
+    "check_passed": true,
+    "web_build_passed": true,
+    "backend_tests_race_build_passed": true,
+    "graph_tests": 10,
+    "simulation_contract_assertions": 493,
+    "flutter_analyze_tests_build_passed": true,
+    "flutter_tests": 24,
+    "flutter_opt_in_tests_skipped_in_normal_suite": 2,
+    "real_incidents_flutter_integration_passed": true,
+    "flood_real_checks": 13,
+    "incident_real_checks": 11,
+    "reference_real_checks": 10,
+    "local_map_layouts": 10,
+    "local_browser_errors": [],
+    "local_api_errors": [],
+    "public_checks": [
+      "Real BASE creation with2000ms, same renderer/camera, paused selection published route,4columns/noOSM, hide keeps searchfocus, resume and completed3ticks",
+      "Direct map-first routes at all3sizes, no autostart, one API status, no horizontal overflow, operator entry and all3real atlas hashes"
+    ],
+    "public_layouts": [
+      {
+        "route": "/flood-lab",
+        "width": 1366,
+        "top": 239.375,
+        "height": 583.671875,
+        "no_overflow": true,
+        "starts": 0
+      },
+      {
+        "route": "/escape",
+        "width": 1366,
+        "top": 217.875,
+        "height": 583.671875,
+        "no_overflow": true,
+        "starts": 0
+      },
+      {
+        "route": "/flood-lab",
+        "width": 1920,
+        "top": 239.375,
+        "height": 820.796875,
+        "no_overflow": true,
+        "starts": 0
+      },
+      {
+        "route": "/escape",
+        "width": 1920,
+        "top": 217.875,
+        "height": 820.796875,
+        "no_overflow": true,
+        "starts": 0
+      },
+      {
+        "route": "/flood-lab",
+        "width": 390,
+        "top": 317.03125,
+        "height": 607.671875,
+        "no_overflow": true,
+        "starts": 0
+      },
+      {
+        "route": "/escape",
+        "width": 390,
+        "top": 275.125,
+        "height": 607.671875,
+        "no_overflow": true,
+        "starts": 0
+      }
+    ],
+    "public_errors": [],
+    "public_api_errors": []
+  },
+  "survivors": {
+    "columns": [
+      "Superviviente",
+      "Estado",
+      "Refugio",
+      "Acción"
+    ],
+    "page_size": 25,
+    "search_preserved_on_hide": true,
+    "route_switch_and_clear_verified": true,
+    "technical_attributes_retained_in_state": true
+  },
+  "limits": [
+    "Public raster tile availability was not tested: automated browser checks intercept tile requests before network.",
+    "Production operator access code was not supplied or exercised; direct entry was verified publicly and authorized storm execution passed real local Go HTTP/browser tests.",
+    "DOM/RAF measurements are local and are not EC2 throughput or paint-FPS certification."
+  ],
+  "evidence": {
+    "local": "deploy/evidence-private/mantasim-mapfirst-1793117344116/report.json",
+    "public": "deploy/evidence-private/mantasim-mapfirst-release-20261027/public-smoke.json"
+  }
+}

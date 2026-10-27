@@ -68,3 +68,11 @@ La aceptación visual final está en [report.json](../deploy/evidence-private/ma
 Ejemplos: [superviviente y ruta en escritorio](../deploy/evidence-private/mantasim-mapfirst-1793117344116/zombie-agents-1366.png), [panel móvil](../deploy/evidence-private/mantasim-mapfirst-1793117344116/zombie-agents-390.png), [inundaciones](../deploy/evidence-private/mantasim-mapfirst-1793117344116/flood-running-1366.png).
 
 En FULL, el checker final midió tres paths viales en inundaciones y dos en zombis, con 134 y 92 nodos DOM dentro de sus mapas de previsualización, respectivamente. Zombis descargó una sola vez la geografía FULL durante la exploración. Son mediciones locales y no equivalen a una certificación de rendimiento de la EC2.
+
+## Entrega publicada
+
+La implementación se subió a GitHub en `fa51604` y se publicó React en [Escape](https://sistemamanta.lexinnovate.com/escape) y [Inundaciones](https://sistemamanta.lexinnovate.com/flood-lab). CloudFront completó la invalidación `I647AFOQF0NRV12CYJYSRBEEYY`. El backend no se reconstruyó ni se reinició. No se alteraron presupuesto, cuotas o temporizadores.
+
+La prueba HTTPS pública comprobó los tres tamaños, mapas en el primer viewport, un solo indicador, ausencia de inicios automáticos y una ejecución BASE de tres turnos a 2000 ms. Verificó la misma cámara/renderer, pausa, selección de ruta real, las cuatro columnas, ausencia de detalles OSM, ocultación con foco correcto, continuación y finalización. Los tres atlas ahora responden `200 image/png` y sus SHA-256 coinciden con el catálogo. No hubo errores JavaScript ni API. [Evidencia de publicación](../deploy/validation-map-first.json) y [prueba pública privada](../deploy/evidence-private/mantasim-mapfirst-release-20261027/public-smoke.json).
+
+La entrada de operador se verificó públicamente sin usar ni solicitar su código real; el inicio autorizado de tormenta se probó con Go y navegador reales en local. Las teselas públicas se bloquean en automatización para respetar su política de uso. Estas dos delimitaciones no se presentan como pruebas remotas ejecutadas.
