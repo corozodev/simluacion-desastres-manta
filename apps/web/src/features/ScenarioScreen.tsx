@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { LoadingState } from '../components/ui';
 import { Escape } from './Escape';
 
@@ -7,10 +7,14 @@ const FloodLab = lazy(() => import('./flood/FloodLab').then(module => ({ default
 
 export function ScenarioScreen() {
   const [search, setSearch] = useSearchParams();
-  const scenario = search.get('scenario') === 'urban_flood' ? 'urban_flood' : 'zombie';
+  const location = useLocation();
+  const navigate = useNavigate();
+  const scenario = search.get('scenario') === 'urban_flood' || location.pathname === '/flood-lab' ? 'urban_flood' : 'zombie';
+  if (scenario === 'zombie') return <><Escape /><p className="session-lab-link"><Link to="/flood-lab">Abrir laboratorio avanzado de inundaciones</Link></p></>;
   return <>
     <section className="scenario-selector" aria-label="Selección de escenario">
       <label><span>ESCENARIOS</span><select aria-label="Escenarios" value={scenario} onChange={event => {
+        if (event.target.value !== 'urban_flood' && location.pathname === '/flood-lab') { navigate('/escape'); return; }
         const next = new URLSearchParams(search);
         if (event.target.value === 'urban_flood') next.set('scenario', 'urban_flood');
         else next.delete('scenario');

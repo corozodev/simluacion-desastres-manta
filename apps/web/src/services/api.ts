@@ -2,6 +2,7 @@ import type { ErrorResponse, HealthResponse, Graph, WorldSnapshot, Survivor, She
 import type { ScenarioSnapshot, EvacuationMetrics, LabState, LabCatalog, LabSession, LabCandidate, LabRunConfig, LabCandidateValidation, LabComparison, LabAction } from '@corodev/contracts';
 import type { Incident, IncidentCreate, IncidentList, IncidentServiceInfo, IncidentLocation, IncidentResolution, IncidentApplication, IncidentApplyResult, IncidentStatusUpdate } from '@corodev/contracts';
 import type { ReferenceStatus, ReferenceCollection, ReferenceProvenance, OfficialRainEvents, LabTelemetry } from '@corodev/contracts';
+import type { SimulationCapabilities, SimulationCreateRequest, SimulationCreated, SimulationMetadata, SimulationState, SimulationResults } from '@corodev/contracts';
 import { config } from '../lib/config';
 import { ApiError } from './errors';
 export { ApiError } from './errors';
@@ -149,7 +150,7 @@ function isScenario(value: unknown): value is ScenarioSnapshot {
       && typeof road.edge_id === 'string' && ['passable', 'caution', 'blocked'].includes(String(road.state))
       && typeof road.risk_source === 'string' && isNumber(road.risk_score) && road.risk_score >= 0 && road.risk_score <= 1
       && isNatural(road.updated_at_simulation_step) && isNumber(road.cost_multiplier) && road.cost_multiplier >= 1)
-    && Array.isArray(value.shelter_conditions) && value.shelter_conditions.length === 4 && value.shelter_conditions.every(shelter => isObject(shelter)
+    && Array.isArray(value.shelter_conditions) && value.shelter_conditions.length >= 1 && value.shelter_conditions.length <= 4 && value.shelter_conditions.every(shelter => isObject(shelter)
       && typeof shelter.shelter_id === 'string' && ['available', 'full', 'exposed', 'inaccessible'].includes(String(shelter.state))
       && isNumber(shelter.risk_score) && shelter.risk_score >= 0 && shelter.risk_score <= 1 && isNatural(shelter.updated_at_simulation_step))
     && Array.isArray(value.agents) && value.agents.length <= 200 && value.agents.every(agent => isObject(agent)
@@ -353,7 +354,65 @@ function isRainEvents(value: unknown): value is OfficialRainEvents {
       && isNumber(event.latitude) && Math.abs(event.latitude) <= 90 && isNumber(event.longitude) && Math.abs(event.longitude) <= 180);
 }
 
+function isManagedMetadata(value: unknown): value is SimulationMetadata {
+  return isObject(value) && typeof value.simulation_id === 'string' && value.simulation_id.length > 0
+    && ['CREATED', 'RUNNING', 'PAUSED', 'COMPLETED', 'CANCELLED', 'FAILED'].includes(String(value.status))
+    && ['zombie_outbreak', 'urban_flood'].includes(String(value.scenario)) && ['BASE', 'FULL_MANTA'].includes(String(value.graph_profile))
+    && ['graph_version', 'created_at', 'started_at', 'updated_at', 'expires_at'].every(key => typeof value[key] === 'string')
+    && ['tick', 'max_ticks', 'state_version', 'tick_interval_ms'].every(key => isNatural(value[key])) && Number.isSafeInteger(value.seed)
+    && isObject(value.config) && isNatural(value.config.survivors) && typeof value.config.round === 'string' && isStrings(value.config.refuge_ids)
+    && (value.config.rainfall_intensity === undefined || isNumber(value.config.rainfall_intensity) && value.config.rainfall_intensity >= 0 && value.config.rainfall_intensity <= 1)
+    && (value.access_token === undefined || typeof value.access_token === 'string' && value.access_token.length > 0);
+}
+function isManagedCreated(value: unknown): value is SimulationCreated {
+  if (!isObject(value)) return false;
+  const token = value.access_token;
+  return isManagedMetadata(value) && typeof token === 'string' && token.length > 0;
+}
+function isManagedState(value: unknown): value is SimulationState {
+  if (!isObject(value)) return false;
+  const snapshot = value.snapshot, scenario = value.scenario_state;
+  return isManagedMetadata(value) && isWorld(snapshot)
+    && snapshot.graph_version === value.graph_version && snapshot.turn === value.tick
+    && (value.scenario === 'urban_flood' ? isScenario(scenario) && scenario.graph_version === value.graph_version : scenario === undefined);
+}
+function isManagedResults(value: unknown): value is SimulationResults {
+  if (!isObject(value) || !isObject(value.results)) return false;
+  const results = value.results;
+  return isManagedState(value)
+    && ['initial_survivors', 'evacuated', 'bitten', 'active', 'refuges_used'].every(key => isNatural(results[key]))
+    && isNumber(results.survival_rate) && results.survival_rate >= 0 && results.survival_rate <= 1;
+}
+function isCapabilities(value: unknown): value is SimulationCapabilities {
+  if (!isObject(value) || !isObject(value.defaults) || !isObject(value.limits)) return false;
+  const defaults = value.defaults, limits = value.limits;
+  return Array.isArray(value.scenarios) && value.scenarios.every(scenario => isObject(scenario)
+    && ['zombie_outbreak', 'urban_flood'].includes(String(scenario.id)) && typeof scenario.name === 'string' && typeof scenario.available === 'boolean' && typeof scenario.synthetic === 'boolean')
+    && Array.isArray(value.graph_profiles) && value.graph_profiles.every(profile => isObject(profile)
+      && ['BASE', 'FULL_MANTA'].includes(String(profile.id)) && typeof profile.name === 'string' && typeof profile.available === 'boolean'
+      && typeof profile.graph_version === 'string' && isNatural(profile.nodes) && isNatural(profile.edges)
+      && (profile.disabled_reason === undefined || typeof profile.disabled_reason === 'string'))
+    && ['zombie_outbreak', 'urban_flood'].includes(String(defaults.scenario))
+    && ['BASE', 'FULL_MANTA'].includes(String(defaults.graph_profile)) && Number.isSafeInteger(defaults.seed)
+    && ['max_ticks', 'tick_interval_ms', 'survivors'].every(key => isNatural(defaults[key])) && typeof defaults.round === 'string'
+    && ['max_active', 'max_full_active', 'max_retained', 'max_memory_bytes', 'min_tick_interval_ms', 'max_tick_interval_ms', 'max_ticks', 'max_survivors'].every(key => isNatural(limits[key]))
+    && Array.isArray(value.rounds) && value.rounds.every(round => isObject(round) && typeof round.id === 'string' && typeof round.name === 'string' && isNatural(round.survivors) && isNatural(round.turns));
+}
+const simulationPath = (id: string) => `/v1/simulations/${encodeURIComponent(id)}`;
+const simulationAuth = (token: string) => ({ Authorization: `Bearer ${token}` });
+
 export const api = {
+  simulationCapabilities: (signal?: AbortSignal) => request<SimulationCapabilities>('/v1/simulations/capabilities', isCapabilities, undefined, signal),
+  createSimulation: (input: SimulationCreateRequest, key: string) => request<SimulationCreated>('/v1/simulations', isManagedCreated,
+    { method: 'POST', headers: { 'Idempotency-Key': key }, body: JSON.stringify(input) }),
+  simulationState: (id: string, token: string, signal?: AbortSignal) => request<SimulationState>(`${simulationPath(id)}/state`, isManagedState,
+    { headers: simulationAuth(token) }, signal),
+  simulationResults: (id: string, token: string, signal?: AbortSignal) => request<SimulationResults>(`${simulationPath(id)}/results`, isManagedResults,
+    { headers: simulationAuth(token) }, signal),
+  controlSimulation: (id: string, token: string, action: 'pause' | 'resume' | 'cancel') => request<SimulationMetadata>(`${simulationPath(id)}/${action}`, isManagedMetadata,
+    { method: 'POST', headers: simulationAuth(token) }),
+  restartSimulation: (id: string, token: string, key: string) => request<SimulationCreated>(`${simulationPath(id)}/restart`, isManagedCreated,
+    { method: 'POST', headers: { ...simulationAuth(token), 'Idempotency-Key': key } }),
   referenceStatus: (signal?: AbortSignal) => labRequest('/v1/reference/status', isReferenceStatus, undefined, signal),
   susceptibilityReference: async (version: string, signal?: AbortSignal) => {
     const value = await labRequest(`/v1/reference/susceptibility?${new URLSearchParams({ version })}`, isReferenceCollection, undefined, signal);

@@ -1,0 +1,53 @@
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { api } from '../services/api';
+import { capabilities, created, errorResponse, json, managedFlood, managedState, results } from './simulation-fixtures';
+
+afterEach(() => vi.restoreAllMocks());
+
+describe('adaptador HTTP privado de simulaciones', () => {
+  it('descubre capacidades sin enviar credenciales ni crear trabajo', async () => {
+    const fetch = vi.spyOn(globalThis, 'fetch').mockResolvedValue(json(capabilities));
+    await expect(api.simulationCapabilities()).resolves.toEqual(capabilities);
+    expect(String(fetch.mock.calls[0]![0])).toMatch(/\/v1\/simulations\/capabilities$/);
+    expect(fetch.mock.calls[0]![1]?.headers).not.toHaveProperty('Authorization');
+    expect(fetch.mock.calls[0]![1]?.method).toBeUndefined();
+  });
+  it('envía clave idempotente sólo en creación y reinicio; autorización Bearer en todas las rutas privadas', async () => {
+    const fetch = vi.spyOn(globalThis, 'fetch').mockResolvedValue(json(created()));
+    await api.createSimulation({ scenario: 'zombie_outbreak', graph_profile: 'BASE', seed: 1, max_ticks: 150, tick_interval_ms: 2000 }, 'test-key');
+    expect(fetch.mock.calls[0]![1]).toMatchObject({ method: 'POST', headers: { 'Idempotency-Key': 'test-key' } });
+    fetch.mockImplementation(async () => json(managedState()));
+    await api.simulationState('private-id', 'opaque-token');
+    await api.controlSimulation('private-id', 'opaque-token', 'pause');
+    fetch.mockResolvedValue(json(results(managedState(undefined, { status: 'COMPLETED' }))));
+    await api.simulationResults('private-id', 'opaque-token');
+    fetch.mockResolvedValue(json(created()));
+    await api.restartSimulation('private-id', 'opaque-token', 'restart-key');
+    for (const [url, init] of fetch.mock.calls.slice(1)) {
+      expect(String(url)).not.toContain('opaque-token');
+      expect(new URL(String(url)).search).toBe('');
+      expect(init?.headers).toMatchObject({ Authorization: 'Bearer opaque-token' });
+      expect(init?.credentials).toBeUndefined();
+      expect(init?.headers).not.toHaveProperty('X-CSRF-Token');
+    }
+    expect(fetch.mock.calls[4]![1]?.headers).toMatchObject({ 'Idempotency-Key': 'restart-key' });
+  });
+  it.each([400, 401, 403, 404, 409, 410, 429, 503])('conserva errores estructurados y request ID (%s)', async status => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(errorResponse(status, 'Error controlado.'));
+    await expect(api.simulationState('private-id', 'opaque-token')).rejects.toMatchObject({ status, message: 'Error controlado.', requestId: 'request-test' });
+  });
+  it('rechaza snapshots sin topología coherente y creación sin credencial privada', async () => {
+    const fetch = vi.spyOn(globalThis, 'fetch').mockResolvedValue(json(managedState(undefined, { graph_version: 'wrong-graph' })));
+    await expect(api.simulationState('private-id', 'opaque-token')).rejects.toMatchObject({ code: 'INVALID_RESPONSE' });
+    fetch.mockResolvedValue(json(managedState()));
+    await expect(api.createSimulation({ scenario: 'zombie_outbreak', graph_profile: 'BASE', seed: 1, max_ticks: 150, tick_interval_ms: 2000 }, 'key')).rejects.toMatchObject({ code: 'INVALID_RESPONSE' });
+  });
+  it('valida inundaciones con refugios seleccionados y exige el snapshot real de su motor', async () => {
+    const flood = managedFlood();
+    flood.scenario_state!.shelter_conditions = flood.scenario_state!.shelter_conditions.slice(0, 1);
+    const fetch = vi.spyOn(globalThis, 'fetch').mockResolvedValue(json(flood));
+    await expect(api.simulationState('private-id', 'opaque-token')).resolves.toMatchObject({ scenario: 'urban_flood' });
+    fetch.mockResolvedValue(json({ ...flood, scenario_state: undefined }));
+    await expect(api.simulationState('private-id', 'opaque-token')).rejects.toMatchObject({ code: 'INVALID_RESPONSE' });
+  });
+});

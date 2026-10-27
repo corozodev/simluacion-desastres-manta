@@ -9,6 +9,7 @@ import { AppRoutes } from '../app/App';
 import { api } from '../services/api';
 import { config, readConfig } from '../lib/config';
 import { routeGeometry } from '../features/WorldMap';
+import { capabilities, managedState, restoreSession } from './simulation-fixtures';
 
 const graph = JSON.parse(readFileSync('../../packages/contracts/examples/graph.json', 'utf8')) as Graph;
 const world = JSON.parse(readFileSync('../../packages/contracts/examples/world.json', 'utf8')) as WorldSnapshot;
@@ -17,6 +18,7 @@ world.metrics.active = 1;
 world.metrics.evacuated = 1;
 
 function renderEscape() {
+  restoreSession();
   const client = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
   return render(<QueryClientProvider client={client}><MemoryRouter initialEntries={['/escape']}><AppRoutes /></MemoryRouter></QueryClientProvider>);
 }
@@ -27,7 +29,7 @@ describe('observación del mundo', () => {
   it('muestra datos HTTP, grafo accesible, refugios y búsqueda de sobrevivientes', async () => {
     vi.spyOn(globalThis, 'fetch').mockImplementation(async input => {
       const path = new URL(String(input)).pathname;
-      return new Response(JSON.stringify(path === '/estado' ? world : path === '/grafo' ? graph : { status: 'ok', service: 'test', version: '0.1.0' }));
+      return new Response(JSON.stringify(path.endsWith('/state') ? managedState(world) : path === '/grafo' ? graph : capabilities));
     });
     renderEscape();
     expect(await screen.findByRole('img', { name: /Red de evacuación/ })).toBeInTheDocument();
@@ -66,7 +68,7 @@ describe('observación del mundo', () => {
     road.geometry = [{ lat: 0, lng: 0 }, { lat: .0002, lng: .0005 }, { lat: 0, lng: .001 }];
     urbanWorld.survivors[0] = { ...urbanWorld.survivors[0]!, target_shelter_id: 'R-2', planned_route: ['N-0000', 'N-0001'], spawn_zone_id: 'synthetic-zone' };
     urbanWorld.shelters[1] = { ...urbanWorld.shelters[1]!, reserved: 1, available: urbanWorld.shelters[1]!.capacity - urbanWorld.shelters[1]!.occupancy - 1 };
-    const requests = vi.spyOn(globalThis, 'fetch').mockImplementation(async input => new Response(JSON.stringify(new URL(String(input)).pathname === '/estado' ? urbanWorld : urbanGraph)));
+    const requests = vi.spyOn(globalThis, 'fetch').mockImplementation(async input => new Response(JSON.stringify(new URL(String(input)).pathname.endsWith('/state') ? managedState(urbanWorld) : new URL(String(input)).pathname === '/grafo' ? urbanGraph : capabilities)));
     renderEscape();
     const map = await screen.findByRole('img', { name: /Red de evacuación/ });
     const initial = map.getAttribute('viewBox');
@@ -89,8 +91,8 @@ describe('observación del mundo', () => {
   it('recupera la observación al reintentar después de una desconexión', async () => {
     let stateRequests = 0;
     vi.spyOn(globalThis, 'fetch').mockImplementation(async input => {
-      if (new URL(String(input)).pathname === '/estado' && stateRequests++ === 0) return new Response(JSON.stringify({ error: { code: 'UNAVAILABLE', message: 'Snapshot temporalmente desconectado.', requestId: 'retry-world', details: [] } }), { status: 503 });
-      return new Response(JSON.stringify(new URL(String(input)).pathname === '/estado' ? world : graph));
+      if (new URL(String(input)).pathname.endsWith('/state') && stateRequests++ === 0) return new Response(JSON.stringify({ error: { code: 'UNAVAILABLE', message: 'Snapshot temporalmente desconectado.', requestId: 'retry-world', details: [] } }), { status: 503 });
+      return new Response(JSON.stringify(new URL(String(input)).pathname.endsWith('/state') ? managedState(world) : new URL(String(input)).pathname === '/grafo' ? graph : capabilities));
     });
     renderEscape();
     expect(await screen.findByRole('alert')).toHaveTextContent('Snapshot temporalmente desconectado.');

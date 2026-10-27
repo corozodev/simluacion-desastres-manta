@@ -1,18 +1,21 @@
 import { Cloud, MapPinned, Menu, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { Link, NavLink, Outlet, useSearchParams } from 'react-router-dom';
+import { Link, NavLink, Outlet, useLocation, useSearchParams } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { brand } from '@corodev/design-tokens/brand';
-import { useFloodState, useWorld } from '../services/queries';
+import { useFloodState } from '../services/queries';
+import { api } from '../services/api';
 import { StatusIndicator } from './ui';
 
 export function AppShell() {
   const [menuOpen, setMenuOpen] = useState(false);
-  // Escape owns polling; the shell only observes the same query cache.
-  const world = useWorld(false);
+  // The shell observes the executor's cache without a second polling clock.
+  const capabilities = useQuery({ queryKey: ['simulation-capabilities'], queryFn: ({ signal }) => api.simulationCapabilities(signal), enabled: false });
   const flood = useFloodState(false);
   const [search] = useSearchParams();
-  const floodSelected = search.get('scenario') === 'urban_flood';
-  const active = floodSelected ? flood : world;
+  const location = useLocation();
+  const floodSelected = search.get('scenario') === 'urban_flood' || location.pathname === '/flood-lab';
+  const active = floodSelected ? flood : capabilities;
   const status = active.isError ? 'offline' : active.isPending ? 'checking' : 'online';
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => { if (event.key === 'Escape') setMenuOpen(false); };
@@ -32,6 +35,6 @@ export function AppShell() {
     <div className="app-body"><header className="topbar"><div className="breadcrumb"><button className="icon-button mobile-menu" aria-label="Abrir menú" aria-expanded={menuOpen} onClick={() => setMenuOpen(true)}><Menu size={22} /></button><span className="breadcrumb-workspace">CoroDev</span><span className="breadcrumb-slash">/</span><strong>Escape de Manta</strong></div>
       <div className="topbar-actions"><span className="topbar-status"><StatusIndicator compact status={status} /></span><div className="avatar" aria-label="Equipo CoroDev">CD</div></div></header>
       <main id="main-content" tabIndex={-1}><Outlet /></main>
-      <footer className="app-footer"><span>Observación pública de la simulación de evacuación.</span><span><span className="footer-dot" />{brand.team} <span className="muted">/</span> v{brand.version}</span></footer>
+      <footer className="app-footer"><span>Simulaciones independientes de evacuación bajo demanda.</span><span><span className="footer-dot" />{brand.team} <span className="muted">/</span> v{brand.version}</span></footer>
     </div></div>;
 }
