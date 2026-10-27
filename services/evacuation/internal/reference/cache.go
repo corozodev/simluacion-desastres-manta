@@ -222,7 +222,7 @@ func (s *Service) Refresh(ctx context.Context) bool {
 		if err == nil && s.cache != "" {
 			err = Write(s.cache, b)
 			if err != nil {
-				failureMessage = "No se pudo guardar la nueva copia oficial. Se conserva la copia anterior en memoria y disco."
+				failureMessage = "No se pudo confirmar el guardado de la nueva copia oficial. Se conserva la copia activa en memoria."
 			}
 		}
 		s.mu.Lock()

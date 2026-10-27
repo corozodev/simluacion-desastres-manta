@@ -1,0 +1,1496 @@
+{
+  "phase": "4D",
+  "recorded_at_utc": "2026-10-27T05:09:50.153305+00:00",
+  "client_date": "2026-10-27",
+  "client_timezone": "America/Guayaquil",
+  "validation_dates": [
+    "2026-10-26",
+    "2026-10-27"
+  ],
+  "baseline_commit": "e418fea",
+  "scope": "Local code, real public SNGR acquisition, cached official data, native Go and React/Flutter verification. No push, AWS account calls, deployment or production restart.",
+  "implementation_commits": [
+    "ec7b188affe6ce5d8b3a9ff46a22274d9fbe52be feat(contracts): define official reference provenance and experimental weights",
+    "66f32c62bcadcf7a4dec6ea8e2de5d9f62c12ba7 feat(reference): cache bounded official geography and weight synthetic flood zones",
+    "0677ea683b0bfe0ec3b1ce41a519416a2a5a3443 feat(flood-lab): expose offline references and asynchronous refresh telemetry",
+    "c95205ed570ea46849a46e8b4d8706ea8cd15dcc feat(web): visualize official susceptibility with explicit provenance and opt in",
+    "837ccc416300fe0e08b27d7c8430fea2154ef181 test(reference): exercise offline geography and preserve full demo regressions"
+  ],
+  "contract_compatibility": {
+    "existing_paths_preserved": 29,
+    "existing_schemas_preserved": 65,
+    "new_paths": 5,
+    "new_schemas": 13,
+    "optional_extensions": [
+      "LabRunConfig.geographic_reference",
+      "DataProvenance.geographic_reference"
+    ],
+    "paso_unchanged": true,
+    "dart_unchanged": true
+  },
+  "official_data": {
+    "susceptibility_provenance": {
+      "category": "official_reference",
+      "source": "Secretaría Nacional de Gestión de Riesgos — Susceptibilidad a inundaciones",
+      "url": "https://sgrportal.gestionderiesgos.gob.ec/server/rest/services/Susceptibilidad_de_Inundaciones/MapServer/0",
+      "consulted_at": "2026-10-27T04:42:05.275571955Z",
+      "portal_modified_at": "2026-10-06T22:28:05.771Z",
+      "attribution": "CONAGE 2024 — resoluciones 006, 007 y 008-CONAGE-2024. MINISTERIO DE GOBIERNO, \nMINISTERIO DE ENERGÍA Y MINAS, \nMINISTERIO DE AGRICULTURA Y GANADERÍA, \nMINISTERIO DE DESARROLLO URBANO Y VIVIENDA, \nSECRETARÍA NACIONAL DE GESTIÓN DE RIESGOS, \nINSTITUTO GEOGRÁFICO MILITAR, \nINSTITUTO DE INVESTIGACIÓN GEOLÓGICO Y ENERGÉTICO, \nINSTITUTO NACIONAL DE ESTADÍSTICA Y CENSOS, \nINSTITUTO OCEANOGRÁFICO Y ANTÁRTICO DE LA ARMADA, \nMINISTERIO DEL AMBIENTE, AGUA Y TRANSICIÓN ECOLÓGICA, \nDIRECTOR DE GESTIÓN DE LA INFORMACIÓN NACIONAL.",
+      "license": "El portal no declara una licencia de reutilización explícita. Se conserva la atribución de la fuente.",
+      "original_crs": "EPSG:32717",
+      "output_crs": "EPSG:4326",
+      "dataset_version": "sngr-susceptibility-14a325fdc3081b5ffd9b1679fc95c65fb9d4de66afe02e649aa2dbf784d16ac3",
+      "temporal_scope": "Susceptibilidad territorial estructural: sólo ALTA, MEDIA y BAJA. SIN y NO APLICABLE no se reclasifican. No representa inundación actual, profundidad ni probabilidad. Generalización de hasta 0,0001 grados; anillos degenerados se recuperan con mayor detalle.",
+      "source_years": [
+        2025
+      ]
+    },
+    "events_provenance": {
+      "category": "official_observation",
+      "source": "Secretaría Nacional de Gestión de Riesgos — EVENTOS",
+      "url": "https://sgrportal.gestionderiesgos.gob.ec/server/rest/services/Hosted/EVENTOS_X_LLUVIAS/FeatureServer/0",
+      "consulted_at": "2026-10-27T04:42:05.4330188Z",
+      "declared_update_date": "2025-04-15",
+      "portal_modified_at": "2025-04-24T18:50:09.987Z",
+      "attribution": "Secretaría Nacional de Gestión de Riesgos — colección EVENTOS_X_LLUVIAS.",
+      "license": "El portal no declara una licencia de reutilización explícita. Se conserva la atribución de la fuente.",
+      "original_crs": "EPSG:4326",
+      "output_crs": "EPSG:4326",
+      "dataset_version": "sngr-rain-events-978aa4c411cd75adf1b88aee7b90bece43105d08ed1e4741b22864f2a1272af0",
+      "temporal_scope": "Fechas declaradas de eventos históricos; N/A en cierre no demuestra actividad actual. No modifica carreteras ni rutas.",
+      "source_years": []
+    },
+    "bbox": [
+      -80.8188739,
+      -1.017171,
+      -80.6581593,
+      -0.9297437
+    ],
+    "features": 59,
+    "vertices": 3463,
+    "classes": {
+      "ALTA": 13,
+      "MEDIA": 11,
+      "BAJA": 35
+    },
+    "excluded_source_classes": [
+      "SIN",
+      "NO APLICABLE"
+    ],
+    "historical_events": 16,
+    "event_date_range": [
+      "2025-02-16",
+      "2025-04-14"
+    ],
+    "declared_latest_record_update_date": "2025-04-15",
+    "acquisition": {
+      "strategy": "bounded-bbox-IDs-then-batches; no pagination assumed",
+      "susceptibility_pagination": false,
+      "events_pagination": true,
+      "max_record_count": 2000,
+      "queries": [
+        "https://sgrportal.gestionderiesgos.gob.ec/server/rest/services/Susceptibilidad_de_Inundaciones/MapServer/0/query?f=json&geometry=-80.8188739%2C-1.0171710%2C-80.6581593%2C-0.9297437&geometryType=esriGeometryEnvelope&inSR=4326&returnIdsOnly=true&spatialRel=esriSpatialRelIntersects&where=sui+IN+%28%27ALTA%27%2C%27MEDIA%27%2C%27BAJA%27%29",
+        "https://sgrportal.gestionderiesgos.gob.ec/server/rest/services/Susceptibilidad_de_Inundaciones/MapServer/0/query?f=geojson&geometry=-80.8188739%2C-1.0171710%2C-80.6581593%2C-0.9297437&geometryPrecision=6&geometryType=esriGeometryEnvelope&inSR=4326&maxAllowableOffset=0.0001&objectIds=9405%2C9407%2C9413%2C9414%2C9415%2C9419%2C9421%2C9422%2C9430%2C9447%2C9465%2C9515%2C9521%2C9522%2C23088%2C23092%2C23113%2C23114%2C23115%2C23116%2C23121%2C23126%2C23127%2C23130%2C23131%2C23132%2C23133%2C23135%2C23136%2C23137%2C23139%2C23142%2C23144%2C23145%2C23149%2C23150%2C23151%2C23154%2C23160%2C23161%2C23162%2C23174%2C23176%2C23177%2C23182%2C23218%2C23234%2C23235%2C23239%2C23243&outFields=FID%2Csui%2Canno&outSR=4326&returnGeometry=true&spatialRel=esriSpatialRelIntersects&where=sui+IN+%28%27ALTA%27%2C%27MEDIA%27%2C%27BAJA%27%29",
+        "https://sgrportal.gestionderiesgos.gob.ec/server/rest/services/Susceptibilidad_de_Inundaciones/MapServer/0/query?f=geojson&geometry=-80.8188739%2C-1.0171710%2C-80.6581593%2C-0.9297437&geometryPrecision=6&geometryType=esriGeometryEnvelope&inSR=4326&maxAllowableOffset=0.0001&objectIds=23281%2C23282%2C23283%2C23284%2C23347%2C30912%2C30913%2C30915%2C30921&outFields=FID%2Csui%2Canno&outSR=4326&returnGeometry=true&spatialRel=esriSpatialRelIntersects&where=sui+IN+%28%27ALTA%27%2C%27MEDIA%27%2C%27BAJA%27%29",
+        "https://sgrportal.gestionderiesgos.gob.ec/server/rest/services/Susceptibilidad_de_Inundaciones/MapServer/0/query?f=geojson&geometry=-80.8188739%2C-1.0171710%2C-80.6581593%2C-0.9297437&geometryPrecision=8&geometryType=esriGeometryEnvelope&inSR=4326&objectIds=9465&outFields=FID%2Csui%2Canno&outSR=4326&returnGeometry=true&spatialRel=esriSpatialRelIntersects&where=sui+IN+%28%27ALTA%27%2C%27MEDIA%27%2C%27BAJA%27%29",
+        "https://sgrportal.gestionderiesgos.gob.ec/server/rest/services/Hosted/EVENTOS_X_LLUVIAS/FeatureServer/0/query?f=json&geometry=-80.8188739%2C-1.0171710%2C-80.6581593%2C-0.9297437&geometryType=esriGeometryEnvelope&inSR=4326&returnIdsOnly=true&spatialRel=esriSpatialRelIntersects&where=1%3D1",
+        "https://sgrportal.gestionderiesgos.gob.ec/server/rest/services/Hosted/EVENTOS_X_LLUVIAS/FeatureServer/0/query?f=geojson&geometry=-80.8188739%2C-1.0171710%2C-80.6581593%2C-0.9297437&geometryPrecision=6&geometryType=esriGeometryEnvelope&inSR=4326&objectIds=107%2C108%2C137%2C148%2C280%2C283%2C300%2C1106%2C1109%2C1120%2C1263%2C1906%2C1993%2C1994%2C2325%2C2870&outFields=objectid%2Ccanton%2Cevento%2Cfechadelevento%2Cfechadecierredelevento%2Cfechaultimaactualizacion&outSR=4326&returnGeometry=true&spatialRel=esriSpatialRelIntersects&where=1%3D1"
+      ]
+    },
+    "bundle_sha256": "292b1ce551d488359cb6e686502a7e00284515cf3ecf5bf4168d254f704fc082",
+    "checksum_is_not_publisher_signature": true
+  },
+  "checks": {
+    "npm_install": true,
+    "contracts_validate": true,
+    "contracts_generate": true,
+    "tokens_generate": true,
+    "generated_check": true,
+    "typecheck": true,
+    "eslint": true,
+    "web_build": true,
+    "go_test": true,
+    "go_race_all": true,
+    "go_race_reference_floodlab_after_persistence_error_handling_adjustment": true,
+    "go_vet": true,
+    "go_build": true,
+    "mobile_analyze": true,
+    "mobile_test": true,
+    "mobile_apk_build": true,
+    "no_new_dependencies": true,
+    "no_external_io_in_simulation_step": true
+  },
+  "tests": {
+    "go": {
+      "top_level": 167,
+      "including_subtests": 261,
+      "packages": 16,
+      "new_top_level": 9,
+      "failures": 0
+    },
+    "react": 53,
+    "react_new": 4,
+    "historical_service": 40,
+    "flutter_passed": 23,
+    "flutter_conditional_skipped": 2,
+    "flutter_real_http_integrations": 2,
+    "playwright_zombie": 8,
+    "python_geospatial": 10,
+    "real_http_contract_zombie": true,
+    "real_http_contract_flood": true,
+    "real_flood4b_checks": {
+      "reviewed_base_and_master_graphs": true,
+      "mutations_require_session_origin_csrf": true,
+      "candidate_count_duplicate_and_far_snap_validation": true,
+      "scenario_switch_and_synthetic_label": true,
+      "eight_independent_layer_controls": true,
+      "ui_map_pick_remove_restore_and_reject_candidates": true,
+      "pause_ack_stops_backend_clock": true,
+      "edge_click_and_agent_route_inspection": true,
+      "rain_evolution_blocks_visible_streets": true,
+      "resume_and_same_seed_replay": true,
+      "ui_original_vs_four_alternative_shelters": true,
+      "master_changes_real_engine_and_keeps_compact_dom": true,
+      "return_to_zombie_preserves_world": true
+    },
+    "real_incidents4c_checks": {
+      "actual_flutter_repository_post_and_replay": true,
+      "incident_survives_process_restart": true,
+      "application_requires_local_session_origin_and_csrf": true,
+      "react_pending_marker_provenance_and_detail": true,
+      "react_server_filters_type_status_and_age": true,
+      "explicit_react_application_closes_road_and_replans_without_movement": true,
+      "application_idempotent_without_extra_effects": true,
+      "base_graph_and_zombie_scenario_unchanged": true,
+      "new_run_clears_overlay_and_stale_run_is_rejected": true,
+      "mobile_390_no_horizontal_overflow": true,
+      "existing_zombie_react_screen_remains_usable": true
+    },
+    "real_official4d_checks": {
+      "verified_official_copy_wgs84_categories_attribution_and_historical_dates": true,
+      "independent_layer_and_provenance_without_mutation": true,
+      "ui_opt_in_pins_version_and_preserves_seed_origins_and_rain": true,
+      "historical_events_do_not_close_roads": true,
+      "incremental_world_updates_reuse_static_polygons": true,
+      "master_real_graph_with_reference_polygons": true,
+      "mobile_390_no_overflow": true,
+      "offline_simulation_and_telemetry_without_provider_requests": true,
+      "zombie_and_base_graph_unchanged": true,
+      "missing_copy_keeps_synthetic_backend_operational": true
+    }
+  },
+  "real_browser": {
+    "phase": "4D",
+    "recorded_at": "2026-10-27T04:54:24.323Z",
+    "scope": "Local real Go, React, Chromium, checked-in official copy; no provider/GPS/AWS/raster requests",
+    "checks": {
+      "verified_official_copy_wgs84_categories_attribution_and_historical_dates": true,
+      "independent_layer_and_provenance_without_mutation": true,
+      "ui_opt_in_pins_version_and_preserves_seed_origins_and_rain": true,
+      "historical_events_do_not_close_roads": true,
+      "incremental_world_updates_reuse_static_polygons": true,
+      "master_real_graph_with_reference_polygons": true,
+      "mobile_390_no_overflow": true,
+      "offline_simulation_and_telemetry_without_provider_requests": true,
+      "zombie_and_base_graph_unchanged": true,
+      "missing_copy_keeps_synthetic_backend_operational": true
+    },
+    "measurements": {
+      "reference_payload_bytes": 92297,
+      "base_polygon_load_and_render_ms": 457.86974699999973,
+      "reference_use": {
+        "category": "official_reference",
+        "dataset_version": "sngr-susceptibility-14a325fdc3081b5ffd9b1679fc95c65fb9d4de66afe02e649aa2dbf784d16ac3",
+        "source_url": "https://sgrportal.gestionderiesgos.gob.ec/server/rest/services/Susceptibilidad_de_Inundaciones/MapServer/0",
+        "consulted_at": "2026-10-27T04:42:05.275571955Z",
+        "strength": 0.25,
+        "zones": [
+          {
+            "zone_id": "synthetic-lab-01",
+            "susceptibility": "MEDIA",
+            "factor": 1.25,
+            "feature_ids": [
+              "23151"
+            ]
+          },
+          {
+            "zone_id": "synthetic-lab-02",
+            "susceptibility": "ALTA",
+            "factor": 1.5,
+            "feature_ids": [
+              "9413",
+              "9414",
+              "9415",
+              "9419",
+              "23149"
+            ]
+          },
+          {
+            "zone_id": "synthetic-lab-03",
+            "susceptibility": "NONE",
+            "factor": 1,
+            "feature_ids": []
+          }
+        ]
+      },
+      "master_graph_bytes": 4543303,
+      "master_start_to_pause_and_polygons_ms": 1742.8634600000005,
+      "master_dom_nodes": 913,
+      "master_heap_used_bytes": 54682016,
+      "mobile_overflow_elements": [],
+      "telemetry": {
+        "run_id": "b484db744ee89c1893c954b607fb6c60",
+        "simulation_step": 1,
+        "world_version": 3,
+        "agents": 20,
+        "edges": 13452,
+        "overlay_edges": 1352,
+        "overlay_update_ms": 1.714486,
+        "replanning_ms": 54.153655,
+        "simulation_step_ms": 108.631984,
+        "planning_calls": 2,
+        "reference": {
+          "queries": 0,
+          "provider_errors": 0,
+          "cache_hits": 6,
+          "cache_misses": 0,
+          "last_query_ms": 0,
+          "total_query_ms": 0,
+          "response_bytes": 0,
+          "last_refresh_ms": 0
+        }
+      }
+    },
+    "browser": {
+      "errors": [],
+      "failed_requests": [],
+      "normal_cancelled_get_requests": [
+        {
+          "path": "/lab/catalog",
+          "reason": "net::ERR_ABORTED"
+        },
+        {
+          "path": "/lab/session",
+          "reason": "net::ERR_ABORTED"
+        },
+        {
+          "path": "/v1/reference/status",
+          "reason": "net::ERR_ABORTED"
+        },
+        {
+          "path": "/lab/graph",
+          "reason": "net::ERR_ABORTED"
+        },
+        {
+          "path": "/grafo",
+          "reason": "net::ERR_ABORTED"
+        },
+        {
+          "path": "/grafo",
+          "reason": "net::ERR_ABORTED"
+        },
+        {
+          "path": "/simulation/catalog",
+          "reason": "net::ERR_ABORTED"
+        }
+      ],
+      "http_errors": [],
+      "external_requests": [],
+      "movement_credential_leaks": [],
+      "polygon_requests": 1
+    },
+    "provenance": {
+      "category": "official_reference",
+      "source": "Secretaría Nacional de Gestión de Riesgos — Susceptibilidad a inundaciones",
+      "url": "https://sgrportal.gestionderiesgos.gob.ec/server/rest/services/Susceptibilidad_de_Inundaciones/MapServer/0",
+      "consulted_at": "2026-10-27T04:42:05.275571955Z",
+      "portal_modified_at": "2026-10-06T22:28:05.771Z",
+      "attribution": "CONAGE 2024 — resoluciones 006, 007 y 008-CONAGE-2024. MINISTERIO DE GOBIERNO, \nMINISTERIO DE ENERGÍA Y MINAS, \nMINISTERIO DE AGRICULTURA Y GANADERÍA, \nMINISTERIO DE DESARROLLO URBANO Y VIVIENDA, \nSECRETARÍA NACIONAL DE GESTIÓN DE RIESGOS, \nINSTITUTO GEOGRÁFICO MILITAR, \nINSTITUTO DE INVESTIGACIÓN GEOLÓGICO Y ENERGÉTICO, \nINSTITUTO NACIONAL DE ESTADÍSTICA Y CENSOS, \nINSTITUTO OCEANOGRÁFICO Y ANTÁRTICO DE LA ARMADA, \nMINISTERIO DEL AMBIENTE, AGUA Y TRANSICIÓN ECOLÓGICA, \nDIRECTOR DE GESTIÓN DE LA INFORMACIÓN NACIONAL.",
+      "license": "El portal no declara una licencia de reutilización explícita. Se conserva la atribución de la fuente.",
+      "original_crs": "EPSG:32717",
+      "output_crs": "EPSG:4326",
+      "dataset_version": "sngr-susceptibility-14a325fdc3081b5ffd9b1679fc95c65fb9d4de66afe02e649aa2dbf784d16ac3",
+      "temporal_scope": "Susceptibilidad territorial estructural: sólo ALTA, MEDIA y BAJA. SIN y NO APLICABLE no se reclasifican. No representa inundación actual, profundidad ni probabilidad. Generalización de hasta 0,0001 grados; anillos degenerados se recuperan con mayor detalle.",
+      "source_years": [
+        2025
+      ],
+      "event_version": "sngr-rain-events-978aa4c411cd75adf1b88aee7b90bece43105d08ed1e4741b22864f2a1272af0",
+      "events_min_date": "2025-02-16",
+      "events_max_date": "2025-04-14"
+    },
+    "passed": true
+  },
+  "incidents_regression": {
+    "incident": {
+      "incident_id": "172462fdd27778c1569c05c93d0752eb",
+      "source_type": "citizen",
+      "verification_status": "pending",
+      "affected_edge_ids": [
+        "E-352a14c06d34b4e3"
+      ],
+      "received_at": "2026-10-27T04:54:18.762322621Z",
+      "event_time": "2026-10-27T04:54:18.759837Z",
+      "location_precision_m": 20
+    },
+    "routing": {
+      "fixture": {
+        "agent_id": "S-0004",
+        "edge_id": "E-352a14c06d34b4e3",
+        "latitude": -0.9536529,
+        "longitude": -80.75476025,
+        "original_route": [
+          "OSM-347399451",
+          "OSM-8270336144",
+          "OSM-10929726953",
+          "OSM-11107105834",
+          "OSM-347399444",
+          "OSM-12521017481",
+          "OSM-11107156018",
+          "OSM-365277463",
+          "OSM-365273351",
+          "OSM-11043223486",
+          "OSM-11113101254",
+          "OSM-11113101261",
+          "OSM-8382605293",
+          "OSM-5069689775",
+          "OSM-5069689810",
+          "OSM-5069690230",
+          "OSM-11121670248",
+          "OSM-7333067932",
+          "OSM-13679435666",
+          "OSM-5308414561",
+          "OSM-11113213215",
+          "OSM-11113213205",
+          "OSM-5308414522",
+          "OSM-4896073980",
+          "OSM-11113045323",
+          "OSM-5069690224",
+          "OSM-5069690117"
+        ],
+        "resolution": {
+          "matched": true,
+          "ambiguous": false,
+          "candidates": [
+            {
+              "edge_id": "E-352a14c06d34b4e3",
+              "road_type": "secondary",
+              "distance_m": 4.378680334524489e-12,
+              "from_node_id": "OSM-347399451",
+              "to_node_id": "OSM-8270336144",
+              "latitude": -0.9536529,
+              "longitude": -80.75476025
+            },
+            {
+              "edge_id": "E-77a368a8d9dc5754",
+              "road_type": "residential",
+              "distance_m": 23.228732640183484,
+              "from_node_id": "OSM-8270336144",
+              "to_node_id": "OSM-8270336377",
+              "latitude": -0.9538002,
+              "longitude": -80.7549084
+            },
+            {
+              "edge_id": "E-926a162f3de9d55f",
+              "road_type": "secondary",
+              "distance_m": 23.228732640183484,
+              "from_node_id": "OSM-8270336144",
+              "to_node_id": "OSM-10929726953",
+              "latitude": -0.9538002,
+              "longitude": -80.7549084
+            }
+          ],
+          "message": "Calle asociada a la ubicación declarada; esta asociación no verifica la novedad.",
+          "graph_version": "manta-master-57caa90f3aa7",
+          "max_snap_distance_m": 50
+        }
+      },
+      "before": {
+        "run_id": "55d6eeb1a2945e9d02ac41d18838e883",
+        "step": 1,
+        "world_version": 3,
+        "reroute_count": 0,
+        "route": [
+          "OSM-347399451",
+          "OSM-8270336144",
+          "OSM-10929726953",
+          "OSM-11107105834",
+          "OSM-347399444",
+          "OSM-12521017481",
+          "OSM-11107156018",
+          "OSM-365277463",
+          "OSM-365273351",
+          "OSM-11043223486",
+          "OSM-11113101254",
+          "OSM-11113101261",
+          "OSM-8382605293",
+          "OSM-5069689775",
+          "OSM-5069689810",
+          "OSM-5069690230",
+          "OSM-11121670248",
+          "OSM-7333067932",
+          "OSM-13679435666",
+          "OSM-5308414561",
+          "OSM-11113213215",
+          "OSM-11113213205",
+          "OSM-5308414522",
+          "OSM-4896073980",
+          "OSM-11113045323",
+          "OSM-5069690224",
+          "OSM-5069690117"
+        ]
+      },
+      "after": {
+        "step": 1,
+        "world_version": 4,
+        "reroute_count": 1,
+        "route": [
+          "OSM-347399451",
+          "OSM-12038298017",
+          "OSM-8270336378",
+          "OSM-8270336377",
+          "OSM-10929726953",
+          "OSM-11107105834",
+          "OSM-347399444",
+          "OSM-12521017481",
+          "OSM-11107156018",
+          "OSM-365277463",
+          "OSM-365273351",
+          "OSM-11043223486",
+          "OSM-11113101254",
+          "OSM-11113101261",
+          "OSM-8382605293",
+          "OSM-5069689775",
+          "OSM-5069689810",
+          "OSM-5069690230",
+          "OSM-11121670248",
+          "OSM-7333067932",
+          "OSM-13679435666",
+          "OSM-5308414561",
+          "OSM-11113213215",
+          "OSM-11113213205",
+          "OSM-5308414522",
+          "OSM-4896073980",
+          "OSM-11113045323",
+          "OSM-5069690224",
+          "OSM-5069690117"
+        ],
+        "road_condition": {
+          "edge_id": "E-352a14c06d34b4e3",
+          "state": "blocked",
+          "risk_source": "external_event+experimental_incident",
+          "risk_score": 0,
+          "updated_at_simulation_step": 1,
+          "cost_multiplier": 1
+        },
+        "application": {
+          "application_id": "cd0a450c1d7b2c897e0adcb730e91273",
+          "incident_id": "172462fdd27778c1569c05c93d0752eb",
+          "run_id": "55d6eeb1a2945e9d02ac41d18838e883",
+          "affected_edge_ids": [
+            "E-352a14c06d34b4e3"
+          ],
+          "simulation_step": 1,
+          "world_version": 4,
+          "source_type": "citizen",
+          "verification_status_at_application": "pending",
+          "effect": "blocked",
+          "expires_at_simulation_step": 22,
+          "applied_at": "2026-10-27T04:54:22.44510084Z"
+        }
+      }
+    },
+    "browser": {
+      "errors": [],
+      "console_errors": [],
+      "failed_requests": [],
+      "normal_cancelled_get_requests": [
+        {
+          "path": "/lab/catalog",
+          "failure": "net::ERR_ABORTED"
+        },
+        {
+          "path": "/lab/session",
+          "failure": "net::ERR_ABORTED"
+        },
+        {
+          "path": "/v1/reference/status",
+          "failure": "net::ERR_ABORTED"
+        },
+        {
+          "path": "/lab/graph",
+          "failure": "net::ERR_ABORTED"
+        },
+        {
+          "path": "/grafo",
+          "failure": "net::ERR_ABORTED"
+        },
+        {
+          "path": "/grafo",
+          "failure": "net::ERR_ABORTED"
+        },
+        {
+          "path": "/grafo",
+          "failure": "net::ERR_ABORTED"
+        },
+        {
+          "path": "/simulation/catalog",
+          "failure": "net::ERR_ABORTED"
+        }
+      ],
+      "http_errors": [],
+      "movement_credential_leaks": [],
+      "raster_requests": []
+    }
+  },
+  "benchmarks": {
+    "before-flood-competition": {
+      "recorded_at": "2026-10-27T04:16:53.66383599Z",
+      "seed": 20261026,
+      "graph_version": "manta-v2-0ab03290b16a",
+      "nodes": 300,
+      "edges": 383,
+      "agents": 80,
+      "turn_limit": 150,
+      "completed_step": 150,
+      "simulation_step_latency": {
+        "count": 150,
+        "total_ms": 751.2754000000001,
+        "p50_ms": 2.084348,
+        "p95_ms": 25.481856,
+        "p99_ms": 40.73595
+      },
+      "simulation_step_latency_max_ms": 42.736933,
+      "evacuation_metrics": {
+        "total_agents": 80,
+        "evacuated_agents": 80,
+        "isolated_agents": 0,
+        "waiting_agents": 0,
+        "average_evacuation_time": 10.7875,
+        "blocked_edges": 0,
+        "caution_edges": 0,
+        "shelters_at_capacity": 0,
+        "reroute_count": 0,
+        "simulation_total_duration": 150
+      },
+      "peak_blocked_edges": 69,
+      "peak_caution_edges": 66,
+      "resource_usage": {
+        "wall_seconds": 0.832066829,
+        "process_cpu_seconds": 2.6019200000000002,
+        "average_cpu_one_core_percent": 312.70565167548585,
+        "peak_rss_kib_linux": 32512,
+        "note": "Linux ru_maxrss is KiB and includes the whole process lifetime; CPU is percent of one core. Three forced-GC samples characterize retained heap; they do not prove a long-term memory bound. TotalAlloc is cumulative allocation, not retained memory."
+      },
+      "deterministic_timeline_sha256": "19755377bbc09a875aff67eafa89da1ebc13041eed9b04b5d59a69a4523f0505",
+      "validation_passed": true
+    },
+    "after-flood-competition": {
+      "recorded_at": "2026-10-27T05:00:33.765422542Z",
+      "seed": 20261026,
+      "graph_version": "manta-v2-0ab03290b16a",
+      "nodes": 300,
+      "edges": 383,
+      "agents": 80,
+      "turn_limit": 150,
+      "completed_step": 150,
+      "simulation_step_latency": {
+        "count": 150,
+        "total_ms": 712.484252,
+        "p50_ms": 2.347073,
+        "p95_ms": 22.90096,
+        "p99_ms": 33.923576
+      },
+      "simulation_step_latency_max_ms": 35.640923,
+      "evacuation_metrics": {
+        "total_agents": 80,
+        "evacuated_agents": 80,
+        "isolated_agents": 0,
+        "waiting_agents": 0,
+        "average_evacuation_time": 10.7875,
+        "blocked_edges": 0,
+        "caution_edges": 0,
+        "shelters_at_capacity": 0,
+        "reroute_count": 0,
+        "simulation_total_duration": 150
+      },
+      "peak_blocked_edges": 69,
+      "peak_caution_edges": 66,
+      "resource_usage": {
+        "wall_seconds": 0.796317093,
+        "process_cpu_seconds": 2.407804,
+        "average_cpu_one_core_percent": 302.36748917808296,
+        "peak_rss_kib_linux": 32312,
+        "note": "Linux ru_maxrss is KiB and includes the whole process lifetime; CPU is percent of one core. Three forced-GC samples characterize retained heap; they do not prove a long-term memory bound. TotalAlloc is cumulative allocation, not retained memory."
+      },
+      "operational_stats": {
+        "simulation_step": 150,
+        "world_version": 301,
+        "agents": 80,
+        "edges": 383,
+        "overlay_edges": 93,
+        "overlay_update_ms": 0.079794,
+        "replanning_ms": 0.619427,
+        "simulation_step_ms": 3.087058,
+        "planning_calls": 151
+      },
+      "deterministic_timeline_sha256": "19755377bbc09a875aff67eafa89da1ebc13041eed9b04b5d59a69a4523f0505",
+      "validation_passed": true
+    },
+    "before-flood-master": {
+      "recorded_at": "2026-10-27T04:16:56.576448991Z",
+      "seed": 20261026,
+      "graph_version": "manta-master-57caa90f3aa7",
+      "nodes": 9179,
+      "edges": 13452,
+      "agents": 80,
+      "turn_limit": 150,
+      "completed_step": 150,
+      "simulation_step_latency": {
+        "count": 150,
+        "total_ms": 17677.217125,
+        "p50_ms": 46.8258,
+        "p95_ms": 361.341769,
+        "p99_ms": 393.814032
+      },
+      "simulation_step_latency_max_ms": 399.705352,
+      "evacuation_metrics": {
+        "total_agents": 80,
+        "evacuated_agents": 80,
+        "isolated_agents": 0,
+        "waiting_agents": 0,
+        "average_evacuation_time": 30.575,
+        "blocked_edges": 0,
+        "caution_edges": 0,
+        "shelters_at_capacity": 1,
+        "reroute_count": 0,
+        "simulation_total_duration": 150
+      },
+      "peak_blocked_edges": 834,
+      "peak_caution_edges": 887,
+      "resource_usage": {
+        "wall_seconds": 18.54864701,
+        "process_cpu_seconds": 52.298208,
+        "average_cpu_one_core_percent": 281.9516052669763,
+        "peak_rss_kib_linux": 257924,
+        "note": "Linux ru_maxrss is KiB and includes the whole process lifetime; CPU is percent of one core. Three forced-GC samples characterize retained heap; they do not prove a long-term memory bound. TotalAlloc is cumulative allocation, not retained memory."
+      },
+      "deterministic_timeline_sha256": "6e58f150f004a58adf023a59006c8caaf12088026cdedadeba2ee2628e373268",
+      "validation_passed": true
+    },
+    "after-flood-master": {
+      "recorded_at": "2026-10-27T05:00:35.009222548Z",
+      "seed": 20261026,
+      "graph_version": "manta-master-57caa90f3aa7",
+      "nodes": 9179,
+      "edges": 13452,
+      "agents": 80,
+      "turn_limit": 150,
+      "completed_step": 150,
+      "simulation_step_latency": {
+        "count": 150,
+        "total_ms": 15310.979469,
+        "p50_ms": 40.201757,
+        "p95_ms": 290.099294,
+        "p99_ms": 336.062865
+      },
+      "simulation_step_latency_max_ms": 336.891691,
+      "evacuation_metrics": {
+        "total_agents": 80,
+        "evacuated_agents": 80,
+        "isolated_agents": 0,
+        "waiting_agents": 0,
+        "average_evacuation_time": 30.575,
+        "blocked_edges": 0,
+        "caution_edges": 0,
+        "shelters_at_capacity": 1,
+        "reroute_count": 0,
+        "simulation_total_duration": 150
+      },
+      "peak_blocked_edges": 834,
+      "peak_caution_edges": 887,
+      "resource_usage": {
+        "wall_seconds": 16.098836455,
+        "process_cpu_seconds": 48.978047999999994,
+        "average_cpu_one_core_percent": 304.23346517560475,
+        "peak_rss_kib_linux": 244044,
+        "note": "Linux ru_maxrss is KiB and includes the whole process lifetime; CPU is percent of one core. Three forced-GC samples characterize retained heap; they do not prove a long-term memory bound. TotalAlloc is cumulative allocation, not retained memory."
+      },
+      "operational_stats": {
+        "simulation_step": 150,
+        "world_version": 301,
+        "agents": 80,
+        "edges": 13452,
+        "overlay_edges": 2411,
+        "overlay_update_ms": 0.875453,
+        "replanning_ms": 5.607298,
+        "simulation_step_ms": 33.852995,
+        "planning_calls": 151
+      },
+      "deterministic_timeline_sha256": "6e58f150f004a58adf023a59006c8caaf12088026cdedadeba2ee2628e373268",
+      "validation_passed": true
+    },
+    "hybrid-flood-competition": {
+      "recorded_at": "2026-10-27T04:46:19.218339098Z",
+      "seed": 20261026,
+      "graph_version": "manta-v2-0ab03290b16a",
+      "nodes": 300,
+      "edges": 383,
+      "agents": 80,
+      "turn_limit": 150,
+      "completed_step": 150,
+      "simulation_step_latency": {
+        "count": 150,
+        "total_ms": 739.5766740000001,
+        "p50_ms": 2.137913,
+        "p95_ms": 23.216412,
+        "p99_ms": 41.311943
+      },
+      "simulation_step_latency_max_ms": 45.74488,
+      "evacuation_metrics": {
+        "total_agents": 80,
+        "evacuated_agents": 80,
+        "isolated_agents": 0,
+        "waiting_agents": 0,
+        "average_evacuation_time": 10.7875,
+        "blocked_edges": 0,
+        "caution_edges": 0,
+        "shelters_at_capacity": 0,
+        "reroute_count": 0,
+        "simulation_total_duration": 150
+      },
+      "peak_blocked_edges": 69,
+      "peak_caution_edges": 66,
+      "resource_usage": {
+        "wall_seconds": 0.833650891,
+        "process_cpu_seconds": 2.607863,
+        "average_cpu_one_core_percent": 312.8243522743383,
+        "peak_rss_kib_linux": 34144,
+        "note": "Linux ru_maxrss is KiB and includes the whole process lifetime; CPU is percent of one core. Three forced-GC samples characterize retained heap; they do not prove a long-term memory bound. TotalAlloc is cumulative allocation, not retained memory."
+      },
+      "geographic_reference": {
+        "category": "official_reference",
+        "dataset_version": "sngr-susceptibility-14a325fdc3081b5ffd9b1679fc95c65fb9d4de66afe02e649aa2dbf784d16ac3",
+        "source_url": "https://sgrportal.gestionderiesgos.gob.ec/server/rest/services/Susceptibilidad_de_Inundaciones/MapServer/0",
+        "consulted_at": "2026-10-27T04:42:05.275571955Z",
+        "strength": 0.25,
+        "zones": [
+          {
+            "zone_id": "synthetic-01",
+            "susceptibility": "NONE",
+            "factor": 1,
+            "feature_ids": []
+          },
+          {
+            "zone_id": "synthetic-02",
+            "susceptibility": "NONE",
+            "factor": 1,
+            "feature_ids": []
+          },
+          {
+            "zone_id": "synthetic-03",
+            "susceptibility": "NONE",
+            "factor": 1,
+            "feature_ids": []
+          }
+        ]
+      },
+      "operational_stats": {
+        "simulation_step": 150,
+        "world_version": 301,
+        "agents": 80,
+        "edges": 383,
+        "overlay_edges": 93,
+        "overlay_update_ms": 0.034093,
+        "replanning_ms": 0.232693,
+        "simulation_step_ms": 1.128732,
+        "planning_calls": 151
+      },
+      "deterministic_timeline_sha256": "a3e2ca1583f0272b63832f3b4bec191cb76730d87f9f71e4d6fc351e4ab98ae9",
+      "validation_passed": true
+    },
+    "hybrid-flood-master": {
+      "recorded_at": "2026-10-27T04:46:20.606827933Z",
+      "seed": 20261026,
+      "graph_version": "manta-master-57caa90f3aa7",
+      "nodes": 9179,
+      "edges": 13452,
+      "agents": 80,
+      "turn_limit": 150,
+      "completed_step": 150,
+      "simulation_step_latency": {
+        "count": 150,
+        "total_ms": 17931.070995000002,
+        "p50_ms": 44.931648,
+        "p95_ms": 359.297006,
+        "p99_ms": 395.735922
+      },
+      "simulation_step_latency_max_ms": 399.161349,
+      "evacuation_metrics": {
+        "total_agents": 80,
+        "evacuated_agents": 80,
+        "isolated_agents": 0,
+        "waiting_agents": 0,
+        "average_evacuation_time": 30.575,
+        "blocked_edges": 0,
+        "caution_edges": 0,
+        "shelters_at_capacity": 1,
+        "reroute_count": 0,
+        "simulation_total_duration": 150
+      },
+      "peak_blocked_edges": 834,
+      "peak_caution_edges": 887,
+      "resource_usage": {
+        "wall_seconds": 18.92084042,
+        "process_cpu_seconds": 53.367411,
+        "average_cpu_one_core_percent": 282.05623965618753,
+        "peak_rss_kib_linux": 265328,
+        "note": "Linux ru_maxrss is KiB and includes the whole process lifetime; CPU is percent of one core. Three forced-GC samples characterize retained heap; they do not prove a long-term memory bound. TotalAlloc is cumulative allocation, not retained memory."
+      },
+      "geographic_reference": {
+        "category": "official_reference",
+        "dataset_version": "sngr-susceptibility-14a325fdc3081b5ffd9b1679fc95c65fb9d4de66afe02e649aa2dbf784d16ac3",
+        "source_url": "https://sgrportal.gestionderiesgos.gob.ec/server/rest/services/Susceptibilidad_de_Inundaciones/MapServer/0",
+        "consulted_at": "2026-10-27T04:42:05.275571955Z",
+        "strength": 0.25,
+        "zones": [
+          {
+            "zone_id": "synthetic-01",
+            "susceptibility": "NONE",
+            "factor": 1,
+            "feature_ids": []
+          },
+          {
+            "zone_id": "synthetic-02",
+            "susceptibility": "NONE",
+            "factor": 1,
+            "feature_ids": []
+          },
+          {
+            "zone_id": "synthetic-03",
+            "susceptibility": "NONE",
+            "factor": 1,
+            "feature_ids": []
+          }
+        ]
+      },
+      "operational_stats": {
+        "simulation_step": 150,
+        "world_version": 301,
+        "agents": 80,
+        "edges": 13452,
+        "overlay_edges": 2411,
+        "overlay_update_ms": 4.369446,
+        "replanning_ms": 7.766625,
+        "simulation_step_ms": 45.595867,
+        "planning_calls": 151
+      },
+      "deterministic_timeline_sha256": "088ce25ffcab4de8c0905f67e41b33bbf8327183002df6a84c32fcf12b0e6b0a",
+      "validation_passed": true
+    },
+    "corridor-synthetic-competition": {
+      "recorded_at": "2026-10-27T05:00:50.795501764Z",
+      "seed": 42,
+      "graph_version": "manta-v2-0ab03290b16a",
+      "nodes": 300,
+      "edges": 383,
+      "agents": 80,
+      "turn_limit": 150,
+      "completed_step": 150,
+      "simulation_step_latency": {
+        "count": 150,
+        "total_ms": 952.2625099999999,
+        "p50_ms": 2.868841,
+        "p95_ms": 23.112271,
+        "p99_ms": 33.323
+      },
+      "simulation_step_latency_max_ms": 39.66958,
+      "evacuation_metrics": {
+        "total_agents": 80,
+        "evacuated_agents": 80,
+        "isolated_agents": 0,
+        "waiting_agents": 0,
+        "average_evacuation_time": 17.475,
+        "blocked_edges": 0,
+        "caution_edges": 0,
+        "shelters_at_capacity": 0,
+        "reroute_count": 74,
+        "simulation_total_duration": 150
+      },
+      "peak_blocked_edges": 49,
+      "peak_caution_edges": 45,
+      "resource_usage": {
+        "wall_seconds": 1.032895698,
+        "process_cpu_seconds": 3.484671,
+        "average_cpu_one_core_percent": 337.3691077179799,
+        "peak_rss_kib_linux": 30164,
+        "note": "Linux ru_maxrss is KiB and includes the whole process lifetime; CPU is percent of one core. Three forced-GC samples characterize retained heap; they do not prove a long-term memory bound. TotalAlloc is cumulative allocation, not retained memory."
+      },
+      "operational_stats": {
+        "simulation_step": 150,
+        "world_version": 301,
+        "agents": 80,
+        "edges": 383,
+        "overlay_edges": 98,
+        "overlay_update_ms": 0.060789,
+        "replanning_ms": 0.53734,
+        "simulation_step_ms": 2.320562,
+        "planning_calls": 151
+      },
+      "deterministic_timeline_sha256": "6e2dc1c2f0182df8ad3e98699abbf0da5383b9940e8021a3bc20afd6a8e98c2c",
+      "validation_passed": true
+    },
+    "corridor-hybrid-competition": {
+      "recorded_at": "2026-10-27T05:00:51.909167973Z",
+      "seed": 42,
+      "graph_version": "manta-v2-0ab03290b16a",
+      "nodes": 300,
+      "edges": 383,
+      "agents": 80,
+      "turn_limit": 150,
+      "completed_step": 150,
+      "simulation_step_latency": {
+        "count": 150,
+        "total_ms": 1121.0879449999998,
+        "p50_ms": 4.62272,
+        "p95_ms": 23.178565,
+        "p99_ms": 28.99374
+      },
+      "simulation_step_latency_max_ms": 31.425419,
+      "evacuation_metrics": {
+        "total_agents": 80,
+        "evacuated_agents": 80,
+        "isolated_agents": 0,
+        "waiting_agents": 0,
+        "average_evacuation_time": 18.025,
+        "blocked_edges": 0,
+        "caution_edges": 0,
+        "shelters_at_capacity": 0,
+        "reroute_count": 83,
+        "simulation_total_duration": 150
+      },
+      "peak_blocked_edges": 49,
+      "peak_caution_edges": 45,
+      "resource_usage": {
+        "wall_seconds": 1.226341511,
+        "process_cpu_seconds": 3.537659,
+        "average_cpu_one_core_percent": 288.47258029415264,
+        "peak_rss_kib_linux": 33868,
+        "note": "Linux ru_maxrss is KiB and includes the whole process lifetime; CPU is percent of one core. Three forced-GC samples characterize retained heap; they do not prove a long-term memory bound. TotalAlloc is cumulative allocation, not retained memory."
+      },
+      "geographic_reference": {
+        "category": "official_reference",
+        "dataset_version": "sngr-susceptibility-14a325fdc3081b5ffd9b1679fc95c65fb9d4de66afe02e649aa2dbf784d16ac3",
+        "source_url": "https://sgrportal.gestionderiesgos.gob.ec/server/rest/services/Susceptibilidad_de_Inundaciones/MapServer/0",
+        "consulted_at": "2026-10-27T04:42:05.275571955Z",
+        "strength": 0.25,
+        "zones": [
+          {
+            "zone_id": "synthetic-reference-corridor",
+            "susceptibility": "MEDIA",
+            "factor": 1.25,
+            "feature_ids": [
+              "23151"
+            ]
+          }
+        ]
+      },
+      "operational_stats": {
+        "simulation_step": 150,
+        "world_version": 301,
+        "agents": 80,
+        "edges": 383,
+        "overlay_edges": 98,
+        "overlay_update_ms": 0.03442,
+        "replanning_ms": 0.999103,
+        "simulation_step_ms": 2.536485,
+        "planning_calls": 151
+      },
+      "deterministic_timeline_sha256": "2af4785e508053737dfb5f58faaa54d7ad49deb7f4038d4a162f20dc842fc630",
+      "validation_passed": true
+    },
+    "corridor-synthetic-master": {
+      "recorded_at": "2026-10-27T05:00:53.590095048Z",
+      "seed": 42,
+      "graph_version": "manta-master-57caa90f3aa7",
+      "nodes": 9179,
+      "edges": 13452,
+      "agents": 80,
+      "turn_limit": 150,
+      "completed_step": 150,
+      "simulation_step_latency": {
+        "count": 150,
+        "total_ms": 18164.869296,
+        "p50_ms": 65.983782,
+        "p95_ms": 310.070444,
+        "p99_ms": 336.388296
+      },
+      "simulation_step_latency_max_ms": 338.866367,
+      "evacuation_metrics": {
+        "total_agents": 80,
+        "evacuated_agents": 80,
+        "isolated_agents": 0,
+        "waiting_agents": 0,
+        "average_evacuation_time": 37.4875,
+        "blocked_edges": 0,
+        "caution_edges": 0,
+        "shelters_at_capacity": 1,
+        "reroute_count": 133,
+        "simulation_total_duration": 150
+      },
+      "peak_blocked_edges": 282,
+      "peak_caution_edges": 241,
+      "resource_usage": {
+        "wall_seconds": 18.807760234,
+        "process_cpu_seconds": 56.09822,
+        "average_cpu_one_core_percent": 298.2716671312495,
+        "peak_rss_kib_linux": 247684,
+        "note": "Linux ru_maxrss is KiB and includes the whole process lifetime; CPU is percent of one core. Three forced-GC samples characterize retained heap; they do not prove a long-term memory bound. TotalAlloc is cumulative allocation, not retained memory."
+      },
+      "operational_stats": {
+        "simulation_step": 150,
+        "world_version": 301,
+        "agents": 80,
+        "edges": 13452,
+        "overlay_edges": 710,
+        "overlay_update_ms": 0.26183,
+        "replanning_ms": 6.83064,
+        "simulation_step_ms": 36.530728,
+        "planning_calls": 151
+      },
+      "deterministic_timeline_sha256": "93224a77aad6d8d98ac005cd665802b3389ccab61697dec2dd19b2721b062144",
+      "validation_passed": true
+    },
+    "corridor-hybrid-master": {
+      "recorded_at": "2026-10-27T05:01:12.468839517Z",
+      "seed": 42,
+      "graph_version": "manta-master-57caa90f3aa7",
+      "nodes": 9179,
+      "edges": 13452,
+      "agents": 80,
+      "turn_limit": 150,
+      "completed_step": 150,
+      "simulation_step_latency": {
+        "count": 150,
+        "total_ms": 18407.732075999997,
+        "p50_ms": 88.603029,
+        "p95_ms": 314.118698,
+        "p99_ms": 330.981164
+      },
+      "simulation_step_latency_max_ms": 331.802364,
+      "evacuation_metrics": {
+        "total_agents": 80,
+        "evacuated_agents": 80,
+        "isolated_agents": 0,
+        "waiting_agents": 0,
+        "average_evacuation_time": 36.35,
+        "blocked_edges": 0,
+        "caution_edges": 0,
+        "shelters_at_capacity": 1,
+        "reroute_count": 140,
+        "simulation_total_duration": 150
+      },
+      "peak_blocked_edges": 282,
+      "peak_caution_edges": 249,
+      "resource_usage": {
+        "wall_seconds": 19.11798653,
+        "process_cpu_seconds": 55.623196,
+        "average_cpu_one_core_percent": 290.94693582253507,
+        "peak_rss_kib_linux": 263424,
+        "note": "Linux ru_maxrss is KiB and includes the whole process lifetime; CPU is percent of one core. Three forced-GC samples characterize retained heap; they do not prove a long-term memory bound. TotalAlloc is cumulative allocation, not retained memory."
+      },
+      "geographic_reference": {
+        "category": "official_reference",
+        "dataset_version": "sngr-susceptibility-14a325fdc3081b5ffd9b1679fc95c65fb9d4de66afe02e649aa2dbf784d16ac3",
+        "source_url": "https://sgrportal.gestionderiesgos.gob.ec/server/rest/services/Susceptibilidad_de_Inundaciones/MapServer/0",
+        "consulted_at": "2026-10-27T04:42:05.275571955Z",
+        "strength": 0.25,
+        "zones": [
+          {
+            "zone_id": "synthetic-reference-corridor",
+            "susceptibility": "MEDIA",
+            "factor": 1.25,
+            "feature_ids": [
+              "23151"
+            ]
+          }
+        ]
+      },
+      "operational_stats": {
+        "simulation_step": 150,
+        "world_version": 301,
+        "agents": 80,
+        "edges": 13452,
+        "overlay_edges": 710,
+        "overlay_update_ms": 0.23556,
+        "replanning_ms": 10.229232,
+        "simulation_step_ms": 33.456501,
+        "planning_calls": 151
+      },
+      "deterministic_timeline_sha256": "766115d4f22a38a5243a9b262c4401c4e80588c68c41ba361bedbbac42156624",
+      "validation_passed": true
+    },
+    "corridor-hybrid-competition-repeat": {
+      "recorded_at": "2026-10-27T05:02:45.168827102Z",
+      "seed": 42,
+      "graph_version": "manta-v2-0ab03290b16a",
+      "nodes": 300,
+      "edges": 383,
+      "agents": 80,
+      "turn_limit": 150,
+      "completed_step": 150,
+      "simulation_step_latency": {
+        "count": 150,
+        "total_ms": 1123.740121,
+        "p50_ms": 4.524169,
+        "p95_ms": 22.872992,
+        "p99_ms": 35.181314
+      },
+      "simulation_step_latency_max_ms": 36.840651,
+      "evacuation_metrics": {
+        "total_agents": 80,
+        "evacuated_agents": 80,
+        "isolated_agents": 0,
+        "waiting_agents": 0,
+        "average_evacuation_time": 18.025,
+        "blocked_edges": 0,
+        "caution_edges": 0,
+        "shelters_at_capacity": 0,
+        "reroute_count": 83,
+        "simulation_total_duration": 150
+      },
+      "peak_blocked_edges": 49,
+      "peak_caution_edges": 45,
+      "resource_usage": {
+        "wall_seconds": 1.21887248,
+        "process_cpu_seconds": 3.675211,
+        "average_cpu_one_core_percent": 301.5254721314243,
+        "peak_rss_kib_linux": 31876,
+        "note": "Linux ru_maxrss is KiB and includes the whole process lifetime; CPU is percent of one core. Three forced-GC samples characterize retained heap; they do not prove a long-term memory bound. TotalAlloc is cumulative allocation, not retained memory."
+      },
+      "geographic_reference": {
+        "category": "official_reference",
+        "dataset_version": "sngr-susceptibility-14a325fdc3081b5ffd9b1679fc95c65fb9d4de66afe02e649aa2dbf784d16ac3",
+        "source_url": "https://sgrportal.gestionderiesgos.gob.ec/server/rest/services/Susceptibilidad_de_Inundaciones/MapServer/0",
+        "consulted_at": "2026-10-27T04:42:05.275571955Z",
+        "strength": 0.25,
+        "zones": [
+          {
+            "zone_id": "synthetic-reference-corridor",
+            "susceptibility": "MEDIA",
+            "factor": 1.25,
+            "feature_ids": [
+              "23151"
+            ]
+          }
+        ]
+      },
+      "operational_stats": {
+        "simulation_step": 150,
+        "world_version": 301,
+        "agents": 80,
+        "edges": 383,
+        "overlay_edges": 98,
+        "overlay_update_ms": 0.108149,
+        "replanning_ms": 0.753543,
+        "simulation_step_ms": 1.668515,
+        "planning_calls": 151
+      },
+      "deterministic_timeline_sha256": "2af4785e508053737dfb5f58faaa54d7ad49deb7f4038d4a162f20dc842fc630",
+      "validation_passed": true
+    },
+    "corridor-hybrid-master-repeat": {
+      "recorded_at": "2026-10-27T05:02:47.920933345Z",
+      "seed": 42,
+      "graph_version": "manta-master-57caa90f3aa7",
+      "nodes": 9179,
+      "edges": 13452,
+      "agents": 80,
+      "turn_limit": 150,
+      "completed_step": 150,
+      "simulation_step_latency": {
+        "count": 150,
+        "total_ms": 17980.325364999997,
+        "p50_ms": 86.806774,
+        "p95_ms": 308.059566,
+        "p99_ms": 319.50761
+      },
+      "simulation_step_latency_max_ms": 323.429562,
+      "evacuation_metrics": {
+        "total_agents": 80,
+        "evacuated_agents": 80,
+        "isolated_agents": 0,
+        "waiting_agents": 0,
+        "average_evacuation_time": 36.35,
+        "blocked_edges": 0,
+        "caution_edges": 0,
+        "shelters_at_capacity": 1,
+        "reroute_count": 140,
+        "simulation_total_duration": 150
+      },
+      "peak_blocked_edges": 282,
+      "peak_caution_edges": 249,
+      "resource_usage": {
+        "wall_seconds": 18.637306648,
+        "process_cpu_seconds": 54.602028000000004,
+        "average_cpu_one_core_percent": 292.97166715803024,
+        "peak_rss_kib_linux": 252748,
+        "note": "Linux ru_maxrss is KiB and includes the whole process lifetime; CPU is percent of one core. Three forced-GC samples characterize retained heap; they do not prove a long-term memory bound. TotalAlloc is cumulative allocation, not retained memory."
+      },
+      "geographic_reference": {
+        "category": "official_reference",
+        "dataset_version": "sngr-susceptibility-14a325fdc3081b5ffd9b1679fc95c65fb9d4de66afe02e649aa2dbf784d16ac3",
+        "source_url": "https://sgrportal.gestionderiesgos.gob.ec/server/rest/services/Susceptibilidad_de_Inundaciones/MapServer/0",
+        "consulted_at": "2026-10-27T04:42:05.275571955Z",
+        "strength": 0.25,
+        "zones": [
+          {
+            "zone_id": "synthetic-reference-corridor",
+            "susceptibility": "MEDIA",
+            "factor": 1.25,
+            "feature_ids": [
+              "23151"
+            ]
+          }
+        ]
+      },
+      "operational_stats": {
+        "simulation_step": 150,
+        "world_version": 301,
+        "agents": 80,
+        "edges": 13452,
+        "overlay_edges": 710,
+        "overlay_update_ms": 0.226109,
+        "replanning_ms": 5.993772,
+        "simulation_step_ms": 33.765721,
+        "planning_calls": 151
+      },
+      "deterministic_timeline_sha256": "766115d4f22a38a5243a9b262c4401c4e80588c68c41ba361bedbbac42156624",
+      "validation_passed": true
+    }
+  },
+  "zombie_http_before": {
+    "arch": "amd64",
+    "availability": 1,
+    "concurrency": 16,
+    "edges": 383,
+    "elapsed_ms": 1176.813112,
+    "go": "go1.26.1",
+    "gomaxprocs": 12,
+    "http_max_ms": 15.191663,
+    "http_p50_ms": 1.630369,
+    "http_p95_ms": 3.767099,
+    "http_p99_ms": 5.374416,
+    "methodology": "real loopback HTTP /paso; initial unchanged observable snapshot; one warmup per active survivor; latency includes transport and decoding; nearest-rank percentiles; full scenarios measure invalidation separately",
+    "nodes": 300,
+    "os": "linux",
+    "requests": 10000,
+    "requests_invalid": 0,
+    "requests_per_second": 8497.525986097273,
+    "requests_success": 10000,
+    "requests_timeout": 0,
+    "scenario": "Ronda 3 — Apocalipsis — aparición urbana por zonas",
+    "seed": 20261028,
+    "survivors": 200,
+    "synchronized_bursts": false
+  },
+  "zombie_http_after": {
+    "arch": "amd64",
+    "availability": 1,
+    "concurrency": 16,
+    "edges": 383,
+    "elapsed_ms": 1004.353212,
+    "go": "go1.26.1",
+    "gomaxprocs": 12,
+    "http_max_ms": 9.339527,
+    "http_p50_ms": 1.405278,
+    "http_p95_ms": 3.167426,
+    "http_p99_ms": 4.33413,
+    "methodology": "real loopback HTTP /paso; initial unchanged observable snapshot; one warmup per active survivor; latency includes transport and decoding; nearest-rank percentiles; full scenarios measure invalidation separately",
+    "nodes": 300,
+    "os": "linux",
+    "requests": 10000,
+    "requests_invalid": 0,
+    "requests_per_second": 9956.656563169332,
+    "requests_success": 10000,
+    "requests_timeout": 0,
+    "scenario": "Ronda 3 — Apocalipsis — aparición urbana por zonas",
+    "seed": 20261028,
+    "survivors": 200,
+    "synchronized_bursts": false
+  },
+  "benchmark_caveats": [
+    "Local measurements, one observation per scenario plus deterministic hybrid repeats; no causal speed improvement, safety claim, physical calibration or AWS SLA.",
+    "Final performance runs had no concurrent test/build suites. Provisional initial master p95 429.097621 ms is preserved separately.",
+    "The original randomly placed flood foci had NONE reference intersections. A separate explicitly synthetic corridor exercises actual MEDIA class weight 1.25.",
+    "replanning_ms measures the complete prepare/planning phase including reservations, not isolated per-agent invalidation latency.",
+    "Browser time includes request/preparation/render/pause acknowledgement; heap is a snapshot, not a leak test."
+  ],
+  "aws": {
+    "resources_added": 0,
+    "account_calls": 0,
+    "deployment_performed": false,
+    "production_modified": false,
+    "observability": "JSON stdout lab_metrics every 30 seconds, existing log-driver pattern and unapplied Logs Insights templates; no new custom metrics/alarms/OTel.",
+    "iac_change_required_for_local_delivery": false,
+    "future_deployment_requirements": [
+      "explicit activation and remote authorization",
+      "persistent writable cache mount if running in read-only container",
+      "backup/retention decision; existing root DeleteOnTermination remains true"
+    ]
+  },
+  "limitations": [
+    "Experimental categorical susceptibility weights, no hydrological forecast, DEM, real drainage, water depth or emergency navigation.",
+    "Historical event collection and N/A closures never imply an active emergency or create road closures.",
+    "Publication/polygon update date and explicit reuse license were not declared; portal modification date is distinct.",
+    "Geometries generalized, queried by bbox and retained whole; absence of intersection is not low risk or safety.",
+    "SHA-256 validates local integrity, not an institutional signature; source terms/schema may change.",
+    "One local lab run per Manager; no remote operator identity, no full historical cache archive, no HA/backups.",
+    "Draft/GPS limitations of 4C remain: session draft only, no new physical GPS test.",
+    "Earthquake and tsunami adapters are recommendations, not implemented scenarios."
+  ],
+  "preserved_existing_files": [
+    "services/evacuation/data/manta-boundaries.json",
+    "services/evacuation/data/manta-expanded.audit.json",
+    "services/evacuation/data/manta-expanded.json",
+    "services/evacuation/data/manta-expanded.provenance.json",
+    "services/evacuation/data/manta-master.audit.json",
+    "services/evacuation/data/manta-master.json",
+    "services/evacuation/data/manta-master.provenance.json",
+    "services/evacuation/data/manta-urban.osm.json.gz",
+    "services/evacuation/data/manta-v1.audit.json",
+    "services/evacuation/data/manta-v1.json",
+    "services/evacuation/data/manta-v1.osm.json.gz",
+    "services/evacuation/data/manta-v1.provenance.json",
+    "services/evacuation/data/manta-v2.audit.json",
+    "services/evacuation/data/manta-v2.json",
+    "services/evacuation/data/manta-v2.provenance.json",
+    "services/evacuation/data/manta.json",
+    "services/evacuation/data/manta.osm.json.gz",
+    "services/evacuation/data/manta.provenance.json",
+    "services/evacuation/internal/control/control_test.go",
+    "services/evacuation/internal/control/http.go",
+    "services/evacuation/internal/control/manager.go",
+    "services/evacuation/internal/control/session.go",
+    "services/evacuation/internal/coordination/flood_test.go",
+    "services/evacuation/internal/coordination/planner.go",
+    "services/evacuation/internal/coordination/planner_test.go",
+    "services/evacuation/internal/decision/engine.go",
+    "services/evacuation/internal/decision/engine_test.go",
+    "services/evacuation/internal/decision/flood_test.go",
+    "services/evacuation/internal/decision/phase2_test.go",
+    "services/evacuation/internal/decision/predictor.go",
+    "services/evacuation/internal/evaluation/phase1/engine.go",
+    "services/evacuation/internal/evaluation/phase1/source.json",
+    "services/evacuation/internal/httpapi/api.go",
+    "services/evacuation/internal/httpapi/api_test.go",
+    "services/evacuation/scenarios/flood/urban-storm-stress.json",
+    "services/evacuation/scenarios/flood/urban-storm.json",
+    "services/evacuation/scenarios/round1.json",
+    "services/evacuation/scenarios/round2.json",
+    "services/evacuation/scenarios/round3.json",
+    "services/evacuation/scenarios/urban/round1.json",
+    "services/evacuation/scenarios/urban/round2.json",
+    "services/evacuation/scenarios/urban/round3.json",
+    "services/evacuation/cmd/server/main.go",
+    "services/evacuation/cmd/flood-server/main.go",
+    "services/evacuation/internal/simulation/simulation.go",
+    "apps/web/src/features/Escape.tsx",
+    "apps/web/src/features/WorldMap.tsx",
+    "docs/informe-fase4a.md",
+    "docs/informe-fase4b.md",
+    "docs/informe-fase4c.md"
+  ],
+  "sources_sha256": {
+    "README.md": "cf88b8751412d20386f2cdda38fec2da98eebf31d30fc6791c97413471f9c100",
+    "apps/web/README.md": "deaa319c11296537413dacd8fec48f30bbc3f41e6b09cfada3802b43ec41c0ec",
+    "apps/web/src/features/flood/FloodLab.tsx": "17fd33748476b2cf8500c6eafc242162b84bc49d8bbe7267b775da78df8bcf9c",
+    "apps/web/src/features/flood/FloodMap.tsx": "b0fb0e385ec9eac9ccc245beb6435d7dc989ced5688fca6faee06fdb08b109b9",
+    "apps/web/src/features/flood/ReferencePanel.tsx": "dfe0e3b81165dedb3e492157fcf71a557cd7483f5a023435811284de4b7a7570",
+    "apps/web/src/features/flood/flood.css": "764898dabef4a1e23a48045b11f86174cfcee2f11f7b9a7f02d1a75b2d5d6875",
+    "apps/web/src/services/api.ts": "99ba848a50efe74e3eb5e12ee05c2c6a2e1e66eb83304b6d65080fff8c3a8d97",
+    "apps/web/src/services/queries.ts": "c15eafcc5160dbf3ebcb3ae99b9c05e4959166c5a0362c4b80b63c7b2b2e0ea7",
+    "apps/web/src/tests/flood.test.tsx": "03aae5bbadeafa9d13140c05d3f79f36437128377722a6000b5f997adad033b4",
+    "apps/web/src/tests/reference.test.tsx": "6a31d21ed864dbd99e4bfd1367e9f25676c3da8e455350db3a34daf4df0da618",
+    "deploy/log-insights-phase4d.txt": "21be95040e05357b41539ca747071c6a8876caa41bf20ba979a17f6b0b38c779",
+    "docs/datos-oficiales-y-demo.md": "8ad4a9ddc39ba77d365490c355566d71ec7cac440b5311cdb1f2e16985db1b11",
+    "docs/informe-fase4d.md": "37770701aab9b13fdaccf2d88ac7e80e4acb0edd210628dcc922f598dab580e0",
+    "package.json": "bc957ba3a5914f7040944494c741df16416797802ec88376515e6e1d3122483a",
+    "packages/contracts/generated/api.d.ts": "639ef43d6468cf1663b318c8303086a1b97f9cfd5d0fb441d395dad80e7a7d44",
+    "packages/contracts/generated/schemas.json": "27a95a9228f24364568c355f54a73132acd638fd643b317f1153f605632a0778",
+    "packages/contracts/openapi.yaml": "03c50599b1d10db334651027a3875a28297d7ae4f79b489e5011eecb2c0258a2",
+    "services/evacuation/cmd/flood-bench/main.go": "111898fa0ae940103ab9f3c9cd6e17cf2d3451f69fb54f06f3528d20a827e420",
+    "services/evacuation/cmd/flood-lab/main.go": "072f7006b04ed20f1237178df7853779ae437da8e3e278e9d64ac93876c0ac4f",
+    "services/evacuation/cmd/reference-fetch/main.go": "28eb137dcd6856266b6f32156fa7f7bf46aaf262bd4b4028fabba6f52b6b332b",
+    "services/evacuation/data/reference/README.md": "148ab12e98e52e54c43283d0e02ca4f30729f6d6847cf944d0f979cdf7d0a54f",
+    "services/evacuation/data/reference/manta-official.json": "90e86e7ac4be63970a263ee400d57ac79d5aa460332e18b0bfcbc4cfd7c79fb7",
+    "services/evacuation/internal/flood/config.go": "24d645e172bc89dcf5170f0a1fbab89ba6473c893764a06cbca0958e49f8896f",
+    "services/evacuation/internal/flood/model.go": "718c886c8d9e2a23a2948dc524fb3c13265a66de02f091b537f358ee69b01e84",
+    "services/evacuation/internal/flood/reference_test.go": "e75e466588392757942193ffe4c3e9dc149b9d9bd02a0976e8494cc36459912c",
+    "services/evacuation/internal/floodlab/http.go": "634fadabc5d5dd7aa0f9de753038e5bf967737befa934a53b31d5c1489596d7d",
+    "services/evacuation/internal/floodlab/manager.go": "4feb477c4417b12ef17d8d35685aa37c2c1792d7dd27393e44e93d86713b9fa2",
+    "services/evacuation/internal/floodlab/models.go": "e831d77bf0f45b9aef14e605bb213ddcd6c69b410bacbc464d9b9947ef868a91",
+    "services/evacuation/internal/floodlab/reference.go": "fb95fddbfd0575342ecaeb1122071f58a7c70ea68e27a7969c318c0190c6dbc6",
+    "services/evacuation/internal/floodlab/reference_test.go": "5ca44d7afb0275eda42163f958a5beb72064a9343a386dc8b1a8321e002c711c",
+    "services/evacuation/internal/reference/cache.go": "783a6d93e8b8865088c6036d9132c022ed585e5fdfe1d0f42352f284410b91b0",
+    "services/evacuation/internal/reference/client.go": "a302793194899109a870049746cea34f0dd1e1fe652207216736e88fa3f73501",
+    "services/evacuation/internal/reference/geometry.go": "c0bc7e0d230930684d7a3bed8825d63f05c1eea547b38eddfa21d34dbc766c06",
+    "services/evacuation/internal/reference/influence.go": "e474b2301170876f354e9845582a203233efb84d46f40f809ef9ea287ce5a477",
+    "services/evacuation/internal/reference/models.go": "ad5691a185b1ce43a906f734f9ac470f1f38aca9c380301e3982235a92676ccc",
+    "services/evacuation/internal/reference/reference_test.go": "effbc68d98da16db817650c021785772cfcb6726bec40567d4a30ef978b34c8e",
+    "services/evacuation/internal/simulation/operational.go": "eb96b5449ac02c421b857965a42abcbe7c480ddb07f29b93a6c73a0118825edf",
+    "services/evacuation/internal/simulation/planner.go": "8a09232c18bda4bb4159c7d6ff292e34543bf33201bb88f723251ff42ad75246",
+    "services/evacuation/internal/simulation/scenario.go": "643f35da8a903d1862e87c81107bfcc5a48a25d337340985a140b6de370fda51",
+    "services/evacuation/internal/world/scenario.go": "663c180ae129b85625a5619139c537d2dc32fea71cdcb7d7bf87c0f621cf9505",
+    "services/evacuation/scenarios/flood/reference-corridor.json": "0186571ca4062d77338a64efd856b89c88cce650e9457cee5dabb50311a886f2",
+    "tools/qa/check_incidents_lab.mjs": "a64ee2ec0e4a8e959e16abe1b1c69a1b425362e8ebddf293d5548f1ce9866743",
+    "tools/qa/check_references_lab.mjs": "83b1631a037d4687b240da1bbe54803d765ac026753bbe2fc00ed26b2e2c5348",
+    "tools/scripts/dev_lab.mjs": "64de6cf7b3a7c6964f1921c3169047972760b64b407dafde72c612edb682a893"
+  },
+  "screenshots_sha256": {
+    "deploy/evidence-private/phase4d-20261026/reference-base-offline.png": "b6fafb9f4465190df930785ae8210ba395ccad596a59a86eec811ef0f1e7f51f",
+    "deploy/evidence-private/phase4d-20261026/reference-hybrid-and-history.png": "9da5b5696f9c45f48357cc1158ed37698566068df37f4aa28bd904083276756a",
+    "deploy/evidence-private/phase4d-20261026/reference-map-polygons.png": "2066f3ab4bf87d4f78262bb75a20932d3538e4744d8c5e1b267754f66ae3aa42",
+    "deploy/evidence-private/phase4d-20261026/reference-master-offline.png": "a1c8cc3cfe4a53754fcb136e8dae9a670ddf92b2f5a4166f0fcd07f6e0378ec4",
+    "deploy/evidence-private/phase4d-20261026/reference-mobile-390.png": "1f1948ed8092d5df69ff49fd8f6d98251e890c79116ec7126b4441456fe151bb",
+    "deploy/evidence-private/phase4d-20261026/reference-panel-mobile-viewport.png": "2fcf9879e1f2c8c3ffb3e28890949fe7bd8e7e4ed20ebe40af6d1b99218ce27d"
+  },
+  "local_artifacts_sha256": {
+    "deploy/evidence-private/phase4d-20261026/go-test.jsonl": "ed8f7afa227e86d33c0dc23c199cc49af00b44f33030188b02f3c4b5fa15c3ff",
+    "deploy/evidence-private/phase4d-20261026/go-race.log": "6fd42abc52a31b7edfaa4007e4d63161cfc5f6c8a01959f53018b74136c125f8",
+    "deploy/evidence-private/phase4d-20261026/references-e2e.json": "961da785812755ee0e6bf91d9f6ee9fa9a2179a1c00b88b6baad92f65de1758b",
+    "deploy/evidence-private/phase4d-20261026/regression4b/browser-lab.json": "882196ea1c59fd20d237cf440e5d9d343d1612f79d7005210ab695cbf1a0d16b",
+    "deploy/evidence-private/phase4d-20261026/regression4c/result.json": "d90fbd4a9793e7e27f0e4af359be07f1c56f36b5a4a793c17444dfdd56a67bb6",
+    "apps/mobile/build/app/outputs/flutter-apk/app-debug.apk": "a19fa0e6d486702cbd145f1036809992850e99db4948f13432045fda8f3e9967",
+    "deploy/evidence-private/phase4d-20261026/before-flood-competition.json": "711b12dea96519ee4da05f6829aee3aea0f5bb3ceb8c02a0e5657c5fb50b855b",
+    "deploy/evidence-private/phase4d-20261026/after-flood-competition.json": "5f6bc5c080559d2ec1372850bbbe318a1cad951ce53f2f6d572ee5a29916fc71",
+    "deploy/evidence-private/phase4d-20261026/before-flood-master.json": "072f0a416ed8f265264320f1a13104474b905baf10c971b7c76707e43ab31011",
+    "deploy/evidence-private/phase4d-20261026/after-flood-master.json": "c6defa370cc78f95de58a4e2bcf6e843ab786952429876c4aa14401df597c910",
+    "deploy/evidence-private/phase4d-20261026/hybrid-flood-competition.json": "a847b4ca4768d4dc8c82540aacc11ada99b7b9b0701fef028039d9dbf5e6086c",
+    "deploy/evidence-private/phase4d-20261026/hybrid-flood-master.json": "c609a7c6a6b704bfbcdc68ac424d783b23bb885342e6ff88127aa60e4c8b1165",
+    "deploy/evidence-private/phase4d-20261026/corridor-synthetic-competition.json": "1b9e8f7d738671681f6c9f4cae84e330e6c614330a762320440382c49ff6c136",
+    "deploy/evidence-private/phase4d-20261026/corridor-hybrid-competition.json": "0d72bc43cb2588c5f89502e859f485fdfa68be943a6ba1250928ce74963523da",
+    "deploy/evidence-private/phase4d-20261026/corridor-synthetic-master.json": "86928a7fad2aa524f5bf9ca6634e0a1ef2923e82068ff78a252f710c14a62a91",
+    "deploy/evidence-private/phase4d-20261026/corridor-hybrid-master.json": "e62ab71ae1827f8e7f6a2936fab70404a81fe97bf2be978172c737fac926b493",
+    "deploy/evidence-private/phase4d-20261026/corridor-hybrid-competition-repeat.json": "26fa3c77cef96b1eab6176adfcfb056da5e1e8bfccea045a0fc798a115fc9685",
+    "deploy/evidence-private/phase4d-20261026/corridor-hybrid-master-repeat.json": "43e0aaa01b327a4e3104ba6db4016cb63489f25bdef97105fbb8bdd81c038c16",
+    "deploy/evidence-private/phase4d-20261026/before-zombie.json": "b6bcef9af6d9e593e85494c952834c9683483e8162e95800e5f18bede656d47b",
+    "deploy/evidence-private/phase4d-20261026/after-zombie.json": "acf758900e7cff00efe6532e0970ba9b4c154d62359f318ddcb6ab4bee82f5c0",
+    "deploy/evidence-private/phase4d-20261026/after-flood-master-initial.json": "f7da1b8539d851ab2ca4bdbe925d2fe51aa61a62e6646448ba8424b0f0094506"
+  },
+  "raw_provider_metadata_sha256": {
+    "deploy/evidence-private/phase4d-20261026/susceptibility-layer.json": "45d1ba8b4cb92bda7cac77a38fd6195ebe79d0c1d6470089c2c4007825149dee",
+    "deploy/evidence-private/phase4d-20261026/susceptibility-service.json": "4875d67261e2f399e659b7462126fc52b15269177302ee5853b97d939dbb6d13",
+    "deploy/evidence-private/phase4d-20261026/rain-events-layer.json": "7dd7363d24a29f9854a8d0943e60c422a42f326ecfc77cfde603adbe354d3eba",
+    "deploy/evidence-private/phase4d-20261026/rain-events-service.json": "d081048200320cf62a8e78b2d17c9a5de1f8ad82472085ed838672e89e8f8aa0",
+    "deploy/evidence-private/phase4d-20261026/susceptibility-item.json": "eb667a7cae7c0f9e265aaa6753cc77d6b5cac951cae21ad58e691cee6570964e",
+    "deploy/evidence-private/phase4d-20261026/rain-events-item.json": "26f5312ad6a807185710f2101e4e6697dd6890d6711d835af8a5f0b740697255",
+    "deploy/evidence-private/phase4d-20261026/events-declared-update.json": "921c3afc5bbefb5a8a1315c4d098e2f8e9991204a5000f6a7d3b0f7c3777e6a3"
+  },
+  "unrelated_preexisting_changes_excluded": [
+    "deploy/validation-phase3b2.json",
+    "docs/informe-fase3b2.md",
+    "docs/operacion-multigrafo.md",
+    "docs/revision-rollout-fase3b2.md",
+    "deploy/validation-phase3b2-rollout.json"
+  ]
+}

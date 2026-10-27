@@ -242,3 +242,11 @@ Flutter permite **Nueva novedad** desde el mapa: marcador manual o GPS Android c
 La acción **Aplicar incidente a simulación** requiere sesión local/CSRF, ejecución experimental esperada y confirmación explícita. Añade un overlay temporal, replanifica sin avanzar el paso y conserva auditoría, sin alterar el grafo base ni el escenario zombie. No ofrece navegación real de emergencia ni convierte reportes en hechos oficiales.
 
 `npm run dev:lab` conserva los reportes en `services/evacuation/private/incidents`. `FLUTTER_BIN=/ruta/flutter/bin/flutter npm run test:incidents:e2e` reproduce Flutter → Go → reinicio → React → cierre y desvío verificable. Ver [guía y endpoints](docs/incidentes-ciudadanos.md), [resultados y límites](docs/informe-fase4c.md) y [decisión de persistencia/costo](docs/decisions/ADR-004-incidentes-persistencia.md). No se realiza push ni despliegue automático.
+
+## Referencia oficial, procedencia y modo offline — FASE 4D
+
+El laboratorio incorpora una capa independiente de **Susceptibilidad oficial a inundaciones**, con 59 polígonos SNGR para la envolvente de Manta, atribución CONAGE 2024, fecha, CRS y versión local verificable. La copia incluye 16 eventos históricos por lluvias, separados de carreteras y reportes ciudadanos. No representa inundación actual ni ofrece predicción hidrológica.
+
+**Usar susceptibilidad geográfica como referencia** permite un experimento opcional con pesos adimensionales por clase, manteniendo lluvia sintética, semilla y grafo. Cada ejecución fija su versión y registra las intersecciones. `npm run dev:lab` funciona sin Internet con la copia versionada; una fuente ausente deja disponible el modo totalmente sintético. `LAB_REFERENCE_ONLINE=true` habilita actualización externa asíncrona; no se despliega automáticamente.
+
+`npm run test:references:e2e` valida Go/React reales en 300 y 9.179 nodos, polígonos, modo offline, procedencia e independencia del escenario zombie. Ver [fuentes, endpoints y demos A–E](docs/datos-oficiales-y-demo.md), [pruebas y benchmarks](docs/informe-fase4d.md) y [copia de datos](services/evacuation/data/reference/README.md).

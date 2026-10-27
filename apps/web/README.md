@@ -31,4 +31,8 @@ FASE 4C añade una capa independiente de novedades y un panel con filtros de tip
 
 `npm run test:incidents:e2e` prueba Flutter real, persistencia tras reinicio y aplicación desde Chromium. [Guía 4C y límites](../../docs/incidentes-ciudadanos.md). La cookie autoriza un laboratorio local compartido; no implementa identidad remota ni un mundo por visitante.
 
+FASE 4D añade la novena capa, **Susceptibilidad oficial a inundaciones**, servida desde una copia validada en Go. Sus 59 paths SVG se memoizan por versión/geografía y se distinguen de la exposición sintética. El panel muestra atribución CONAGE 2024, fechas originales, CRS y límites; los eventos de 2025 se consultan como históricos y no cierran calles.
+
+El toggle de visualización no modifica la simulación. La opción separada **Usar susceptibilidad geográfica como referencia** fija versión y peso adimensional al iniciar. TanStack consulta disponibilidad cada 30 segundos y reutiliza los polígonos por versión con `staleTime:Infinity`; el polling del mundo no vuelve a descargarlos. La lectura HTTP funciona offline. `LAB_REFERENCE_ONLINE=true npm run dev:lab` permite una actualización asíncrona explícita. [Demos A–E y observabilidad](../../docs/datos-oficiales-y-demo.md), `npm run test:references:e2e`.
+
 **SIMULACIÓN — DATOS SINTÉTICOS.** Los escenarios de inundación emplean parámetros sintéticos y no constituyen pronósticos hidrológicos ni recomendaciones oficiales de evacuación.
