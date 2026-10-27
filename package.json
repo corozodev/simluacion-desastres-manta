@@ -16,6 +16,9 @@
   "scripts": {
     "dev:api": "npm run dev:backend",
     "dev:web": "npm run dev -w @corodev/web",
+    "dev:lab": "node tools/scripts/dev_lab.mjs",
+    "dev:flood:lab": "node tools/scripts/go.mjs run ./cmd/flood-lab",
+    "test:lab:flood": "node tools/qa/check_flood_lab.mjs",
     "contracts:validate": "node tools/codegen/contracts.mjs --validate",
     "contracts:generate": "node tools/codegen/contracts.mjs",
     "tokens:generate": "node tools/codegen/tokens.mjs",
