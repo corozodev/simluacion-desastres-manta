@@ -1,5 +1,22 @@
 // GENERATED from packages/contracts/openapi.yaml. Do not edit.
 export interface paths {
+    "/metrics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Métricas agregadas del ejecutor; sin IDs de sesión ni credenciales. */
+        get: operations["getSimulationMetrics"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/healthz": {
         parameters: {
             query?: never;
@@ -599,10 +616,363 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/simulations/capabilities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Escenarios, grafos, opciones y límites disponibles; no crea ejecuciones. */
+        get: operations["getSimulationCapabilities"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/simulations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Valida, reserva capacidad y crea una ejecución privada independiente.
+         * @description No se inicia ninguna ejecución mediante GET. Idempotency-Key evita duplicados por reintentos: misma clave y configuración repiten el ID y token originales; otra configuración con la misma clave devuelve 409. El token opaco sólo se entrega al crear o repetir esta respuesta; no es una clave administrativa.
+         */
+        post: operations["createSimulation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/simulations/{simulation_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Metadatos privados; consultar no avanza turnos. */
+        get: operations["getSimulation"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/simulations/{simulation_id}/state": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Snapshot privado versionado sin repetir la topología estática. */
+        get: operations["getSimulationState"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/simulations/{simulation_id}/results": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Resultado privado final para comparación reproducible. */
+        get: operations["getSimulationResults"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/simulations/{simulation_id}/pause": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Pausa sin descartar el estado ni avanzar turnos. */
+        post: operations["pauseSimulation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/simulations/{simulation_id}/resume": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Continúa la sesión desde el mismo turno. */
+        post: operations["resumeSimulation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/simulations/{simulation_id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cancela definitivamente y libera el cupo de ejecución. */
+        post: operations["cancelSimulation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/simulations/{simulation_id}/restart": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Crea otra sesión con la misma configuración y semilla; conserva la anterior. */
+        post: operations["restartSimulation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** @description Configuración acotada; propiedades desconocidas se rechazan. refuge_ids vacío o ausente usa todos los refugios predeterminados del grafo. */
+        SimulationConfigInput: {
+            survivors?: number;
+            /** @enum {string} */
+            round?: "round1" | "round2" | "round3";
+            refuge_ids?: string[];
+            /** @description Parámetro sintético exclusivo de urban_flood; no representa lluvia observada ni un pronóstico. */
+            rainfall_intensity?: number;
+        };
+        SimulationConfig: {
+            survivors: number;
+            /** @enum {string} */
+            round: "round1" | "round2" | "round3";
+            refuge_ids: string[];
+            rainfall_intensity?: number;
+        };
+        SimulationCreateRequest: {
+            /** @enum {string} */
+            scenario: "zombie_outbreak" | "urban_flood";
+            /**
+             * @default BASE
+             * @enum {string}
+             */
+            graph_profile: "BASE" | "FULL_MANTA";
+            /** @default 20261026 */
+            seed: number;
+            /** @default 150 */
+            max_ticks: number;
+            /** @default 2000 */
+            tick_interval_ms: number;
+            config?: components["schemas"]["SimulationConfigInput"];
+        };
+        SimulationMetadata: {
+            simulation_id: string;
+            /** @enum {string} */
+            status: "CREATED" | "RUNNING" | "PAUSED" | "COMPLETED" | "CANCELLED" | "FAILED";
+            tick: number;
+            max_ticks: number;
+            state_version: number;
+            /** @enum {string} */
+            scenario: "zombie_outbreak" | "urban_flood";
+            /** @enum {string} */
+            graph_profile: "BASE" | "FULL_MANTA";
+            graph_version: string;
+            seed: number;
+            tick_interval_ms: number;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            started_at: string;
+            /** Format: date-time */
+            updated_at: string;
+            /** Format: date-time */
+            ended_at?: string;
+            /** Format: date-time */
+            expires_at: string;
+            config: components["schemas"]["SimulationConfig"];
+        };
+        SimulationCreated: {
+            simulation_id: string;
+            /** @enum {string} */
+            status: "CREATED" | "RUNNING" | "PAUSED" | "COMPLETED" | "CANCELLED" | "FAILED";
+            tick: number;
+            max_ticks: number;
+            state_version: number;
+            /** @enum {string} */
+            scenario: "zombie_outbreak" | "urban_flood";
+            /** @enum {string} */
+            graph_profile: "BASE" | "FULL_MANTA";
+            graph_version: string;
+            seed: number;
+            tick_interval_ms: number;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            started_at: string;
+            /** Format: date-time */
+            updated_at: string;
+            /** Format: date-time */
+            ended_at?: string;
+            /** Format: date-time */
+            expires_at: string;
+            config: components["schemas"]["SimulationConfig"];
+            /** @description Credencial opaca; sólo creación, reinicio o replay idempotente. Nunca se devuelve en consultas ni controles normales. */
+            access_token: string;
+        };
+        SimulationState: {
+            simulation_id: string;
+            /** @enum {string} */
+            status: "CREATED" | "RUNNING" | "PAUSED" | "COMPLETED" | "CANCELLED" | "FAILED";
+            tick: number;
+            max_ticks: number;
+            state_version: number;
+            /** @enum {string} */
+            scenario: "zombie_outbreak" | "urban_flood";
+            /** @enum {string} */
+            graph_profile: "BASE" | "FULL_MANTA";
+            graph_version: string;
+            seed: number;
+            tick_interval_ms: number;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            started_at: string;
+            /** Format: date-time */
+            updated_at: string;
+            /** Format: date-time */
+            ended_at?: string;
+            /** Format: date-time */
+            expires_at: string;
+            config: components["schemas"]["SimulationConfig"];
+            snapshot: components["schemas"]["WorldSnapshot"];
+            scenario_state?: components["schemas"]["ScenarioSnapshot"];
+        };
+        SimulationResults: {
+            simulation_id: string;
+            /** @enum {string} */
+            status: "CREATED" | "RUNNING" | "PAUSED" | "COMPLETED" | "CANCELLED" | "FAILED";
+            tick: number;
+            max_ticks: number;
+            state_version: number;
+            /** @enum {string} */
+            scenario: "zombie_outbreak" | "urban_flood";
+            /** @enum {string} */
+            graph_profile: "BASE" | "FULL_MANTA";
+            graph_version: string;
+            seed: number;
+            tick_interval_ms: number;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            started_at: string;
+            /** Format: date-time */
+            updated_at: string;
+            /** Format: date-time */
+            ended_at?: string;
+            /** Format: date-time */
+            expires_at: string;
+            config: components["schemas"]["SimulationConfig"];
+            snapshot: components["schemas"]["WorldSnapshot"];
+            scenario_state?: components["schemas"]["ScenarioSnapshot"];
+            results: components["schemas"]["SimulationResultMetrics"];
+        };
+        SimulationResultMetrics: {
+            initial_survivors: number;
+            evacuated: number;
+            bitten: number;
+            active: number;
+            survival_rate: number;
+            refuges_used: number;
+        };
+        SimulationScenarioCapability: {
+            /** @enum {string} */
+            id: "zombie_outbreak" | "urban_flood";
+            name: string;
+            available: boolean;
+            synthetic: boolean;
+        };
+        SimulationGraphProfile: {
+            /** @enum {string} */
+            id: "BASE" | "FULL_MANTA";
+            name: string;
+            available: boolean;
+            graph_version: string;
+            nodes: number;
+            edges: number;
+            disabled_reason?: string;
+        };
+        SimulationDefaults: {
+            /** @enum {string} */
+            scenario: "zombie_outbreak" | "urban_flood";
+            /** @enum {string} */
+            graph_profile: "BASE" | "FULL_MANTA";
+            seed: number;
+            max_ticks: number;
+            tick_interval_ms: number;
+            survivors: number;
+            /** @enum {string} */
+            round: "round1" | "round2" | "round3";
+        };
+        SimulationLimits: {
+            max_active: number;
+            max_full_active: number;
+            max_retained: number;
+            max_memory_bytes: number;
+            min_tick_interval_ms: number;
+            max_tick_interval_ms: number;
+            max_ticks: number;
+            max_survivors: number;
+        };
+        SimulationCapabilities: {
+            scenarios: components["schemas"]["SimulationScenarioCapability"][];
+            graph_profiles: components["schemas"]["SimulationGraphProfile"][];
+            defaults: components["schemas"]["SimulationDefaults"];
+            limits: components["schemas"]["SimulationLimits"];
+            rounds: components["schemas"]["SimulationRound"][];
+        };
         GraphNode: {
             id: string;
             lat: number;
@@ -844,7 +1214,7 @@ export interface components {
         };
         ErrorResponseError: {
             /** @enum {string} */
-            code: "VALIDATION_ERROR" | "NOT_FOUND" | "INTERNAL_ERROR" | "UNAUTHORIZED" | "CONFLICT" | "UNAVAILABLE" | "TIMEOUT" | "METHOD_NOT_ALLOWED";
+            code: "VALIDATION_ERROR" | "NOT_FOUND" | "INTERNAL_ERROR" | "UNAUTHORIZED" | "CONFLICT" | "UNAVAILABLE" | "TIMEOUT" | "METHOD_NOT_ALLOWED" | "EXPIRED" | "RATE_LIMITED";
             message: string;
             requestId: string;
             details: components["schemas"]["ErrorDetail"][];
@@ -1320,6 +1690,34 @@ export interface components {
         };
     };
     responses: {
+        /** @description Sesión caducada conocida temporalmente; después de retirar su tombstone devuelve 404. */
+        SimulationExpired: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ErrorResponse"];
+            };
+        };
+        /** @description Presupuesto de solicitudes agotado; Retry-After indica cuándo reintentar. */
+        RateLimited: {
+            headers: {
+                "Retry-After"?: string;
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ErrorResponse"];
+            };
+        };
+        /** @description Cupos activos, sesiones retenidas o presupuesto de memoria agotados; no se crea trabajo. */
+        SimulationCapacity: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ErrorResponse"];
+            };
+        };
         /** @description Falta la credencial privada o no es válida. */
         Unauthorized: {
             headers: {
@@ -1391,6 +1789,53 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    getSimulationMetrics: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Exposición Prometheus de contadores, sesiones, memoria estimada y tiempos acumulados. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/plain": string;
+                };
+            };
+            /** @description Origen CORS rechazado. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Método no permitido. */
+            405: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Presupuesto de solicitudes agotado; consultar Retry-After. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     getEvacuationHealth: {
         parameters: {
             query?: never;
@@ -2973,8 +3418,454 @@ export interface operations {
             };
         };
     };
+    getSimulationCapabilities: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Capacidades públicas del proceso; ambos motores son sintéticos. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SimulationCapabilities"];
+                };
+            };
+            /** @description Origen CORS rechazado. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Método no permitido. */
+            405: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Presupuesto de solicitudes agotado; consultar Retry-After. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    createSimulation: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Clave opaca de solicitud; el replay exige el mismo cuerpo normalizado. */
+                "Idempotency-Key": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SimulationCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Ejecución creada; conservar la credencial sólo en sessionStorage. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SimulationCreated"];
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            /** @description Origen CORS rechazado. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Método no permitido. */
+            405: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            409: components["responses"]["Conflict"];
+            429: components["responses"]["RateLimited"];
+            503: components["responses"]["SimulationCapacity"];
+        };
+    };
+    getSimulation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                simulation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sesión autorizada; nunca incluye access_token. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SimulationMetadata"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            /** @description Origen CORS rechazado. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+            /** @description Método no permitido. */
+            405: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            410: components["responses"]["SimulationExpired"];
+            429: components["responses"]["RateLimited"];
+        };
+    };
+    getSimulationState: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description ETag de la versión ya recibida; la autorización se verifica antes del 304. */
+                "If-None-Match"?: string;
+            };
+            path: {
+                simulation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sesión autorizada; nunca incluye access_token. */
+            200: {
+                headers: {
+                    /** @description Versión opaca del snapshot y estado de ejecución. */
+                    ETag?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SimulationState"];
+                };
+            };
+            /** @description Snapshot sin cambios; sin cuerpo JSON. */
+            304: {
+                headers: {
+                    ETag?: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            /** @description Origen CORS rechazado. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+            /** @description Método no permitido. */
+            405: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            410: components["responses"]["SimulationExpired"];
+            429: components["responses"]["RateLimited"];
+        };
+    };
+    getSimulationResults: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                simulation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sesión autorizada; nunca incluye access_token. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SimulationResults"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            /** @description Origen CORS rechazado. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+            /** @description Método no permitido. */
+            405: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            409: components["responses"]["Conflict"];
+            410: components["responses"]["SimulationExpired"];
+            429: components["responses"]["RateLimited"];
+        };
+    };
+    pauseSimulation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                simulation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Comando aplicado; repeticiones válidas no crean bucles adicionales. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SimulationMetadata"];
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+            /** @description Origen CORS rechazado. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+            /** @description Método no permitido. */
+            405: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            409: components["responses"]["Conflict"];
+            410: components["responses"]["SimulationExpired"];
+            429: components["responses"]["RateLimited"];
+            503: components["responses"]["SimulationCapacity"];
+        };
+    };
+    resumeSimulation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                simulation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Comando aplicado; repeticiones válidas no crean bucles adicionales. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SimulationMetadata"];
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+            /** @description Origen CORS rechazado. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+            /** @description Método no permitido. */
+            405: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            409: components["responses"]["Conflict"];
+            410: components["responses"]["SimulationExpired"];
+            429: components["responses"]["RateLimited"];
+            503: components["responses"]["SimulationCapacity"];
+        };
+    };
+    cancelSimulation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                simulation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Comando aplicado; repeticiones válidas no crean bucles adicionales. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SimulationMetadata"];
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+            /** @description Origen CORS rechazado. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+            /** @description Método no permitido. */
+            405: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            409: components["responses"]["Conflict"];
+            410: components["responses"]["SimulationExpired"];
+            429: components["responses"]["RateLimited"];
+            503: components["responses"]["SimulationCapacity"];
+        };
+    };
+    restartSimulation: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Clave opaca de solicitud; el replay exige el mismo cuerpo normalizado. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                simulation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Comando aplicado; repeticiones válidas no crean bucles adicionales. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SimulationCreated"];
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+            /** @description Origen CORS rechazado. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+            /** @description Método no permitido. */
+            405: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            409: components["responses"]["Conflict"];
+            410: components["responses"]["SimulationExpired"];
+            429: components["responses"]["RateLimited"];
+            503: components["responses"]["SimulationCapacity"];
+        };
+    };
 }
 
+export type SimulationConfigInput = components['schemas']['SimulationConfigInput'];
+export type SimulationConfig = components['schemas']['SimulationConfig'];
+export type SimulationCreateRequest = components['schemas']['SimulationCreateRequest'];
+export type SimulationMetadata = components['schemas']['SimulationMetadata'];
+export type SimulationCreated = components['schemas']['SimulationCreated'];
+export type SimulationState = components['schemas']['SimulationState'];
+export type SimulationResults = components['schemas']['SimulationResults'];
+export type SimulationResultMetrics = components['schemas']['SimulationResultMetrics'];
+export type SimulationScenarioCapability = components['schemas']['SimulationScenarioCapability'];
+export type SimulationGraphProfile = components['schemas']['SimulationGraphProfile'];
+export type SimulationDefaults = components['schemas']['SimulationDefaults'];
+export type SimulationLimits = components['schemas']['SimulationLimits'];
+export type SimulationCapabilities = components['schemas']['SimulationCapabilities'];
 export type GraphNode = components['schemas']['GraphNode'];
 export type GeoPoint = components['schemas']['GeoPoint'];
 export type SpawnZone = components['schemas']['SpawnZone'];

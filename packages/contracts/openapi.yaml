@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: CoroDev Spooky API
-  version: 0.3.0
+  version: 0.5.0
   description: API Go de evacuación y controles entre rondas; conserva esquemas
     históricos de FASE 2.
 servers:
@@ -13,7 +13,34 @@ tags:
   - name: System
   - name: Demo
   - name: Evacuation
+  - name: Simulations
 paths:
+  /metrics:
+    get:
+      operationId: getSimulationMetrics
+      tags: [ System, Simulations ]
+      summary: Métricas agregadas del ejecutor; sin IDs de sesión ni credenciales.
+      responses:
+        '200':
+          description: Exposición Prometheus de contadores, sesiones, memoria estimada y tiempos acumulados.
+          content:
+            text/plain:
+              schema: { type: string }
+        '403':
+          description: Origen CORS rechazado.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '405':
+          description: Método no permitido.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '429':
+          description: Presupuesto de solicitudes agotado; consultar Retry-After.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
   /healthz:
     get:
       operationId: getEvacuationHealth
@@ -1346,8 +1373,379 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+  /v1/simulations/capabilities:
+    get:
+      operationId: getSimulationCapabilities
+      tags: [ Simulations ]
+      summary: Escenarios, grafos, opciones y límites disponibles; no crea ejecuciones.
+      responses:
+        '200':
+          description: Capacidades públicas del proceso; ambos motores son sintéticos.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SimulationCapabilities' }
+        '403':
+          description: Origen CORS rechazado.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '405':
+          description: Método no permitido.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '429':
+          description: Presupuesto de solicitudes agotado; consultar Retry-After.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+  /v1/simulations:
+    post:
+      operationId: createSimulation
+      tags: [ Simulations ]
+      summary: Valida, reserva capacidad y crea una ejecución privada independiente.
+      description: >-
+        No se inicia ninguna ejecución mediante GET. Idempotency-Key evita duplicados
+        por reintentos: misma clave y configuración repiten el ID y token originales;
+        otra configuración con la misma clave devuelve 409. El token opaco sólo se
+        entrega al crear o repetir esta respuesta; no es una clave administrativa.
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          description: Clave opaca de solicitud; el replay exige el mismo cuerpo normalizado.
+          schema: { type: string, minLength: 16, maxLength: 128 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SimulationCreateRequest' }
+      responses:
+        '201':
+          description: Ejecución creada; conservar la credencial sólo en sessionStorage.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SimulationCreated' }
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '503':
+          $ref: '#/components/responses/SimulationCapacity'
+        '403':
+          description: Origen CORS rechazado.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '405':
+          description: Método no permitido.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+  /v1/simulations/{simulation_id}:
+    get:
+      operationId: getSimulation
+      tags: [ Simulations ]
+      summary: Metadatos privados; consultar no avanza turnos.
+      security:
+        - SimulationBearer: []
+      parameters:
+        - name: simulation_id
+          in: path
+          required: true
+          schema: { type: string, minLength: 1, maxLength: 100 }
+      responses:
+        '200':
+          description: Sesión autorizada; nunca incluye access_token.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SimulationMetadata' }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '410':
+          $ref: '#/components/responses/SimulationExpired'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '403':
+          description: Origen CORS rechazado.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '405':
+          description: Método no permitido.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+  /v1/simulations/{simulation_id}/state:
+    get:
+      operationId: getSimulationState
+      tags: [ Simulations ]
+      summary: Snapshot privado versionado sin repetir la topología estática.
+      security:
+        - SimulationBearer: []
+      parameters:
+        - name: simulation_id
+          in: path
+          required: true
+          schema: { type: string, minLength: 1, maxLength: 100 }
+        - name: If-None-Match
+          in: header
+          schema: { type: string }
+          description: ETag de la versión ya recibida; la autorización se verifica antes del 304.
+      responses:
+        '200':
+          description: Sesión autorizada; nunca incluye access_token.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SimulationState' }
+          headers:
+            ETag:
+              description: Versión opaca del snapshot y estado de ejecución.
+              schema: { type: string }
+        '304':
+          description: Snapshot sin cambios; sin cuerpo JSON.
+          headers:
+            ETag:
+              schema: { type: string }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '410':
+          $ref: '#/components/responses/SimulationExpired'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '403':
+          description: Origen CORS rechazado.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '405':
+          description: Método no permitido.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+  /v1/simulations/{simulation_id}/results:
+    get:
+      operationId: getSimulationResults
+      tags: [ Simulations ]
+      summary: Resultado privado final para comparación reproducible.
+      security:
+        - SimulationBearer: []
+      parameters:
+        - name: simulation_id
+          in: path
+          required: true
+          schema: { type: string, minLength: 1, maxLength: 100 }
+      responses:
+        '200':
+          description: Sesión autorizada; nunca incluye access_token.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SimulationResults' }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '410':
+          $ref: '#/components/responses/SimulationExpired'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '403':
+          description: Origen CORS rechazado.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '405':
+          description: Método no permitido.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+  /v1/simulations/{simulation_id}/pause:
+    post:
+      operationId: pauseSimulation
+      tags: [ Simulations ]
+      summary: Pausa sin descartar el estado ni avanzar turnos.
+      security:
+        - SimulationBearer: []
+      parameters:
+        - name: simulation_id
+          in: path
+          required: true
+          schema: { type: string, minLength: 1, maxLength: 100 }
+      responses:
+        '200':
+          description: Comando aplicado; repeticiones válidas no crean bucles adicionales.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SimulationMetadata' }
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '410':
+          $ref: '#/components/responses/SimulationExpired'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '503':
+          $ref: '#/components/responses/SimulationCapacity'
+        '403':
+          description: Origen CORS rechazado.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '405':
+          description: Método no permitido.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+  /v1/simulations/{simulation_id}/resume:
+    post:
+      operationId: resumeSimulation
+      tags: [ Simulations ]
+      summary: Continúa la sesión desde el mismo turno.
+      security:
+        - SimulationBearer: []
+      parameters:
+        - name: simulation_id
+          in: path
+          required: true
+          schema: { type: string, minLength: 1, maxLength: 100 }
+      responses:
+        '200':
+          description: Comando aplicado; repeticiones válidas no crean bucles adicionales.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SimulationMetadata' }
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '410':
+          $ref: '#/components/responses/SimulationExpired'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '503':
+          $ref: '#/components/responses/SimulationCapacity'
+        '403':
+          description: Origen CORS rechazado.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '405':
+          description: Método no permitido.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+  /v1/simulations/{simulation_id}/cancel:
+    post:
+      operationId: cancelSimulation
+      tags: [ Simulations ]
+      summary: Cancela definitivamente y libera el cupo de ejecución.
+      security:
+        - SimulationBearer: []
+      parameters:
+        - name: simulation_id
+          in: path
+          required: true
+          schema: { type: string, minLength: 1, maxLength: 100 }
+      responses:
+        '200':
+          description: Comando aplicado; repeticiones válidas no crean bucles adicionales.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SimulationMetadata' }
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '410':
+          $ref: '#/components/responses/SimulationExpired'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '503':
+          $ref: '#/components/responses/SimulationCapacity'
+        '403':
+          description: Origen CORS rechazado.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '405':
+          description: Método no permitido.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+  /v1/simulations/{simulation_id}/restart:
+    post:
+      operationId: restartSimulation
+      tags: [ Simulations ]
+      summary: Crea otra sesión con la misma configuración y semilla; conserva la anterior.
+      security:
+        - SimulationBearer: []
+      parameters:
+        - name: simulation_id
+          in: path
+          required: true
+          schema: { type: string, minLength: 1, maxLength: 100 }
+        - name: Idempotency-Key
+          in: header
+          required: true
+          description: Clave opaca de solicitud; el replay exige el mismo cuerpo normalizado.
+          schema: { type: string, minLength: 16, maxLength: 128 }
+      responses:
+        '201':
+          description: Comando aplicado; repeticiones válidas no crean bucles adicionales.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SimulationCreated' }
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '410':
+          $ref: '#/components/responses/SimulationExpired'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '503':
+          $ref: '#/components/responses/SimulationCapacity'
+        '403':
+          description: Origen CORS rechazado.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '405':
+          description: Método no permitido.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
 components:
   securitySchemes:
+    SimulationBearer:
+      type: http
+      scheme: bearer
+      description: Token opaco privado ligado exclusivamente a una simulación; nunca en URL, logs o telemetría.
     SimulatorApiKey:
       type: apiKey
       in: header
@@ -1365,6 +1763,220 @@ components:
       name: X-CSRF-Token
       description: Token ligado a la sesión; además se exige Origin permitido.
   schemas:
+    SimulationConfigInput:
+      type: object
+      additionalProperties: false
+      description: Configuración acotada; propiedades desconocidas se rechazan. refuge_ids vacío o ausente usa todos los refugios predeterminados del grafo.
+      properties:
+        survivors: { type: integer, minimum: 1, maximum: 200 }
+        round: { type: string, enum: [ round1, round2, round3 ] }
+        refuge_ids:
+          type: array
+          maxItems: 4
+          uniqueItems: true
+          items: { type: string, minLength: 1, maxLength: 100 }
+        rainfall_intensity:
+          type: number
+          minimum: 0
+          maximum: 1
+          description: Parámetro sintético exclusivo de urban_flood; no representa lluvia observada ni un pronóstico.
+    SimulationConfig:
+      type: object
+      additionalProperties: false
+      required: [ survivors, round, refuge_ids ]
+      properties:
+        survivors: { type: integer, minimum: 1, maximum: 200 }
+        round: { type: string, enum: [ round1, round2, round3 ] }
+        refuge_ids:
+          type: array
+          uniqueItems: true
+          items: { type: string, minLength: 1 }
+        rainfall_intensity: { type: number, minimum: 0, maximum: 1 }
+    SimulationCreateRequest:
+      type: object
+      additionalProperties: false
+      required: [ scenario, graph_profile ]
+      properties:
+        scenario: { type: string, enum: [ zombie_outbreak, urban_flood ] }
+        graph_profile: { type: string, enum: [ BASE, FULL_MANTA ], default: BASE }
+        seed: { type: integer, minimum: -9007199254740991, maximum: 9007199254740991, default: 20261026 }
+        max_ticks: { type: integer, minimum: 1, maximum: 150, default: 150 }
+        tick_interval_ms: { type: integer, minimum: 1000, maximum: 5000, default: 2000 }
+        config: { $ref: '#/components/schemas/SimulationConfigInput' }
+    SimulationMetadata:
+      type: object
+      additionalProperties: false
+      required: [ simulation_id, status, tick, max_ticks, state_version, scenario, graph_profile, graph_version, seed, tick_interval_ms, created_at, started_at, updated_at, expires_at, config ]
+      properties:
+        simulation_id: { type: string, minLength: 1 }
+        status:
+          type: string
+          enum: [ CREATED, RUNNING, PAUSED, COMPLETED, CANCELLED, FAILED ]
+        tick: { type: integer, minimum: 0 }
+        max_ticks: { type: integer, minimum: 1, maximum: 150 }
+        state_version: { type: integer, minimum: 0 }
+        scenario: { type: string, enum: [ zombie_outbreak, urban_flood ] }
+        graph_profile: { type: string, enum: [ BASE, FULL_MANTA ] }
+        graph_version: { type: string, minLength: 1 }
+        seed: { type: integer, minimum: -9007199254740991, maximum: 9007199254740991 }
+        tick_interval_ms: { type: integer, minimum: 1000, maximum: 5000 }
+        created_at: { type: string, format: date-time }
+        started_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+        ended_at: { type: string, format: date-time }
+        expires_at: { type: string, format: date-time }
+        config: { $ref: '#/components/schemas/SimulationConfig' }
+    SimulationCreated:
+      type: object
+      additionalProperties: false
+      required: [ simulation_id, status, tick, max_ticks, state_version, scenario, graph_profile, graph_version, seed, tick_interval_ms, created_at, started_at, updated_at, expires_at, config, access_token ]
+      properties:
+        simulation_id: { type: string, minLength: 1 }
+        status:
+          type: string
+          enum: [ CREATED, RUNNING, PAUSED, COMPLETED, CANCELLED, FAILED ]
+        tick: { type: integer, minimum: 0 }
+        max_ticks: { type: integer, minimum: 1, maximum: 150 }
+        state_version: { type: integer, minimum: 0 }
+        scenario: { type: string, enum: [ zombie_outbreak, urban_flood ] }
+        graph_profile: { type: string, enum: [ BASE, FULL_MANTA ] }
+        graph_version: { type: string, minLength: 1 }
+        seed: { type: integer, minimum: -9007199254740991, maximum: 9007199254740991 }
+        tick_interval_ms: { type: integer, minimum: 1000, maximum: 5000 }
+        created_at: { type: string, format: date-time }
+        started_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+        ended_at: { type: string, format: date-time }
+        expires_at: { type: string, format: date-time }
+        config: { $ref: '#/components/schemas/SimulationConfig' }
+        access_token:
+          type: string
+          minLength: 32
+          description: Credencial opaca; sólo creación, reinicio o replay idempotente. Nunca se devuelve en consultas ni controles normales.
+    SimulationState:
+      type: object
+      additionalProperties: false
+      required: [ simulation_id, status, tick, max_ticks, state_version, scenario, graph_profile, graph_version, seed, tick_interval_ms, created_at, started_at, updated_at, expires_at, config, snapshot ]
+      properties:
+        simulation_id: { type: string, minLength: 1 }
+        status:
+          type: string
+          enum: [ CREATED, RUNNING, PAUSED, COMPLETED, CANCELLED, FAILED ]
+        tick: { type: integer, minimum: 0 }
+        max_ticks: { type: integer, minimum: 1, maximum: 150 }
+        state_version: { type: integer, minimum: 0 }
+        scenario: { type: string, enum: [ zombie_outbreak, urban_flood ] }
+        graph_profile: { type: string, enum: [ BASE, FULL_MANTA ] }
+        graph_version: { type: string, minLength: 1 }
+        seed: { type: integer, minimum: -9007199254740991, maximum: 9007199254740991 }
+        tick_interval_ms: { type: integer, minimum: 1000, maximum: 5000 }
+        created_at: { type: string, format: date-time }
+        started_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+        ended_at: { type: string, format: date-time }
+        expires_at: { type: string, format: date-time }
+        config: { $ref: '#/components/schemas/SimulationConfig' }
+        snapshot: { $ref: '#/components/schemas/WorldSnapshot' }
+        scenario_state: { $ref: '#/components/schemas/ScenarioSnapshot' }
+    SimulationResults:
+      type: object
+      additionalProperties: false
+      required: [ simulation_id, status, tick, max_ticks, state_version, scenario, graph_profile, graph_version, seed, tick_interval_ms, created_at, started_at, updated_at, expires_at, config, snapshot, results ]
+      properties:
+        simulation_id: { type: string, minLength: 1 }
+        status:
+          type: string
+          enum: [ CREATED, RUNNING, PAUSED, COMPLETED, CANCELLED, FAILED ]
+        tick: { type: integer, minimum: 0 }
+        max_ticks: { type: integer, minimum: 1, maximum: 150 }
+        state_version: { type: integer, minimum: 0 }
+        scenario: { type: string, enum: [ zombie_outbreak, urban_flood ] }
+        graph_profile: { type: string, enum: [ BASE, FULL_MANTA ] }
+        graph_version: { type: string, minLength: 1 }
+        seed: { type: integer, minimum: -9007199254740991, maximum: 9007199254740991 }
+        tick_interval_ms: { type: integer, minimum: 1000, maximum: 5000 }
+        created_at: { type: string, format: date-time }
+        started_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+        ended_at: { type: string, format: date-time }
+        expires_at: { type: string, format: date-time }
+        config: { $ref: '#/components/schemas/SimulationConfig' }
+        snapshot: { $ref: '#/components/schemas/WorldSnapshot' }
+        scenario_state: { $ref: '#/components/schemas/ScenarioSnapshot' }
+        results: { $ref: '#/components/schemas/SimulationResultMetrics' }
+    SimulationResultMetrics:
+      type: object
+      additionalProperties: false
+      required: [ initial_survivors, evacuated, bitten, active, survival_rate, refuges_used ]
+      properties:
+        initial_survivors: { type: integer, minimum: 1 }
+        evacuated: { type: integer, minimum: 0 }
+        bitten: { type: integer, minimum: 0 }
+        active: { type: integer, minimum: 0 }
+        survival_rate: { type: number, minimum: 0, maximum: 1 }
+        refuges_used: { type: integer, minimum: 0 }
+    SimulationScenarioCapability:
+      type: object
+      additionalProperties: false
+      required: [ id, name, available, synthetic ]
+      properties:
+        id: { type: string, enum: [ zombie_outbreak, urban_flood ] }
+        name: { type: string, minLength: 1 }
+        available: { type: boolean }
+        synthetic: { type: boolean }
+    SimulationGraphProfile:
+      type: object
+      additionalProperties: false
+      required: [ id, name, available, graph_version, nodes, edges ]
+      properties:
+        id: { type: string, enum: [ BASE, FULL_MANTA ] }
+        name: { type: string, minLength: 1 }
+        available: { type: boolean }
+        graph_version: { type: string, minLength: 1 }
+        nodes: { type: integer, minimum: 1 }
+        edges: { type: integer, minimum: 1 }
+        disabled_reason: { type: string }
+    SimulationDefaults:
+      type: object
+      additionalProperties: false
+      required: [ scenario, graph_profile, seed, max_ticks, tick_interval_ms, survivors, round ]
+      properties:
+        scenario: { type: string, enum: [ zombie_outbreak, urban_flood ] }
+        graph_profile: { type: string, enum: [ BASE, FULL_MANTA ] }
+        seed: { type: integer, minimum: -9007199254740991, maximum: 9007199254740991 }
+        max_ticks: { type: integer, minimum: 1, maximum: 150 }
+        tick_interval_ms: { type: integer, minimum: 1000, maximum: 5000 }
+        survivors: { type: integer, minimum: 1, maximum: 200 }
+        round: { type: string, enum: [ round1, round2, round3 ] }
+    SimulationLimits:
+      type: object
+      additionalProperties: false
+      required: [ max_active, max_full_active, max_retained, max_memory_bytes, min_tick_interval_ms, max_tick_interval_ms, max_ticks, max_survivors ]
+      properties:
+        max_active: { type: integer, minimum: 1 }
+        max_full_active: { type: integer, minimum: 0 }
+        max_retained: { type: integer, minimum: 1 }
+        max_memory_bytes: { type: integer, minimum: 1 }
+        min_tick_interval_ms: { type: integer, minimum: 1 }
+        max_tick_interval_ms: { type: integer, minimum: 1 }
+        max_ticks: { type: integer, minimum: 1 }
+        max_survivors: { type: integer, minimum: 1 }
+    SimulationCapabilities:
+      type: object
+      additionalProperties: false
+      required: [ scenarios, graph_profiles, defaults, limits, rounds ]
+      properties:
+        scenarios:
+          type: array
+          items: { $ref: '#/components/schemas/SimulationScenarioCapability' }
+        graph_profiles:
+          type: array
+          items: { $ref: '#/components/schemas/SimulationGraphProfile' }
+        defaults: { $ref: '#/components/schemas/SimulationDefaults' }
+        limits: { $ref: '#/components/schemas/SimulationLimits' }
+        rounds:
+          type: array
+          items: { $ref: '#/components/schemas/SimulationRound' }
     GraphNode:
       type: object
       additionalProperties: false
@@ -1825,7 +2437,9 @@ components:
               CONFLICT,
               UNAVAILABLE,
               TIMEOUT,
-              METHOD_NOT_ALLOWED
+              METHOD_NOT_ALLOWED,
+              EXPIRED,
+              RATE_LIMITED
             ]
         message:
           type: string
@@ -3321,6 +3935,24 @@ components:
           $ref: "#/components/schemas/ReferenceProviderMetrics"
 
   responses:
+    SimulationExpired:
+      description: Sesión caducada conocida temporalmente; después de retirar su tombstone devuelve 404.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+    RateLimited:
+      description: Presupuesto de solicitudes agotado; Retry-After indica cuándo reintentar.
+      headers:
+        Retry-After:
+          schema: { type: string }
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+    SimulationCapacity:
+      description: Cupos activos, sesiones retenidas o presupuesto de memoria agotados; no se crea trabajo.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
     Unauthorized:
       description: Falta la credencial privada o no es válida.
       content:

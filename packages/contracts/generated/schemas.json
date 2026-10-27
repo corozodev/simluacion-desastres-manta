@@ -1,6 +1,810 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "definitions": {
+    "SimulationConfigInput": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Configuración acotada; propiedades desconocidas se rechazan. refuge_ids vacío o ausente usa todos los refugios predeterminados del grafo.",
+      "properties": {
+        "survivors": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 200
+        },
+        "round": {
+          "type": "string",
+          "enum": [
+            "round1",
+            "round2",
+            "round3"
+          ]
+        },
+        "refuge_ids": {
+          "type": "array",
+          "maxItems": 4,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          }
+        },
+        "rainfall_intensity": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Parámetro sintético exclusivo de urban_flood; no representa lluvia observada ni un pronóstico."
+        }
+      }
+    },
+    "SimulationConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "survivors",
+        "round",
+        "refuge_ids"
+      ],
+      "properties": {
+        "survivors": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 200
+        },
+        "round": {
+          "type": "string",
+          "enum": [
+            "round1",
+            "round2",
+            "round3"
+          ]
+        },
+        "refuge_ids": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "rainfall_intensity": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        }
+      }
+    },
+    "SimulationCreateRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "scenario",
+        "graph_profile"
+      ],
+      "properties": {
+        "scenario": {
+          "type": "string",
+          "enum": [
+            "zombie_outbreak",
+            "urban_flood"
+          ]
+        },
+        "graph_profile": {
+          "type": "string",
+          "enum": [
+            "BASE",
+            "FULL_MANTA"
+          ],
+          "default": "BASE"
+        },
+        "seed": {
+          "type": "integer",
+          "minimum": -9007199254740991,
+          "maximum": 9007199254740991,
+          "default": 20261026
+        },
+        "max_ticks": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 150,
+          "default": 150
+        },
+        "tick_interval_ms": {
+          "type": "integer",
+          "minimum": 1000,
+          "maximum": 5000,
+          "default": 2000
+        },
+        "config": {
+          "$ref": "#/definitions/SimulationConfigInput"
+        }
+      }
+    },
+    "SimulationMetadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "simulation_id",
+        "status",
+        "tick",
+        "max_ticks",
+        "state_version",
+        "scenario",
+        "graph_profile",
+        "graph_version",
+        "seed",
+        "tick_interval_ms",
+        "created_at",
+        "started_at",
+        "updated_at",
+        "expires_at",
+        "config"
+      ],
+      "properties": {
+        "simulation_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "CREATED",
+            "RUNNING",
+            "PAUSED",
+            "COMPLETED",
+            "CANCELLED",
+            "FAILED"
+          ]
+        },
+        "tick": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "max_ticks": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 150
+        },
+        "state_version": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "scenario": {
+          "type": "string",
+          "enum": [
+            "zombie_outbreak",
+            "urban_flood"
+          ]
+        },
+        "graph_profile": {
+          "type": "string",
+          "enum": [
+            "BASE",
+            "FULL_MANTA"
+          ]
+        },
+        "graph_version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "seed": {
+          "type": "integer",
+          "minimum": -9007199254740991,
+          "maximum": 9007199254740991
+        },
+        "tick_interval_ms": {
+          "type": "integer",
+          "minimum": 1000,
+          "maximum": 5000
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "started_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "ended_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "expires_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "config": {
+          "$ref": "#/definitions/SimulationConfig"
+        }
+      }
+    },
+    "SimulationCreated": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "simulation_id",
+        "status",
+        "tick",
+        "max_ticks",
+        "state_version",
+        "scenario",
+        "graph_profile",
+        "graph_version",
+        "seed",
+        "tick_interval_ms",
+        "created_at",
+        "started_at",
+        "updated_at",
+        "expires_at",
+        "config",
+        "access_token"
+      ],
+      "properties": {
+        "simulation_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "CREATED",
+            "RUNNING",
+            "PAUSED",
+            "COMPLETED",
+            "CANCELLED",
+            "FAILED"
+          ]
+        },
+        "tick": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "max_ticks": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 150
+        },
+        "state_version": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "scenario": {
+          "type": "string",
+          "enum": [
+            "zombie_outbreak",
+            "urban_flood"
+          ]
+        },
+        "graph_profile": {
+          "type": "string",
+          "enum": [
+            "BASE",
+            "FULL_MANTA"
+          ]
+        },
+        "graph_version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "seed": {
+          "type": "integer",
+          "minimum": -9007199254740991,
+          "maximum": 9007199254740991
+        },
+        "tick_interval_ms": {
+          "type": "integer",
+          "minimum": 1000,
+          "maximum": 5000
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "started_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "ended_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "expires_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "config": {
+          "$ref": "#/definitions/SimulationConfig"
+        },
+        "access_token": {
+          "type": "string",
+          "minLength": 32,
+          "description": "Credencial opaca; sólo creación, reinicio o replay idempotente. Nunca se devuelve en consultas ni controles normales."
+        }
+      }
+    },
+    "SimulationState": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "simulation_id",
+        "status",
+        "tick",
+        "max_ticks",
+        "state_version",
+        "scenario",
+        "graph_profile",
+        "graph_version",
+        "seed",
+        "tick_interval_ms",
+        "created_at",
+        "started_at",
+        "updated_at",
+        "expires_at",
+        "config",
+        "snapshot"
+      ],
+      "properties": {
+        "simulation_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "CREATED",
+            "RUNNING",
+            "PAUSED",
+            "COMPLETED",
+            "CANCELLED",
+            "FAILED"
+          ]
+        },
+        "tick": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "max_ticks": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 150
+        },
+        "state_version": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "scenario": {
+          "type": "string",
+          "enum": [
+            "zombie_outbreak",
+            "urban_flood"
+          ]
+        },
+        "graph_profile": {
+          "type": "string",
+          "enum": [
+            "BASE",
+            "FULL_MANTA"
+          ]
+        },
+        "graph_version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "seed": {
+          "type": "integer",
+          "minimum": -9007199254740991,
+          "maximum": 9007199254740991
+        },
+        "tick_interval_ms": {
+          "type": "integer",
+          "minimum": 1000,
+          "maximum": 5000
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "started_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "ended_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "expires_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "config": {
+          "$ref": "#/definitions/SimulationConfig"
+        },
+        "snapshot": {
+          "$ref": "#/definitions/WorldSnapshot"
+        },
+        "scenario_state": {
+          "$ref": "#/definitions/ScenarioSnapshot"
+        }
+      }
+    },
+    "SimulationResults": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "simulation_id",
+        "status",
+        "tick",
+        "max_ticks",
+        "state_version",
+        "scenario",
+        "graph_profile",
+        "graph_version",
+        "seed",
+        "tick_interval_ms",
+        "created_at",
+        "started_at",
+        "updated_at",
+        "expires_at",
+        "config",
+        "snapshot",
+        "results"
+      ],
+      "properties": {
+        "simulation_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "CREATED",
+            "RUNNING",
+            "PAUSED",
+            "COMPLETED",
+            "CANCELLED",
+            "FAILED"
+          ]
+        },
+        "tick": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "max_ticks": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 150
+        },
+        "state_version": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "scenario": {
+          "type": "string",
+          "enum": [
+            "zombie_outbreak",
+            "urban_flood"
+          ]
+        },
+        "graph_profile": {
+          "type": "string",
+          "enum": [
+            "BASE",
+            "FULL_MANTA"
+          ]
+        },
+        "graph_version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "seed": {
+          "type": "integer",
+          "minimum": -9007199254740991,
+          "maximum": 9007199254740991
+        },
+        "tick_interval_ms": {
+          "type": "integer",
+          "minimum": 1000,
+          "maximum": 5000
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "started_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "ended_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "expires_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "config": {
+          "$ref": "#/definitions/SimulationConfig"
+        },
+        "snapshot": {
+          "$ref": "#/definitions/WorldSnapshot"
+        },
+        "scenario_state": {
+          "$ref": "#/definitions/ScenarioSnapshot"
+        },
+        "results": {
+          "$ref": "#/definitions/SimulationResultMetrics"
+        }
+      }
+    },
+    "SimulationResultMetrics": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "initial_survivors",
+        "evacuated",
+        "bitten",
+        "active",
+        "survival_rate",
+        "refuges_used"
+      ],
+      "properties": {
+        "initial_survivors": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "evacuated": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "bitten": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "active": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "survival_rate": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "refuges_used": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "SimulationScenarioCapability": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name",
+        "available",
+        "synthetic"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "enum": [
+            "zombie_outbreak",
+            "urban_flood"
+          ]
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "available": {
+          "type": "boolean"
+        },
+        "synthetic": {
+          "type": "boolean"
+        }
+      }
+    },
+    "SimulationGraphProfile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name",
+        "available",
+        "graph_version",
+        "nodes",
+        "edges"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "enum": [
+            "BASE",
+            "FULL_MANTA"
+          ]
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "available": {
+          "type": "boolean"
+        },
+        "graph_version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "nodes": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "edges": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "disabled_reason": {
+          "type": "string"
+        }
+      }
+    },
+    "SimulationDefaults": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "scenario",
+        "graph_profile",
+        "seed",
+        "max_ticks",
+        "tick_interval_ms",
+        "survivors",
+        "round"
+      ],
+      "properties": {
+        "scenario": {
+          "type": "string",
+          "enum": [
+            "zombie_outbreak",
+            "urban_flood"
+          ]
+        },
+        "graph_profile": {
+          "type": "string",
+          "enum": [
+            "BASE",
+            "FULL_MANTA"
+          ]
+        },
+        "seed": {
+          "type": "integer",
+          "minimum": -9007199254740991,
+          "maximum": 9007199254740991
+        },
+        "max_ticks": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 150
+        },
+        "tick_interval_ms": {
+          "type": "integer",
+          "minimum": 1000,
+          "maximum": 5000
+        },
+        "survivors": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 200
+        },
+        "round": {
+          "type": "string",
+          "enum": [
+            "round1",
+            "round2",
+            "round3"
+          ]
+        }
+      }
+    },
+    "SimulationLimits": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "max_active",
+        "max_full_active",
+        "max_retained",
+        "max_memory_bytes",
+        "min_tick_interval_ms",
+        "max_tick_interval_ms",
+        "max_ticks",
+        "max_survivors"
+      ],
+      "properties": {
+        "max_active": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "max_full_active": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "max_retained": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "max_memory_bytes": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "min_tick_interval_ms": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "max_tick_interval_ms": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "max_ticks": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "max_survivors": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "SimulationCapabilities": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "scenarios",
+        "graph_profiles",
+        "defaults",
+        "limits",
+        "rounds"
+      ],
+      "properties": {
+        "scenarios": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/SimulationScenarioCapability"
+          }
+        },
+        "graph_profiles": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/SimulationGraphProfile"
+          }
+        },
+        "defaults": {
+          "$ref": "#/definitions/SimulationDefaults"
+        },
+        "limits": {
+          "$ref": "#/definitions/SimulationLimits"
+        },
+        "rounds": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/SimulationRound"
+          }
+        }
+      }
+    },
     "GraphNode": {
       "type": "object",
       "additionalProperties": false,
@@ -1079,7 +1883,9 @@
             "CONFLICT",
             "UNAVAILABLE",
             "TIMEOUT",
-            "METHOD_NOT_ALLOWED"
+            "METHOD_NOT_ALLOWED",
+            "EXPIRED",
+            "RATE_LIMITED"
           ]
         },
         "message": {

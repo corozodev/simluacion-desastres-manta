@@ -1,0 +1,12 @@
+{
+  "scenario": "zombie_outbreak",
+  "graph_profile": "BASE",
+  "seed": 20261026,
+  "max_ticks": 150,
+  "tick_interval_ms": 2000,
+  "config": {
+    "survivors": 20,
+    "round": "round1",
+    "refuge_ids": []
+  }
+}
