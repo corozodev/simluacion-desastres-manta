@@ -86,7 +86,7 @@ describe('observación del mundo', () => {
     expect(routeGeometry(urbanGraph, { ...urbanWorld.survivors[0]!, current_node: 'N-0001', planned_route: ['N-0001', 'N-0000'] })).toEqual([...road.geometry].reverse());
   });
 
-  it('recupera la observación al reintentar después de una desconexión sin depender del mock', async () => {
+  it('recupera la observación al reintentar después de una desconexión', async () => {
     let stateRequests = 0;
     vi.spyOn(globalThis, 'fetch').mockImplementation(async input => {
       if (new URL(String(input)).pathname === '/estado' && stateRequests++ === 0) return new Response(JSON.stringify({ error: { code: 'UNAVAILABLE', message: 'Snapshot temporalmente desconectado.', requestId: 'retry-world', details: [] } }), { status: 503 });

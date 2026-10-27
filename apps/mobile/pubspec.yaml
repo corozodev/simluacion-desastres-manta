@@ -1,5 +1,5 @@
 name: corodev_spooky
-description: Cliente adaptable de CoroDev — Spooky Starter.
+description: Cliente de observación de Escape de Manta sobre la API Go.
 publish_to: none
 version: 0.1.0+1
 

@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 
 import '../core/api/api_failure.dart';
-import '../core/api/generated/models.dart';
 import '../core/theme/tokens.g.dart';
 
 class PageHeader extends StatelessWidget {
@@ -128,89 +126,4 @@ class ErrorState extends StatelessWidget {
       ),
     );
   }
-}
-
-class StatusBadge extends StatelessWidget {
-  const StatusBadge({super.key, required this.status});
-  final String status;
-
-  @override
-  Widget build(BuildContext context) {
-    final (color, label) = switch (status) {
-      'active' => (SpookyTokens.success, 'Activo'),
-      'pending' => (SpookyTokens.warning, 'Pendiente'),
-      'completed' => (SpookyTokens.accent, 'Completado'),
-      _ => (SpookyTokens.textSecondary, status),
-    };
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: SpookyTokens.spacing3,
-        vertical: SpookyTokens.spacing1,
-      ),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: .1),
-        borderRadius: BorderRadius.circular(SpookyTokens.radiusSm),
-        border: Border.all(color: color.withValues(alpha: .3)),
-      ),
-      child: Text(label, style: TextStyle(fontSize: 12, color: color)),
-    );
-  }
-}
-
-class ItemCard extends StatelessWidget {
-  const ItemCard({super.key, required this.item});
-  final DemoItem item;
-
-  @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.only(bottom: SpookyTokens.spacing3),
-    child: Card(
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: () => context.go('/items/${Uri.encodeComponent(item.id)}'),
-        child: Padding(
-          padding: const EdgeInsets.all(SpookyTokens.spacing4),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      item.id.toUpperCase(),
-                      style: const TextStyle(
-                        color: SpookyTokens.textSecondary,
-                        letterSpacing: 1,
-                        fontSize: 11,
-                      ),
-                    ),
-                  ),
-                  StatusBadge(status: item.status),
-                ],
-              ),
-              const SizedBox(height: SpookyTokens.spacing3),
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      item.title,
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                  ),
-                  const Icon(Icons.arrow_outward_rounded, size: 18),
-                ],
-              ),
-              const SizedBox(height: SpookyTokens.spacing2),
-              Text(
-                item.description,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(color: SpookyTokens.textSecondary),
-              ),
-            ],
-          ),
-        ),
-      ),
-    ),
-  );
 }

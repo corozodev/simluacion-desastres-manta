@@ -1,6 +1,6 @@
 import { spawn } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
-import { mkdtemp, readFile, rm } from 'node:fs/promises';
+import { mkdtemp, readFile, rm, mkdir } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -111,7 +111,7 @@ try {
     web = spawn(process.execPath, [path.join(root, 'node_modules/vite/bin/vite.js'), '--host', '127.0.0.1', '--port', '5174', '--strictPort'], {
       cwd: path.join(root, 'apps/web'),
       stdio: 'ignore',
-      env: { ...process.env, VITE_API_MODE: 'mock', VITE_API_BASE_URL: 'http://localhost:3001', VITE_WORLD_API_BASE_URL: baseUrl },
+      env: { ...process.env, VITE_WORLD_API_BASE_URL: baseUrl },
     });
     let webReady = false;
     for (let attempt = 0; attempt < 100; attempt++) {
@@ -122,10 +122,13 @@ try {
     if (!webReady) throw new Error('Vite did not start on port 5174');
     browser = await chromium.launch(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE } : {});
     const page = await browser.newPage({ viewport: { width: 1440, height: 1100 } });
-    const credentialLeaks = [], demoHealthRequests = [];
+    const credentialLeaks = [], legacyRequests = [], unexpectedApiRequests = [];
+    const publicWorldRoutes = new Set(['/healthz', '/grafo', '/estado']);
     page.on('request', request => {
       if (request.url().startsWith(baseUrl) && request.headers()['x-api-key']) credentialLeaks.push(request.url());
-      if (new URL(request.url()).pathname === '/health') demoHealthRequests.push(request.url());
+      const route = new URL(request.url()).pathname;
+      if (route === '/health' || route.startsWith('/v1/demo/')) legacyRequests.push(request.url());
+      if (request.url().startsWith(baseUrl) && !publicWorldRoutes.has(route)) unexpectedApiRequests.push(route);
     });
     await page.goto('http://127.0.0.1:5174/escape');
     await page.getByRole('img', { name: /Red de evacuación y posiciones observables/ }).waitFor();
@@ -143,10 +146,20 @@ try {
     await page.getByRole('cell', { name: survivor.id, exact: true }).waitFor();
     await page.getByText('Refugio asignado:', { exact: false }).waitFor();
     if (urban && await page.locator('.escape-spawn-zone').count() !== 4) throw new Error('Urban spawn polygons missing in browser');
+    const screenshotDir = process.env.PHASE3B_BROWSER_SCREENSHOT_DIR;
+    if (screenshotDir) {
+      await mkdir(screenshotDir, { recursive: true });
+      await page.screenshot({ path: path.join(screenshotDir, 'desktop-local-go.png'), fullPage: true });
+    }
     await page.setViewportSize({ width: 390, height: 844 });
     if (await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth)) throw new Error('Escape page overflows mobile viewport');
+    if (screenshotDir) {
+      await page.waitForTimeout(300);
+      await page.screenshot({ path: path.join(screenshotDir, 'mobile-local-go.png'), fullPage: true });
+    }
     if (credentialLeaks.length) throw new Error('Browser sent movement credentials');
-    if (demoHealthRequests.length) throw new Error('Escape connection incorrectly queried the demo health API');
+    if (legacyRequests.length) throw new Error('Client requested an obsolete API route');
+    if (unexpectedApiRequests.length) throw new Error('Browser requested a non-observation API route');
     console.log(`React navegador correcto: ${urban ? 'Manta v2' : 'Manta v1'}, geometrías, zoom/desplazamiento, búsqueda y ruta; viewport móvil sin desborde ni credenciales.`);
   }
 } finally {

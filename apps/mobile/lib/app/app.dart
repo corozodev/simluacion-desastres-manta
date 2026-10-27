@@ -3,55 +3,23 @@ import 'package:go_router/go_router.dart';
 
 import '../core/theme/app_theme.dart';
 import '../core/theme/brand.g.dart';
-import '../features/demo/demo_form_screen.dart';
-import '../features/diagnostics/diagnostics_screen.dart';
-import '../features/home/home_screen.dart';
 import '../features/escape/escape_screen.dart';
-import '../features/items/item_detail_screen.dart';
-import '../features/items/items_screen.dart';
 import 'app_shell.dart';
 
-GoRouter createRouter({String initialLocation = '/'}) => GoRouter(
+GoRouter createRouter({String initialLocation = '/escape'}) => GoRouter(
   initialLocation: initialLocation,
+  redirect: (context, state) => state.uri.path == '/escape' ? null : '/escape',
   routes: [
     ShellRoute(
       builder: (context, state, child) => AppShell(child: child),
       routes: [
-        GoRoute(path: '/', builder: (context, state) => const HomeScreen()),
         GoRoute(
           path: '/escape',
           builder: (context, state) => const EscapeScreen(),
         ),
-        GoRoute(
-          path: '/items',
-          builder: (context, state) => const ItemsScreen(),
-          routes: [
-            GoRoute(
-              path: ':id',
-              builder: (context, state) =>
-                  ItemDetailScreen(id: state.pathParameters['id']!),
-            ),
-          ],
-        ),
-        GoRoute(
-          path: '/demo',
-          builder: (context, state) => const DemoFormScreen(),
-        ),
-        GoRoute(
-          path: '/diagnostics',
-          builder: (context, state) => const DiagnosticsScreen(),
-        ),
       ],
     ),
   ],
-  errorBuilder: (context, state) => Scaffold(
-    body: Center(
-      child: FilledButton(
-        onPressed: () => context.go('/'),
-        child: const Text('Ir al inicio'),
-      ),
-    ),
-  ),
 );
 
 class SpookyApp extends StatefulWidget {

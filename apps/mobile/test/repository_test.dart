@@ -1,7 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:corodev_spooky/core/api/api_failure.dart';
-import 'package:corodev_spooky/core/api/demo_repository.dart';
+import 'package:corodev_spooky/core/api/world_repository.dart';
 import 'package:corodev_spooky/core/api/dio_client.dart';
 import 'package:corodev_spooky/core/config/api_config.dart';
 import 'package:dio/dio.dart';
@@ -23,7 +23,7 @@ class _Adapter implements HttpClientAdapter {
 }
 
 void main() {
-  test('configuration rejects credentials, query secrets and invalid mode', () {
+  test('configuration rejects credentials and query secrets', () {
     for (final url in [
       'https://user:secret@example.com',
       'https://example.com?token=secret',
@@ -33,8 +33,8 @@ void main() {
       expect(() => ApiConfig(baseUrl: url), throwsArgumentError);
     }
     expect(
-      () => ApiConfig(baseUrl: 'https://example.com', mode: 'unknown'),
-      throwsArgumentError,
+      ApiConfig.fromEnvironment().baseUrl,
+      'https://api.sistemamanta.lexinnovate.com',
     );
     final config = ApiConfig(baseUrl: 'https://example.com/stage');
     expect(config.displayUrl, 'https://example.com/stage');
@@ -44,7 +44,7 @@ void main() {
     final dio = createDio(ApiConfig(baseUrl: 'https://api.example.com/dev'));
     addTearDown(() => dio.close());
     dio.httpClientAdapter = _Adapter((request) {
-      expect(request.uri.toString(), 'https://api.example.com/dev/health');
+      expect(request.uri.toString(), 'https://api.example.com/dev/healthz');
       return ResponseBody.fromString(
         '{"status":"ok","service":"test","version":"0.1.0"}',
         200,
@@ -53,7 +53,7 @@ void main() {
         },
       );
     });
-    expect((await HttpDemoRepository(dio).health()).status, 'ok');
+    expect((await HttpWorldRepository(dio).health()).status, 'ok');
   });
 
   test(
@@ -72,7 +72,7 @@ void main() {
         ),
       );
       await expectLater(
-        HttpDemoRepository(dio).health(),
+        HttpWorldRepository(dio).health(),
         throwsA(
           isA<ApiFailure>()
               .having((error) => error.code, 'code', 'VALIDATION_ERROR')
@@ -98,7 +98,7 @@ void main() {
         throw DioException(requestOptions: options, type: type);
       });
       await expectLater(
-        HttpDemoRepository(dio).health(),
+        HttpWorldRepository(dio).health(),
         throwsA(isA<ApiFailure>().having((error) => error.code, 'code', code)),
       );
     });
@@ -111,7 +111,7 @@ void main() {
       (request) => ResponseBody.fromString('upstream error', 502),
     );
     await expectLater(
-      HttpDemoRepository(dio).health(),
+      HttpWorldRepository(dio).health(),
       throwsA(
         isA<ApiFailure>().having((error) => error.code, 'code', 'HTTP_ERROR'),
       ),
@@ -131,7 +131,7 @@ void main() {
       ),
     );
     await expectLater(
-      HttpDemoRepository(dio).health(),
+      HttpWorldRepository(dio).health(),
       throwsA(
         isA<ApiFailure>().having(
           (error) => error.code,

@@ -19,6 +19,8 @@ void main() {
       );
       addTearDown(() => dio.close(force: true));
       final repository = HttpWorldRepository(dio);
+      final health = await repository.health();
+      expect(health.service, 'corodev-evacuation');
       final graph = await repository.graph();
       final world = await repository.state();
       expect(graph.nodes, hasLength(300));

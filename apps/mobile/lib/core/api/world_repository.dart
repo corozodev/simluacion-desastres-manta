@@ -19,6 +19,7 @@ bool _validShelter(Shelter shelter) =>
             shelter.capacity);
 
 abstract interface class WorldRepository {
+  Future<HealthResponse> health();
   Future<WorldSnapshot> state();
   Future<Graph> graph();
   Future<Survivor> survivor(String id);
@@ -27,6 +28,18 @@ abstract interface class WorldRepository {
 class HttpWorldRepository implements WorldRepository {
   const HttpWorldRepository(this.dio);
   final Dio dio;
+
+  @override
+  Future<HealthResponse> health() =>
+      requestJson(() => dio.get('healthz'), (json) {
+        final result = HealthResponse.fromJson(json);
+        if (result.status != 'ok' ||
+            result.service.isEmpty ||
+            result.version.isEmpty) {
+          throw const FormatException('Invalid health response');
+        }
+        return result;
+      });
 
   @override
   Future<WorldSnapshot> state() => requestJson(() => dio.get('estado'), (json) {

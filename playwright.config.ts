@@ -9,26 +9,18 @@ export default defineConfig({
   use: {
     baseURL: 'http://localhost:5173',
     trace: 'retain-on-failure',
-    launchOptions: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE
-      ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE }
-      : {},
+    launchOptions: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE } : {},
   },
   projects: [
     { name: 'desktop', use: { ...devices['Desktop Chrome'], viewport: { width: 1440, height: 1100 } } },
     { name: 'mobile', use: { ...devices['Pixel 7'], defaultBrowserType: 'chromium' } },
   ],
-  webServer: [
-    {
-      command: 'npm run build:api && npm run start -w @corodev/mock-api',
-      url: 'http://127.0.0.1:3001/health',
-      reuseExistingServer: false,
-      env: { HOST: '127.0.0.1', PORT: '3001', NODE_ENV: 'test', CORS_ORIGINS: 'http://localhost:5173' },
-    },
-    {
-      command: 'npm run dev:web',
-      url: 'http://localhost:5173',
-      reuseExistingServer: false,
-      env: { VITE_API_MODE: 'mock', VITE_API_BASE_URL: 'http://localhost:3001' },
-    },
-  ],
+  // Browser tests intercept this explicit Go origin with contract test doubles.
+  // Real Go integration is verified separately by tools/qa/check_http_contracts.mjs.
+  webServer: {
+    command: 'npm run dev:web',
+    url: 'http://localhost:5173',
+    reuseExistingServer: false,
+    env: { VITE_WORLD_API_BASE_URL: 'http://127.0.0.1:8089' },
+  },
 });

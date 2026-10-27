@@ -10,8 +10,6 @@ Lee primero el `AGENTS.md` raíz. Ejecuta comandos desde la raíz con `npm run �
 - Mantén navegación por teclado, foco visible, etiquetas y estados de carga, vacío y error. Usa español para la interfaz.
 - Pruebas de interacción en `src/tests`; `npm run test --workspace @corodev/web`, `npm run typecheck --workspace @corodev/web`, `npm run build --workspace @corodev/web`.
 
-El formulario confirma envíos HTTP; no afirma persistencia permanente. Las fechas de los elementos son fixtures de demostración.
+El cliente sólo observa la API Go mediante `/healthz`, `/grafo` y `/estado`; no incorpora credenciales ni llama `/paso`. `/escape` es la entrada y única pantalla. `VITE_WORLD_API_BASE_URL` selecciona explícitamente la instancia Go, con HTTPS de producción por defecto. No introducir fuentes de datos de ejemplo en runtime; los dobles HTTP sólo pertenecen a pruebas.
 
-Track A: `/escape` utiliza `api.world`/`api.graph`, modelos generados y polling con TanStack Query. `VITE_WORLD_API_BASE_URL` es una URL pública de observación; por defecto reutiliza la URL de la API demo. Usa `http://localhost:8080` para el backend Go. Los endpoints de movimiento y sus credenciales permanecen exclusivamente en Go. Conserva la atribución de OSM y diferencia el fixture sintético del mock.
-
-FASE 2: `WorldMap.tsx` conserva geometrías reales, zonas de aparición y envolvente urbana de referencia. No describir esa envolvente como límite oficial ni afirmar que el grafo operativo cubre todas las calles. Mostrar solo una ruta seleccionada y amenazas publicadas. `/escape` usa su propio estado de conexión; conservar separada la salud del mock demo. Los nuevos campos de reservas/geometrías son opcionales para mantener compatibilidad con fixtures anteriores.
+`WorldMap.tsx` conserva geometrías reales, zonas de aparición y envolvente de referencia urbana. No afirmar cobertura vial completa ni límites municipales oficiales. Mostrar sólo la ruta seleccionada y amenazas publicadas. AppShell comparte la caché de Escape sin otro temporizador de polling.

@@ -2,9 +2,9 @@
 
 abstract final class AppBrand {
   static const String team = "CoroDev";
-  static const String name = "Spooky Starter";
-  static const String subtitle = "Tu próxima idea empieza aquí.";
+  static const String name = "Escape de Manta Zombie";
+  static const String subtitle = "Simulación de evacuación en Manta.";
   static const String version = "0.1.0";
-  static const String overviewTitle = "Un buen comienzo. Una gran idea por venir.";
-  static const String description = "Una base compartida para construir lo que viene. Explora los registros de demostración y comprueba tu conexión.";
+  static const String overviewTitle = "Escape de Manta Zombie";
+  static const String description = "Observa el mapa, los turnos y el estado de la simulación de evacuación en Manta.";
 }

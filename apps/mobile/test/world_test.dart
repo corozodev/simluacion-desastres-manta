@@ -15,8 +15,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'support/fake_repository.dart';
-
 Map<String, dynamic> worldJson() {
   final value =
       jsonDecode(
@@ -61,6 +59,12 @@ class _Adapter implements HttpClientAdapter {
 }
 
 class _Repository implements WorldRepository {
+  @override
+  Future<HealthResponse> health() async => const HealthResponse(
+    status: 'ok',
+    service: 'corodev-evacuation',
+    version: '0.1.0',
+  );
   final WorldSnapshot world = WorldSnapshot.fromJson(worldJson());
 
   @override
@@ -164,20 +168,19 @@ void main() {
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
-      final router = createRouter(initialLocation: '/escape');
+      final router = createRouter(initialLocation: '/');
       addTearDown(router.dispose);
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [
-            repositoryProvider.overrideWithValue(FakeRepository()),
-            worldRepositoryProvider.overrideWithValue(_Repository()),
-          ],
+          overrides: [worldRepositoryProvider.overrideWithValue(_Repository())],
           child: SpookyApp(router: router),
         ),
       );
       await tester.pumpAndSettle();
-      expect(find.text('Escape de Manta Zombie'), findsOneWidget);
-      expect(find.byType(NavigationBar), findsOneWidget);
+      expect(find.text('Escape de Manta Zombie'), findsWidgets);
+      expect(find.byType(NavigationBar), findsNothing);
+      expect(find.byTooltip('API evacuación conectada'), findsOneWidget);
+      expect(router.routeInformationProvider.value.uri.path, '/escape');
       expect(find.text('Estado conectado'), findsOneWidget);
       expect(find.widgetWithText(ListTile, 'S-0001'), findsOneWidget);
       await tester.enterText(

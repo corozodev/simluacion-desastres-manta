@@ -1,24 +1,10 @@
-import type { DemoItem, ErrorResponse, HealthResponse, ItemListResponse, SubmitRequest, SubmitResponse, Graph, WorldSnapshot, Survivor, Shelter, Zombie } from '@corodev/contracts';
+import type { ErrorResponse, HealthResponse, Graph, WorldSnapshot, Survivor, Shelter, Zombie } from '@corodev/contracts';
 import { config } from '../lib/config';
-
-export class ApiError extends Error {
-  constructor(
-    message: string,
-    public readonly code: string,
-    public readonly status?: number,
-    public readonly requestId?: string,
-    public readonly details: { field: string; message: string }[] = [],
-  ) { super(message); this.name = 'ApiError'; }
-}
+import { ApiError } from './errors';
+export { ApiError } from './errors';
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
-}
-
-function isItem(value: unknown): value is DemoItem {
-  return isObject(value) && typeof value.id === 'string' && typeof value.title === 'string'
-    && typeof value.description === 'string' && ['active', 'pending', 'completed'].includes(String(value.status))
-    && typeof value.createdAt === 'string' && !Number.isNaN(Date.parse(value.createdAt));
 }
 
 function isErrorResponse(value: unknown): value is ErrorResponse {
@@ -29,7 +15,7 @@ function isErrorResponse(value: unknown): value is ErrorResponse {
       && typeof detail.field === 'string' && typeof detail.message === 'string');
 }
 
-async function request<T>(path: string, validate: (value: unknown) => value is T, init?: RequestInit, signal?: AbortSignal, baseUrl = config.apiBaseUrl): Promise<T> {
+async function request<T>(path: string, validate: (value: unknown) => value is T, init?: RequestInit, signal?: AbortSignal, baseUrl = config.worldApiBaseUrl): Promise<T> {
   if (config.error) throw new ApiError(config.error, 'CONFIGURATION_ERROR');
   const controller = new AbortController();
   let timedOut = false;
@@ -117,19 +103,8 @@ function isWorld(value: unknown): value is WorldSnapshot {
 }
 
 export const api = {
-  world: (signal?: AbortSignal) => request<WorldSnapshot>('/estado', isWorld, undefined, signal, config.worldApiBaseUrl),
-  graph: (signal?: AbortSignal) => request<Graph>('/grafo', isGraph, undefined, signal, config.worldApiBaseUrl),
-  health: (signal?: AbortSignal) => request<HealthResponse>('/health', (value): value is HealthResponse =>
+  world: (signal?: AbortSignal) => request<WorldSnapshot>('/estado', isWorld, undefined, signal),
+  graph: (signal?: AbortSignal) => request<Graph>('/grafo', isGraph, undefined, signal),
+  health: (signal?: AbortSignal) => request<HealthResponse>('/healthz', (value): value is HealthResponse =>
     isObject(value) && value.status === 'ok' && typeof value.service === 'string' && typeof value.version === 'string', undefined, signal),
-  items: (page = 1, pageSize = 6, q = '', signal?: AbortSignal) => {
-    const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize), ...(q ? { q } : {}) });
-    return request<ItemListResponse>(`/v1/demo/items?${params}`, (value): value is ItemListResponse =>
-      isObject(value) && Array.isArray(value.data) && value.data.every(isItem) && isObject(value.pagination)
-      && Number.isInteger(value.pagination.page) && Number.isInteger(value.pagination.pageSize)
-      && Number.isInteger(value.pagination.total) && Number(value.pagination.total) >= 0, undefined, signal);
-  },
-  item: (id: string, signal?: AbortSignal) => request<DemoItem>(`/v1/demo/items/${encodeURIComponent(id)}`, isItem, undefined, signal),
-  submit: (body: SubmitRequest) => request<SubmitResponse>('/v1/demo/submit', (value): value is SubmitResponse =>
-    isObject(value) && typeof value.submissionId === 'string' && value.status === 'accepted' && typeof value.message === 'string',
-  { method: 'POST', body: JSON.stringify(body) }),
 };

@@ -174,18 +174,6 @@ class _EscapeScreenState extends ConsumerState<EscapeScreen> {
                       ),
                     ),
                   ),
-              if (world.events.any(
-                (event) => event.type == 'synthetic_fixture',
-              ))
-                const Padding(
-                  padding: EdgeInsets.symmetric(
-                    vertical: SpookyTokens.spacing4,
-                  ),
-                  child: Text(
-                    'Fixture sintética estática; no es el mapa real de Manta.',
-                    style: TextStyle(color: SpookyTokens.textSecondary),
-                  ),
-                ),
             ],
           ),
           loading: () => const LoadingState(),

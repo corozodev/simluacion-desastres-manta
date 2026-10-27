@@ -1,9 +1,9 @@
 // GENERATED from packages/design-tokens. Do not edit.
 export const brand = {
   "team": "CoroDev",
-  "name": "Spooky Starter",
-  "subtitle": "Tu próxima idea empieza aquí.",
+  "name": "Escape de Manta Zombie",
+  "subtitle": "Simulación de evacuación en Manta.",
   "version": "0.1.0",
-  "overviewTitle": "Un buen comienzo. Una gran idea por venir.",
-  "description": "Una base compartida para construir lo que viene. Explora los registros de demostración y comprueba tu conexión."
+  "overviewTitle": "Escape de Manta Zombie",
+  "description": "Observa el mapa, los turnos y el estado de la simulación de evacuación en Manta."
 } as const;

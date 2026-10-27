@@ -14,7 +14,7 @@
     "packages/design-tokens"
   ],
   "scripts": {
-    "dev:api": "npm run dev -w @corodev/mock-api",
+    "dev:api": "npm run dev:backend",
     "dev:web": "npm run dev -w @corodev/web",
     "contracts:validate": "node tools/codegen/contracts.mjs --validate",
     "contracts:generate": "node tools/codegen/contracts.mjs",
@@ -25,11 +25,11 @@
     "check": "npm run contracts:validate && npm run generated:check && npm run typecheck && npm run lint",
     "test": "npm run test --workspaces --if-present",
     "build:web": "npm run build -w @corodev/web",
-    "build:api": "npm run build -w @corodev/mock-api",
+    "build:api": "npm run build:backend",
     "mobile:check": "node tools/scripts/flutter.mjs analyze",
     "mobile:test": "node tools/scripts/flutter.mjs test",
     "mobile:build": "node tools/scripts/flutter.mjs build apk --debug",
-    "mobile:integration": "node tools/scripts/flutter.mjs test --dart-define=RUN_HTTP_TESTS=true test/http_integration_test.dart",
+    "mobile:integration": "node tools/scripts/flutter.mjs test --dart-define=RUN_WORLD_HTTP_TESTS=true test/world_http_integration_test.dart",
     "test:e2e": "playwright test",
     "dev:backend": "node tools/scripts/go.mjs run ./cmd/server",
     "simulate": "node tools/scripts/go.mjs run ./cmd/sim",

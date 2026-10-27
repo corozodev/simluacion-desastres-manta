@@ -13,6 +13,31 @@ if (process.argv.includes('--validate')) process.exit(0);
 const contract = parse(await readFile(contractPath, 'utf8'));
 const schemas = contract.components.schemas;
 const named = Object.keys(schemas);
+// The mobile application consumes only the evacuation API. Keep the shared
+// contract intact while generating the models reachable from those operations.
+const mobileSchemas = new Set();
+function collectMobileSchemas(value) {
+  if (!value || typeof value !== 'object') return;
+  if (typeof value.$ref === 'string') {
+    const prefix = '#/components/schemas/';
+    const responsesPrefix = '#/components/responses/';
+    if (value.$ref.startsWith(prefix)) {
+      const name = value.$ref.slice(prefix.length);
+      if (!schemas[name]) throw new Error(`Unknown mobile schema ${name}`);
+      if (!mobileSchemas.has(name)) {
+        mobileSchemas.add(name);
+        collectMobileSchemas(schemas[name]);
+      }
+    } else if (value.$ref.startsWith(responsesPrefix)) {
+      collectMobileSchemas(contract.components.responses[value.$ref.slice(responsesPrefix.length)]);
+    }
+  }
+  for (const entry of Object.values(value)) collectMobileSchemas(entry);
+}
+for (const route of ['/healthz', '/grafo', '/estado', '/paso']) {
+  if (!contract.paths[route]) throw new Error(`Missing evacuation operation ${route}`);
+  collectMobileSchemas(contract.paths[route]);
+}
 const header = '// GENERATED from packages/contracts/openapi.yaml. Do not edit.\n';
 const ts = header + astToString(await openapiTS(contract)) + '\n' + named.map((name) => `export type ${name} = components['schemas']['${name}'];`).join('\n') + '\n';
 
@@ -47,7 +72,7 @@ function toJson(schema, expression) {
 }
 const dartField = (name) => name.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
 const dart = [header, '// ignore_for_file: always_put_required_named_parameters_first, use_null_aware_elements', ''];
-for (const [name, schema] of Object.entries(schemas)) {
+for (const [name, schema] of Object.entries(schemas).filter(([name]) => mobileSchemas.has(name))) {
   if (schema.type !== 'object' || !schema.properties) throw new Error(`Expected named object schema: ${name}`);
   const fields = Object.entries(schema.properties);
   const required = new Set(schema.required || []);
