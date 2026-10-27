@@ -1,0 +1,93 @@
+{
+  "recorded_at": "2026-10-27T18:19:27.387784-05:00",
+  "release": "reports-e4863a9-20261027",
+  "implementation_commit": "e4863a9b35be4b7768a7c3c4e4f51f59e7733525",
+  "repository": "https://github.com/corozodev/simluacion-desastres-manta",
+  "region": "us-east-2",
+  "instance_id": "i-05fd56f1bcb3b1aba",
+  "site": "https://sistemamanta.lexinnovate.com/flood-lab",
+  "api": "https://api.sistemamanta.lexinnovate.com",
+  "instruction_scope": {
+    "production_builds": true,
+    "tests": false,
+    "browser_tests": false,
+    "lint": false,
+    "typechecks": false,
+    "formatters": false,
+    "codegen": false,
+    "flutter_build": false
+  },
+  "publication_method": "Go static linux/amd64 executables bound read-only in the existing installed Docker image; Vite production output uploaded to existing S3/CloudFront. No Docker build, new infrastructure or application test.",
+  "runtime": {
+    "release": "reports-e4863a9-20261027",
+    "implementation_commit": "e4863a9b35be4b7768a7c3c4e4f51f59e7733525",
+    "status": "DEPLOYED",
+    "container_ids": {
+      "corodev-backend": "cad8c2f3addb20ca7bc0040ba4bc9abc35235c88dc33a568c9cff584260e3500",
+      "corodev-flood-lab": "d85b3f3dde5a0b6ff10d3cc048c3a41232188a19464ca81350eb8bc216ee50a6"
+    },
+    "backend_health": "healthy",
+    "lab_running": true,
+    "persistent_data_preserved": true,
+    "credentials_and_environment_preserved": true,
+    "tests_run": false,
+    "rollback_containers": {
+      "corodev-backend": "corodev-backend-before-reports-e4863a9-20261027",
+      "corodev-flood-lab": "corodev-flood-lab-before-reports-e4863a9-20261027"
+    },
+    "images": {
+      "corodev-backend": "sha256:b2e928a730cc9646b570229efe2e83b2ae54c6ed1439ae4beae1a863ad94214e",
+      "corodev-flood-lab": "sha256:b2e928a730cc9646b570229efe2e83b2ae54c6ed1439ae4beae1a863ad94214e"
+    },
+    "resources": {
+      "corodev-backend": {
+        "memory": 4294967296,
+        "nano_cpus": 2000000000
+      },
+      "corodev-flood-lab": {
+        "memory": 805306368,
+        "nano_cpus": 500000000
+      }
+    }
+  },
+  "artifacts": {
+    "server": {
+      "sha256": "d098cf6c797e7b324a3214bf93d60a7dd362a743ea50411847a0f33188d77444",
+      "bytes": 7868578
+    },
+    "flood-lab": {
+      "sha256": "6f8502bfb7aeaeb4a4e21aad8454ab2b0244650537e7d0a7dbe7060a1fff0d7d",
+      "bytes": 7950498
+    },
+    "web-index": {
+      "sha256": "8a81b90c97026008d509eda4793d76d7a6e94499b928ce44da8c50dedb4eb8b4",
+      "bytes": 616
+    }
+  },
+  "cloudfront": {
+    "id": "I4T04Q5FKD9G7ATVVMSZYOZSPL",
+    "status": "Completed"
+  },
+  "web_bucket": "corodev-phase2-webbucket-eolh01x4qp4e",
+  "previous_assets_retained": true,
+  "persistent_reports_preserved": true,
+  "existing_credentials_limits_and_expiry_preserved": true,
+  "backend_ssm_command": "51c303be-486c-4197-8d2e-4da24a084aff",
+  "deployment_attempts": [
+    {
+      "command": "9bce008e-9e0e-4853-8b7e-414d38126c2a",
+      "status": "ROLLED_BACK",
+      "reason": "Docker rejected explicit EXPOSE metadata with shared container networking; previous services restored."
+    },
+    {
+      "command": "51c303be-486c-4197-8d2e-4da24a084aff",
+      "status": "Success"
+    }
+  ],
+  "limitations": [
+    "No functional, browser, static-analysis or performance validation was executed.",
+    "Generated contract files intentionally unchanged; adapter extensions read additive fields until codegen is authorized.",
+    "The existing operator account must authenticate before moderation; local development cookies do not grant report moderation.",
+    "An older reader may reject newly persisted optional moderation fields; rollback must preserve new audit data."
+  ]
+}

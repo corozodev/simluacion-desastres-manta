@@ -47,3 +47,22 @@ acredita la funcionalidad de esta modificación; el despliegue se registra apart
 La auditoría privada identifica la sesión privilegiada mediante una huella
 irreversible, sin guardar su cookie ni su token. El rol de operador existente
 es el único rol administrativo disponible; no se creó un sistema de cuentas.
+
+## Archivos principales modificados
+
+- React: `features/flood/FloodLab.tsx`, `FloodMap.tsx`, `IncidentPanel.tsx`,
+  `ReferencePanel.tsx`, `incidentPresentation.ts`, `flood.css`, nuevos
+  `ActionMenu.tsx` y `CancelSimulationDialog.tsx`; `features/mobile/MobileViewer.tsx`.
+- HTTP React: `services/api.ts`, `queries.ts`, nuevo `incidentTypes.ts`;
+  `components/OperatorAccess.tsx` reutiliza el acceso existente para moderación.
+- Contrato: `packages/contracts/openapi.yaml`.
+- Backend: `internal/incidents/models.go` y `store.go`;
+  `internal/floodlab/incident_http.go`, nuevo `incident_permissions.go` y
+  cierre de recursos de cancelación en `manager.go`.
+- Flutter: `core/api/incident_repository.dart`,
+  `features/escape/escape_screen.dart`, `route_map.dart` y
+  `features/incidents/incident_report_screen.dart`.
+
+Los archivos generados permanecen sin modificar. Un binario antiguo que lea
+el almacén con campos nuevos puede necesitar una versión compatible para
+retroceder; no deben descartarse revisiones nuevas para restaurar un snapshot.
