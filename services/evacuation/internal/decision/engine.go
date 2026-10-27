@@ -133,7 +133,7 @@ func wait(s world.Survivor) world.DecisionResult {
 // Without an assignment it selects from shared candidate plans. Neither path
 // reserves capacity or mutates the authoritative world.
 func (e *DeterministicEngine) NextStep(ctx context.Context, w world.WorldSnapshot, s world.Survivor) world.DecisionResult {
-	if ctx.Err() != nil || s.Status != world.Active || w.Graph == nil {
+	if ctx.Err() != nil || s.Status != world.Active || w.Graph == nil || world.AgentWaiting(w, s.ID) {
 		return wait(s)
 	}
 	b := e.prepare(ctx, w)
@@ -163,7 +163,7 @@ func (e *DeterministicEngine) NextStep(ctx context.Context, w world.WorldSnapsho
 // Candidates computes at most one route per refuge. Occupancy is authoritative;
 // previous reservations are deliberately ignored while D reallocates the cohort.
 func (e *DeterministicEngine) Candidates(ctx context.Context, w world.WorldSnapshot, s world.Survivor) []world.DecisionResult {
-	if ctx.Err() != nil || s.Status != world.Active || w.Graph == nil {
+	if ctx.Err() != nil || s.Status != world.Active || w.Graph == nil || world.AgentWaiting(w, s.ID) {
 		return nil
 	}
 	b := e.prepare(ctx, w)
@@ -176,7 +176,7 @@ func (e *DeterministicEngine) Candidates(ctx context.Context, w world.WorldSnaps
 // Escape is a one-edge emergency without a refuge target. Hard restrictions and
 // forecast weights are shared with normal routing.
 func (e *DeterministicEngine) Escape(ctx context.Context, w world.WorldSnapshot, s world.Survivor) world.DecisionResult {
-	if ctx.Err() != nil || s.Status != world.Active || w.Graph == nil {
+	if ctx.Err() != nil || s.Status != world.Active || w.Graph == nil || world.AgentWaiting(w, s.ID) {
 		return wait(s)
 	}
 	b := e.prepare(ctx, w)
@@ -221,7 +221,7 @@ func (e *DeterministicEngine) prepare(ctx context.Context, w world.WorldSnapshot
 		}
 		result.env, result.plans, result.shelters = env, map[string]map[string]choice{}, map[string]world.Shelter{}
 		for _, sh := range w.Shelters {
-			if !env.nodes[sh.NodeID] || env.danger[sh.NodeID] || sh.Capacity <= sh.Occupancy {
+			if !env.nodes[sh.NodeID] || env.danger[sh.NodeID] || sh.Capacity <= sh.Occupancy || world.ShelterUnavailable(w, sh.ID) {
 				continue
 			}
 			result.shelters[sh.ID] = sh
@@ -532,11 +532,20 @@ func buildEnvironment(ctx context.Context, w world.WorldSnapshot) (*environment,
 	for _, id := range w.BlockedEdges {
 		blocked[id] = true
 	}
+	overlay := roadOverlay(w)
+	for id, condition := range overlay {
+		if condition.blocked {
+			blocked[id] = true
+		}
+	}
 	add := func(from, to string, edge world.GraphEdge) {
 		if env.danger[to] || env.forbidden[Transition{From: from, To: to}] {
 			return
 		}
 		cost := 1 + edge.DistanceM/1000 + edge.DistanceM/(edge.SpeedMPS*100)
+		if multiplier := overlay[edge.ID].multiplier; multiplier > 1 {
+			cost *= multiplier
+		}
 		if math.IsInf(cost, 0) || math.IsNaN(cost) {
 			return
 		}
@@ -577,6 +586,33 @@ func buildEnvironment(ctx context.Context, w world.WorldSnapshot) (*environment,
 	return env, true
 }
 
+type roadEffect struct {
+	blocked    bool
+	multiplier float64
+}
+
+// Only effective restrictions and costs belong to routing. Descriptive risk
+// values and update timestamps must not invalidate shared reverse searches.
+func roadOverlay(w world.WorldSnapshot) map[string]roadEffect {
+	if w.Scenario == nil {
+		return nil
+	}
+	effects := make(map[string]roadEffect, len(w.Scenario.RoadConditions))
+	for _, condition := range w.Scenario.RoadConditions {
+		effect := effects[condition.EdgeID]
+		if condition.State == "blocked" {
+			effect.blocked = true
+		}
+		if condition.State == "caution" && condition.CostMultiplier > effect.multiplier && condition.CostMultiplier > 1 && !math.IsNaN(condition.CostMultiplier) && !math.IsInf(condition.CostMultiplier, 0) {
+			effect.multiplier = condition.CostMultiplier
+		}
+		if effect.blocked || effect.multiplier > 1 {
+			effects[condition.EdgeID] = effect
+		}
+	}
+	return effects
+}
+
 func fingerprint(ctx context.Context, w world.WorldSnapshot, prediction bool) (uint64, uint64, bool) {
 	h := fnv.New64a()
 	var numeric [8]byte
@@ -598,6 +634,7 @@ func fingerprint(ctx context.Context, w world.WorldSnapshot, prediction bool) (u
 		}
 		str(n.ID)
 	}
+	overlay := roadOverlay(w)
 	number(uint64(len(w.Graph.Edges)))
 	for i, edge := range w.Graph.Edges {
 		if i%64 == 0 && ctx.Err() != nil {
@@ -609,8 +646,12 @@ func fingerprint(ctx context.Context, w world.WorldSnapshot, prediction bool) (u
 		str(edge.RoadType)
 		number(math.Float64bits(edge.DistanceM))
 		number(math.Float64bits(edge.SpeedMPS))
-		boolean(edge.Blocked)
+		boolean(edge.Blocked || overlay[edge.ID].blocked)
 		boolean(edge.Directed)
+		if effect := overlay[edge.ID]; !edge.Blocked && !effect.blocked && effect.multiplier > 1 {
+			str("scenario_road_cost")
+			number(math.Float64bits(effect.multiplier))
+		}
 	}
 	number(uint64(len(w.BlockedEdges)))
 	for _, id := range w.BlockedEdges {
@@ -634,6 +675,9 @@ func fingerprint(ctx context.Context, w world.WorldSnapshot, prediction bool) (u
 		str(sh.NodeID)
 		number(uint64(sh.Capacity))
 		number(uint64(sh.Occupancy))
+		if world.ShelterUnavailable(w, sh.ID) {
+			str("scenario_shelter_unavailable")
+		}
 	}
 	routingKey := h.Sum64()
 	visibleRunner := false

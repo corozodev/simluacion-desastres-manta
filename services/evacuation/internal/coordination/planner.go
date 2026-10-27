@@ -82,6 +82,13 @@ func index(w world.WorldSnapshot) topology {
 	for _, id := range w.BlockedEdges {
 		blocked[id] = true
 	}
+	if w.Scenario != nil {
+		for _, condition := range w.Scenario.RoadConditions {
+			if condition.State == "blocked" {
+				blocked[condition.EdgeID] = true
+			}
+		}
+	}
 	for _, n := range w.Graph.Nodes {
 		t.nodes[n.ID] = true
 	}
@@ -197,6 +204,9 @@ func (p *Planner) Prepare(ctx context.Context, input world.WorldSnapshot) world.
 			stats.Active++
 			v.TargetShelterID = ""
 			v.PlannedRoute = []string{v.CurrentNode}
+			if world.AgentWaiting(input, v.ID) {
+				stats.Unassigned++
+			}
 		}
 		if v.Status == world.Bitten {
 			v.TargetShelterID = ""
@@ -212,7 +222,7 @@ func (p *Planner) Prepare(ctx context.Context, input world.WorldSnapshot) world.
 	requests := make([]request, 0, stats.Active)
 	order := make([]int, 0, stats.Active)
 	for i, v := range input.Survivors {
-		if v.Status == world.Active {
+		if v.Status == world.Active && !world.AgentWaiting(input, v.ID) {
 			order = append(order, i)
 		}
 	}
@@ -227,7 +237,7 @@ func (p *Planner) Prepare(ctx context.Context, input world.WorldSnapshot) world.
 		byShelter := map[string]world.DecisionResult{}
 		for _, candidate := range p.provider.Candidates(ctx, input, v) {
 			sh, exists := shelters[candidate.TargetShelterID]
-			valid := exists && capacity[sh.ID] > 0 && len(candidate.Route) > 0 && candidate.Route[len(candidate.Route)-1] == sh.NodeID && top.validRoute(candidate.Route, v.CurrentNode) && !(len(candidate.Route) == 1 && top.danger[v.CurrentNode]) && candidate.Cost >= 0 && candidate.EstimatedRisk >= 0 && !math.IsNaN(candidate.Cost) && !math.IsNaN(candidate.EstimatedRisk) && !math.IsInf(candidate.Cost, 0) && !math.IsInf(candidate.EstimatedRisk, 0)
+			valid := exists && !world.ShelterUnavailable(input, sh.ID) && capacity[sh.ID] > 0 && len(candidate.Route) > 0 && candidate.Route[len(candidate.Route)-1] == sh.NodeID && top.validRoute(candidate.Route, v.CurrentNode) && !(len(candidate.Route) == 1 && top.danger[v.CurrentNode]) && candidate.Cost >= 0 && candidate.EstimatedRisk >= 0 && !math.IsNaN(candidate.Cost) && !math.IsNaN(candidate.EstimatedRisk) && !math.IsInf(candidate.Cost, 0) && !math.IsInf(candidate.EstimatedRisk, 0)
 			if valid {
 				next := v.CurrentNode
 				if len(candidate.Route) > 1 {
