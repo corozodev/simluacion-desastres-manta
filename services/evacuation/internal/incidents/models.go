@@ -64,6 +64,9 @@ type Create struct {
 	EvidenceMetadata        *EvidenceMetadata `json:"evidence_metadata,omitempty"`
 }
 type Incident struct {
+	MapWithdrawn            bool             `json:"map_withdrawn,omitempty"`
+	ModerationNote          string           `json:"moderation_note,omitempty"`
+	OfficialSource          *OfficialSource  `json:"official_source,omitempty"`
 	SchemaVersion           int              `json:"schema_version"`
 	IncidentID              string           `json:"incident_id"`
 	IncidentType            string           `json:"incident_type"`
@@ -95,12 +98,27 @@ type List struct {
 type Query struct {
 	BBox                             *Bounds
 	IncidentType, VerificationStatus string
+	MapVisibility                    string
 	Since, Until, ReceivedAfter      time.Time
 	Limit, Offset                    int
 }
 type StatusUpdate struct {
 	VerificationStatus string    `json:"verification_status"`
 	ExpectedUpdatedAt  time.Time `json:"expected_updated_at"`
+	Note               string    `json:"note,omitempty"`
+	MapWithdrawn       *bool     `json:"map_withdrawn,omitempty"`
+	OfficialSource     *OfficialSourceInput `json:"official_source,omitempty"`
+	OfficialAck        bool      `json:"official_ack,omitempty"`
+	Reviewer           string    `json:"-"`
+}
+type OfficialSourceInput struct {
+	Title string `json:"title"`
+	URL   string `json:"url"`
+}
+type OfficialSource struct {
+	Title      string    `json:"title"`
+	URL        string    `json:"url"`
+	RecordedAt time.Time `json:"recorded_at"`
 }
 type ApplyRequest struct {
 	ExpectedRunID   string `json:"expected_run_id"`
@@ -124,6 +142,10 @@ type Application struct {
 
 func (i Incident) clone() Incident {
 	i.AffectedEdgeIDs = append([]string{}, i.AffectedEdgeIDs...)
+	if i.OfficialSource != nil {
+		source := *i.OfficialSource
+		i.OfficialSource = &source
+	}
 	return i
 }
 func (a Application) Clone() Application {

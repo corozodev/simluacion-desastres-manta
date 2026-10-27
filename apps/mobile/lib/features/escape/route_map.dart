@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../../core/api/generated/models.dart';
+import '../../core/api/incident_repository.dart';
 import '../../core/theme/tokens.g.dart';
 import '../../core/api/reference_repository.dart';
 
@@ -181,7 +182,7 @@ class _RouteMapState extends State<RouteMap> {
       }
     }
     if (widget.onSelectIncident != null) {
-      for (final report in widget.incidents) {
+      for (final report in widget.incidents.where(incidentIsMapActive)) {
         candidate(
           GeoPoint(lat: report.latitude, lng: report.longitude),
           () => widget.onSelectIncident!(report),
@@ -524,11 +525,13 @@ class _MapPainter extends CustomPainter {
           ..strokeWidth = 1.5,
       );
     }
-    for (final report in incidents) {
+    for (final report in incidents.where(incidentIsMapActive)) {
       final position = project(
         GeoPoint(lat: report.latitude, lng: report.longitude),
       );
       final pending = report.verificationStatus == 'pending';
+      final verified = report.verificationStatus == 'verified';
+      final official = report.sourceType == 'official' || incidentModeration(report).officialTitle != null;
       final shape = Path()
         ..moveTo(position.dx, position.dy - 6)
         ..lineTo(position.dx + 6, position.dy)
@@ -537,9 +540,9 @@ class _MapPainter extends CustomPainter {
         ..close();
       canvas.drawPath(
         shape,
-        Paint()..color = pending ? SpookyTokens.warning : SpookyTokens.accent,
+        Paint()..color = verified ? SpookyTokens.success : pending ? SpookyTokens.warning : SpookyTokens.accent,
       );
-      _label(canvas, position, pending ? '?' : '!');
+      _label(canvas, position, official ? 'O' : verified ? '✓' : pending ? '?' : '+');
     }
     if (marker != null) {
       final position = project(marker!);

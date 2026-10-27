@@ -5,7 +5,7 @@ import { api } from '../services/api';
 import { Button, ErrorState } from './ui';
 
 /** Operator credentials are submitted once; only the HttpOnly cookie persists. */
-export function OperatorAccess({ session, loading, error, retry }: { session?: LabSession; loading: boolean; error: Error | null; retry: () => void }) {
+export function OperatorAccess({ session, loading, error, retry, purpose = 'usar herramientas autorizadas' }: { session?: LabSession; loading: boolean; error: Error | null; retry: () => void; purpose?: string }) {
   const client = useQueryClient();
   const [operator, setOperator] = useState('');
   const accessCode = useRef<HTMLInputElement>(null);
@@ -19,6 +19,7 @@ export function OperatorAccess({ session, loading, error, retry }: { session?: L
     await client.cancelQueries({ queryKey: ['flood', 'session'] });
     const permission = await api.floodSession();
     client.setQueryData(['flood', 'session'], permission);
+    void client.invalidateQueries({ queryKey: ['incidents', 'permissions'] });
     if (!permission.authenticated) throw new Error('La sesión no habilita este laboratorio. Revisa el origen y la configuración del servicio.');
   } });
   if (loading) return <p role="status">Comprobando sesión de operador…</p>;
@@ -27,7 +28,7 @@ export function OperatorAccess({ session, loading, error, retry }: { session?: L
   if (!session?.enabled) return <p className="operator-access" role="status">Sólo observación. El acceso de operador está deshabilitado en esta instancia.</p>;
   return <details className="operator-access" open>
     <summary>Acceso de operador</summary>
-    <p>Se requiere sesión de operador para ejecutar.</p>
+    <p>Se requiere sesión de operador para {purpose}.</p>
     <form className="simulation-form" onSubmit={event => {
       event.preventDefault();
       if (gate.current) return;

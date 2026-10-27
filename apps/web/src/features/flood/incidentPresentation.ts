@@ -1,4 +1,5 @@
 import type { Incident } from '@corodev/contracts';
+import type { ModeratedIncident } from '../../services/incidentTypes';
 
 export const incidentTypeLabels: Record<Incident['incident_type'], string> = {
   flooded_road: 'Calle inundada', road_closed: 'Calle cerrada', landslide: 'Deslizamiento',
@@ -20,10 +21,19 @@ export function incidentDate(value: string) {
 export function incidentIsExpired(incident: Incident) {
   return incident.verification_status === 'expired' || Date.parse(incident.expires_at) <= Date.now();
 }
+export function incidentIsActive(incident: Incident) {
+  return !(incident as ModeratedIncident).map_withdrawn && !['rejected', 'expired'].includes(incident.verification_status) && !incidentIsExpired(incident);
+}
+export function incidentStateLabel(incident: Incident) {
+  return (incident as ModeratedIncident).map_withdrawn ? 'Retirado del mapa' : incidentStatusLabels[incident.verification_status];
+}
+export function incidentOfficialSource(incident: Incident) {
+  return (incident as ModeratedIncident).official_source;
+}
 
 export type IncidentFilterDraft = {
   type: '' | Incident['incident_type'];
-  status: '' | Incident['verification_status'];
+  status: '' | Incident['verification_status'] | 'withdrawn';
   age: '' | '1' | '24' | '168';
 };
 

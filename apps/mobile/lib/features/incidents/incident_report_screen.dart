@@ -433,7 +433,7 @@ class _IncidentReportScreenState extends ConsumerState<IncidentReportScreen> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         const Text('Enviado', style: TextStyle(color: SpookyTokens.success)),
-        Text('Estado: ${incidentStatuses[report.verificationStatus]}'),
+        Text('Estado: ${incidentDisplayStatus(report)}'),
 
         Text(incidentTypes[report.incidentType]!),
 
@@ -443,7 +443,7 @@ class _IncidentReportScreenState extends ConsumerState<IncidentReportScreen> {
         ),
 
         Text(
-          'Procedencia: ${const {'citizen': 'ciudadana', 'synthetic': 'sintética', 'official': 'oficial'}[report.sourceType]}',
+          'Procedencia: ${incidentDisplayOrigin(report)}',
         ),
         const Text('La recepción no confirma que lo reportado sea verdadero.'),
         OutlinedButton.icon(

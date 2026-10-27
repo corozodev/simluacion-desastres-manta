@@ -425,6 +425,9 @@ func (m *Manager) Act(action Action) (State, error) {
 		m.state.State = "cancelled"
 		m.state.RuntimeElapsedMS = runtimeElapsed(m.current, true)
 		m.mu.Unlock()
+		// opMu excludes a concurrent Step. Keep the confirmed final snapshot while
+		// releasing the execution's private HTTP listener and idle connections.
+		_ = m.current.app.Close()
 	case "speed":
 		if action.IntervalMS == nil || *action.IntervalMS < 0 || *action.IntervalMS > 5000 {
 			return State{}, ErrInvalid

@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"math"
+	"net/url"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -67,6 +68,18 @@ type record struct {
 	Incident     Incident `json:"incident"`
 	RawLatitude  float64  `json:"raw_latitude"`
 	RawLongitude float64  `json:"raw_longitude"`
+	Moderation   []moderationEvent `json:"moderation,omitempty"`
+}
+// Private audit: never part of the public Incident DTO. Existing snapshots load
+// without this optional field; no data migration or new store is required.
+type moderationEvent struct {
+	At             time.Time `json:"at"`
+	Reviewer       string `json:"reviewer"`
+	PreviousStatus string `json:"previous_status"`
+	Status         string `json:"status"`
+	Withdrawn      bool `json:"withdrawn"`
+	Note           string `json:"note,omitempty"`
+	OfficialSource *OfficialSource `json:"official_source,omitempty"`
 }
 type idempotency struct {
 	BodyHash   string `json:"body_hash"`
@@ -86,6 +99,7 @@ func (d diskState) clone() diskState {
 	c := emptyState()
 	for k, v := range d.Records {
 		v.Incident = v.Incident.clone()
+		v.Moderation = append([]moderationEvent(nil), v.Moderation...)
 		c.Records[k] = v
 	}
 	for k, v := range d.Idempotency {
@@ -198,6 +212,14 @@ func validDiskState(d diskState) bool {
 			return false
 		}
 	}
+	for _, r := range d.Records {
+		if utf8.RuneCountInString(r.Incident.ModerationNote) > 280 || len(r.Moderation) > 32 { return false }
+		if source := r.Incident.OfficialSource; source != nil && (!validOfficialSource(source.Title, source.URL) || source.RecordedAt.IsZero()) { return false }
+		for _, event := range r.Moderation {
+			if event.At.IsZero() || event.Reviewer == "" || !validStatus(event.Status) || !validStatus(event.PreviousStatus) || utf8.RuneCountInString(event.Note) > 280 { return false }
+			if source := event.OfficialSource; source != nil && (!validOfficialSource(source.Title, source.URL) || source.RecordedAt.IsZero()) { return false }
+		}
+	}
 	for k, v := range d.Idempotency {
 		if len(k) != 64 || len(v.BodyHash) != 64 {
 			return false
@@ -222,6 +244,10 @@ func (s *Store) writeAtomic(data diskState) error {
 	defer os.Remove(name)
 	if err = f.Chmod(0600); err == nil {
 		err = json.NewEncoder(f).Encode(data)
+	}
+	if err == nil {
+		info, statErr := f.Stat()
+		if statErr != nil { err = statErr } else if info.Size() > 64<<20 { err = ErrUnavailable }
 	}
 	if err == nil {
 		err = f.Sync()
@@ -433,7 +459,7 @@ func (s *Store) Create(input Create, key, source, client string) (Incident, bool
 		return Incident{}, false, ErrUnavailable
 	}
 	i := Incident{SchemaVersion: 1, IncidentID: id, IncidentType: input.IncidentType, Latitude: math.Round(input.Latitude*1e4) / 1e4, Longitude: math.Round(input.Longitude*1e4) / 1e4, Description: input.Description, SeverityReported: input.SeverityReported, RoadPassabilityReported: input.RoadPassabilityReported, EventTime: input.EventTime, ReceivedAt: now, SourceType: source, VerificationStatus: "pending", EvidenceMetadata: EvidenceMetadata{0, "not_supported"}, AffectedEdgeIDs: []string{resolved.Candidates[0].EdgeID}, GraphVersion: s.resolver.version, SnapDistanceM: resolved.Candidates[0].DistanceM, LocationMethod: input.LocationMethod, LocationPrecisionM: 20, ExpiresAt: now.Add(24 * time.Hour), UpdatedAt: now}
-	data.Records[id] = record{i, input.Latitude, input.Longitude}
+	data.Records[id] = record{Incident: i, RawLatitude: input.Latitude, RawLongitude: input.Longitude}
 	data.Idempotency[keyHash] = idempotency{bodyHash, id}
 	if err = s.saveLocked(data); err != nil {
 		return Incident{}, false, err
@@ -456,7 +482,7 @@ func (s *Store) List(query Query) (List, error) {
 	if query.Limit == 0 {
 		query.Limit = 100
 	}
-	if query.Limit < 1 || query.Limit > 200 || query.Offset < 0 || query.Offset > 10000 || query.IncidentType != "" && !validType(query.IncidentType) || query.VerificationStatus != "" && !validStatus(query.VerificationStatus) || !query.Since.IsZero() && !query.Until.IsZero() && query.Since.After(query.Until) {
+	if !oneOf(query.MapVisibility, "", "active", "withdrawn") || query.Limit < 1 || query.Limit > 200 || query.Offset < 0 || query.Offset > 10000 || query.IncidentType != "" && !validType(query.IncidentType) || query.VerificationStatus != "" && !validStatus(query.VerificationStatus) || !query.Since.IsZero() && !query.Until.IsZero() && query.Since.After(query.Until) {
 		return List{}, ErrInvalid
 	}
 	if b := query.BBox; b != nil && (!coordinates(b.MinLatitude, b.MinLongitude) || !coordinates(b.MaxLatitude, b.MaxLongitude) || b.MinLatitude > b.MaxLatitude || b.MinLongitude > b.MaxLongitude) {
@@ -470,7 +496,10 @@ func (s *Store) List(query Query) (List, error) {
 	all := []Incident{}
 	for _, r := range s.data.Records {
 		i := r.Incident
-		if query.IncidentType != "" && i.IncidentType != query.IncidentType || query.VerificationStatus != "" && i.VerificationStatus != query.VerificationStatus || query.VerificationStatus == "" && oneOf(i.VerificationStatus, "rejected", "expired") || query.BBox != nil && !within(*query.BBox, i.Latitude, i.Longitude) || !query.Since.IsZero() && i.EventTime.Before(query.Since) || !query.Until.IsZero() && i.EventTime.After(query.Until) || !query.ReceivedAfter.IsZero() && !i.ReceivedAt.After(query.ReceivedAfter) {
+		if (query.MapVisibility == "withdrawn") != i.MapWithdrawn {
+			continue
+		}
+		if query.IncidentType != "" && i.IncidentType != query.IncidentType || query.VerificationStatus != "" && i.VerificationStatus != query.VerificationStatus || query.VerificationStatus == "" && query.MapVisibility != "withdrawn" && oneOf(i.VerificationStatus, "rejected", "expired") || query.BBox != nil && !within(*query.BBox, i.Latitude, i.Longitude) || !query.Since.IsZero() && i.EventTime.Before(query.Since) || !query.Until.IsZero() && i.EventTime.After(query.Until) || !query.ReceivedAfter.IsZero() && !i.ReceivedAt.After(query.ReceivedAfter) {
 			continue
 		}
 		all = append(all, i.clone())
@@ -485,8 +514,17 @@ func (s *Store) List(query Query) (List, error) {
 	end := min(start+query.Limit, len(all))
 	return List{all[start:end], len(all), query.Limit, query.Offset, end < len(all)}, nil
 }
+func validOfficialSource(title, value string) bool {
+	u, err := url.Parse(value)
+	return err == nil && u.Scheme == "https" && u.Hostname() != "" && u.User == nil && len(value) <= 2048 && utf8.RuneCountInString(strings.TrimSpace(title)) >= 3 && utf8.RuneCountInString(title) <= 160
+}
+
 func (s *Store) Review(id string, input StatusUpdate) (Incident, error) {
-	if !oneOf(input.VerificationStatus, "pending", "corroborated", "verified", "rejected") || input.ExpectedUpdatedAt.IsZero() {
+	input.Note = strings.TrimSpace(input.Note)
+	if !oneOf(input.VerificationStatus, "pending", "corroborated", "verified", "rejected") || input.ExpectedUpdatedAt.IsZero() || utf8.RuneCountInString(input.Note) > 280 || input.MapWithdrawn != nil && !*input.MapWithdrawn {
+		return Incident{}, ErrInvalid
+	}
+	if input.OfficialSource != nil && (!input.OfficialAck || !validOfficialSource(input.OfficialSource.Title, input.OfficialSource.URL) || input.VerificationStatus != "verified") {
 		return Incident{}, ErrInvalid
 	}
 	s.mu.Lock()
@@ -502,18 +540,41 @@ func (s *Store) Review(id string, input StatusUpdate) (Incident, error) {
 	if !r.Incident.UpdatedAt.Equal(input.ExpectedUpdatedAt) {
 		return Incident{}, ErrConflict
 	}
-	if r.Incident.VerificationStatus == "expired" {
+	if r.Incident.VerificationStatus == "expired" || r.Incident.MapWithdrawn {
 		return Incident{}, ErrIneligible
 	}
-	if r.Incident.VerificationStatus == input.VerificationStatus {
+	if input.OfficialSource != nil && r.Incident.SourceType == "synthetic" {
+		return Incident{}, ErrInvalid
+	}
+	if r.Incident.VerificationStatus == input.VerificationStatus && input.MapWithdrawn == nil && input.OfficialSource == nil && input.Note == "" {
 		return r.Incident.clone(), nil
 	}
+	// Bound private audit without discarding earlier reviews. Retention remains
+	// the existing seven days; retired records are not physically deleted here.
+	if len(r.Moderation) >= 32 {
+		return Incident{}, ErrConflict
+	}
 	data := s.data.clone()
+	previous := r.Incident.VerificationStatus
 	r.Incident.VerificationStatus = input.VerificationStatus
+	if input.MapWithdrawn != nil {
+		r.Incident.MapWithdrawn = *input.MapWithdrawn
+	}
+	if input.Note != "" {
+		r.Incident.ModerationNote = input.Note
+	}
+	var accreditation *OfficialSource
+	if input.OfficialSource != nil {
+		accreditation = &OfficialSource{Title: strings.TrimSpace(input.OfficialSource.Title), URL: input.OfficialSource.URL, RecordedAt: now}
+		r.Incident.OfficialSource = accreditation
+	}
 	r.Incident.UpdatedAt = now
 	if !now.After(input.ExpectedUpdatedAt) {
 		r.Incident.UpdatedAt = input.ExpectedUpdatedAt.Add(time.Nanosecond)
 	}
+	reviewer := input.Reviewer
+	if reviewer == "" { reviewer = "internal" }
+	r.Moderation = append(append([]moderationEvent(nil), r.Moderation...), moderationEvent{At: r.Incident.UpdatedAt, Reviewer: reviewer, PreviousStatus: previous, Status: input.VerificationStatus, Withdrawn: r.Incident.MapWithdrawn, Note: input.Note, OfficialSource: accreditation})
 	data.Records[id] = r
 	if err := s.saveLocked(data); err != nil {
 		return Incident{}, err
@@ -545,7 +606,7 @@ func (s *Store) ApplicationEdges(id string, g *world.Graph) ([]string, error) {
 	if !ok {
 		return nil, ErrNotFound
 	}
-	if oneOf(r.Incident.VerificationStatus, "rejected", "expired") {
+	if r.Incident.MapWithdrawn || oneOf(r.Incident.VerificationStatus, "rejected", "expired") {
 		return nil, ErrIneligible
 	}
 	edges := map[string]world.GraphEdge{}
@@ -590,7 +651,7 @@ func (s *Store) RecordApplication(a Application) (Application, error) {
 	if !ok {
 		return Application{}, ErrNotFound
 	}
-	if oneOf(r.Incident.VerificationStatus, "rejected", "expired") {
+	if r.Incident.MapWithdrawn || oneOf(r.Incident.VerificationStatus, "rejected", "expired") {
 		return Application{}, ErrIneligible
 	}
 	if !slices.Equal(r.Incident.AffectedEdgeIDs, a.AffectedEdgeIDs) {

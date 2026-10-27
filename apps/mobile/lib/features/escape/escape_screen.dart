@@ -86,10 +86,7 @@ class _EscapeScreenState extends ConsumerState<EscapeScreen>
             .where(
               (report) =>
                   report.sourceType != 'synthetic' &&
-                  !const [
-                    'rejected',
-                    'expired',
-                  ].contains(report.verificationStatus),
+                  incidentIsMapActive(report),
             )
             .toList();
         reportsError = null;
@@ -378,6 +375,7 @@ class _ScenarioPaneState extends State<_ScenarioPane> {
   }
 
   void selectReport(Incident incident) {
+    if (!incidentIsMapActive(incident)) return;
     final date = DateTime.parse(incident.eventTime).toLocal();
     final time = MaterialLocalizations.of(
       context,
@@ -399,8 +397,11 @@ class _ScenarioPaneState extends State<_ScenarioPane> {
               'Severidad declarada: ${incidentSeverities[incident.severityReported]}',
             ),
             Text(
-              incidentStatuses[incident.verificationStatus] ?? 'Sin verificar',
+              incidentDisplayStatus(incident),
             ),
+            Text(incidentDisplayOrigin(incident)),
+            if (incidentModeration(incident).officialTitle case final title?)
+              SelectableText('$title\n${incidentModeration(incident).officialURL}'),
             const SizedBox(height: 12),
             const Text(
               'Un reporte pendiente no modifica las rutas de la simulación.',
@@ -468,8 +469,7 @@ class _ScenarioPaneState extends State<_ScenarioPane> {
                         incidentTypes[report.incidentType] ?? 'Novedad',
                       ),
                       subtitle: Text(
-                        incidentStatuses[report.verificationStatus] ??
-                            'Sin verificar',
+                        '${incidentDisplayStatus(report)} · ${incidentDisplayOrigin(report)}',
                       ),
                       onTap: () {
                         Navigator.pop(context);

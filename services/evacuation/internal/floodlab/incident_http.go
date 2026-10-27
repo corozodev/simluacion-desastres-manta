@@ -19,6 +19,8 @@ import (
 // the existing local cookie, explicit Origin and session-bound CSRF checks.
 func incidentRoute(path string) (method string, public bool, ok bool) {
 	switch path {
+	case "/lab/incidents/permissions":
+		return "GET", true, true
 	case "/v1/incidents", "/v1/incidents/config":
 		return "GET", true, true
 	case "/v1/incidents/resolve":
@@ -94,9 +96,9 @@ func incidentError(w http.ResponseWriter, err error) {
 }
 func incidentQuery(r *http.Request) (incidents.Query, error) {
 	q := r.URL.Query()
-	query := incidents.Query{IncidentType: q.Get("incident_type"), VerificationStatus: q.Get("verification_status"), Limit: 100}
+	query := incidents.Query{IncidentType: q.Get("incident_type"), VerificationStatus: q.Get("verification_status"), MapVisibility: q.Get("map_visibility"), Limit: 100}
 	for key, values := range q {
-		if len(values) != 1 || values[0] == "" || !contains([]string{"bbox", "incident_type", "verification_status", "since", "until", "received_after", "limit", "offset"}, key) {
+		if len(values) != 1 || values[0] == "" || !contains([]string{"bbox", "incident_type", "verification_status", "map_visibility", "since", "until", "received_after", "limit", "offset"}, key) {
 			return query, incidents.ErrInvalid
 		}
 	}
@@ -151,6 +153,10 @@ func contains(values []string, value string) bool {
 }
 
 func (m *Manager) serveIncident(w http.ResponseWriter, r *http.Request) {
+	if r.URL.Path == "/lab/incidents/permissions" {
+		writeJSON(w, 200, m.incidentModerationPermissions(r))
+		return
+	}
 	store := m.incidents()
 	if store == nil {
 		incidentError(w, incidents.ErrUnavailable)
@@ -223,10 +229,22 @@ func (m *Manager) serveIncident(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if parts[3] == "status" {
+		// A loopback development cookie is not an operator account. Reuse the
+		// configured identity bridge instead of granting visitors moderation.
+		permissions := m.incidentModerationPermissions(r)
+		if !permissions.CanReview {
+			fail(w, 403, "UNAUTHORIZED", "Se requiere una cuenta de operador autorizada para moderar reportes.")
+			return
+		}
 		var input incidents.StatusUpdate
 		if !decodeIncident(w, r, &input, "verification_status", "expected_updated_at") {
 			return
 		}
+		if input.OfficialSource != nil && !permissions.CanMarkOfficial || input.MapWithdrawn != nil && !permissions.CanWithdraw {
+			fail(w, 403, "UNAUTHORIZED", "La sesión no tiene permiso para esta acción de moderación.")
+			return
+		}
+		input.Reviewer = "operator-session:" + sessionKey(r.Header.Get("X-CSRF-Token"))[:24]
 		result, err := m.ReviewIncident(id, input)
 		if err != nil {
 			incidentError(w, err)

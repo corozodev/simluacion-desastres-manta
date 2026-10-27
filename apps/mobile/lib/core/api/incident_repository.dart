@@ -31,6 +31,26 @@ const incidentStatuses = {
   'expired': 'Caducado',
 };
 
+// Additive OpenAPI fields are read here without editing generated models.
+// Codegen was explicitly excluded from this source-only refinement.
+class IncidentModeration {
+  const IncidentModeration({this.withdrawn = false, this.officialTitle, this.officialURL});
+  final bool withdrawn;
+  final String? officialTitle, officialURL;
+}
+final _moderation = Expando<IncidentModeration>('incident-moderation');
+IncidentModeration incidentModeration(Incident report) => _moderation[report] ?? const IncidentModeration();
+bool incidentIsMapActive(Incident report) =>
+    !incidentModeration(report).withdrawn &&
+    !const ['rejected', 'expired'].contains(report.verificationStatus) &&
+    (DateTime.tryParse(report.expiresAt)?.isAfter(DateTime.now()) ?? false);
+String incidentDisplayStatus(Incident report) => incidentModeration(report).withdrawn
+    ? 'Retirado del mapa' : incidentStatuses[report.verificationStatus] ?? 'Sin verificar';
+String incidentDisplayOrigin(Incident report) {
+  final original = const {'citizen': 'Reporte ciudadano', 'synthetic': 'Dato sintético', 'official': 'Fuente oficial'}[report.sourceType] ?? 'Origen declarado';
+  return incidentModeration(report).officialTitle == null ? original : '$original · respaldo oficial';
+}
+
 abstract interface class IncidentRepository {
   Future<IncidentServiceInfo> config();
   Future<IncidentResolution> resolve(IncidentLocation location);
@@ -105,13 +125,14 @@ class HttpIncidentRepository implements IncidentRepository {
     ),
     (json) {
       final result = IncidentList.fromJson(json);
-      for (final incident in result.incidents) {
-        _incident(incident.toJson());
-      }
+      final records = (json['incidents'] as List)
+          .map((raw) => _incident(Map<String, dynamic>.from(raw as Map)))
+          .toList(growable: false);
       if (result.total < 0 || result.offset < 0 || result.limit < 1) {
         throw const FormatException('Invalid incident list');
       }
-      return result;
+      return IncidentList(incidents: records, total: result.total, limit: result.limit,
+          offset: result.offset, hasMore: result.hasMore);
     },
   );
 }
@@ -144,5 +165,24 @@ Incident _incident(Map<String, dynamic> json) {
       DateTime.tryParse(incident.expiresAt) == null) {
     throw const FormatException('Invalid incident');
   }
+  final withdrawn = json['map_withdrawn'];
+  if (withdrawn != null && withdrawn is! bool) {
+    throw const FormatException('Invalid map visibility');
+  }
+  String? officialTitle, officialURL;
+  final rawSource = json['official_source'];
+  if (rawSource != null) {
+    final source = Map<String, dynamic>.from(rawSource as Map);
+    final uri = Uri.tryParse(source['url'] as String);
+    if (uri == null || uri.scheme != 'https' || uri.host.isEmpty || uri.userInfo.isNotEmpty ||
+        source['title'] is! String || (source['title'] as String).trim().length < 3 ||
+        DateTime.tryParse(source['recorded_at'] as String) == null) {
+      throw const FormatException('Invalid official reference');
+    }
+    officialTitle = source['title'] as String;
+    officialURL = source['url'] as String;
+  }
+  _moderation[incident] = IncidentModeration(withdrawn: withdrawn == true,
+      officialTitle: officialTitle, officialURL: officialURL);
   return incident;
 }

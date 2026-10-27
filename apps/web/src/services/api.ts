@@ -1,9 +1,10 @@
 import type { ErrorResponse, HealthResponse, Graph, WorldSnapshot, Survivor, Shelter, Zombie, SimulationInfo, SimulationCatalog, OperatorSession, StartSimulation } from '@corodev/contracts';
 import type { ScenarioSnapshot, EvacuationMetrics, LabState, LabCatalog, LabSession, LabCandidate, LabRunConfig, LabCandidateValidation, LabComparison, LabAction } from '@corodev/contracts';
-import type { Incident, IncidentCreate, IncidentList, IncidentServiceInfo, IncidentLocation, IncidentResolution, IncidentApplication, IncidentApplyResult, IncidentStatusUpdate } from '@corodev/contracts';
+import type { IncidentCreate, IncidentServiceInfo, IncidentLocation, IncidentResolution, IncidentApplication, IncidentApplyResult } from '@corodev/contracts';
 import type { ReferenceStatus, ReferenceCollection, ReferenceProvenance, OfficialRainEvents, LabTelemetry } from '@corodev/contracts';
 import type { SimulationCapabilities, SimulationCreateRequest, SimulationCreated, SimulationMetadata, SimulationState, SimulationResults, PublishedSimulation } from '@corodev/contracts';
 import { config } from '../lib/config';
+import type { ModeratedIncident as Incident, ModeratedIncidentList as IncidentList, IncidentModerationUpdate as IncidentStatusUpdate, IncidentModerationPermissions } from './incidentTypes';
 import { ApiError } from './errors';
 export { ApiError } from './errors';
 
@@ -287,6 +288,10 @@ const incidentStates = ['pending', 'corroborated', 'verified', 'rejected', 'expi
 const incidentSources = ['citizen', 'synthetic', 'official'];
 const isId = (value: unknown): value is string => typeof value === 'string' && /^[a-f0-9]{32}$/.test(value);
 const isDate = (value: unknown): value is string => typeof value === 'string' && Number.isFinite(Date.parse(value));
+function isHttpsLink(value: unknown): value is string {
+  if (typeof value !== 'string' || value.length > 2048) return false;
+  try { const url = new URL(value); return url.protocol === 'https:' && Boolean(url.hostname) && !url.username && !url.password; } catch { return false; }
+}
 function isIncident(value: unknown): value is Incident {
   if (!isObject(value) || !isObject(value.evidence_metadata)) return false;
   return value.schema_version === 1 && isId(value.incident_id) && incidentTypes.includes(String(value.incident_type))
@@ -299,7 +304,10 @@ function isIncident(value: unknown): value is Incident {
     && value.evidence_metadata.attachment_count === 0 && value.evidence_metadata.storage_status === 'not_supported'
     && isStrings(value.affected_edge_ids) && value.affected_edge_ids.length <= 5 && typeof value.graph_version === 'string'
     && isNumber(value.snap_distance_m) && value.snap_distance_m >= 0 && isNumber(value.location_precision_m) && value.location_precision_m >= 0
-    && ['manual', 'device'].includes(String(value.location_method));
+    && ['manual', 'device'].includes(String(value.location_method))
+    && (value.map_withdrawn === undefined || typeof value.map_withdrawn === 'boolean')
+    && (value.moderation_note === undefined || typeof value.moderation_note === 'string' && Array.from(value.moderation_note).length <= 280)
+    && (value.official_source === undefined || isObject(value.official_source) && typeof value.official_source.title === 'string' && Array.from(value.official_source.title).length >= 3 && Array.from(value.official_source.title).length <= 160 && isHttpsLink(value.official_source.url) && isDate(value.official_source.recorded_at));
 }
 
 function isIncidentList(value: unknown): value is IncidentList {
@@ -346,11 +354,37 @@ export interface IncidentFilters {
   bbox?: string;
   incident_type?: Incident['incident_type'];
   verification_status?: Incident['verification_status'];
+  map_visibility?: 'active' | 'withdrawn';
   received_after?: string;
   since?: string;
   until?: string;
   limit?: number;
   offset?: number;
+}
+
+// Keep confirmed moderation newer than any in-flight poll. Go timestamps may
+// differ by one nanosecond; Date.parse alone would collapse those versions.
+const confirmedIncidents = new Map<string, Incident>();
+function compareIncidentTime(left: string, right: string): number {
+  const difference = Date.parse(left) - Date.parse(right);
+  if (difference) return difference;
+  const fraction = (value: string) => (value.match(/\.(\d{1,9})/)?.[1] ?? '').padEnd(9, '0');
+  return fraction(left).localeCompare(fraction(right));
+}
+function rememberIncident(value: Incident): Incident {
+  const confirmed = confirmedIncidents.get(value.incident_id);
+  if (confirmed && compareIncidentTime(value.updated_at, confirmed.updated_at) <= 0) return confirmed;
+  confirmedIncidents.set(value.incident_id, value);
+  if (confirmedIncidents.size > 1024) confirmedIncidents.delete(confirmedIncidents.keys().next().value!);
+  return value;
+}
+export function reconcileIncidentList(value: IncidentList, filters: IncidentFilters = {}): IncidentList {
+  const incidents = value.incidents.map(rememberIncident).filter(incident => {
+    if (Boolean(incident.map_withdrawn) !== (filters.map_visibility === 'withdrawn')) return false;
+    if (filters.verification_status) return incident.verification_status === filters.verification_status;
+    return filters.map_visibility === 'withdrawn' || !['rejected', 'expired'].includes(incident.verification_status);
+  });
+  return { ...value, incidents, total: Math.max(incidents.length, value.total - (value.incidents.length - incidents.length)) };
 }
 
 function incidentRequest<T>(path: string, validate: (value: unknown) => value is T, init?: RequestInit, signal?: AbortSignal): Promise<T> {
@@ -511,18 +545,19 @@ export const api = {
   refreshReference: (csrf: string) => labMutation('/lab/reference/refresh', isReferenceStatus, {}, csrf),
   labTelemetry: (signal?: AbortSignal) => labRequest<LabTelemetry>('/lab/telemetry', (value): value is LabTelemetry => isObject(value) && typeof value.run_id === 'string' && ['simulation_step', 'world_version', 'agents', 'edges', 'overlay_edges', 'overlay_update_ms', 'replanning_ms', 'simulation_step_ms', 'planning_calls'].every(key => isNumber(value[key]) && value[key] >= 0) && isObject(value.reference), undefined, signal),
   incidentInfo: (signal?: AbortSignal) => incidentRequest('/v1/incidents/config', isIncidentInfo, undefined, signal),
-  incidents: (filters: IncidentFilters = {}, signal?: AbortSignal) => {
+  incidents: async (filters: IncidentFilters = {}, signal?: AbortSignal) => {
     const query = new URLSearchParams();
     for (const [key, value] of Object.entries(filters)) if (value !== undefined && value !== '') query.set(key, String(value));
-    return incidentRequest(`/v1/incidents${query.size ? `?${query}` : ''}`, isIncidentList, undefined, signal);
+    return reconcileIncidentList(await incidentRequest(`/v1/incidents${query.size ? `?${query}` : ''}`, isIncidentList, undefined, signal), filters);
   },
-  incident: (id: string, signal?: AbortSignal) => incidentRequest(`/v1/incidents/${encodeURIComponent(id)}`, isIncident, undefined, signal),
+  incident: async (id: string, signal?: AbortSignal) => rememberIncident(await incidentRequest(`/v1/incidents/${encodeURIComponent(id)}`, isIncident, undefined, signal)),
   resolveIncident: (input: IncidentLocation) => incidentRequest('/v1/incidents/resolve', isResolution, { method: 'POST', body: JSON.stringify(input) }),
   createIncident: (input: IncidentCreate, key: string) => incidentRequest('/v1/incidents', isIncident,
     { method: 'POST', headers: { 'Idempotency-Key': key }, body: JSON.stringify(input) }),
   createSyntheticIncident: (input: IncidentCreate, key: string, csrf: string) => labRequest('/lab/incidents/synthetic', isIncident,
     { method: 'POST', credentials: 'include', headers: { 'X-CSRF-Token': csrf, 'Idempotency-Key': key }, body: JSON.stringify(input) }),
-  reviewIncident: (id: string, input: IncidentStatusUpdate, csrf: string) => labMutation(`/lab/incidents/${encodeURIComponent(id)}/status`, isIncident, input, csrf),
+  incidentModerationPermissions: (signal?: AbortSignal) => labRequest<IncidentModerationPermissions>('/lab/incidents/permissions', (value): value is IncidentModerationPermissions => isObject(value) && ['can_review', 'can_withdraw', 'can_mark_official', 'operator_login_available'].every(key => typeof value[key] === 'boolean'), { credentials: 'include' }, signal),
+  reviewIncident: async (id: string, input: IncidentStatusUpdate, csrf: string) => rememberIncident(await labMutation(`/lab/incidents/${encodeURIComponent(id)}/status`, isIncident, input, csrf)),
   applyFloodIncident: (id: string, expectedRunId: string, csrf: string, durationSteps = 20, effect: 'blocked' | 'caution' = 'blocked') => labMutation(`/lab/incidents/${encodeURIComponent(id)}/apply`, isIncidentApplyResult,
     { expected_run_id: expectedRunId, duration_steps: durationSteps, effect, experimental_ack: true }, csrf),
   floodCatalog: (signal?: AbortSignal) => labRequest('/lab/catalog', isLabCatalog, undefined, signal),

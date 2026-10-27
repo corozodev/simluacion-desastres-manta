@@ -10,7 +10,14 @@ export function useGraph(runId?: string, mode?: string) {
 }
 
 export function useFloodState(enabled = true) {
-  return useQuery({ queryKey: ['flood', 'state'], queryFn: ({ signal }) => api.floodState(signal), retry: false, refetchInterval: 500, staleTime: 0, enabled });
+  return useQuery({ queryKey: ['flood', 'state'], queryFn: ({ signal }) => api.floodState(signal), retry: false, refetchInterval: 500, staleTime: 0, enabled,
+    structuralSharing: (previous, next) => {
+      const oldState = previous as Awaited<ReturnType<typeof api.floodState>> | undefined;
+      const newState = next as Awaited<ReturnType<typeof api.floodState>>;
+      if (oldState?.run_id === newState.run_id && (oldState.scenario.world_version > newState.scenario.world_version || oldState.state === 'cancelled' && newState.state !== 'cancelled')) return oldState;
+      return newState;
+    },
+  });
 }
 
 export function useFloodCatalog() {
@@ -31,6 +38,10 @@ export function useIncidents(filters: IncidentFilters = {}, enabled = true) {
 
 export function useIncidentDetail(id?: string) {
   return useQuery({ queryKey: ['incidents', 'detail', id ?? ''], queryFn: ({ signal }) => api.incident(id ?? '', signal), retry: false, refetchInterval: 5000, staleTime: 0, enabled: Boolean(id) });
+}
+
+export function useIncidentModerationPermissions(enabled = true) {
+  return useQuery({ queryKey: ['incidents', 'permissions'], queryFn: ({ signal }) => api.incidentModerationPermissions(signal), retry: false, refetchInterval: enabled ? 30000 : false, staleTime: 0, enabled });
 }
 
 export function useIncidentInfo() {

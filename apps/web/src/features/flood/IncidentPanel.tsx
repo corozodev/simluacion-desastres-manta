@@ -1,10 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import type { ReactNode } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { MapPin, MessageSquare, ShieldCheck } from 'lucide-react';
-import type { Incident, IncidentApplyResult, IncidentList, IncidentStatusUpdate, LabState } from '@corodev/contracts';
+import type { Incident, IncidentApplyResult, IncidentList, LabState } from '@corodev/contracts';
+import type { IncidentModerationPermissions, IncidentModerationUpdate, ModeratedIncident } from '../../services/incidentTypes';
 import { Badge, Button, Card, ErrorState, LoadingState } from '../../components/ui';
-import { api } from '../../services/api';
-import { incidentDate, incidentIsExpired, incidentSourceLabels, incidentStatusGlyphs, incidentStatusLabels, incidentTypeLabels, type IncidentFilterDraft } from './incidentPresentation';
+import { api, reconcileIncidentList, type IncidentFilters } from '../../services/api';
+import { incidentDate, incidentIsExpired, incidentOfficialSource, incidentSourceLabels, incidentStateLabel, incidentStatusLabels, incidentTypeLabels, type IncidentFilterDraft } from './incidentPresentation';
 
 export interface IncidentPanelProps {
   list?: IncidentList;
@@ -15,61 +17,121 @@ export interface IncidentPanelProps {
   onFilters: (filters: IncidentFilterDraft) => void;
   selectedId: string;
   onSelect: (id: string) => void;
+  onLocate?: (id: string) => void;
   selected?: Incident;
   detailLoading?: boolean;
   detailError?: Error | null;
-  backend: LabState;
-  preview: boolean;
   csrf: string;
-  busy: boolean;
-  onApplied: (result: IncidentApplyResult) => void;
+  permissions?: IncidentModerationPermissions;
+  access?: ReactNode;
+  busy?: boolean;
+  // Existing embedding callers may still provide these; moderation never reads
+  // or mutates a simulation, and the experimental application UI is removed.
+  backend?: LabState;
+  preview?: boolean;
+  onApplied?: (result: IncidentApplyResult) => void;
 }
 
-export function IncidentPanel({ list, loading, error, onRetry, filters, onFilters, selectedId, onSelect, selected, detailLoading, detailError, backend, preview, csrf, busy, onApplied }: IncidentPanelProps) {
+type ReviewAction = 'verify' | 'reject' | 'withdraw' | 'official';
+const severityLabels = { low: 'Baja', moderate: 'Moderada', high: 'Alta', unknown: 'Sin especificar' };
+
+export function IncidentPanel({ list, loading, error, onRetry, filters, onFilters, selectedId, onSelect, onLocate, selected, detailLoading, detailError, csrf, permissions, access, busy = false }: IncidentPanelProps) {
   const client = useQueryClient();
-  const [preparing, setPreparing] = useState(false);
-  const [acknowledged, setAcknowledged] = useState(false);
-  const [duration, setDuration] = useState(20);
-  const [effect, setEffect] = useState<'blocked' | 'caution'>('blocked');
-  const [reviewStatus, setReviewStatus] = useState<IncidentStatusUpdate['verification_status']>('pending');
-  const [receipt, setReceipt] = useState<IncidentApplyResult>();
-  const refresh = () => { void client.invalidateQueries({ queryKey: ['incidents'] }); };
-  const apply = useMutation({
-    mutationFn: () => api.applyFloodIncident(selected!.incident_id, backend.run_id, csrf, duration, effect),
-    onSuccess: result => { setReceipt(result); setPreparing(false); setAcknowledged(false); onApplied(result); refresh(); },
-    onError: refresh,
-  });
+  const [form, setForm] = useState<ReviewAction>();
+  const [note, setNote] = useState('');
+  const [sourceTitle, setSourceTitle] = useState('');
+  const [sourceURL, setSourceURL] = useState('');
+  const [sourceAck, setSourceAck] = useState(false);
+  const [confirmation, setConfirmation] = useState('');
+  const saving = useRef(false);
+  const selection = useRef(selectedId);
+  selection.current = selectedId;
+  const refresh = () => { void client.invalidateQueries({ queryKey: ['incidents', 'list'] }); void client.invalidateQueries({ queryKey: ['incidents', 'detail'] }); void client.invalidateQueries({ queryKey: ['mobile', 'incidents'] }); };
   const review = useMutation({
-    mutationFn: () => api.reviewIncident(selected!.incident_id, { verification_status: reviewStatus, expected_updated_at: selected!.updated_at }, csrf),
-    onSuccess: refresh, onError: refresh,
+    mutationFn: (input: { id: string; update: IncidentModerationUpdate }) => api.reviewIncident(input.id, input.update, csrf),
+    onMutate: async () => { await client.cancelQueries({ queryKey: ['incidents', 'list'] }); await client.cancelQueries({ queryKey: ['incidents', 'detail'] }); await client.cancelQueries({ queryKey: ['mobile', 'incidents'] }); },
+    onSuccess: async result => {
+      await client.cancelQueries({ queryKey: ['incidents', 'list'] });
+      await client.cancelQueries({ queryKey: ['incidents', 'detail'] }); await client.cancelQueries({ queryKey: ['mobile', 'incidents'] });
+      client.setQueryData(['incidents', 'detail', result.incident_id], result);
+      for (const [key, value] of [...client.getQueriesData<IncidentList>({ queryKey: ['incidents', 'list'] }), ...client.getQueriesData<IncidentList>({ queryKey: ['mobile', 'incidents'] })]) {
+        if (!value) continue;
+        const updated = { ...value, incidents: value.incidents.map(item => item.incident_id === result.incident_id ? result : item) };
+        client.setQueryData(key, reconcileIncidentList(updated, key[2] as IncidentFilters));
+      }
+      if (selection.current === result.incident_id) {
+        setConfirmation('Revisión guardada. El mapa se actualizó con la respuesta del servidor.');
+        setForm(undefined); setNote(''); setSourceAck(false);
+      }
+      refresh();
+    },
+    onError: () => { setConfirmation(''); refresh(); },
   });
-  useEffect(() => { setPreparing(false); setAcknowledged(false); setReceipt(undefined); apply.reset(); review.reset(); }, [selectedId, backend.run_id]);
-  useEffect(() => { if (selected && selected.verification_status !== 'expired') setReviewStatus(selected.verification_status); }, [selected?.incident_id, selected?.verification_status]);
-  const authorized = Boolean(csrf);
-  const validRun = !preview && ['running', 'paused'].includes(backend.state) && backend.comparison?.state !== 'running';
-  const expired = selected ? incidentIsExpired(selected) : false;
-  const eligible = Boolean(selected && !expired && selected.verification_status !== 'rejected' && selected.affected_edge_ids.length);
-  const disabled = busy || apply.isPending || review.isPending || !authorized || !validRun || !eligible;
-  const application = selected ? backend.incident_applications?.find(item => item.incident_id === selected.incident_id) : undefined;
-  const currentReceipt = receipt?.application.run_id === backend.run_id ? receipt : undefined;
+  useEffect(() => { setForm(undefined); setNote(''); setSourceTitle(''); setSourceURL(''); setSourceAck(false); setConfirmation(''); review.reset(); }, [selectedId]);
+  const report = selected as ModeratedIncident | undefined;
+  const withdrawn = Boolean(report?.map_withdrawn);
+  const inactive = !report || withdrawn || incidentIsExpired(report);
+  const authorized = Boolean(csrf && permissions?.can_review);
+  const source = report && incidentOfficialSource(report);
+  const disabled = busy || review.isPending || !authorized || inactive;
+  const submit = (action: ReviewAction) => {
+    if (!report || disabled || saving.current) return;
+    if (action === 'withdraw' && !permissions?.can_withdraw || action === 'official' && !permissions?.can_mark_official) return;
+    if (action === 'reject' && !note.trim() || action === 'official' && (!sourceAck || sourceTitle.trim().length < 3 || !/^https:\/\//i.test(sourceURL))) return;
+    const update: IncidentModerationUpdate = {
+      verification_status: action === 'reject' ? 'rejected' : action === 'withdraw' ? report.verification_status === 'expired' ? 'rejected' : report.verification_status : 'verified',
+      expected_updated_at: report.updated_at,
+      ...(note.trim() ? { note: note.trim() } : {}),
+      ...(action === 'withdraw' ? { map_withdrawn: true as const } : {}),
+      ...(action === 'official' ? { official_source: { title: sourceTitle.trim(), url: sourceURL.trim() }, official_ack: true } : {}),
+    };
+    saving.current = true;
+    void review.mutateAsync({ id: report.incident_id, update }).catch(() => {}).finally(() => { saving.current = false; });
+  };
   return <Card className="flood-incidents-card" aria-label="Novedades georreferenciadas">
-    <div className="flood-card-heading"><div><span className="flood-kicker"><MessageSquare size={16} /> NOVEDADES GEOREFERENCIADAS</span><h2>Reportes y procedencia</h2><p>Las ubicaciones son aproximadas. Un reporte ciudadano pendiente no confirma una condición vial ni recomienda una ruta de emergencia.</p></div><Badge tone="warning">{list?.total ?? 0} reportes encontrados</Badge></div>
-    <div className="flood-incident-filters"><label>Tipo de novedad<select aria-label="Tipo de novedad" value={filters.type} onChange={event => onFilters({ ...filters, type: event.target.value as IncidentFilterDraft['type'] })}><option value="">Todos los tipos</option>{Object.entries(incidentTypeLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
-      <label>Estado de verificación<select aria-label="Estado de verificación" value={filters.status} onChange={event => onFilters({ ...filters, status: event.target.value as IncidentFilterDraft['status'] })}><option value="">Reportes activos</option>{Object.entries(incidentStatusLabels).filter(([status]) => authorized || !['rejected', 'expired'].includes(status)).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
-      <label>Antigüedad del reporte<select aria-label="Antigüedad del reporte" value={filters.age} onChange={event => onFilters({ ...filters, age: event.target.value as IncidentFilterDraft['age'] })}><option value="1">Última hora</option><option value="24">Últimas 24 horas</option><option value="168">Últimos 7 días</option><option value="">Todas las fechas</option></select></label>
+    <div className="flood-card-heading"><div><span className="flood-kicker"><MessageSquare size={15} /> NOVEDADES</span><h2>Consulta y moderación</h2></div><Badge tone="neutral">{list?.total ?? 0} reportes</Badge></div>
+    <div className="flood-incident-filters">
+      <label>Tipo<select aria-label="Tipo de novedad" value={filters.type} onChange={event => onFilters({ ...filters, type: event.target.value as IncidentFilterDraft['type'] })}><option value="">Todos</option>{Object.entries(incidentTypeLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
+      <label>Estado<select aria-label="Estado de verificación" value={filters.status} onChange={event => onFilters({ ...filters, status: event.target.value as IncidentFilterDraft['status'] })}><option value="">Activos</option>{Object.entries(incidentStatusLabels).filter(([status]) => authorized || !['rejected', 'expired'].includes(status)).map(([value, label]) => <option key={value} value={value}>{label}</option>)}{authorized && <option value="withdrawn">Retirados del mapa</option>}</select></label>
+      <label>Recientes<select aria-label="Antigüedad del reporte" value={filters.age} onChange={event => onFilters({ ...filters, age: event.target.value as IncidentFilterDraft['age'] })}><option value="1">Última hora</option><option value="24">Último día</option><option value="168">Última semana</option><option value="">Todos</option></select></label>
     </div>
-    <p className="muted">Actualización cada 5 segundos en la cobertura mostrada. La fecha del filtro corresponde a la recepción del servidor.</p>
-    {loading ? <LoadingState label="Consultando novedades de esta cobertura…" /> : error ? <ErrorState error={error} onRetry={onRetry} /> : <div className="flood-incident-columns"><div className="flood-incident-list" aria-label="Lista de novedades">{list?.incidents.length ? list.incidents.map(incident => <button key={incident.incident_id} type="button" aria-label={`Seleccionar incidente ${incident.incident_id}`} aria-pressed={selectedId === incident.incident_id} className={`flood-incident-item flood-incident-${incident.verification_status}`} onClick={() => onSelect(incident.incident_id)}><span className="flood-incident-glyph" aria-hidden="true">{incidentStatusGlyphs[incident.verification_status]}</span><span><strong>{incidentTypeLabels[incident.incident_type]}</strong><span>{incidentStatusLabels[incident.verification_status]}</span><span className={incident.source_type === 'synthetic' ? 'flood-incident-synthetic-label' : ''}>{incidentSourceLabels[incident.source_type]}</span><small>Recibido {incidentDate(incident.received_at)}</small></span></button>) : <p className="flood-incident-empty" role="status">No hay novedades con estos filtros en la cobertura mostrada.</p>}{list?.has_more && <p className="muted" role="status">Se muestran hasta {list.limit} reportes. Acota el tipo, estado o antigüedad para consultar los restantes.</p>}</div>
-      <div className="flood-incident-detail-area">{detailLoading ? <LoadingState label="Consultando detalle del reporte…" /> : detailError ? <ErrorState error={detailError} onRetry={onRetry} /> : selected ? <section className="flood-incident-detail" aria-label={`Detalle de incidente ${selected.incident_id}`}>
-        <div className="flood-incident-detail-heading"><MapPin size={18} /><h3>{incidentTypeLabels[selected.incident_type]}</h3></div><p className={`flood-incident-state flood-incident-${selected.verification_status}`}>{incidentSourceLabels[selected.source_type]} · {incidentStatusLabels[selected.verification_status]}</p>{selected.source_type === 'citizen' && selected.verification_status === 'pending' && <p className="flood-incident-notice">Reporte ciudadano pendiente de verificación</p>}{selected.source_type === 'synthetic' && <p className="flood-incident-notice">Dato sintético para pruebas; no describe una observación real.</p>}
-        <p className="flood-incident-description">{selected.description}</p><dl className="flood-incident-metadata"><div><dt>Ubicación aproximada</dt><dd>{selected.latitude.toFixed(4)}, {selected.longitude.toFixed(4)} · cuantización de {selected.location_precision_m} m; no mide la exactitud del dispositivo</dd></div><div><dt>Momento declarado</dt><dd>{incidentDate(selected.event_time)}</dd></div><div><dt>Recibido por el servidor</dt><dd>{incidentDate(selected.received_at)}</dd></div><div><dt>Última actualización</dt><dd>{incidentDate(selected.updated_at)}</dd></div><div><dt>Caduca</dt><dd>{incidentDate(selected.expires_at)}{expired && ' · Caducado'}</dd></div><div><dt>Transitabilidad declarada</dt><dd>{{ passable: 'Transitable', restricted: 'Restringida', blocked: 'Bloqueada', unknown: 'Desconocida' }[selected.road_passability_reported]}</dd></div><div><dt>Severidad declarada</dt><dd>{{ low: 'Baja', moderate: 'Moderada', high: 'Alta', unknown: 'Desconocida' }[selected.severity_reported]}</dd></div><div><dt>Aristas asociadas</dt><dd>{selected.affected_edge_ids.join(', ') || 'Sin asociación vial admisible'}</dd></div><div><dt>Identificador del reporte</dt><dd>{selected.incident_id}</dd></div></dl>
-        <details className="flood-incident-application"><summary>Evaluación experimental en esta ejecución</summary><p>Acción autorizada: aplica un efecto temporal sólo a la ejecución actual; conserva la procedencia del reporte.</p>{!validRun && <p className="muted">Inicia o pausa una tormenta en la cobertura activa para evaluar el reporte; espera a que termine cualquier comparación A/B.</p>}{!authorized && <p className="muted">La aplicación requiere la sesión local autorizada del laboratorio.</p>}{!eligible && <p className="muted">No se aplican reportes rechazados, caducados ni sin asociación vial.</p>}
-          {!preparing ? <Button variant="secondary" disabled={disabled} onClick={() => { setPreparing(true); setAcknowledged(false); apply.reset(); }}>Revisar aplicación experimental</Button> : <div className="flood-incident-apply-review"><p>Reporte {selected.incident_id} → ejecución {backend.run_id}. Aristas: {selected.affected_edge_ids.join(', ')}.</p><label>Efecto experimental<select aria-label="Efecto experimental" value={effect} onChange={event => setEffect(event.target.value as 'blocked' | 'caution')}><option value="blocked">Cierre temporal</option><option value="caution">Precaución temporal</option></select></label><label>Duración del overlay en pasos<input type="number" min="1" max="1000" step="1" value={duration} onChange={event => setDuration(Number(event.target.value))} /></label><label className="flood-incident-ack"><input type="checkbox" checked={acknowledged} onChange={event => setAcknowledged(event.target.checked)} />Entiendo que esta evaluación es experimental y no confirma el reporte ni habilita navegación real.</label><div className="flood-actions"><Button disabled={disabled || !acknowledged || !Number.isInteger(duration) || duration < 1 || duration > 1000} onClick={() => apply.mutate()}>{apply.isPending ? 'Aplicando…' : 'Aplicar incidente a simulación'}</Button><Button variant="ghost" disabled={apply.isPending} onClick={() => setPreparing(false)}>Cancelar</Button></div></div>}
-          {apply.error && <ErrorState error={apply.error} onRetry={() => apply.reset()} />}{currentReceipt && <p className="flood-validation-success" role="status">{currentReceipt.already_applied ? 'El incidente ya estaba aplicado; no se duplicó el overlay.' : 'Incidente aplicado a esta ejecución experimental.'} El reporte continúa {incidentStatusLabels[currentReceipt.incident.verification_status].toLowerCase()}.</p>}
-          {application && <dl className="flood-incident-audit" aria-label="Registro de aplicación experimental"><div><dt>Ejecución</dt><dd>{application.run_id}</dd></div><div><dt>Paso / versión del mundo</dt><dd>{application.simulation_step} / {application.world_version}</dd></div><div><dt>Efecto y caducidad simulada</dt><dd>{application.effect === 'blocked' ? 'Cierre temporal' : 'Precaución temporal'} · hasta el paso {application.expires_at_simulation_step}</dd></div><div><dt>Procedencia al aplicar</dt><dd>{incidentSourceLabels[application.source_type]} · {incidentStatusLabels[application.verification_status_at_application]}</dd></div><div><dt>Aristas del overlay</dt><dd>{application.affected_edge_ids.join(', ')}</dd></div></dl>}
-        </details>
-        {authorized && !expired && <details className="flood-incident-moderation"><summary><ShieldCheck size={14} />Revisión autorizada del reporte</summary><p>Esta revisión modifica el estado del reporte, conserva su procedencia y no lo aplica al motor.</p><label>Nuevo estado de verificación<select aria-label="Nuevo estado de verificación" value={reviewStatus} onChange={event => setReviewStatus(event.target.value as IncidentStatusUpdate['verification_status'])}>{Object.entries(incidentStatusLabels).filter(([status]) => status !== 'expired').map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label><Button variant="secondary" disabled={busy || review.isPending || apply.isPending || reviewStatus === selected.verification_status} onClick={() => review.mutate()}>{review.isPending ? 'Guardando revisión…' : 'Guardar revisión autorizada'}</Button>{review.error && <ErrorState error={review.error} onRetry={() => review.reset()} />}{review.isSuccess && <p role="status">Revisión guardada. La procedencia del reporte se conserva.</p>}</details>}
-      </section> : <p className="flood-incident-empty">Selecciona un marcador o un reporte para consultar su procedencia y evaluar su aplicación al laboratorio.</p>}</div>
+    {error && <ErrorState error={error} onRetry={onRetry} />}
+    {loading && !list ? <LoadingState label="Cargando reportes…" /> : <div className={`flood-incident-workspace ${report ? 'has-selection' : ''}`}>
+      <div className="flood-incident-list" aria-label="Lista de reportes">
+        {!list?.incidents.length && <p className="flood-incident-empty">No hay reportes con estos filtros.</p>}
+        {list?.incidents.map(item => <button type="button" key={item.incident_id} className={`flood-incident-card ${selectedId === item.incident_id ? 'selected' : ''}`} aria-pressed={selectedId === item.incident_id} onClick={() => { onSelect(item.incident_id); onLocate?.(item.incident_id); }}>
+          <span className="flood-incident-card-heading"><strong>{incidentTypeLabels[item.incident_type]}</strong><Badge tone={item.verification_status === 'verified' ? 'success' : 'warning'}>{incidentStateLabel(item)}</Badge></span>
+          <span className="flood-incident-card-description">{item.description}</span>
+          <span className="flood-incident-card-meta"><time dateTime={item.event_time}>{incidentDate(item.event_time)}</time><span>{incidentSourceLabels[item.source_type]}</span>{incidentOfficialSource(item) && <span>⬡ Respaldo oficial</span>}{item.severity_reported !== 'unknown' && <span>Severidad {severityLabels[item.severity_reported].toLowerCase()}</span>}</span>
+        </button>)}
+        {list?.has_more && <p className="muted">Hay más reportes. Acota los filtros para localizarlos.</p>}
+      </div>
+      {report && <section className="flood-incident-detail" aria-label="Detalle del reporte seleccionado">
+        <div className="flood-incident-detail-actions"><Button variant="ghost" onClick={() => onSelect('')}>← Volver a la lista</Button>{!withdrawn && !['rejected', 'expired'].includes(report.verification_status) && <Button variant="secondary" onClick={() => onLocate?.(report.incident_id)}><MapPin size={14} />Ubicar en mapa</Button>}</div>
+        <h3>{incidentTypeLabels[report.incident_type]}</h3><p>{report.description}</p>
+        <p className="flood-incident-card-meta"><span>{incidentStateLabel(report)}</span><span>{incidentSourceLabels[report.source_type]}</span><time dateTime={report.event_time}>{incidentDate(report.event_time)}</time></p>
+        {report.severity_reported !== 'unknown' && <p>Severidad: {severityLabels[report.severity_reported]}</p>}
+        {source && <p>⬡ Respaldo oficial: <a href={source.url} target="_blank" rel="noreferrer">{source.title}</a>. Se conserva el origen {report.source_type === 'citizen' ? 'ciudadano' : 'del reporte'}.</p>}
+        {report.moderation_note && <p className="muted">Motivo de revisión: {report.moderation_note}</p>}
+        {detailLoading && <p role="status">Actualizando reporte…</p>}{detailError && <ErrorState error={detailError} onRetry={onRetry} />}
+        {authorized && !inactive && <div className="flood-incident-moderation">
+          <div className="flood-moderation-actions" aria-label="Acciones de moderación">
+            {['pending', 'corroborated'].includes(report.verification_status) && <Button variant="secondary" disabled={disabled} onClick={() => submit('verify')}><ShieldCheck size={14} />Verificar</Button>}
+            {report.verification_status !== 'rejected' && <Button variant="secondary" disabled={disabled} onClick={() => { setForm('reject'); setConfirmation(''); }}>Rechazar</Button>}
+            {permissions?.can_mark_official && report.source_type !== 'synthetic' && !source && <Button variant="secondary" disabled={disabled || report.verification_status === 'rejected'} onClick={() => { setForm('official'); setConfirmation(''); }}>Marcar como oficial</Button>}
+            {permissions?.can_withdraw && <Button variant="ghost" disabled={disabled} onClick={() => { setForm('withdraw'); setConfirmation(''); }}>Retirar del mapa</Button>}
+          </div>
+          {form && <form className="flood-moderation-form" onSubmit={event => { event.preventDefault(); submit(form); }}>
+            {form === 'official' && <><p>Vincula una publicación oficial revisada. Esto acredita respaldo documental y conserva la procedencia original; el enlace no se verifica automáticamente.</p><label>Publicación o entidad responsable<input required minLength={3} maxLength={160} value={sourceTitle} disabled={review.isPending} onChange={event => setSourceTitle(event.target.value)} /></label><label>Enlace a la fuente oficial<input type="url" required pattern="https://.*" maxLength={2048} value={sourceURL} disabled={review.isPending} onChange={event => setSourceURL(event.target.value)} /></label><label className="flood-official-ack"><input type="checkbox" required checked={sourceAck} disabled={review.isPending} onChange={event => setSourceAck(event.target.checked)} />He revisado la publicación oficial que respalda esta novedad.</label></>}
+            {form === 'withdraw' && <p>El reporte dejará de aparecer en el mapa. Se conserva su registro y su historial.</p>}
+            <label>{form === 'reject' ? 'Motivo del rechazo' : 'Nota de revisión'}<textarea required={form === 'reject'} maxLength={280} rows={2} value={note} disabled={review.isPending} onChange={event => setNote(event.target.value)} /></label>
+            <div className="flood-moderation-actions"><Button type="submit" disabled={disabled}>{review.isPending ? 'Guardando…' : 'Confirmar revisión'}</Button><Button type="button" variant="ghost" disabled={review.isPending} onClick={() => setForm(undefined)}>Volver</Button></div>
+          </form>}
+        </div>}
+        {review.error && <ErrorState error={review.error} onRetry={() => review.reset()} />}
+        {confirmation && <p role="status">{confirmation}</p>}
+      </section>}
     </div>}
+    <div className="flood-moderation-access">{access}</div>
   </Card>;
 }

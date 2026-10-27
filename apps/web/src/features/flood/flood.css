@@ -341,3 +341,61 @@
   .flood-workspace-hud .hud-actions > .flood-actions-disclosure { flex: 0 0 auto; }
   .flood-actions-disclosure .flood-config-popover { width: min(300px, 100%); }
 }
+
+/* One compact instrument; configuration and actions share the same surface. */
+.flood-compact-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; padding: 6px; border: 1px solid var(--color-border); border-radius: var(--radius-sm); background: var(--color-surface); min-width: 0; }
+.flood-compact-toolbar > .simulation-hud { display: contents; }
+.flood-compact-toolbar .flood-workspace-preparation { flex: 0 0 auto; }
+.flood-compact-toolbar .hud-state { flex: 1 1 180px; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; min-width: 0; font-size: 11px; }
+.flood-compact-toolbar .hud-state strong { font-size: 12px; }
+.flood-compact-toolbar .hud-state > span { white-space: normal; overflow-wrap: anywhere; }
+.flood-compact-toolbar .hud-state progress { flex: 1 1 55px; min-width: 40px; max-width: 110px; height: 5px; }
+.flood-compact-toolbar .hud-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; min-width: 0; }
+.flood-compact-toolbar .hud-actions > .button, .mantasim-shell .flood-compact-toolbar .flood-parameters > summary { min-height: 40px; padding: 8px 10px; }
+.flood-compact-toolbar > .flood-compact-notice, .flood-compact-toolbar > .error-state, .flood-compact-toolbar > .flood-pick-notice { flex-basis: 100%; }
+.flood-action-menu { z-index: 10000; display: grid; gap: 4px; box-sizing: border-box; overflow-y: auto; padding: 6px; border: 1px solid var(--color-border); border-radius: var(--radius-sm); background: var(--color-surface); color: var(--color-textPrimary); box-shadow: 0 8px 24px #0005; }
+.flood-action-menu > .button { justify-content: flex-start; width: 100%; min-height: 44px; white-space: normal; text-align: left; }
+.flood-cancel-dialog { width: min(400px, calc(100vw - 32px)); box-sizing: border-box; padding: 20px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); color: var(--color-textPrimary); }
+.flood-cancel-dialog::backdrop { background: #0009; }
+.flood-cancel-dialog h2 { margin: 0 0 10px; font-size: 17px; }
+.flood-cancel-dialog p { font-size: 13px; line-height: 1.5; }
+.flood-dialog-actions, .flood-moderation-actions, .flood-incident-detail-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.flood-dialog-actions { justify-content: flex-end; margin-top: 16px; }
+.flood-dialog-actions .button, .flood-moderation-actions .button, .flood-incident-detail-actions .button { min-height: 40px; }
+.flood-page .flood-secondary { margin-top: 10px; }
+.flood-incidents-card { padding: 12px; }
+.flood-incidents-card .flood-card-heading { margin-bottom: 10px; }
+.flood-incidents-card h2 { margin: 4px 0 0; font-size: 16px; }
+.flood-incidents-card .flood-incident-filters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+.flood-incident-filters label { min-width: 0; flex: 1 1 130px; }
+.flood-incident-filters select { width: 100%; min-height: 40px; }
+.flood-incident-workspace { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
+.flood-incident-workspace.has-selection { grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); }
+.flood-incidents-card .flood-incident-list { display: grid; align-content: start; gap: 6px; max-height: 420px; overflow-y: auto; }
+.flood-incidents-card .flood-incident-card { display: grid; gap: 6px; width: 100%; min-width: 0; padding: 10px; text-align: left; font: inherit; color: var(--color-textPrimary); background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-sm); }
+.flood-incidents-card .flood-incident-card.selected { border-color: var(--color-primary); }
+.flood-incident-card-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px; font-size: 12px; }
+.flood-incident-card-description { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; font-size: 12px; line-height: 1.4; }
+.flood-incident-card-meta { display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 11px; color: var(--color-textSecondary); }
+.flood-incident-detail { min-width: 0; padding: 10px; border: 1px solid var(--color-border); border-radius: var(--radius-sm); overflow-wrap: anywhere; }
+.flood-incident-detail h3 { margin: 10px 0 6px; font-size: 14px; }
+.flood-incident-detail > p { margin: 7px 0; font-size: 12px; line-height: 1.5; }
+.flood-moderation-form { display: grid; gap: 8px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--color-border); }
+.flood-moderation-form label { display: grid; gap: 4px; font-size: 12px; }
+.flood-moderation-form input:not([type=checkbox]), .flood-moderation-form textarea { min-width: 0; width: 100%; min-height: 40px; }
+.flood-moderation-form .flood-official-ack { display: flex; align-items: flex-start; gap: 7px; }
+.flood-moderation-access { margin-top: 10px; font-size: 12px; }
+.flood-source-summary p { margin: 6px 0; font-size: 12px; line-height: 1.5; overflow-wrap: anywhere; }
+@media(max-width:700px) {
+  .flood-incident-workspace.has-selection { grid-template-columns: minmax(0, 1fr); }
+  .flood-incident-workspace.has-selection .flood-incident-list { display: none; }
+}
+@media(max-width:600px) {
+  .flood-workspace-hud.flood-compact-toolbar { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 6px; }
+  .flood-compact-toolbar .flood-workspace-preparation { grid-column: 1; }
+  .flood-compact-toolbar .hud-state { grid-column: 2; display: flex; width: auto; }
+  .flood-compact-toolbar .hud-state > span { flex: 1 1 auto; }
+  .flood-compact-toolbar .hud-state progress { flex: 1 1 40px; width: auto; }
+  .flood-compact-toolbar .hud-actions { grid-column: 1 / -1; justify-content: flex-end; }
+  .flood-compact-toolbar > .flood-compact-notice, .flood-compact-toolbar > .error-state, .flood-compact-toolbar > .flood-pick-notice { grid-column: 1 / -1; }
+}
