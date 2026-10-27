@@ -40,9 +40,10 @@ func New(g *world.Graph, cfg simulation.Config, address, key string, origins []s
 }
 
 type Options struct {
-	Engine  world.DecisionEngine
-	Planner world.TurnPlanner
-	Observe func(httpapi.RequestTiming)
+	Engine   world.DecisionEngine
+	Planner  world.TurnPlanner
+	Observe  func(httpapi.RequestTiming)
+	Metadata func() *world.SimulationInfo
 }
 
 // NewWithOptions allows controlled offline evaluations without changing HTTP.
@@ -52,7 +53,7 @@ func NewWithOptions(g *world.Graph, cfg simulation.Config, address, key string, 
 	if engine == nil {
 		engine = decision.New()
 	}
-	handler, err := httpapi.New(store, engine, g, httpapi.Options{APIKey: key, AllowedOrigins: origins, Logger: logger, Observe: options.Observe})
+	handler, err := httpapi.New(store, engine, g, httpapi.Options{APIKey: key, AllowedOrigins: origins, Logger: logger, Observe: options.Observe, Metadata: options.Metadata})
 	if err != nil {
 		return nil, err
 	}
@@ -100,6 +101,12 @@ func NewWithOptions(g *world.Graph, cfg simulation.Config, address, key string, 
 	app := &App{Store: store, Simulator: sim, BaseURL: baseURL, server: server, client: client, done: make(chan error, 1)}
 	go func() { app.done <- server.Serve(listener) }()
 	return app, nil
+}
+
+// ServeHTTP reuses the exact read/decision handler behind the run controller.
+// Each simulator still calls its own independent loopback HTTP server.
+func (a *App) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	a.server.Handler.ServeHTTP(w, r)
 }
 
 func (a *App) Close() error {

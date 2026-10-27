@@ -1,11 +1,14 @@
 openapi: 3.0.3
 info:
   title: CoroDev Spooky API
-  version: 0.2.0
-  description: Contrato compartido por los clientes React y Flutter y la API local.
+  version: 0.3.0
+  description: API Go de evacuación y controles entre rondas; conserva esquemas
+    históricos de FASE 2.
 servers:
-  - url: http://localhost:3001
-    description: API local
+  - url: https://api.sistemamanta.lexinnovate.com
+    description: Go en AWS
+  - url: http://127.0.0.1:8080
+    description: Go local
 tags:
   - name: System
   - name: Demo
@@ -14,7 +17,7 @@ paths:
   /healthz:
     get:
       operationId: getEvacuationHealth
-      tags: [System]
+      tags: [ System ]
       summary: Comprueba la disponibilidad del proceso Go.
       responses:
         '200':
@@ -26,7 +29,7 @@ paths:
   /estado:
     get:
       operationId: getWorldState
-      tags: [Evacuation]
+      tags: [ Evacuation ]
       summary: Snapshot público observable; nunca revela sleepers dormidos.
       responses:
         '200':
@@ -40,7 +43,7 @@ paths:
   /grafo:
     get:
       operationId: getWorldGraph
-      tags: [Evacuation]
+      tags: [ Evacuation ]
       summary: Grafo estático versionado; bloqueos dinámicos se consultan en /estado.
       responses:
         '200':
@@ -51,12 +54,35 @@ paths:
                 $ref: '#/components/schemas/Graph'
         '503':
           $ref: '#/components/responses/Unavailable'
+        "409":
+          description: La ronda cambió; volver a consultar /estado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      parameters:
+        - name: mode
+          in: query
+          description: Previsualización pública de un preset; no cambia la ronda activa.
+          schema:
+            type: string
+            enum:
+              - competition
+              - full
+              - expanded
+        - name: run_id
+          in: query
+          description: Rechaza con409 si la ronda activa cambió; no se combina con mode.
+          schema:
+            type: string
   /paso:
     post:
       operationId: decideNextStep
-      tags: [Evacuation]
+      tags: [ Evacuation ]
       summary: Decide un vecino transitable o espera en el nodo actual.
-      description: No muta el mundo. El turno y nodo deben coincidir con el sobreviviente activo del snapshot publicado. Tiempo máximo de la llamada 500 ms.
+      description: No muta el mundo. El turno y nodo deben coincidir con el
+        sobreviviente activo del snapshot publicado. Tiempo máximo de la llamada
+        500 ms.
       security:
         - SimulatorApiKey: []
       requestBody:
@@ -87,7 +113,7 @@ paths:
   /health:
     get:
       operationId: getHealth
-      tags: [System]
+      tags: [ System ]
       summary: Comprueba la disponibilidad de la API.
       responses:
         '200':
@@ -101,7 +127,7 @@ paths:
   /v1/demo/items:
     get:
       operationId: listDemoItems
-      tags: [Demo]
+      tags: [ Demo ]
       summary: Lista elementos de demostración con búsqueda y paginación.
       parameters:
         - in: query
@@ -127,7 +153,8 @@ paths:
             maxLength: 200
       responses:
         '200':
-          description: Página de resultados; una búsqueda sin coincidencias devuelve data vacío.
+          description: Página de resultados; una búsqueda sin coincidencias devuelve data
+            vacío.
           content:
             application/json:
               schema:
@@ -139,7 +166,7 @@ paths:
   /v1/demo/items/{id}:
     get:
       operationId: getDemoItem
-      tags: [Demo]
+      tags: [ Demo ]
       summary: Obtiene un elemento por su identificador.
       parameters:
         - in: path
@@ -165,7 +192,7 @@ paths:
   /v1/demo/submit:
     post:
       operationId: submitDemo
-      tags: [Demo]
+      tags: [ Demo ]
       summary: Valida y acepta un formulario de demostración sin persistencia.
       requestBody:
         required: true
@@ -184,6 +211,213 @@ paths:
           $ref: '#/components/responses/ValidationError'
         '500':
           $ref: '#/components/responses/InternalError'
+  /simulation/catalog:
+    get:
+      operationId: getSimulationCatalog
+      tags:
+        - Evacuation
+      summary: Catálogo aprobado; previsualizar no inicia una ronda.
+      responses:
+        "200":
+          description: "Respuesta pública. "
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SimulationCatalog"
+        "503":
+          description: El estado no está preparado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /simulation:
+    get:
+      operationId: getSimulationInfo
+      tags:
+        - Evacuation
+      summary: Ejecución actual y configuración pública.
+      responses:
+        "200":
+          description: "Respuesta pública. "
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SimulationInfo"
+        "503":
+          description: El estado no está preparado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /runs/{run_id}/estado:
+    get:
+      operationId: getCompletedRunState
+      tags:
+        - Evacuation
+      summary: Snapshot observable conservado de una ronda terminada; historial
+        acotado en memoria.
+      parameters:
+        - name: run_id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[a-f0-9]{32}$
+      responses:
+        "200":
+          description: Snapshot público conservado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorldSnapshot"
+        "404":
+          description: Ronda no conservada.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /admin/session:
+    get:
+      operationId: getOperatorSession
+      tags:
+        - System
+      summary: Estado de sesión; sólo una sesión válida recibe token CSRF.
+      responses:
+        "200":
+          description: Sesión o visitante.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OperatorSession"
+    post:
+      operationId: createOperatorSession
+      tags:
+        - System
+      summary: Intercambia un código independiente generado en servidor por cookie
+        HttpOnly. Requiere Origin permitido y JSON; tiene límite de intentos.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OperatorLogin"
+      responses:
+        "200":
+          description: Sesión autenticada; cookie Secure HttpOnly SameSite=Strict.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OperatorSession"
+        "400":
+          description: JSON no válido.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Acceso rechazado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Origin rechazado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "429":
+          description: Demasiados intentos.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "503":
+          description: Administración no configurada.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      operationId: deleteOperatorSession
+      tags:
+        - System
+      summary: Revoca la sesión y su cookie; requiere Origin y CSRF.
+      security:
+        - OperatorCookie: []
+          OperatorCSRF: []
+      responses:
+        "200":
+          description: Sesión cerrada.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OperatorSession"
+        "401":
+          description: Sesión requerida.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: CSRF u Origin rechazado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /admin/runs:
+    post:
+      operationId: startSimulationRun
+      tags:
+        - Evacuation
+      summary: Inicia sólo entre rondas; no interrumpe una ejecución ni permite rutas
+        de archivo arbitrarias.
+      security:
+        - OperatorCookie: []
+          OperatorCSRF: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StartSimulation"
+      responses:
+        "201":
+          description: Nueva ronda; estado anterior conservado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SimulationInfo"
+        "400":
+          description: Configuración no válida.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Sesión requerida.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: CSRF, Origin o modo no habilitado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Ronda activa, inicio en progreso o identificador anterior obsoleto.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "503":
+          description: No pudo prepararse la ronda; estado anterior intacto.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 components:
   securitySchemes:
     SimulatorApiKey:
@@ -191,192 +425,230 @@ components:
       in: header
       name: x-api-key
       description: Credencial privada del simulador. Nunca se entrega a React o Flutter.
+    OperatorCookie:
+      type: apiKey
+      in: cookie
+      name: __Host-corodev_admin
+      description: Cookie de sesión opaca HttpOnly/Secure, independiente de x-api-key;
+        no se almacena en Web Storage.
+    OperatorCSRF:
+      type: apiKey
+      in: header
+      name: X-CSRF-Token
+      description: Token ligado a la sesión; además se exige Origin permitido.
   schemas:
     GraphNode:
       type: object
       additionalProperties: false
-      required: [id, lat, lng]
+      required: [ id, lat, lng ]
       properties:
-        id: {type: string, minLength: 1}
-        lat: {type: number, minimum: -90, maximum: 90}
-        lng: {type: number, minimum: -180, maximum: 180}
+        id: { type: string, minLength: 1 }
+        lat: { type: number, minimum: -90, maximum: 90 }
+        lng: { type: number, minimum: -180, maximum: 180 }
     GeoPoint:
       type: object
       additionalProperties: false
-      required: [lat, lng]
+      required: [ lat, lng ]
       properties:
-        lat: {type: number, minimum: -90, maximum: 90}
-        lng: {type: number, minimum: -180, maximum: 180}
+        lat: { type: number, minimum: -90, maximum: 90 }
+        lng: { type: number, minimum: -180, maximum: 180 }
     SpawnZone:
       type: object
       additionalProperties: false
-      required: [id, name, source, geometry, node_ids, weight]
+      required: [ id, name, source, geometry, node_ids, weight ]
       properties:
-        id: {type: string, minLength: 1}
-        name: {type: string, minLength: 1}
-        source: {type: string, minLength: 1}
+        id: { type: string, minLength: 1 }
+        name: { type: string, minLength: 1 }
+        source: { type: string, minLength: 1 }
         geometry:
           type: array
           minItems: 4
-          items: {$ref: '#/components/schemas/GeoPoint'}
+          items: { $ref: '#/components/schemas/GeoPoint' }
         node_ids:
           type: array
           minItems: 1
-          items: {type: string}
-        weight: {type: number, minimum: 0}
+          items: { type: string }
+        weight: { type: number, minimum: 0 }
     GraphEdge:
       type: object
       additionalProperties: false
-      required: [id, from, to, distance_m, road_type, speed_mps, blocked, directed]
+      required: [ id, from, to, distance_m, road_type, speed_mps, blocked, directed ]
       properties:
-        id: {type: string, minLength: 1}
-        from: {type: string, minLength: 1}
-        to: {type: string, minLength: 1}
-        distance_m: {type: number, exclusiveMinimum: true, minimum: 0}
-        road_type: {type: string, minLength: 1}
-        speed_mps: {type: number, exclusiveMinimum: true, minimum: 0}
-        blocked: {type: boolean}
-        directed: {type: boolean}
-        bridge: {type: boolean}
+        id: { type: string, minLength: 1 }
+        from: { type: string, minLength: 1 }
+        to: { type: string, minLength: 1 }
+        distance_m: { type: number, exclusiveMinimum: true, minimum: 0 }
+        road_type: { type: string, minLength: 1 }
+        speed_mps: { type: number, exclusiveMinimum: true, minimum: 0 }
+        blocked: { type: boolean }
+        directed: { type: boolean }
+        bridge: { type: boolean }
         geometry:
           type: array
-          items: {$ref: '#/components/schemas/GeoPoint'}
+          items: { $ref: '#/components/schemas/GeoPoint' }
     Shelter:
       type: object
       additionalProperties: false
-      required: [id, node_id, capacity, occupancy]
+      required: [ id, node_id, capacity, occupancy ]
       properties:
-        id: {type: string, minLength: 1}
-        node_id: {type: string, minLength: 1}
-        capacity: {type: integer, minimum: 1}
-        occupancy: {type: integer, minimum: 0}
-        reserved: {type: integer, minimum: 0}
-        available: {type: integer, minimum: 0}
+        id: { type: string, minLength: 1 }
+        node_id: { type: string, minLength: 1 }
+        capacity: { type: integer, minimum: 1 }
+        occupancy: { type: integer, minimum: 0 }
+        reserved: { type: integer, minimum: 0 }
+        available: { type: integer, minimum: 0 }
     Graph:
       type: object
       additionalProperties: false
-      required: [version, source, nodes, edges, shelters]
+      required: [ version, source, nodes, edges, shelters ]
       properties:
-        version: {type: string, minLength: 1}
-        source: {type: string, minLength: 1}
+        version: { type: string, minLength: 1 }
+        source: { type: string, minLength: 1 }
         nodes:
           type: array
           minItems: 1
-          items: {$ref: '#/components/schemas/GraphNode'}
+          items: { $ref: '#/components/schemas/GraphNode' }
         edges:
           type: array
-          items: {$ref: '#/components/schemas/GraphEdge'}
+          items: { $ref: '#/components/schemas/GraphEdge' }
         shelters:
           type: array
           minItems: 4
           maxItems: 4
-          items: {$ref: '#/components/schemas/Shelter'}
+          items: { $ref: '#/components/schemas/Shelter' }
         spawn_zones:
           type: array
-          items: {$ref: '#/components/schemas/SpawnZone'}
+          items: { $ref: '#/components/schemas/SpawnZone' }
         coverage:
           type: array
-          items: {$ref: '#/components/schemas/GeoPoint'}
+          items: { $ref: '#/components/schemas/GeoPoint' }
     Zombie:
       type: object
       additionalProperties: false
-      required: [id, type, current_node, movement_state, awake, path]
+      required: [ id, type, current_node, movement_state, awake, path ]
       properties:
-        id: {type: string, minLength: 1}
-        type: {type: string, enum: [walker, runner, horde, sleeper]}
-        current_node: {type: string, minLength: 1}
-        movement_state: {type: string}
-        awake: {type: boolean}
+        id: { type: string, minLength: 1 }
+        type: { type: string, enum: [ walker, runner, horde, sleeper ] }
+        current_node: { type: string, minLength: 1 }
+        movement_state: { type: string }
+        awake: { type: boolean }
         path:
           type: array
           description: Recorrido del turno incluyendo origen, nodos intermedios y destino.
-          items: {type: string}
+          items: { type: string }
     Survivor:
       type: object
       additionalProperties: false
-      required: [id, current_node, status, target_shelter_id, planned_route]
+      required: [ id, current_node, status, target_shelter_id, planned_route ]
       properties:
-        id: {type: string, minLength: 1}
-        current_node: {type: string, minLength: 1}
-        status: {type: string, enum: [active, bitten, evacuated]}
-        target_shelter_id: {type: string}
-        spawn_zone_id: {type: string}
+        id: { type: string, minLength: 1 }
+        current_node: { type: string, minLength: 1 }
+        status: { type: string, enum: [ active, bitten, evacuated ] }
+        target_shelter_id: { type: string }
+        spawn_zone_id: { type: string }
         planned_route:
           type: array
-          items: {type: string}
+          items: { type: string }
     WorldEvent:
       type: object
       additionalProperties: false
-      required: [turn, type, entity_id, edge_id, message]
+      required: [ turn, type, entity_id, edge_id, message ]
       properties:
-        turn: {type: integer, minimum: 0}
-        type: {type: string}
-        entity_id: {type: string}
-        edge_id: {type: string}
-        message: {type: string}
+        turn: { type: integer, minimum: 0 }
+        type: { type: string }
+        entity_id: { type: string }
+        edge_id: { type: string }
+        message: { type: string }
     WorldMetrics:
       type: object
       additionalProperties: false
-      required: [evacuated, bitten, active, turns, requests_success, requests_invalid, requests_timeout, http_p50_ms, http_p95_ms, http_p99_ms, availability]
+      required:
+        [
+          evacuated,
+          bitten,
+          active,
+          turns,
+          requests_success,
+          requests_invalid,
+          requests_timeout,
+          http_p50_ms,
+          http_p95_ms,
+          http_p99_ms,
+          availability
+        ]
       properties:
-        evacuated: {type: integer, minimum: 0}
-        bitten: {type: integer, minimum: 0}
-        active: {type: integer, minimum: 0}
-        turns: {type: integer, minimum: 0}
-        requests_success: {type: integer, minimum: 0}
-        requests_invalid: {type: integer, minimum: 0}
-        requests_timeout: {type: integer, minimum: 0}
-        http_p50_ms: {type: number, minimum: 0}
-        http_p95_ms: {type: number, minimum: 0}
-        http_p99_ms: {type: number, minimum: 0}
-        availability: {type: number, minimum: 0, maximum: 1}
+        evacuated: { type: integer, minimum: 0 }
+        bitten: { type: integer, minimum: 0 }
+        active: { type: integer, minimum: 0 }
+        turns: { type: integer, minimum: 0 }
+        requests_success: { type: integer, minimum: 0 }
+        requests_invalid: { type: integer, minimum: 0 }
+        requests_timeout: { type: integer, minimum: 0 }
+        http_p50_ms: { type: number, minimum: 0 }
+        http_p95_ms: { type: number, minimum: 0 }
+        http_p99_ms: { type: number, minimum: 0 }
+        availability: { type: number, minimum: 0, maximum: 1 }
     WorldSnapshot:
       type: object
       additionalProperties: false
-      required: [turn, world_version, graph_version, zombies, survivors, shelters, blocked_edges, events, metrics]
+      required:
+        [
+          turn,
+          world_version,
+          graph_version,
+          zombies,
+          survivors,
+          shelters,
+          blocked_edges,
+          events,
+          metrics
+        ]
       properties:
-        turn: {type: integer, minimum: 0}
-        world_version: {type: integer, minimum: 0}
-        graph_version: {type: string}
+        turn: { type: integer, minimum: 0 }
+        world_version: { type: integer, minimum: 0 }
+        graph_version: { type: string }
         zombies:
           type: array
-          description: Solo zombies visibles; los sleepers dormidos se excluyen completamente.
-          items: {$ref: '#/components/schemas/Zombie'}
+          description: Solo zombies visibles; los sleepers dormidos se excluyen
+            completamente.
+          items: { $ref: '#/components/schemas/Zombie' }
         survivors:
           type: array
-          items: {$ref: '#/components/schemas/Survivor'}
+          items: { $ref: '#/components/schemas/Survivor' }
         shelters:
           type: array
-          items: {$ref: '#/components/schemas/Shelter'}
+          items: { $ref: '#/components/schemas/Shelter' }
         blocked_edges:
           type: array
-          items: {type: string}
+          items: { type: string }
         events:
           type: array
-          items: {$ref: '#/components/schemas/WorldEvent'}
-        metrics: {$ref: '#/components/schemas/WorldMetrics'}
+          items: { $ref: '#/components/schemas/WorldEvent' }
+        metrics: { $ref: '#/components/schemas/WorldMetrics' }
+        simulation:
+          $ref: "#/components/schemas/SimulationInfo"
     StepRequest:
       type: object
       additionalProperties: false
-      required: [sobrevivienteId, nodoActual, turno]
+      required: [ sobrevivienteId, nodoActual, turno ]
       properties:
-        sobrevivienteId: {type: string, minLength: 1, maxLength: 100}
-        nodoActual: {type: string, minLength: 1, maxLength: 100}
-        turno: {type: integer, minimum: 0}
+        sobrevivienteId: { type: string, minLength: 1, maxLength: 100 }
+        nodoActual: { type: string, minLength: 1, maxLength: 100 }
+        turno: { type: integer, minimum: 0 }
     StepResponse:
       type: object
       additionalProperties: false
-      required: [siguienteNodo]
+      required: [ siguienteNodo ]
       properties:
-        siguienteNodo: {type: string, minLength: 1}
+        siguienteNodo: { type: string, minLength: 1 }
     HealthResponse:
       type: object
       additionalProperties: false
-      required: [status, service, version]
+      required: [ status, service, version ]
       properties:
         status:
           type: string
-          enum: [ok]
+          enum: [ ok ]
         service:
           type: string
         version:
@@ -384,7 +656,7 @@ components:
     DemoItem:
       type: object
       additionalProperties: false
-      required: [id, title, description, status, createdAt]
+      required: [ id, title, description, status, createdAt ]
       properties:
         id:
           type: string
@@ -394,14 +666,14 @@ components:
           type: string
         status:
           type: string
-          enum: [active, pending, completed]
+          enum: [ active, pending, completed ]
         createdAt:
           type: string
           format: date-time
     Pagination:
       type: object
       additionalProperties: false
-      required: [page, pageSize, total]
+      required: [ page, pageSize, total ]
       properties:
         page:
           type: integer
@@ -416,7 +688,7 @@ components:
     ItemListResponse:
       type: object
       additionalProperties: false
-      required: [data, pagination]
+      required: [ data, pagination ]
       properties:
         data:
           type: array
@@ -427,33 +699,34 @@ components:
     SubmitRequest:
       type: object
       additionalProperties: false
-      required: [title]
+      required: [ title ]
       properties:
         title:
           type: string
           minLength: 1
           maxLength: 100
           pattern: '\S'
-          description: Se recortan espacios exteriores; debe contener al menos un carácter no blanco.
+          description: Se recortan espacios exteriores; debe contener al menos un carácter
+            no blanco.
         description:
           type: string
           maxLength: 1000
     SubmitResponse:
       type: object
       additionalProperties: false
-      required: [submissionId, status, message]
+      required: [ submissionId, status, message ]
       properties:
         submissionId:
           type: string
         status:
           type: string
-          enum: [accepted]
+          enum: [ accepted ]
         message:
           type: string
     ErrorDetail:
       type: object
       additionalProperties: false
-      required: [field, message]
+      required: [ field, message ]
       properties:
         field:
           type: string
@@ -462,18 +735,28 @@ components:
     ErrorResponse:
       type: object
       additionalProperties: false
-      required: [error]
+      required: [ error ]
       properties:
         error:
           $ref: '#/components/schemas/ErrorResponseError'
     ErrorResponseError:
       type: object
       additionalProperties: false
-      required: [code, message, requestId, details]
+      required: [ code, message, requestId, details ]
       properties:
         code:
           type: string
-          enum: [VALIDATION_ERROR, NOT_FOUND, INTERNAL_ERROR, UNAUTHORIZED, CONFLICT, UNAVAILABLE, TIMEOUT, METHOD_NOT_ALLOWED]
+          enum:
+            [
+              VALIDATION_ERROR,
+              NOT_FOUND,
+              INTERNAL_ERROR,
+              UNAUTHORIZED,
+              CONFLICT,
+              UNAVAILABLE,
+              TIMEOUT,
+              METHOD_NOT_ALLOWED
+            ]
         message:
           type: string
         requestId:
@@ -482,27 +765,231 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ErrorDetail'
+    SimulationInfo:
+      type: object
+      additionalProperties: false
+      required:
+        - run_id
+        - mode
+        - round
+        - state
+        - seed
+        - graph_version
+        - turn_limit
+        - interval_ms
+      properties:
+        run_id:
+          type: string
+        mode:
+          type: string
+          enum:
+            - competition
+            - full
+            - expanded
+        round:
+          type: string
+          enum:
+            - round1
+            - round2
+            - round3
+        state:
+          type: string
+          enum:
+            - idle
+            - starting
+            - running
+            - finished
+            - failed
+        seed:
+          type: integer
+          format: int64
+        graph_version: &a1
+          type: string
+        turn_limit:
+          type: integer
+          enum:
+            - 150
+        interval_ms:
+          type: integer
+          minimum: 0
+        started_at: *a1
+        ended_at: *a1
+        failure: *a1
+    GraphPreset:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - name
+        - nodes
+        - edges
+        - graph_version
+        - source
+        - coverage
+        - experimental
+        - enabled
+        - preview_available
+        - disabled_reason
+      properties:
+        id:
+          type: string
+          enum:
+            - competition
+            - full
+            - expanded
+        name: &a1
+          type: string
+        nodes:
+          type: integer
+          minimum: 1
+        edges:
+          type: integer
+          minimum: 1
+        graph_version: *a1
+        source: *a1
+        coverage: *a1
+        experimental:
+          type: boolean
+        enabled:
+          type: boolean
+        preview_available:
+          type: boolean
+        disabled_reason: *a1
+    SimulationRound:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - name
+        - survivors
+        - turns
+      properties:
+        id:
+          type: string
+          enum:
+            - round1
+            - round2
+            - round3
+        name:
+          type: string
+        survivors:
+          type: integer
+          enum:
+            - 20
+            - 80
+            - 200
+        turns:
+          type: integer
+          enum:
+            - 150
+    SimulationCatalog:
+      type: object
+      additionalProperties: false
+      required:
+        - default_mode
+        - presets
+        - rounds
+        - admin_enabled
+        - history_limit
+      properties:
+        default_mode:
+          type: string
+          enum:
+            - competition
+        presets:
+          type: array
+          items:
+            $ref: "#/components/schemas/GraphPreset"
+        rounds:
+          type: array
+          items:
+            $ref: "#/components/schemas/SimulationRound"
+        admin_enabled:
+          type: boolean
+        history_limit:
+          type: integer
+          minimum: 1
+    OperatorSession:
+      type: object
+      additionalProperties: false
+      required:
+        - enabled
+        - authenticated
+      properties:
+        enabled:
+          type: boolean
+        authenticated:
+          type: boolean
+        operator: &a1
+          type: string
+        csrf_token: *a1
+        expires_at: *a1
+    OperatorLogin:
+      type: object
+      additionalProperties: false
+      required:
+        - operator
+        - access_code
+      properties:
+        operator:
+          type: string
+          minLength: 1
+          maxLength: 64
+        access_code:
+          type: string
+          pattern: ^[A-Za-z0-9_-]{43}$
+          description: Código aleatorio de256bits introducido por el operador. Nunca se
+            incluye en bundles.
+    StartSimulation:
+      type: object
+      additionalProperties: false
+      required:
+        - mode
+        - round
+        - seed
+        - expected_run_id
+      properties:
+        mode:
+          type: string
+          enum:
+            - competition
+            - full
+            - expanded
+        round:
+          type: string
+          enum:
+            - round1
+            - round2
+            - round3
+        seed:
+          type: integer
+          format: int64
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        expected_run_id:
+          type: string
+          pattern: ^[a-f0-9]{32}$
   responses:
     Unauthorized:
       description: Falta la credencial privada o no es válida.
       content:
         application/json:
-          schema: {$ref: '#/components/schemas/ErrorResponse'}
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
     Conflict:
       description: Turno, nodo o estado del sobreviviente incoherente con el snapshot.
       content:
         application/json:
-          schema: {$ref: '#/components/schemas/ErrorResponse'}
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
     Unavailable:
       description: Aún no existe un snapshot disponible.
       content:
         application/json:
-          schema: {$ref: '#/components/schemas/ErrorResponse'}
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
     Timeout:
       description: Se agotó el tiempo para decidir el movimiento.
       content:
         application/json:
-          schema: {$ref: '#/components/schemas/ErrorResponse'}
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
     ValidationError:
       description: Entrada inválida; details identifica los campos con problemas.
       content:

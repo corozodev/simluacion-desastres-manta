@@ -110,17 +110,34 @@ type Metrics struct {
 }
 
 type WorldSnapshot struct {
-	Turn         int        `json:"turn"`
-	WorldVersion uint64     `json:"world_version"`
-	GraphVersion string     `json:"graph_version"`
-	Zombies      []Zombie   `json:"zombies"`
-	Survivors    []Survivor `json:"survivors"`
-	Shelters     []Shelter  `json:"shelters"`
-	BlockedEdges []string   `json:"blocked_edges"`
-	Events       []Event    `json:"events"`
-	Metrics      Metrics    `json:"metrics"`
+	Turn         int             `json:"turn"`
+	WorldVersion uint64          `json:"world_version"`
+	GraphVersion string          `json:"graph_version"`
+	Zombies      []Zombie        `json:"zombies"`
+	Survivors    []Survivor      `json:"survivors"`
+	Shelters     []Shelter       `json:"shelters"`
+	BlockedEdges []string        `json:"blocked_edges"`
+	Events       []Event         `json:"events"`
+	Metrics      Metrics         `json:"metrics"`
+	Simulation   *SimulationInfo `json:"simulation,omitempty"`
 	// Graph is local decision input; GET /grafo publishes it separately.
 	Graph *Graph `json:"-"`
+}
+
+// SimulationInfo identifies the run separately from a reusable graph version.
+// Operator identity belongs to the private audit log, never this public DTO.
+type SimulationInfo struct {
+	RunID        string `json:"run_id"`
+	Mode         string `json:"mode"`
+	Round        string `json:"round"`
+	State        string `json:"state"`
+	Seed         int64  `json:"seed"`
+	GraphVersion string `json:"graph_version"`
+	TurnLimit    int    `json:"turn_limit"`
+	IntervalMS   int64  `json:"interval_ms"`
+	StartedAt    string `json:"started_at,omitempty"`
+	EndedAt      string `json:"ended_at,omitempty"`
+	Failure      string `json:"failure,omitempty"`
 }
 
 type StepRequest struct {

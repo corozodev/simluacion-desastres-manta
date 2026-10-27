@@ -57,6 +57,10 @@ func (g *Graph) Clone() *Graph {
 
 func (w WorldSnapshot) Clone() WorldSnapshot {
 	copy := w
+	if w.Simulation != nil {
+		info := *w.Simulation
+		copy.Simulation = &info
+	}
 	copy.Graph = w.Graph.Clone()
 	copy.Zombies = append([]Zombie{}, w.Zombies...)
 	for i := range copy.Zombies {

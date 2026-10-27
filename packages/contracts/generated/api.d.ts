@@ -139,6 +139,93 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/simulation/catalog": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Catálogo aprobado; previsualizar no inicia una ronda. */
+        get: operations["getSimulationCatalog"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/simulation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Ejecución actual y configuración pública. */
+        get: operations["getSimulationInfo"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/runs/{run_id}/estado": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Snapshot observable conservado de una ronda terminada; historial acotado en memoria. */
+        get: operations["getCompletedRunState"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/session": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Estado de sesión; sólo una sesión válida recibe token CSRF. */
+        get: operations["getOperatorSession"];
+        put?: never;
+        /** Intercambia un código independiente generado en servidor por cookie HttpOnly. Requiere Origin permitido y JSON; tiene límite de intentos. */
+        post: operations["createOperatorSession"];
+        /** Revoca la sesión y su cookie; requiere Origin y CSRF. */
+        delete: operations["deleteOperatorSession"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/runs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Inicia sólo entre rondas; no interrumpe una ejecución ni permite rutas de archivo arbitrarias. */
+        post: operations["startSimulationRun"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -239,6 +326,7 @@ export interface components {
             blocked_edges: string[];
             events: components["schemas"]["WorldEvent"][];
             metrics: components["schemas"]["WorldMetrics"];
+            simulation?: components["schemas"]["SimulationInfo"];
         };
         StepRequest: {
             sobrevivienteId: string;
@@ -296,6 +384,76 @@ export interface components {
             message: string;
             requestId: string;
             details: components["schemas"]["ErrorDetail"][];
+        };
+        SimulationInfo: {
+            run_id: string;
+            /** @enum {string} */
+            mode: "competition" | "full" | "expanded";
+            /** @enum {string} */
+            round: "round1" | "round2" | "round3";
+            /** @enum {string} */
+            state: "idle" | "starting" | "running" | "finished" | "failed";
+            /** Format: int64 */
+            seed: number;
+            graph_version: string;
+            /** @enum {integer} */
+            turn_limit: 150;
+            interval_ms: number;
+            started_at?: string;
+            ended_at?: string;
+            failure?: string;
+        };
+        GraphPreset: {
+            /** @enum {string} */
+            id: "competition" | "full" | "expanded";
+            name: string;
+            nodes: number;
+            edges: number;
+            graph_version: string;
+            source: string;
+            coverage: string;
+            experimental: boolean;
+            enabled: boolean;
+            preview_available: boolean;
+            disabled_reason: string;
+        };
+        SimulationRound: {
+            /** @enum {string} */
+            id: "round1" | "round2" | "round3";
+            name: string;
+            /** @enum {integer} */
+            survivors: 20 | 80 | 200;
+            /** @enum {integer} */
+            turns: 150;
+        };
+        SimulationCatalog: {
+            /** @enum {string} */
+            default_mode: "competition";
+            presets: components["schemas"]["GraphPreset"][];
+            rounds: components["schemas"]["SimulationRound"][];
+            admin_enabled: boolean;
+            history_limit: number;
+        };
+        OperatorSession: {
+            enabled: boolean;
+            authenticated: boolean;
+            operator?: string;
+            csrf_token?: string;
+            expires_at?: string;
+        };
+        OperatorLogin: {
+            operator: string;
+            /** @description Código aleatorio de256bits introducido por el operador. Nunca se incluye en bundles. */
+            access_code: string;
+        };
+        StartSimulation: {
+            /** @enum {string} */
+            mode: "competition" | "full" | "expanded";
+            /** @enum {string} */
+            round: "round1" | "round2" | "round3";
+            /** Format: int64 */
+            seed: number;
+            expected_run_id: string;
         };
     };
     responses: {
@@ -413,7 +571,12 @@ export interface operations {
     };
     getWorldGraph: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Previsualización pública de un preset; no cambia la ronda activa. */
+                mode?: "competition" | "full" | "expanded";
+                /** @description Rechaza con409 si la ronda activa cambió; no se combina con mode. */
+                run_id?: string;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -427,6 +590,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Graph"];
+                };
+            };
+            /** @description La ronda cambió; volver a consultar /estado. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
             503: components["responses"]["Unavailable"];
@@ -560,6 +732,291 @@ export interface operations {
             500: components["responses"]["InternalError"];
         };
     };
+    getSimulationCatalog: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Respuesta pública. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SimulationCatalog"];
+                };
+            };
+            /** @description El estado no está preparado. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getSimulationInfo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Respuesta pública. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SimulationInfo"];
+                };
+            };
+            /** @description El estado no está preparado. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getCompletedRunState: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Snapshot público conservado. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorldSnapshot"];
+                };
+            };
+            /** @description Ronda no conservada. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getOperatorSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sesión o visitante. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OperatorSession"];
+                };
+            };
+        };
+    };
+    createOperatorSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OperatorLogin"];
+            };
+        };
+        responses: {
+            /** @description Sesión autenticada; cookie Secure HttpOnly SameSite=Strict. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OperatorSession"];
+                };
+            };
+            /** @description JSON no válido. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Acceso rechazado. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Origin rechazado. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Demasiados intentos. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Administración no configurada. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    deleteOperatorSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sesión cerrada. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OperatorSession"];
+                };
+            };
+            /** @description Sesión requerida. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description CSRF u Origin rechazado. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    startSimulationRun: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StartSimulation"];
+            };
+        };
+        responses: {
+            /** @description Nueva ronda; estado anterior conservado. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SimulationInfo"];
+                };
+            };
+            /** @description Configuración no válida. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Sesión requerida. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description CSRF, Origin o modo no habilitado. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Ronda activa, inicio en progreso o identificador anterior obsoleto. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description No pudo prepararse la ronda; estado anterior intacto. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
 }
 
 export type GraphNode = components['schemas']['GraphNode'];
@@ -584,3 +1041,10 @@ export type SubmitResponse = components['schemas']['SubmitResponse'];
 export type ErrorDetail = components['schemas']['ErrorDetail'];
 export type ErrorResponse = components['schemas']['ErrorResponse'];
 export type ErrorResponseError = components['schemas']['ErrorResponseError'];
+export type SimulationInfo = components['schemas']['SimulationInfo'];
+export type GraphPreset = components['schemas']['GraphPreset'];
+export type SimulationRound = components['schemas']['SimulationRound'];
+export type SimulationCatalog = components['schemas']['SimulationCatalog'];
+export type OperatorSession = components['schemas']['OperatorSession'];
+export type OperatorLogin = components['schemas']['OperatorLogin'];
+export type StartSimulation = components['schemas']['StartSimulation'];

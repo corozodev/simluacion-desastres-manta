@@ -6,18 +6,19 @@ import (
 	"fmt"
 	"log/slog"
 	"math"
+	"net"
+	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"syscall"
 	"time"
 
-	"corodev/evacuation/internal/application"
-	"corodev/evacuation/internal/coordination"
+	"corodev/evacuation/internal/catalog"
+	"corodev/evacuation/internal/control"
 	"corodev/evacuation/internal/decision"
-	"corodev/evacuation/internal/graph"
-	"corodev/evacuation/internal/simulation"
 )
 
 func env(name, fallback string) string {
@@ -26,43 +27,58 @@ func env(name, fallback string) string {
 	}
 	return fallback
 }
+func boolean(name string, fallback bool) (bool, error) {
+	if value := os.Getenv(name); value != "" {
+		v, err := strconv.ParseBool(value)
+		if err != nil {
+			return false, fmt.Errorf("invalid %s", name)
+		}
+		return v, nil
+	}
+	return fallback, nil
+}
 func run(logger *slog.Logger) error {
 	key := os.Getenv("API_KEY")
 	if strings.TrimSpace(key) == "" {
-		return errors.New("API_KEY is required; generate a local secret and keep it outside clients and repository")
+		return errors.New("API_KEY is required; keep it outside clients and repository")
 	}
-	g, err := graph.Load(env("GRAPH_PATH", "data/manta-v2.json"))
-	if err != nil {
-		return err
+	dataDir, scenarioDir := env("GRAPH_DATA_DIR", "data"), env("SCENARIO_DIR", "scenarios/urban")
+	if path := os.Getenv("GRAPH_PATH"); path != "" && filepath.Clean(path) != filepath.Join(dataDir, "manta-v2.json") {
+		return errors.New("GRAPH_PATH must select the competition catalog source; use the authenticated controller for other presets")
 	}
-	cfg, err := simulation.LoadConfig(env("SCENARIO_PATH", "scenarios/urban/round1.json"))
-	if err != nil {
-		return err
-	}
-	for name, destination := range map[string]*int{"SIM_TURNS": &cfg.Turns, "SIM_CONCURRENCY": &cfg.Concurrency} {
-		if value := os.Getenv(name); value != "" {
-			parsed, err := strconv.Atoi(value)
-			if err != nil || parsed < 1 {
-				return fmt.Errorf("invalid %s", name)
-			}
-			*destination = parsed
+	round := env("INITIAL_ROUND", "round1")
+	if path := os.Getenv("SCENARIO_PATH"); path != "" {
+		round = strings.TrimSuffix(filepath.Base(path), ".json")
+		if filepath.Clean(path) != filepath.Join(scenarioDir, round+".json") {
+			return errors.New("SCENARIO_PATH must select an approved urban round")
 		}
 	}
+	if value := os.Getenv("SIM_TURNS"); value != "" && value != "150" {
+		return errors.New("catalog rounds require SIM_TURNS=150")
+	}
+	concurrency := 0
+	if value := os.Getenv("SIM_CONCURRENCY"); value != "" {
+		v, err := strconv.Atoi(value)
+		if err != nil || v < 1 || v > 200 {
+			return errors.New("invalid SIM_CONCURRENCY")
+		}
+		concurrency = v
+	}
+	var seed *int64
 	if value := os.Getenv("SIM_SEED"); value != "" {
-		cfg.Seed, err = strconv.ParseInt(value, 10, 64)
-		if err != nil {
+		v, err := strconv.ParseInt(value, 10, 64)
+		if err != nil || v < -9007199254740991 || v > 9007199254740991 {
 			return errors.New("invalid SIM_SEED")
 		}
+		seed = &v
 	}
 	interval, err := time.ParseDuration(env("SIM_INTERVAL", "2s"))
 	if err != nil || interval < 0 {
 		return errors.New("invalid SIM_INTERVAL")
 	}
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer stop()
-	prediction, err := strconv.ParseBool(env("PREDICTION_ENABLED", "true"))
+	prediction, err := boolean("PREDICTION_ENABLED", true)
 	if err != nil {
-		return errors.New("invalid PREDICTION_ENABLED")
+		return err
 	}
 	riskWeight, err := strconv.ParseFloat(env("RISK_WEIGHT", "0.6"), 64)
 	if err != nil || riskWeight <= 0 || math.IsNaN(riskWeight) || math.IsInf(riskWeight, 0) {
@@ -72,25 +88,81 @@ func run(logger *slog.Logger) error {
 	if err != nil || predictionWeight <= 0 || math.IsNaN(predictionWeight) || math.IsInf(predictionWeight, 0) {
 		return errors.New("invalid PREDICTION_WEIGHT")
 	}
-	engine := decision.NewWithOptions(decision.Options{Prediction: prediction, RiskWeight: riskWeight, PredictionWeight: predictionWeight})
-	app, err := application.NewWithOptions(g, cfg, env("LISTEN_ADDR", "127.0.0.1:8080"), key, strings.Split(env("CORS_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173"), ","), logger, application.Options{Engine: engine, Planner: coordination.New(engine, coordination.Options{})})
+	full, err := boolean("ENABLE_FULL_MODE", false)
 	if err != nil {
 		return err
 	}
-	defer app.Close()
-	logger.Info("backend ready", "url", app.BaseURL, "scenario", cfg.Name, "nodes", len(g.Nodes), "edges", len(g.Edges), "turn_interval", interval.String())
-	go func() {
-		err := app.Simulator.Run(ctx, cfg.Turns, interval)
-		if err != nil && ctx.Err() == nil {
-			logger.Error("simulation stopped", "error", err.Error())
-			stop()
-			return
+	expanded, err := boolean("ENABLE_EXPANDED_MODE", false)
+	if err != nil {
+		return err
+	}
+	autoStart, err := boolean("SIM_AUTOSTART", true)
+	if err != nil {
+		return err
+	}
+	localAdmin, err := boolean("ADMIN_ALLOW_INSECURE_LOOPBACK", false)
+	if err != nil {
+		return err
+	}
+	address := env("LISTEN_ADDR", "127.0.0.1:8080")
+	host, _, err := net.SplitHostPort(address)
+	if err != nil {
+		return err
+	}
+	if localAdmin {
+		ip := net.ParseIP(host)
+		if ip == nil || !ip.IsLoopback() {
+			return errors.New("insecure admin development requires a literal loopback listener")
 		}
-		if ctx.Err() == nil {
-			logger.Info("simulation finished; final snapshot remains available", "metrics", app.Simulator.Snapshot().Metrics)
+	}
+	c, err := catalog.New(dataDir, scenarioDir, catalog.Options{EnableFull: full, EnableExpanded: expanded, Concurrency: concurrency})
+	if err != nil {
+		return err
+	}
+	origins := strings.Split(env("CORS_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173"), ",")
+	m, err := control.New(c, control.Options{APIKey: key, Origins: origins, Logger: logger, Engine: decision.Options{Prediction: prediction, RiskWeight: riskWeight, PredictionWeight: predictionWeight}, Interval: interval, Round: round, Seed: seed, AutoStart: autoStart, Admin: control.AdminOptions{Operator: os.Getenv("ADMIN_OPERATOR"), AccessHash: os.Getenv("ADMIN_ACCESS_HASH"), AllowInsecureLoopback: localAdmin}})
+	if err != nil {
+		return err
+	}
+	defer m.Close()
+	network := "tcp"
+	if ip := net.ParseIP(host); host == "" || ip != nil && ip.To4() != nil {
+		network = "tcp4"
+	}
+	listener, err := net.Listen(network, address)
+	if err != nil {
+		return err
+	}
+	server := &http.Server{Handler: m, ReadHeaderTimeout: 2 * time.Second, ReadTimeout: 2 * time.Second, WriteTimeout: 15 * time.Second, IdleTimeout: 30 * time.Second, MaxHeaderBytes: 16 << 10}
+	done := make(chan error, 1)
+	go func() { done <- server.Serve(listener) }()
+	actualHost, port, _ := net.SplitHostPort(listener.Addr().String())
+	if actualHost == "" || actualHost == "0.0.0.0" {
+		actualHost = "127.0.0.1"
+	}
+	if actualHost == "::" {
+		actualHost = "::1"
+	}
+	info := m.Info()
+	preset, _ := c.Preset("competition")
+	cfg, _ := c.Config("competition", round, seed)
+	logger.Info("backend ready", "url", "http://"+net.JoinHostPort(actualHost, port), "scenario", cfg.Name, "nodes", preset.Nodes, "edges", preset.Edges, "turn_interval", interval.String(), "mode", info.Mode, "admin_enabled", os.Getenv("ADMIN_ACCESS_HASH") != "")
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+	select {
+	case <-ctx.Done():
+	case err := <-done:
+		if !errors.Is(err, http.ErrServerClosed) {
+			_ = listener.Close()
+			return err
 		}
-	}()
-	<-ctx.Done()
+	}
+	shutdown, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if err := server.Shutdown(shutdown); err != nil {
+		_ = server.Close()
+		return err
+	}
 	return nil
 }
 func main() {

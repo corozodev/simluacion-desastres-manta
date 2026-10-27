@@ -381,6 +381,7 @@ class WorldSnapshot {
     required this.blockedEdges,
     required this.events,
     required this.metrics,
+    this.simulation,
   });
 
   final int turn;
@@ -392,6 +393,7 @@ class WorldSnapshot {
   final List<String> blockedEdges;
   final List<WorldEvent> events;
   final WorldMetrics metrics;
+  final SimulationInfo? simulation;
 
   factory WorldSnapshot.fromJson(Map<String, dynamic> json) => WorldSnapshot(
     turn: json['turn'] as int,
@@ -403,6 +405,7 @@ class WorldSnapshot {
     blockedEdges: (json['blocked_edges'] as List).map((value) => value as String).toList(),
     events: (json['events'] as List).map((value) => WorldEvent.fromJson(Map<String, dynamic>.from(value as Map))).toList(),
     metrics: WorldMetrics.fromJson(Map<String, dynamic>.from(json['metrics'] as Map)),
+    simulation: json['simulation'] == null ? null : SimulationInfo.fromJson(Map<String, dynamic>.from(json['simulation'] as Map)),
   );
 
   Map<String, dynamic> toJson() => {
@@ -415,6 +418,7 @@ class WorldSnapshot {
     'blocked_edges': blockedEdges.map((value) => value).toList(),
     'events': events.map((value) => value.toJson()).toList(),
     'metrics': metrics.toJson(),
+    if (simulation != null) 'simulation': simulation!.toJson(),
   };
 }
 
@@ -543,5 +547,61 @@ class ErrorResponseError {
     'message': message,
     'requestId': requestId,
     'details': details.map((value) => value.toJson()).toList(),
+  };
+}
+
+class SimulationInfo {
+  const SimulationInfo({
+    required this.runId,
+    required this.mode,
+    required this.round,
+    required this.state,
+    required this.seed,
+    required this.graphVersion,
+    required this.turnLimit,
+    required this.intervalMs,
+    this.startedAt,
+    this.endedAt,
+    this.failure,
+  });
+
+  final String runId;
+  final String mode;
+  final String round;
+  final String state;
+  final int seed;
+  final String graphVersion;
+  final int turnLimit;
+  final int intervalMs;
+  final String? startedAt;
+  final String? endedAt;
+  final String? failure;
+
+  factory SimulationInfo.fromJson(Map<String, dynamic> json) => SimulationInfo(
+    runId: json['run_id'] as String,
+    mode: json['mode'] as String,
+    round: json['round'] as String,
+    state: json['state'] as String,
+    seed: json['seed'] as int,
+    graphVersion: json['graph_version'] as String,
+    turnLimit: json['turn_limit'] as int,
+    intervalMs: json['interval_ms'] as int,
+    startedAt: json['started_at'] == null ? null : json['started_at'] as String,
+    endedAt: json['ended_at'] == null ? null : json['ended_at'] as String,
+    failure: json['failure'] == null ? null : json['failure'] as String,
+  );
+
+  Map<String, dynamic> toJson() => {
+    'run_id': runId,
+    'mode': mode,
+    'round': round,
+    'state': state,
+    'seed': seed,
+    'graph_version': graphVersion,
+    'turn_limit': turnLimit,
+    'interval_ms': intervalMs,
+    if (startedAt != null) 'started_at': startedAt!,
+    if (endedAt != null) 'ended_at': endedAt!,
+    if (failure != null) 'failure': failure!,
   };
 }

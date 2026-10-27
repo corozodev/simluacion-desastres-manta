@@ -472,6 +472,9 @@
         },
         "metrics": {
           "$ref": "#/definitions/WorldMetrics"
+        },
+        "simulation": {
+          "$ref": "#/definitions/SimulationInfo"
         }
       }
     },
@@ -718,6 +721,294 @@
           "items": {
             "$ref": "#/definitions/ErrorDetail"
           }
+        }
+      }
+    },
+    "SimulationInfo": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "run_id",
+        "mode",
+        "round",
+        "state",
+        "seed",
+        "graph_version",
+        "turn_limit",
+        "interval_ms"
+      ],
+      "properties": {
+        "run_id": {
+          "type": "string"
+        },
+        "mode": {
+          "type": "string",
+          "enum": [
+            "competition",
+            "full",
+            "expanded"
+          ]
+        },
+        "round": {
+          "type": "string",
+          "enum": [
+            "round1",
+            "round2",
+            "round3"
+          ]
+        },
+        "state": {
+          "type": "string",
+          "enum": [
+            "idle",
+            "starting",
+            "running",
+            "finished",
+            "failed"
+          ]
+        },
+        "seed": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "graph_version": {
+          "type": "string"
+        },
+        "turn_limit": {
+          "type": "integer",
+          "enum": [
+            150
+          ]
+        },
+        "interval_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "started_at": {
+          "type": "string"
+        },
+        "ended_at": {
+          "type": "string"
+        },
+        "failure": {
+          "type": "string"
+        }
+      }
+    },
+    "GraphPreset": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name",
+        "nodes",
+        "edges",
+        "graph_version",
+        "source",
+        "coverage",
+        "experimental",
+        "enabled",
+        "preview_available",
+        "disabled_reason"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "enum": [
+            "competition",
+            "full",
+            "expanded"
+          ]
+        },
+        "name": {
+          "type": "string"
+        },
+        "nodes": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "edges": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "graph_version": {
+          "type": "string"
+        },
+        "source": {
+          "type": "string"
+        },
+        "coverage": {
+          "type": "string"
+        },
+        "experimental": {
+          "type": "boolean"
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "preview_available": {
+          "type": "boolean"
+        },
+        "disabled_reason": {
+          "type": "string"
+        }
+      }
+    },
+    "SimulationRound": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name",
+        "survivors",
+        "turns"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "enum": [
+            "round1",
+            "round2",
+            "round3"
+          ]
+        },
+        "name": {
+          "type": "string"
+        },
+        "survivors": {
+          "type": "integer",
+          "enum": [
+            20,
+            80,
+            200
+          ]
+        },
+        "turns": {
+          "type": "integer",
+          "enum": [
+            150
+          ]
+        }
+      }
+    },
+    "SimulationCatalog": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "default_mode",
+        "presets",
+        "rounds",
+        "admin_enabled",
+        "history_limit"
+      ],
+      "properties": {
+        "default_mode": {
+          "type": "string",
+          "enum": [
+            "competition"
+          ]
+        },
+        "presets": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/GraphPreset"
+          }
+        },
+        "rounds": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/SimulationRound"
+          }
+        },
+        "admin_enabled": {
+          "type": "boolean"
+        },
+        "history_limit": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "OperatorSession": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "enabled",
+        "authenticated"
+      ],
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "authenticated": {
+          "type": "boolean"
+        },
+        "operator": {
+          "type": "string"
+        },
+        "csrf_token": {
+          "type": "string"
+        },
+        "expires_at": {
+          "type": "string"
+        }
+      }
+    },
+    "OperatorLogin": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "operator",
+        "access_code"
+      ],
+      "properties": {
+        "operator": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "access_code": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{43}$",
+          "description": "Código aleatorio de256bits introducido por el operador. Nunca se incluye en bundles."
+        }
+      }
+    },
+    "StartSimulation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mode",
+        "round",
+        "seed",
+        "expected_run_id"
+      ],
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": [
+            "competition",
+            "full",
+            "expanded"
+          ]
+        },
+        "round": {
+          "type": "string",
+          "enum": [
+            "round1",
+            "round2",
+            "round3"
+          ]
+        },
+        "seed": {
+          "type": "integer",
+          "format": "int64",
+          "minimum": -9007199254740991,
+          "maximum": 9007199254740991
+        },
+        "expected_run_id": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{32}$"
         }
       }
     }

@@ -27,6 +27,7 @@ type Options struct {
 	AllowedOrigins  []string
 	Logger          *slog.Logger
 	Observe         func(RequestTiming)
+	Metadata        func() *world.SimulationInfo
 }
 
 // RequestTiming is server-side instrumentation; client HTTP latency is measured
@@ -190,6 +191,9 @@ func (a *api) serve(w http.ResponseWriter, r *http.Request) {
 	}
 	switch r.URL.Path {
 	case "/estado":
+		if a.options.Metadata != nil {
+			snapshot.Simulation = a.options.Metadata()
+		}
 		writeJSON(w, 200, snapshot)
 	case "/grafo":
 		writeJSON(w, 200, snapshot.Graph)
