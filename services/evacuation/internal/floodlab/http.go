@@ -201,6 +201,11 @@ func requiredInput(raw json.RawMessage, destination any) bool {
 			return false
 		}
 		cfg, ok := requiredObject(body["config"], "mode", "seed", "rainfall_profile", "rainfall_intensity", "simulation_duration", "evacuation_behavior", "agents", "interval_ms", "shelters")
+		if hydraulic, present := cfg["hydrology"]; present {
+			if _, valid := requiredObject(hydraulic); !valid {
+				return false
+			}
+		}
 		if ref, present := cfg["geographic_reference"]; present {
 			if _, valid := requiredObject(ref, "enabled", "strength"); !valid {
 				return false

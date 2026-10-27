@@ -2,6 +2,7 @@ package sessions
 
 import (
 	"bytes"
+	"corodev/evacuation/internal/runlimits"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -309,7 +310,7 @@ func (m *Manager) capabilities() any {
 		"scenarios":      []any{map[string]any{"id": "zombie_outbreak", "name": "Brote zombie", "available": true, "synthetic": true}, map[string]any{"id": "urban_flood", "name": "Inundación urbana simulada", "available": true, "synthetic": true}},
 		"graph_profiles": profiles, "rounds": m.catalog.Rounds(),
 		"defaults": map[string]any{"scenario": "zombie_outbreak", "graph_profile": "BASE", "seed": 20261026, "max_ticks": m.options.DefaultMaxTicks, "tick_interval_ms": m.options.DefaultTickInterval.Milliseconds(), "survivors": 20, "round": "round1"},
-		"limits":   map[string]any{"max_active": m.options.MaxActive, "max_full_active": m.options.MaxFullActive, "max_retained": m.options.MaxRetained, "max_memory_bytes": m.options.MaxMemoryBytes, "min_tick_interval_ms": 1000, "max_tick_interval_ms": 5000, "max_ticks": 150, "max_survivors": 200},
+		"limits":   map[string]any{"max_active": m.options.MaxActive, "max_full_active": m.options.MaxFullActive, "max_retained": m.options.MaxRetained, "max_memory_bytes": m.options.MaxMemoryBytes, "min_tick_interval_ms": 1000, "max_tick_interval_ms": 5000, "max_ticks": runlimits.MaxTicks, "min_ticks": m.options.MinTicks, "official_max_ticks": runlimits.OfficialTicks, "max_survivors": 200},
 	}
 }
 

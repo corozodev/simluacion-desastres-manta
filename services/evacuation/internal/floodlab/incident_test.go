@@ -41,7 +41,7 @@ func pausedIncidentRun(t *testing.T, m *Manager) State {
 	cfg := compactConfig(m)
 	cfg.RainfallIntensity = 0
 	cfg.IntervalMS = 5000
-	cfg.SimulationDuration = 20
+	cfg.SimulationDuration = 30
 	s, err := m.Start(RunRequest{Config: cfg, ExpectedRunID: m.State().RunID})
 	if err != nil {
 		t.Fatal(err)

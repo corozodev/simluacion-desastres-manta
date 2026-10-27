@@ -3,53 +3,40 @@ package flood
 import (
 	"fmt"
 	"math"
-	"math/rand"
 	"sort"
 
 	"corodev/evacuation/internal/graph"
 	"corodev/evacuation/internal/world"
 )
 
-// ElevationProvider is a future adapter contract. A missing observation must be
-// reported as unavailable; this model never supplies or invents elevations.
-// Elevation alone cannot establish the safety of a location or its access.
+// ElevationProvider is reserved for a sourced DEM adapter. The current domain
+// uses named synthetic terrain and never claims elevations measured in Manta.
 type ElevationProvider interface {
 	ElevationAt(world.GeoPoint) (metres float64, available bool, provenance string)
 }
 
-type focus struct {
-	config ZoneConfig
-	center world.GeoPoint
-	factor float64
-	level  float64
-	radius float64
-}
-
-type distance struct {
-	focus int
-	value float64
-}
-
-type road struct {
+type hydraulicRoad struct {
 	condition world.RoadCondition
-	distances []distance
+	depth     float64
+	cells     []int
 }
 
-// Model belongs to the simulator's single writer. Public slices are independent
-// copies; HTTP readers consume the simulator's published immutable snapshot.
-// Memory is bounded by the graph and at most 32 pre-indexed synthetic zones.
+// Model belongs exclusively to the simulator writer. It retains one grid and
+// precomputed street-cell intersections, never a per-turn map history. There is
+// no radial exposure runtime; old radial configuration fields remain accepted
+// solely for HTTP/scenario compatibility and do not drive this engine.
 type Model struct {
 	config       Config
 	step         int
 	rainfall     float64
-	foci         []focus
-	roads        []road
-	nodes        map[string]world.GeoPoint
+	domain       *hydraulicDomain
+	roads        []hydraulicRoad
+	nodes        map[string]int
 	shelters     []world.ShelterCondition
-	shelterNodes []string
+	shelterCells []int
 }
 
-func New(g *world.Graph, seed int64, cfg Config) (*Model, error) {
+func New(g *world.Graph, _ int64, cfg Config) (*Model, error) {
 	cfg, err := cfg.WithDefaults()
 	if err != nil {
 		return nil, err
@@ -57,69 +44,33 @@ func New(g *world.Graph, seed int64, cfg Config) (*Model, error) {
 	if err := graph.Validate(g); err != nil {
 		return nil, fmt.Errorf("flood graph: %w", err)
 	}
-	m := &Model{config: cfg, nodes: map[string]world.GeoPoint{}}
+	m := &Model{config: cfg, domain: buildDomain(g, *cfg.Hydrology), nodes: map[string]int{}}
 	for _, n := range g.Nodes {
-		m.nodes[n.ID] = world.GeoPoint{Lat: n.Lat, Lng: n.Lng}
+		m.nodes[n.ID] = m.domain.cellAt(world.GeoPoint{Lat: n.Lat, Lng: n.Lng})
 	}
-	// This PRNG never consumes the simulator's agent/zombie random sequence.
-	rng := rand.New(rand.NewSource(seed ^ 0x464c4f4f44))
-	zones := append([]ZoneConfig(nil), cfg.Zones...)
-	generated := len(zones) == 0
-	if generated {
-		nodes := append([]world.GraphNode(nil), g.Nodes...)
-		sort.Slice(nodes, func(i, j int) bool { return nodes[i].ID < nodes[j].ID })
-		order := rng.Perm(len(nodes))
-		for i := 0; i < 3 && i < len(nodes); i++ {
-			zones = append(zones, ZoneConfig{ID: fmt.Sprintf("synthetic-%02d", i+1), CenterNode: nodes[order[i]].ID, RadiusMinM: 150, RadiusMaxM: 800})
-		}
+	points := map[string]world.GeoPoint{}
+	for _, n := range g.Nodes {
+		points[n.ID] = world.GeoPoint{Lat: n.Lat, Lng: n.Lng}
 	}
-	for _, z := range zones {
-		center, ok := m.nodes[z.CenterNode]
-		if !ok {
-			return nil, fmt.Errorf("flood zone %q references unknown center_node %q", z.ID, z.CenterNode)
-		}
-		factor := 1.0
-		if generated {
-			factor = .85 + .30*rng.Float64()
-		}
-		if cfg.GeographicReference != nil {
-			for _, r := range cfg.GeographicReference.Zones {
-				if r.ZoneID == z.ID {
-					factor *= r.Factor
-				}
-			}
-		}
-		m.foci = append(m.foci, focus{config: z, center: center, factor: factor, radius: z.RadiusMinM})
-	}
-	// Precompute centre-to-polyline distances once. The per-step road loop never
-	// reconstructs graph topology or scans unaffected streets.
 	for _, edge := range g.Edges {
 		geometry := edge.Geometry
-		if len(geometry) == 0 {
-			geometry = []world.GeoPoint{m.nodes[edge.From], m.nodes[edge.To]}
+		if len(geometry) < 2 {
+			geometry = []world.GeoPoint{points[edge.From], points[edge.To]}
 		}
-		source := "synthetic_urban_flood"
-		if cfg.GeographicReference != nil {
-			source += "+official_reference_experiment"
-		}
-		r := road{condition: world.RoadCondition{EdgeID: edge.ID, State: "passable", RiskSource: source, CostMultiplier: 1}}
-		for i, f := range m.foci {
-			d := polylineDistance(f.center, geometry)
-			if d <= f.config.RadiusMaxM {
-				r.distances = append(r.distances, distance{focus: i, value: d})
-			}
-		}
-		if len(r.distances) > 0 {
-			m.roads = append(m.roads, r)
-		}
+		m.roads = append(m.roads, hydraulicRoad{condition: world.RoadCondition{EdgeID: edge.ID, State: "passable", RiskSource: cfg.HydraulicModel, CostMultiplier: 1}, cells: m.cellsAlong(geometry)})
 	}
 	sort.Slice(m.roads, func(i, j int) bool { return m.roads[i].condition.EdgeID < m.roads[j].condition.EdgeID })
-	shelters := append([]world.Shelter(nil), g.Shelters...)
+	shelters := append([]world.Shelter{}, g.Shelters...)
 	sort.Slice(shelters, func(i, j int) bool { return shelters[i].ID < shelters[j].ID })
 	for _, sh := range shelters {
 		m.shelters = append(m.shelters, world.ShelterCondition{ShelterID: sh.ID, State: "available"})
-		m.shelterNodes = append(m.shelterNodes, sh.NodeID)
+		m.shelterCells = append(m.shelterCells, m.nodes[sh.NodeID])
 	}
+	if cfg.Hydrology.AntecedentRainHours > 0 {
+		m.domain.advance(cfg.Hydrology.AntecedentRainHours*3600, cfg.RainfallIntensity*RainfallScaleMMH)
+	}
+	m.domain.rainfall = 0
+	m.updateConditions()
 	return m, nil
 }
 
@@ -127,6 +78,10 @@ func (m *Model) Config() Config {
 	c := m.config
 	c.Zones = append([]ZoneConfig(nil), c.Zones...)
 	c.GeographicReference = c.GeographicReference.Clone()
+	if c.Hydrology != nil {
+		h := *c.Hydrology
+		c.Hydrology = &h
+	}
 	return c
 }
 
@@ -144,7 +99,7 @@ func (m *Model) profile(t float64) float64 {
 		if x >= .15 && x < .45 {
 			return 1
 		}
-	default: // storm
+	default:
 		if x < .55 {
 			return 1
 		}
@@ -152,8 +107,9 @@ func (m *Model) profile(t float64) float64 {
 	return 0
 }
 
-// Advance applies every omitted step in order. Repeated or older step numbers
-// are idempotent. Simulation time is step*time_step, capped at duration.
+// Advance integrates exact profile boundaries, then bounded physical substeps.
+// Repeated/older indices are idempotent and skipped indices run every step.
+// Physical rain never depends on visual playback or HTTP request timing.
 func (m *Model) Advance(step int) {
 	last := int(math.Ceil(m.config.SimulationDuration / m.config.TimeStep))
 	if step > last {
@@ -162,10 +118,8 @@ func (m *Model) Advance(step int) {
 	for m.step < step {
 		start := float64(m.step) * m.config.TimeStep
 		dt := math.Min(m.config.TimeStep, m.config.SimulationDuration-start)
-		m.rainfall = 0
 		end := start + dt
-		// Integrate across the profile boundaries even when a configured step
-		// spans an entire storm. A larger time_step cannot extend the rainfall.
+		m.rainfall = 0
 		for at := start; at < end; {
 			next := end
 			for _, fraction := range [...]float64{.15, .45, .55} {
@@ -175,36 +129,15 @@ func (m *Model) Advance(step int) {
 				}
 			}
 			segment := next - at
-			rainfall := m.config.RainfallIntensity * m.profile(at)
-			m.rainfall += rainfall * segment / dt
-			for i := range m.foci {
-				f := &m.foci[i]
-				input := m.config.FloodGrowthRate * rainfall * f.factor
-				if m.config.DrainageFactor == 0 {
-					f.level = clamp(f.level + input*segment)
-				} else {
-					// Expm1 avoids cancellation for tiny drainage*time_step.
-					gain := -math.Expm1(-m.config.DrainageFactor * segment)
-					f.level = clamp(f.level*(1-gain) + input*(gain/m.config.DrainageFactor))
-				}
-			}
+			rain := m.config.RainfallIntensity * m.profile(at)
+			m.rainfall += rain * segment / dt
+			m.domain.advance(segment/m.config.TimeStep*m.config.Hydrology.SecondsPerTurn, rain*RainfallScaleMMH)
 			at = next
 		}
-		for i := range m.foci {
-			f := &m.foci[i]
-			f.radius = f.config.RadiusMinM + (f.config.RadiusMaxM-f.config.RadiusMinM)*f.level
-		}
+		m.domain.rainfall = m.rainfall * RainfallScaleMMH
 		m.step++
 		m.updateConditions()
 	}
-}
-
-func exposure(f focus, d float64) float64 {
-	if d >= f.radius {
-		return 0
-	}
-	x := d / f.radius
-	return clamp(f.level * (1 - x*x))
 }
 
 func nextState(previous string, risk float64, t RoadThresholds) string {
@@ -220,105 +153,137 @@ func nextState(previous string, risk float64, t RoadThresholds) string {
 	return "passable"
 }
 
+func (m *Model) depthAt(cell int) float64 {
+	if cell < 0 || cell >= len(m.domain.depth) {
+		return 0
+	}
+	return m.domain.depth[cell]
+}
+func (m *Model) risk(depth float64) float64 { return clamp(depth / m.config.Hydrology.BlockedDepthM) }
+
 func (m *Model) updateConditions() {
+	h := m.config.Hydrology
+	t := RoadThresholds{Caution: h.CautionDepthM, Blocked: h.BlockedDepthM, Hysteresis: h.HysteresisM, CautionPenalty: m.config.RoadRiskThresholds.CautionPenalty}
 	for i := range m.roads {
 		r := &m.roads[i]
-		risk := 0.0
-		for _, d := range r.distances {
-			risk = math.Max(risk, exposure(m.foci[d.focus], d.value))
+		depth := 0.0
+		for _, cell := range r.cells {
+			depth = math.Max(depth, m.depthAt(cell))
 		}
-		state := nextState(r.condition.State, risk, m.config.RoadRiskThresholds)
+		state, risk := nextState(r.condition.State, depth, t), m.risk(depth)
 		if risk != r.condition.RiskScore || state != r.condition.State {
-			r.condition.RiskScore, r.condition.State = risk, state
 			r.condition.UpdatedAtSimulationStep = m.step
-			r.condition.CostMultiplier = 1
-			if state == "caution" {
-				r.condition.CostMultiplier += m.config.RoadRiskThresholds.CautionPenalty
-			}
+		}
+		// Public Roads() deep-copies this internal scalar.
+		r.depth = depth
+		r.condition.DepthM = &r.depth
+		r.condition.State = state
+		r.condition.RiskScore = risk
+		r.condition.CostMultiplier = 1
+		if state == "caution" {
+			r.condition.CostMultiplier += t.CautionPenalty
 		}
 	}
 	for i := range m.shelters {
 		sh := &m.shelters[i]
-		risk := m.ExposureAt(m.shelterNodes[i])
-		state := "available"
+		risk := m.risk(m.depthAt(m.shelterCells[i]))
 		threshold := m.config.ShelterExposureThreshold
 		if sh.State == "exposed" {
-			threshold = math.Max(threshold*.5, threshold-m.config.RoadRiskThresholds.Hysteresis)
+			threshold = math.Max(threshold*.5, threshold-h.HysteresisM/h.BlockedDepthM)
 		}
+		state := "available"
 		if risk >= threshold {
 			state = "exposed"
 		}
 		if risk != sh.RiskScore || state != sh.State {
-			sh.RiskScore, sh.State = risk, state
 			sh.UpdatedAtSimulationStep = m.step
 		}
+		sh.RiskScore, sh.State = risk, state
 	}
 }
 
-func (m *Model) Zones() []world.FloodZone {
-	zones := make([]world.FloodZone, 0, len(m.foci))
-	for _, f := range m.foci {
-		zones = append(zones, world.FloodZone{ID: f.config.ID, Center: f.center, RadiusM: f.radius, Intensity: f.level})
-	}
-	return zones
-}
-
-// Roads returns only the pre-indexed candidate overlay, including recovered
-// passable roads. Baseline and explicit-event closures are combined by the core.
+// Zones is an empty compatibility collection. Calculated hydraulic cells are
+// the only active inundation extent; no circles or polygons substitute flow.
+func (m *Model) Zones() []world.FloodZone { return []world.FloodZone{} }
 func (m *Model) Roads() []world.RoadCondition {
 	roads := make([]world.RoadCondition, len(m.roads))
 	for i := range m.roads {
 		roads[i] = m.roads[i].condition
+		if roads[i].DepthM != nil {
+			depth := *roads[i].DepthM
+			roads[i].DepthM = &depth
+		}
 	}
 	return roads
 }
-
-// Shelters reports only exposure. Occupancy, reservations and road access remain
-// authoritative simulator/planner responsibilities.
 func (m *Model) Shelters() []world.ShelterCondition {
-	return append([]world.ShelterCondition(nil), m.shelters...)
+	return append([]world.ShelterCondition{}, m.shelters...)
 }
-
 func (m *Model) ExposureAt(nodeID string) float64 {
-	p, ok := m.nodes[nodeID]
+	cell, ok := m.nodes[nodeID]
 	if !ok {
 		return 0
 	}
-	risk := 0.0
-	for _, f := range m.foci {
-		risk = math.Max(risk, exposure(f, pointDistance(f.center, p)))
-	}
-	return risk
+	return m.risk(m.depthAt(cell))
 }
-
 func (m *Model) Rainfall() float64 { return m.rainfall }
 
-// Local equirectangular coordinates are adequate for these bounded synthetic
-// footprints on the Manta graph; no terrain, slope or hydrology is inferred.
-func project(origin, p world.GeoPoint) (x, y float64) {
-	const earthRadius = 6371000.0
-	const radians = math.Pi / 180
-	x = (p.Lng - origin.Lng) * radians * math.Cos(origin.Lat*radians) * earthRadius
-	y = (p.Lat - origin.Lat) * radians * earthRadius
-	return x, y
-}
-
-func pointDistance(origin, p world.GeoPoint) float64 {
-	x, y := project(origin, p)
-	return math.Hypot(x, y)
-}
-
-func polylineDistance(center world.GeoPoint, points []world.GeoPoint) float64 {
-	best := math.Inf(1)
-	for i := 1; i < len(points); i++ {
-		ax, ay := project(center, points[i-1])
-		bx, by := project(center, points[i])
-		dx, dy := bx-ax, by-ay
-		u := 0.0
-		if length2 := dx*dx + dy*dy; length2 > 0 {
-			u = math.Max(0, math.Min(1, -(ax*dx+ay*dy)/length2))
+func (m *Model) HydraulicSnapshot() *world.HydraulicSnapshot {
+	d := m.domain
+	s := &world.HydraulicSnapshot{Model: m.config.HydraulicModel, TerrainSource: "synthetic-coastal-basin-v1", Grid: d.grid, DepthsM: append([]float64{}, d.depth...), RainfallMMH: d.rainfall, HydrologicalTimeSeconds: d.clock, MassBalance: d.budget()}
+	for _, depth := range d.depth {
+		if depth >= .01 {
+			s.FloodedAreaM2 += d.grid.CellSizeM * d.grid.CellSizeM
 		}
-		best = math.Min(best, math.Hypot(ax+u*dx, ay+u*dy))
+		s.MaxDepthM = math.Max(s.MaxDepthM, depth)
 	}
-	return best
+	return s
+}
+
+// cellsAlong visits every grid cell intersected by a segment interior. Splitting
+// at each vertical/horizontal grid line avoids missing a flooded interior cell
+// even when both road endpoints are dry. Geometry is indexed once at creation.
+func (m *Model) cellsAlong(points []world.GeoPoint) []int {
+	seen := map[int]bool{}
+	grid := m.domain.grid
+	add := func(p world.GeoPoint) {
+		if i := m.domain.cellAt(p); i >= 0 {
+			seen[i] = true
+		}
+	}
+	for j := 1; j < len(points); j++ {
+		a, b := points[j-1], points[j]
+		add(a)
+		add(b)
+		times := []float64{0, 1}
+		if b.Lng != a.Lng {
+			for c := 0; c <= grid.Cols; c++ {
+				x := grid.Origin.Lng + float64(c)*grid.LngStep
+				t := (x - a.Lng) / (b.Lng - a.Lng)
+				if t > 0 && t < 1 {
+					times = append(times, t)
+				}
+			}
+		}
+		if b.Lat != a.Lat {
+			for r := 0; r <= grid.Rows; r++ {
+				y := grid.Origin.Lat + float64(r)*grid.LatStep
+				t := (y - a.Lat) / (b.Lat - a.Lat)
+				if t > 0 && t < 1 {
+					times = append(times, t)
+				}
+			}
+		}
+		sort.Float64s(times)
+		for k := 1; k < len(times); k++ {
+			t := (times[k-1] + times[k]) * .5
+			add(world.GeoPoint{Lat: a.Lat + t*(b.Lat-a.Lat), Lng: a.Lng + t*(b.Lng-a.Lng)})
+		}
+	}
+	cells := make([]int, 0, len(seen))
+	for cell := range seen {
+		cells = append(cells, cell)
+	}
+	sort.Ints(cells)
+	return cells
 }

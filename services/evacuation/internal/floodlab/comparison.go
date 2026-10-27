@@ -38,6 +38,7 @@ func (m *Manager) Compare(req RunRequest) (State, error) {
 	m.mu.Lock()
 	if m.state.State == "running" || m.state.State == "idle" {
 		m.state.State = "paused"
+		m.state.RuntimeElapsedMS = runtimeElapsed(m.current, true)
 	}
 	m.state.Comparison = &Comparison{ID: id, State: "running", Message: "Ejecutando A: cuatro candidatos originales.", Results: []ComparisonResult{}}
 	m.compareCancel, m.compareDone = cancel, done

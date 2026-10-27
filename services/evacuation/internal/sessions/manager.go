@@ -21,6 +21,7 @@ import (
 	"corodev/evacuation/internal/decision"
 	"corodev/evacuation/internal/flood"
 	"corodev/evacuation/internal/graph"
+	"corodev/evacuation/internal/runlimits"
 	"corodev/evacuation/internal/simulation"
 	"corodev/evacuation/internal/world"
 )
@@ -166,7 +167,7 @@ func (m *Manager) validate(req CreateRequest) error {
 	if !ok || !p.Enabled || req.GraphProfile == "FULL_MANTA" && m.options.MaxFullActive == 0 {
 		return &Error{400, "VALIDATION_ERROR", "El perfil de grafo no está habilitado."}
 	}
-	if req.Seed != nil && (*req.Seed < -9007199254740991 || *req.Seed > 9007199254740991) || req.MaxTicks != nil && (*req.MaxTicks < 1 || *req.MaxTicks > 150) || req.TickIntervalMS != nil && (*req.TickIntervalMS < 1000 || *req.TickIntervalMS > 5000) || req.Config.Survivors != nil && (*req.Config.Survivors < 1 || *req.Config.Survivors > 200) {
+	if req.Seed != nil && (*req.Seed < -9007199254740991 || *req.Seed > 9007199254740991) || req.MaxTicks != nil && (*req.MaxTicks < m.options.MinTicks || *req.MaxTicks > runlimits.MaxTicks) || req.TickIntervalMS != nil && (*req.TickIntervalMS < 1000 || *req.TickIntervalMS > 5000) || req.Config.Survivors != nil && (*req.Config.Survivors < 1 || *req.Config.Survivors > 200) {
 		return invalid()
 	}
 	if len(req.Config.RefugeIDs) > 4 || req.Config.CustomShelters != nil && len(req.Config.CustomShelters) != 4 {
@@ -207,7 +208,7 @@ func (m *Manager) prepare(req CreateRequest) (*execution, error) {
 		interval = *req.TickIntervalMS
 	}
 	if req.Config.Mode == "official" {
-		maxTicks, interval = 150, 2000
+		maxTicks, interval = runlimits.OfficialTicks, 2000
 	}
 	cfg.Turns = maxTicks
 	if req.Config.Survivors != nil {
@@ -276,6 +277,7 @@ func (m *Manager) prepare(req CreateRequest) (*execution, error) {
 		cfg.Walkers, cfg.Runners, cfg.Hordes, cfg.Sleepers = 0, 0, 0, 0
 		cfg.Events = nil
 		fc := flood.DefaultConfig()
+		fc.SimulationDuration = float64(maxTicks)
 		if req.Config.RainfallIntensity != nil {
 			fc.RainfallIntensity = *req.Config.RainfallIntensity
 		}

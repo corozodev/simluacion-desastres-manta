@@ -4,7 +4,9 @@ package floodlab
 
 import (
 	"corodev/evacuation/internal/catalog"
+	"corodev/evacuation/internal/flood"
 	"corodev/evacuation/internal/incidents"
+	"corodev/evacuation/internal/runlimits"
 	"corodev/evacuation/internal/world"
 )
 
@@ -20,16 +22,18 @@ type Candidate struct {
 }
 
 type RunConfig struct {
-	Mode                string               `json:"mode"`
-	Seed                int64                `json:"seed"`
-	RainfallProfile     string               `json:"rainfall_profile"`
-	RainfallIntensity   float64              `json:"rainfall_intensity"`
-	SimulationDuration  float64              `json:"simulation_duration"`
-	EvacuationBehavior  string               `json:"evacuation_behavior"`
-	Agents              int                  `json:"agents"`
-	IntervalMS          int                  `json:"interval_ms"`
-	Shelters            []Candidate          `json:"shelters"`
-	GeographicReference *GeographicReference `json:"geographic_reference,omitempty"`
+	HydraulicModel      string                 `json:"hydraulic_model,omitempty"`
+	Hydrology           *flood.HydrologyConfig `json:"hydrology,omitempty"`
+	Mode                string                 `json:"mode"`
+	Seed                int64                  `json:"seed"`
+	RainfallProfile     string                 `json:"rainfall_profile"`
+	RainfallIntensity   float64                `json:"rainfall_intensity"`
+	SimulationDuration  float64                `json:"simulation_duration"`
+	EvacuationBehavior  string                 `json:"evacuation_behavior"`
+	Agents              int                    `json:"agents"`
+	IntervalMS          int                    `json:"interval_ms"`
+	Shelters            []Candidate            `json:"shelters"`
+	GeographicReference *GeographicReference   `json:"geographic_reference,omitempty"`
 }
 type GeographicReference struct {
 	Enabled        bool    `json:"enabled"`
@@ -76,12 +80,13 @@ type Preset struct {
 }
 
 type Catalog struct {
-	Modes            []catalog.Preset `json:"modes"`
-	Presets          []Preset         `json:"presets"`
-	DefaultConfig    RunConfig        `json:"default_config"`
-	OriginalShelters []Candidate      `json:"original_shelters"`
-	MaxSnapDistanceM float64          `json:"max_snap_distance_m"`
-	Disclaimer       string           `json:"disclaimer"`
+	DurationLimits   runlimits.DurationLimits `json:"duration_limits"`
+	Modes            []catalog.Preset         `json:"modes"`
+	Presets          []Preset                 `json:"presets"`
+	DefaultConfig    RunConfig                `json:"default_config"`
+	OriginalShelters []Candidate              `json:"original_shelters"`
+	MaxSnapDistanceM float64                  `json:"max_snap_distance_m"`
+	Disclaimer       string                   `json:"disclaimer"`
 }
 
 type Origin struct {
@@ -121,6 +126,7 @@ type Comparison struct {
 }
 
 type State struct {
+	RuntimeElapsedMS     float64                 `json:"runtime_elapsed_ms"`
 	RunID                string                  `json:"run_id"`
 	State                string                  `json:"state"`
 	Mode                 string                  `json:"mode"`
@@ -136,6 +142,10 @@ type State struct {
 
 func cloneConfig(c RunConfig) RunConfig {
 	c.Shelters = append([]Candidate{}, c.Shelters...)
+	if c.Hydrology != nil {
+		h := *c.Hydrology
+		c.Hydrology = &h
+	}
 	if c.GeographicReference != nil {
 		r := *c.GeographicReference
 		c.GeographicReference = &r

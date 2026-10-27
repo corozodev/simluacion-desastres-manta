@@ -97,6 +97,7 @@ func testManager(t testing.TB, change func(*Options)) (*Manager, *fakeClock) {
 	t.Helper()
 	clock := newClock()
 	o := DefaultOptions()
+	o.MinTicks = 1 // Lifecycle fixtures exercise one/two turns; public defaults remain 30.
 	o.Clock = clock
 	if change != nil {
 		change(&o)

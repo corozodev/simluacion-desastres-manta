@@ -34,7 +34,7 @@ func newManager(t *testing.T) *Manager {
 func compactConfig(m *Manager) RunConfig {
 	cfg := m.Catalog().DefaultConfig
 	cfg.Agents = 8
-	cfg.SimulationDuration = 12
+	cfg.SimulationDuration = 30
 	cfg.IntervalMS = 10
 	return cfg
 }
@@ -57,7 +57,7 @@ func TestControllerPauseResumeRestartAndRepeatPreserveClockAndOrigins(t *testing
 	m := newManager(t)
 	cfg := compactConfig(m)
 	cfg.IntervalMS = 100
-	cfg.SimulationDuration = 20
+	cfg.SimulationDuration = 30
 	state, err := m.Start(RunRequest{Config: cfg, ExpectedRunID: m.State().RunID})
 	if err != nil {
 		t.Fatal(err)
@@ -101,7 +101,7 @@ func TestControllerPauseResumeRestartAndRepeatPreserveClockAndOrigins(t *testing
 		t.Fatal(err)
 	}
 	final := waitState(t, m, func(s State) bool { return s.State == "finished" })
-	if final.Scenario.SimulationStep != 20 || final.Config.IntervalMS != 0 || len(final.Timeline) != 21 {
+	if final.Scenario.SimulationStep != 30 || final.Config.IntervalMS != 0 || len(final.Timeline) != 31 {
 		t.Fatal("actual backend pacing/clock did not match the controls")
 	}
 	if _, err := m.Act(Action{Action: "pause", ExpectedRunID: reset.RunID}); err != ErrChanged {

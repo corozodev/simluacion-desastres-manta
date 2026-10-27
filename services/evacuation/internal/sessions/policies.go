@@ -1,5 +1,7 @@
 package sessions
 
+import "corodev/evacuation/internal/runlimits"
+
 // Policy settings are immutable construction inputs. A recovered credential
 // only reads an existing run; it cannot replace its policy or PRNG.
 func resolvedPolicies(c InputConfig) Config {
@@ -64,7 +66,7 @@ func validatePolicies(req CreateRequest) error {
 		if req.Config.Round == "round3" {
 			population = 200
 		}
-		if req.GraphProfile != "BASE" || c.ZombiePolicy != "classic_random" || c.Pro.RescueFleet || len(req.Config.CustomShelters) > 0 || len(req.Config.RefugeIDs) > 0 || req.Config.Survivors != nil && *req.Config.Survivors != population || req.MaxTicks != nil && *req.MaxTicks != 150 || req.TickIntervalMS != nil && *req.TickIntervalMS != 2000 {
+		if req.GraphProfile != "BASE" || c.ZombiePolicy != "classic_random" || c.Pro.RescueFleet || len(req.Config.CustomShelters) > 0 || len(req.Config.RefugeIDs) > 0 || req.Config.Survivors != nil && *req.Config.Survivors != population || req.MaxTicks != nil && *req.MaxTicks != runlimits.OfficialTicks || req.TickIntervalMS != nil && *req.TickIntervalMS != 2000 {
 			return invalid()
 		}
 	}

@@ -20,7 +20,7 @@ func managerReference(t *testing.T, m *Manager) *reference.Service {
 	}
 	return s
 }
-func TestOfficialReferencePinnedAndZeroWeightKeepsOutcomes(t *testing.T) {
+func TestOfficialReferenceRemainsContextualAndPinned(t *testing.T) {
 	m := newManager(t)
 	s := managerReference(t, m)
 	cfg := compactConfig(m)
@@ -30,7 +30,7 @@ func TestOfficialReferencePinnedAndZeroWeightKeepsOutcomes(t *testing.T) {
 		t.Fatal(e)
 	}
 	defer plain.app.Close()
-	cfg.GeographicReference = &GeographicReference{Enabled: true, DatasetVersion: s.Status().DatasetVersion, Strength: 0}
+	cfg.GeographicReference = &GeographicReference{Enabled: true, DatasetVersion: s.Status().DatasetVersion, Strength: .8}
 	hybrid, e := m.prepare(cfg)
 	if e != nil {
 		t.Fatal(e)
@@ -40,8 +40,8 @@ func TestOfficialReferencePinnedAndZeroWeightKeepsOutcomes(t *testing.T) {
 		t.Fatal("reference changed origins")
 	}
 	use := hybrid.app.Simulator.Snapshot().Scenario.DataProvenance.GeographicReference
-	if use == nil || use.DatasetVersion != cfg.GeographicReference.DatasetVersion || len(use.Zones) != 3 {
-		t.Fatal("version/intersections absent", use)
+	if use == nil || use.DatasetVersion != cfg.GeographicReference.DatasetVersion || len(use.Zones) != 0 {
+		t.Fatal("version absent or contextual reference changed hydraulic terrain", use)
 	}
 	for i := 0; i < int(cfg.SimulationDuration); i++ {
 		if e = plain.app.Simulator.Step(context.Background()); e != nil {
@@ -53,7 +53,7 @@ func TestOfficialReferencePinnedAndZeroWeightKeepsOutcomes(t *testing.T) {
 	}
 	a, b := plain.app.Simulator.Snapshot(), hybrid.app.Simulator.Snapshot()
 	if !reflect.DeepEqual(a.Survivors, b.Survivors) || !reflect.DeepEqual(a.Shelters, b.Shelters) || !reflect.DeepEqual(a.Scenario.EvacuationMetrics, b.Scenario.EvacuationMetrics) {
-		t.Fatal("zero strength altered outcomes")
+		t.Fatal("contextual susceptibility altered hydraulic outcomes")
 	}
 	cfg.GeographicReference.DatasetVersion = "missing-version"
 	if _, e = m.prepare(cfg); e == nil {

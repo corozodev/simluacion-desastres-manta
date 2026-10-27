@@ -15,6 +15,7 @@ import (
 	"corodev/evacuation/internal/flood"
 	"corodev/evacuation/internal/incidents"
 	"corodev/evacuation/internal/reference"
+	"corodev/evacuation/internal/runlimits"
 	"corodev/evacuation/internal/simulation"
 	"corodev/evacuation/internal/world"
 )
@@ -26,12 +27,14 @@ var (
 )
 
 type execution struct {
-	app        *application.App
-	graph      *world.Graph
-	turns      int
-	config     RunConfig
-	origins    []Origin
-	threatHash string
+	app                *application.App
+	graph              *world.Graph
+	turns              int
+	config             RunConfig
+	origins            []Origin
+	threatHash         string
+	startedAt          time.Time
+	runtimeAccumulated time.Duration
 }
 
 type Manager struct {
@@ -90,8 +93,11 @@ func New(dataDir, scenarioDir string, origins []string) (*Manager, error) {
 		p.Enabled = true
 		m.catalog.Modes = append(m.catalog.Modes, p)
 	}
-	defaults := RunConfig{Mode: "competition", Seed: 20261026, RainfallProfile: "storm", RainfallIntensity: .8, SimulationDuration: 150, EvacuationBehavior: "preventive", Agents: 80, IntervalMS: 500, Shelters: originalCandidates(m.graphs["competition"])}
-	m.catalog.DefaultConfig = defaults
+	defaults := RunConfig{HydraulicModel: "rainfall_runoff_2d", Mode: "competition", Seed: 20261026, RainfallProfile: "storm", RainfallIntensity: .8, SimulationDuration: runlimits.DefaultTicks, EvacuationBehavior: "preventive", Agents: 80, IntervalMS: 500, Shelters: originalCandidates(m.graphs["competition"])}
+	hydrologyDefaults := flood.DefaultHydrologyConfig()
+	defaults.Hydrology = &hydrologyDefaults
+	m.catalog.DefaultConfig = cloneConfig(defaults)
+	m.catalog.DurationLimits = runlimits.Duration()
 	m.catalog.OriginalShelters = append([]Candidate{}, defaults.Shelters...)
 	m.catalog.MaxSnapDistanceM = MaxSnapDistanceM
 	m.catalog.Disclaimer = Disclaimer
@@ -141,7 +147,7 @@ func (m *Manager) Catalog() Catalog {
 func (m *Manager) State() State { m.mu.RLock(); defer m.mu.RUnlock(); return m.state.clone() }
 
 func validConfig(cfg RunConfig) bool {
-	return validReference(cfg.GeographicReference) && (cfg.Mode == "competition" || cfg.Mode == "full") && cfg.Seed >= -9007199254740991 && cfg.Seed <= 9007199254740991 && finite(cfg.RainfallIntensity) && cfg.RainfallIntensity >= 0 && cfg.RainfallIntensity <= 1 && finite(cfg.SimulationDuration) && cfg.SimulationDuration >= 1 && cfg.SimulationDuration <= 10000 && cfg.Agents >= 1 && cfg.Agents <= 200 && cfg.IntervalMS >= 0 && cfg.IntervalMS <= 5000 && (cfg.RainfallProfile == "storm" || cfg.RainfallProfile == "constant" || cfg.RainfallProfile == "pulse") && (cfg.EvacuationBehavior == "preventive" || cfg.EvacuationBehavior == "late" || cfg.EvacuationBehavior == "adaptive")
+	return validReference(cfg.GeographicReference) && (cfg.Mode == "competition" || cfg.Mode == "full") && cfg.Seed >= -9007199254740991 && cfg.Seed <= 9007199254740991 && finite(cfg.RainfallIntensity) && cfg.RainfallIntensity >= 0 && cfg.RainfallIntensity <= 1 && finite(cfg.SimulationDuration) && cfg.SimulationDuration >= runlimits.MinTicks && cfg.SimulationDuration <= runlimits.MaxTicks && cfg.SimulationDuration == math.Trunc(cfg.SimulationDuration) && validHydrologyConfig(cfg) && cfg.Agents >= 1 && cfg.Agents <= 200 && cfg.IntervalMS >= 0 && cfg.IntervalMS <= 5000 && (cfg.RainfallProfile == "storm" || cfg.RainfallProfile == "constant" || cfg.RainfallProfile == "pulse") && (cfg.EvacuationBehavior == "preventive" || cfg.EvacuationBehavior == "late" || cfg.EvacuationBehavior == "adaptive")
 }
 
 type initialClient struct{}
@@ -153,16 +159,11 @@ func (initialClient) NextStep(_ context.Context, r world.StepRequest) (world.Ste
 // freeze uses the competition graph and its original shelters for every run.
 // Otherwise selecting a shelter at a former spawn node would consume a different
 // PRNG sequence and turn a shelter A/B into an accidental population comparison.
-func (m *Manager) freeze(cfg RunConfig, target *world.Graph) ([]world.Survivor, []Origin, []flood.ZoneConfig, error) {
+func (m *Manager) freeze(cfg RunConfig, target *world.Graph) ([]world.Survivor, []Origin, error) {
 	base := m.graphs["competition"]
-	fc := flood.DefaultConfig()
-	fc.SimulationDuration = cfg.SimulationDuration
-	fc.RainfallProfile = cfg.RainfallProfile
-	fc.RainfallIntensity = cfg.RainfallIntensity
-	fc.EvacuationBehavior = cfg.EvacuationBehavior
-	sim, err := simulation.New(base, world.NewStore(), simulation.Config{ScenarioType: "urban_flood", Flood: &fc, Seed: cfg.Seed, Survivors: cfg.Agents, UseSpawnZones: true}, initialClient{})
+	sim, err := simulation.New(base, world.NewStore(), simulation.Config{Seed: cfg.Seed, Turns: 1, Survivors: cfg.Agents, UseSpawnZones: true}, initialClient{})
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, err
 	}
 	initial := sim.Snapshot().Survivors
 	baseNodes := map[string]world.GraphNode{}
@@ -183,7 +184,7 @@ func (m *Manager) freeze(cfg RunConfig, target *world.Graph) ([]world.Survivor, 
 			node, d = nearest(target, world.GeoPoint{Lat: source.Lat, Lng: source.Lng})
 		}
 		if node.ID == "" || d > MaxSnapDistanceM {
-			return nil, nil, nil, fmt.Errorf("no pudo conservarse el origen geográfico del agente %s", v.ID)
+			return nil, nil, fmt.Errorf("no pudo conservarse el origen geográfico del agente %s", v.ID)
 		}
 		v.CurrentNode = node.ID
 		v.TargetShelterID = ""
@@ -191,39 +192,17 @@ func (m *Manager) freeze(cfg RunConfig, target *world.Graph) ([]world.Survivor, 
 		v.Status = world.Active
 		origins = append(origins, Origin{ID: v.ID, NodeID: node.ID, Lat: source.Lat, Lng: source.Lng, SnapDistanceM: d})
 	}
-	model, err := flood.New(base, cfg.Seed, fc)
-	if err != nil {
-		return nil, nil, nil, err
-	}
-	// The first artificial focus deliberately stresses an evacuation corridor;
-	// its position is an experiment design, never evidence of local flood risk.
-	centers := []world.GeoPoint{}
-	if corridor, ok := baseNodes["OSM-363647979"]; ok {
-		centers = append(centers, world.GeoPoint{Lat: corridor.Lat, Lng: corridor.Lng})
-	}
-	for _, zone := range model.Zones() {
-		duplicate := false
-		for _, center := range centers {
-			if center == zone.Center {
-				duplicate = true
-			}
-		}
-		if !duplicate && len(centers) < 3 {
-			centers = append(centers, zone.Center)
-		}
-	}
-	zones := []flood.ZoneConfig{}
-	for i, center := range centers {
-		node, d := nearest(target, center)
-		if node.ID == "" || d > MaxSnapDistanceM {
-			return nil, nil, nil, fmt.Errorf("no pudo conservarse un foco sintético entre grafos")
-		}
-		zones = append(zones, flood.ZoneConfig{ID: fmt.Sprintf("synthetic-lab-%02d", i+1), CenterNode: node.ID, RadiusMinM: 150, RadiusMaxM: 800})
-	}
-	return initial, origins, zones, nil
+	return initial, origins, nil
 }
 
 func (m *Manager) prepare(cfg RunConfig) (*execution, error) {
+	if cfg.HydraulicModel == "" {
+		cfg.HydraulicModel = "rainfall_runoff_2d"
+	}
+	if cfg.Hydrology == nil {
+		h := flood.DefaultHydrologyConfig()
+		cfg.Hydrology = &h
+	}
 	if !validConfig(cfg) {
 		return nil, ErrInvalid
 	}
@@ -235,7 +214,7 @@ func (m *Manager) prepare(cfg RunConfig) (*execution, error) {
 	if err != nil {
 		return nil, err
 	}
-	initial, origins, zones, err := m.freeze(cfg, base)
+	initial, origins, err := m.freeze(cfg, base)
 	if err != nil {
 		return nil, err
 	}
@@ -244,7 +223,8 @@ func (m *Manager) prepare(cfg RunConfig) (*execution, error) {
 	fc.RainfallIntensity = cfg.RainfallIntensity
 	fc.SimulationDuration = cfg.SimulationDuration
 	fc.EvacuationBehavior = cfg.EvacuationBehavior
-	fc.Zones = zones
+	fc.HydraulicModel = cfg.HydraulicModel
+	fc.Hydrology = cfg.Hydrology
 	if err = m.configureReference(cfg, &fc, g); err != nil {
 		return nil, err
 	}
@@ -253,11 +233,17 @@ func (m *Manager) prepare(cfg RunConfig) (*execution, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &execution{app: app, graph: g, turns: turns, config: cloneConfig(cfg), origins: origins, threatHash: digest(zones)}, nil
+	return &execution{app: app, graph: g, turns: turns, config: cloneConfig(cfg), origins: origins, threatHash: digest(struct {
+		Model     string
+		Hydrology *flood.HydrologyConfig
+	}{cfg.HydraulicModel, cfg.Hydrology})}, nil
 }
 
 func (m *Manager) initialState(id, status string, run *execution) State {
 	w := run.app.Simulator.Snapshot()
+	if status == "running" {
+		run.startedAt = time.Now()
+	}
 	return State{RunID: id, State: status, Mode: run.config.Mode, GraphVersion: run.graph.Version, Config: cloneConfig(run.config), Scenario: w.Scenario, Shelters: w.Shelters, Origins: append([]Origin{}, run.origins...), Timeline: []TimelineEntry{{Step: 0, SimulationTime: 0, EvacuationMetrics: w.Scenario.EvacuationMetrics, StepLatencyMS: 0}}}
 }
 
@@ -305,6 +291,7 @@ func (m *Manager) loop() {
 			w := run.app.Simulator.Snapshot()
 			m.mu.Lock()
 			m.state.Scenario, m.state.Shelters = w.Scenario, w.Shelters
+			m.state.RuntimeElapsedMS = runtimeElapsed(run, false)
 			m.state.Timeline = append(m.state.Timeline, TimelineEntry{Step: w.Turn, SimulationTime: w.Scenario.SimulationTime, EvacuationMetrics: w.Scenario.EvacuationMetrics, StepLatencyMS: elapsed})
 			if len(m.state.Timeline) > 512 {
 				compact := make([]TimelineEntry, 0, 257)
@@ -316,8 +303,10 @@ func (m *Manager) loop() {
 			}
 			if err != nil {
 				m.state.State = "failed"
+				m.state.RuntimeElapsedMS = runtimeElapsed(run, true)
 			} else if w.Turn >= run.turns {
 				m.state.State = "finished"
+				m.state.RuntimeElapsedMS = runtimeElapsed(run, true)
 			}
 			m.mu.Unlock()
 		}
@@ -412,6 +401,7 @@ func (m *Manager) Act(action Action) (State, error) {
 		}
 		m.mu.Lock()
 		m.state.State = "paused"
+		m.state.RuntimeElapsedMS = runtimeElapsed(m.current, true)
 		m.mu.Unlock()
 	case "resume":
 		if current.State != "paused" && current.State != "idle" {
@@ -422,6 +412,18 @@ func (m *Manager) Act(action Action) (State, error) {
 		}
 		m.mu.Lock()
 		m.state.State = "running"
+		if m.current.startedAt.IsZero() {
+			m.current.startedAt = time.Now()
+		}
+		m.mu.Unlock()
+	case "cancel":
+		if current.State != "running" && current.State != "paused" && current.State != "idle" && current.State != "cancelled" {
+			return State{}, ErrState
+		}
+		m.stopComparison()
+		m.mu.Lock()
+		m.state.State = "cancelled"
+		m.state.RuntimeElapsedMS = runtimeElapsed(m.current, true)
 		m.mu.Unlock()
 	case "speed":
 		if action.IntervalMS == nil || *action.IntervalMS < 0 || *action.IntervalMS > 5000 {
@@ -434,6 +436,9 @@ func (m *Manager) Act(action Action) (State, error) {
 	default:
 		return State{}, ErrInvalid
 	}
+	m.mu.Lock()
+	m.state.RuntimeElapsedMS = runtimeElapsed(m.current, false)
+	m.mu.Unlock()
 	m.signal()
 	return m.State(), nil
 }
@@ -488,4 +493,26 @@ func (m *Manager) Close() error {
 	m.opMu.Lock()
 	defer m.opMu.Unlock()
 	return m.current.app.Close()
+}
+
+// Validate hydraulic parameters without constructing/prewarming a grid.
+func validHydrologyConfig(cfg RunConfig) bool {
+	fc := flood.DefaultConfig()
+	fc.HydraulicModel, fc.Hydrology = cfg.HydraulicModel, cfg.Hydrology
+	_, err := fc.WithDefaults()
+	return err == nil
+}
+
+// runtimeElapsed measures active wall time, including pacing but excluding pauses.
+// Callers hold opMu; only the execution writer changes these clocks.
+func runtimeElapsed(run *execution, stop bool) float64 {
+	elapsed := run.runtimeAccumulated
+	if !run.startedAt.IsZero() {
+		elapsed += time.Since(run.startedAt)
+		if stop {
+			run.runtimeAccumulated = elapsed
+			run.startedAt = time.Time{}
+		}
+	}
+	return float64(elapsed) / float64(time.Millisecond)
 }

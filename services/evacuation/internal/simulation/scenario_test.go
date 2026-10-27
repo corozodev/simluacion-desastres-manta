@@ -17,8 +17,10 @@ func TestFloodCombinesIndependentClosureSourcesAndPreservesBaseGraph(t *testing.
 	base := g.Clone()
 	fc := flood.DefaultConfig()
 	fc.SimulationDuration, fc.RainfallIntensity = 20, 1
-	fc.FloodGrowthRate, fc.DrainageFactor = 1, .3
-	fc.Zones = []flood.ZoneConfig{{ID: "synthetic-B", CenterNode: "B", RadiusMinM: 25, RadiusMaxM: 25}}
+	h := flood.DefaultHydrologyConfig()
+	h.InitialWaterDepthM, h.DrainageMMH, h.InfiltrationMMH = .35, 100, 100
+	h.SecondsPerTurn = 300
+	fc.Hydrology = &h
 	cfg := Config{ScenarioType: "urban_flood", Flood: &fc, InitialSurvivors: []world.Survivor{survivor("S1", "B")}, Events: []ScheduledEvent{
 		{Turn: 1, EdgeID: "E3", Blocked: true},
 		{Turn: 2, EdgeID: "E1", Blocked: false},

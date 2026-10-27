@@ -1,5 +1,5 @@
-// Package flood implements an experimental spatial exposure model. All risk
-// values and rates are synthetic; none represents water depth or a forecast.
+// Package flood implements a conservative experimental surface-water model.
+// Terrain and parameters are synthetic; results are not emergency forecasts.
 package flood
 
 import (
@@ -18,8 +18,8 @@ type RoadThresholds struct {
 	CautionPenalty float64 `json:"caution_penalty"`
 }
 
-// ZoneConfig locates a synthetic focus on an actual graph node. Radii describe
-// an experimental footprint in metres, never depth or a sourced flood extent.
+// ZoneConfig preserves historical scenario-file compatibility. The hydraulic
+// engine ignores radial footprints; water extent derives only from cell depths.
 type ZoneConfig struct {
 	ID         string  `json:"id"`
 	CenterNode string  `json:"center_node"`
@@ -28,6 +28,8 @@ type ZoneConfig struct {
 }
 
 type Config struct {
+	HydraulicModel           string              `json:"hydraulic_model,omitempty"`
+	Hydrology                *HydrologyConfig    `json:"hydrology,omitempty"`
 	RainfallProfile          string              `json:"rainfall_profile"`
 	RainfallIntensity        float64             `json:"rainfall_intensity"`
 	SimulationDuration       float64             `json:"simulation_duration"`
@@ -43,6 +45,7 @@ type Config struct {
 
 func DefaultConfig() Config {
 	return Config{
+		HydraulicModel:  "rainfall_runoff_2d",
 		RainfallProfile: "storm", RainfallIntensity: .8,
 		SimulationDuration: 150, TimeStep: 1,
 		FloodGrowthRate: .08, DrainageFactor: .025,
@@ -83,6 +86,23 @@ func finite(v float64) bool { return !math.IsNaN(v) && !math.IsInf(v, 0) }
 // when constructing a configured model without JSON.
 func (c Config) WithDefaults() (Config, error) {
 	d := DefaultConfig()
+	if c.HydraulicModel == "" {
+		c.HydraulicModel = d.HydraulicModel
+	}
+	if c.HydraulicModel != "rainfall_runoff_2d" && c.HydraulicModel != "compound_flood_2d" {
+		return Config{}, fmt.Errorf("unsupported hydraulic_model %q", c.HydraulicModel)
+	}
+	h := DefaultHydrologyConfig()
+	if c.Hydrology != nil {
+		h = *c.Hydrology
+	}
+	if err := h.Validate(); err != nil {
+		return Config{}, err
+	}
+	c.Hydrology = &h
+	if c.HydraulicModel != "compound_flood_2d" && (h.SeaLevelM != 0 || h.ChannelInflowM3S != 0) {
+		return Config{}, fmt.Errorf("coastal level and channel inflow require compound_flood_2d")
+	}
 	if c.RainfallProfile == "" {
 		c.RainfallProfile = d.RainfallProfile
 	}

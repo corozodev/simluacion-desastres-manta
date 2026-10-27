@@ -144,7 +144,9 @@ func (f *urbanFloodScenario) roadEvent(_ *Simulator, event ScheduledEvent) {
 
 func (f *urbanFloodScenario) advance(s *Simulator, events *[]world.Event) {
 	f.expireIncidents(s)
+	started := time.Now()
 	f.model.Advance(s.turn)
+	f.performance.HydraulicStepLatencyMS = float64(time.Since(started)) / float64(time.Millisecond)
 	before := s.blocked
 	f.updateOverlay(s)
 	for _, condition := range f.roads {
@@ -315,6 +317,7 @@ func (f *urbanFloodScenario) planned(before, after []world.Survivor) {
 func (f *urbanFloodScenario) finishStep(s *Simulator, elapsed time.Duration) {
 	f.performance.SimulationStepLatencyMS = float64(elapsed) / float64(time.Millisecond)
 	f.performance.SimulationTotalDurationMS += f.performance.SimulationStepLatencyMS
+	f.performance.EvacuationStepLatencyMS = math.Max(0, f.performance.SimulationStepLatencyMS-f.performance.HydraulicStepLatencyMS)
 }
 
 func (f *urbanFloodScenario) snapshot(s *Simulator) *world.ScenarioSnapshot {
@@ -322,9 +325,9 @@ func (f *urbanFloodScenario) snapshot(s *Simulator) *world.ScenarioSnapshot {
 	w := &world.ScenarioSnapshot{
 		ScenarioType: "urban_flood", SimulationStep: s.turn, WorldVersion: s.version, GraphVersion: s.graph.Version,
 		SimulationTime: elapsed, SimulationDuration: f.cfg.SimulationDuration, TimeStep: f.cfg.TimeStep,
-		Rainfall: f.model.Rainfall(), FloodZones: f.model.Zones(), RoadConditions: append([]world.RoadCondition{}, f.roads...),
+		Hydraulic: f.model.HydraulicSnapshot(), Rainfall: f.model.Rainfall(), FloodZones: f.model.Zones(), RoadConditions: append([]world.RoadCondition{}, f.roads...),
 		ShelterConditions: append([]world.ShelterCondition{}, f.shelters...), Agents: []world.FloodAgent{}, Performance: f.performance,
-		DataProvenance: world.DataProvenance{GraphSource: s.graph.Source, Model: "synthetic-surface-exposure-v1", ElevationSource: "unavailable",
+		DataProvenance: world.DataProvenance{GraphSource: s.graph.Source, Model: f.cfg.HydraulicModel, ElevationSource: "synthetic-coastal-basin-v1 (no DEM de Manta)",
 			Disclaimer: "Los escenarios de inundación emplean parámetros sintéticos y no constituyen pronósticos hidrológicos ni recomendaciones oficiales de evacuación", GeographicReference: f.cfg.GeographicReference.Clone()},
 	}
 	m := &w.EvacuationMetrics

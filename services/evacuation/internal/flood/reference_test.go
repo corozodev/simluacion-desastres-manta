@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-func TestReferenceWeightsPreserveSeedGeometryAndDryRain(t *testing.T) {
+func TestOfficialSusceptibilityIsContextOnlyNotWater(t *testing.T) {
 	cfg := focusedConfig()
 	base := mustModel(t, fixture(), 42, cfg)
 	cfg.GeographicReference = &world.ReferenceUse{Category: "official_reference", DatasetVersion: "test-double-only", SourceURL: "https://example.invalid/test", ConsultedAt: "2026-10-26T00:00:00Z", Strength: .25, Zones: []world.ReferenceZoneUse{{ZoneID: "focus", Susceptibility: "ALTA", Factor: 1.5, FeatureIDs: []string{"test-only"}}}}
@@ -16,13 +16,13 @@ func TestReferenceWeightsPreserveSeedGeometryAndDryRain(t *testing.T) {
 	}
 	base.Advance(5)
 	hybrid.Advance(5)
-	if hybrid.Zones()[0].Intensity <= base.Zones()[0].Intensity {
-		t.Fatal("categorical experiment had no effect")
+	if !reflect.DeepEqual(hybrid.HydraulicSnapshot(), base.HydraulicSnapshot()) {
+		t.Fatal("categorical susceptibility changed hydraulic state without a physical parameter")
 	}
 	cfg.RainfallIntensity = 0
 	dry := mustModel(t, fixture(), 42, cfg)
 	dry.Advance(5)
-	if dry.Zones()[0].Intensity != 0 {
+	if dry.HydraulicSnapshot().MassBalance.StoredM3 != 0 {
 		t.Fatal("reference fabricated rainfall")
 	}
 	cfg.GeographicReference.Zones[0].Factor = 123

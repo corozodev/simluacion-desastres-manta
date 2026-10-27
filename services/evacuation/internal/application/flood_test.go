@@ -142,8 +142,11 @@ func TestUrbanFloodHTTPDeterminismAndIndependentSeeds(t *testing.T) {
 	if !reflect.DeepEqual(a, b) {
 		t.Fatal("identical seeds did not reproduce all observable steps")
 	}
-	if reflect.DeepEqual(a[0].Scenario.FloodZones, c[0].Scenario.FloodZones) {
-		t.Fatal("different seeds did not change synthetic flood foci")
+	if !reflect.DeepEqual(a[0].Scenario.Hydraulic, c[0].Scenario.Hydraulic) {
+		t.Fatal("changing population seed changed fixed terrain/rain inputs")
+	}
+	if reflect.DeepEqual(a[0].Survivors, c[0].Survivors) {
+		t.Fatal("different population seeds did not change initial agents")
 	}
 	if a[11].Turn != 12 || a[11].Scenario.EvacuationMetrics.SimulationTotalDuration != 12 {
 		t.Fatal("configured flood simulation did not finish")
@@ -232,8 +235,24 @@ func TestUrbanFloodExposedShelterReleasesReservationsAndRespectsSaturation(t *te
 		cfg.InitialSurvivors = append(cfg.InitialSurvivors, world.Survivor{ID: fmt.Sprintf("S%d", i), CurrentNode: "A", Status: world.Active})
 	}
 	cfg.Flood.RainfallProfile, cfg.Flood.RainfallIntensity = "constant", 1
-	cfg.Flood.FloodGrowthRate, cfg.Flood.DrainageFactor = 1, 0
-	cfg.Flood.Zones = []flood.ZoneConfig{{ID: "shelter-exposure", CenterNode: "C", RadiusMinM: 25, RadiusMaxM: 25}}
+	// A broad synthetic domain gives the central C basin a lower surface than
+	// the three alternative destinations. Initially uniform water is below the
+	// shelter threshold; conservative redistribution later exposes C.
+	for i := range g.Nodes {
+		g.Nodes[i].Lat *= 20
+		g.Nodes[i].Lng *= 15
+	}
+	g.Nodes[2].Lat, g.Nodes[2].Lng = .01, .015
+	for i := range g.Edges {
+		g.Edges[i].Geometry = nil
+	}
+	h := flood.DefaultHydrologyConfig()
+	h.InitialWaterDepthM, h.SecondsPerTurn = .15, 300
+	h.InfiltrationMMH, h.DrainageMMH = 0, 0
+	h.CautionDepthM, h.BlockedDepthM = .4, .6
+	cfg.Flood.Hydrology = &h
+	cfg.Flood.ShelterExposureThreshold = .16 / .6
+	cfg.Flood.RainfallIntensity = 0
 	app := newFloodApp(t, g, cfg)
 	initial := app.Simulator.Snapshot()
 	previous := ""
@@ -401,6 +420,13 @@ func TestUrbanFloodFullStormChangesRoutesAndDrainsOnOfficialGraph(t *testing.T) 
 	if cfg.Flood == nil || cfg.Flood.SimulationDuration != 150 || cfg.Flood.TimeStep != 1 || cfg.Survivors != 80 || len(g.Nodes) != 300 {
 		t.Fatal("reviewed full-storm scenario or official graph identity changed")
 	}
+	// A synthetic high-drainage event exercises physical closure and recovery.
+	// Low depth thresholds are scenario assumptions, not transport guidance.
+	h := flood.DefaultHydrologyConfig()
+	h.InfiltrationMMH, h.DrainageMMH = 0, 80
+	h.CautionDepthM, h.BlockedDepthM, h.HysteresisM = .01, .03, .003
+	cfg.Flood.Hydrology = &h
+	cfg.Flood.EvacuationBehavior = "late"
 	before, err := json.Marshal(g)
 	if err != nil {
 		t.Fatal(err)
