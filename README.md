@@ -10,6 +10,8 @@ FASE 2 de Track A: backend Go con simulación determinista, planificación diná
 
 **FASE 6A validada localmente:** sprites CC0 a 4 FPS, interpolación de recorridos comprobables, agrupación por zoom, focos de inundación, leyenda y controles de movimiento. Incluye símbolos estáticos Flutter y evidencia desktop/móvil. [Implementación, recursos, pruebas y límites](docs/informe-fase6a.md).
 
+**FASE 7 implementada localmente:** políticas zombie intercambiables, ruta mínima/A* dinámico/A* temporal, predicción probabilística observable, reservas y flota experimental 5×4. React configura el backend real y compara ejecuciones independientes con replay/exportación JSON/CSV. El motor anterior conserva prioridad; se documentan también regresiones. [Algoritmos, pruebas, benchmarks y limitaciones](docs/informe-fase7.md). Sin push ni despliegue de esta fase.
+
 [Abrir Escape en AWS](https://sistemamanta.lexinnovate.com/escape) · [API HTTPS](https://api.sistemamanta.lexinnovate.com/healthz). **FASE 5 desplegada el 27 de octubre:** `m7i-flex.large`, 2 vCPU / 8 GiB, cuatro sesiones activas con hasta una FULL_MANTA. El propietario mantuvo el plan FREE y elevó el Budget a 50 USD. **Retirada AWS programada a partir del 31 de octubre, 01:46 de Ecuador**, incluidos disco y versiones S3. Ver [despliegue, comprobaciones, alcance y cancelación](docs/despliegue-fase5-y-caducidad.md).
 
 ## Inicio local
