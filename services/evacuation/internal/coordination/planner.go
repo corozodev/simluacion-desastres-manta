@@ -189,7 +189,9 @@ func (p *Planner) Prepare(ctx context.Context, input world.WorldSnapshot) world.
 		p.mu.Unlock()
 	}()
 	// Previous reserved counts are observations of the previous allocation, not
-	// additional occupied seats. Rebuild them from all current active survivors.
+	// additional occupied seats. Rebuild pedestrian reservations from the active
+	// walking cohort; the simulator charges onboard seats as effective occupancy
+	// in this input while retaining passengers as observable prediction targets.
 	capacity := map[string]int{}
 	shelters := map[string]world.Shelter{}
 	for i := range output.Shelters {
@@ -204,7 +206,7 @@ func (p *Planner) Prepare(ctx context.Context, input world.WorldSnapshot) world.
 	}
 	for i := range output.Survivors {
 		v := &output.Survivors[i]
-		if v.Status == world.Active {
+		if v.Status == world.Active && v.VehicleID == "" {
 			stats.Active++
 			v.TargetShelterID = ""
 			v.PlannedRoute = []string{v.CurrentNode}
@@ -226,7 +228,7 @@ func (p *Planner) Prepare(ctx context.Context, input world.WorldSnapshot) world.
 	requests := make([]request, 0, stats.Active)
 	order := make([]int, 0, stats.Active)
 	for i, v := range input.Survivors {
-		if v.Status == world.Active && !world.AgentWaiting(input, v.ID) {
+		if v.Status == world.Active && v.VehicleID == "" && !world.AgentWaiting(input, v.ID) {
 			order = append(order, i)
 		}
 	}

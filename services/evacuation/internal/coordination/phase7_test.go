@@ -62,3 +62,57 @@ func TestTemporalPublishedWaitRemainsCoherentThroughHTTPDecision(t *testing.T) {
 		}
 	}
 }
+
+func TestOnboardPassengersRemainVisibleWithoutPedestrianAllocation(t *testing.T) {
+	for _, disabled := range []bool{false, true} {
+		w := star(3, 2)
+		w.Shelters = w.Shelters[:1]
+		// Simulator reserves the passenger's real seat as effective occupancy in
+		// this planner-only input. It does not hide observable prey from engines.
+		w.Shelters[0].Occupancy = 1
+		passenger := &w.Survivors[0]
+		passenger.VehicleID = "TRUCK-1"
+		passenger.TargetShelterID = "R1"
+		passenger.PlannedRoute = []string{passenger.CurrentNode}
+		w.Zombies = []world.Zombie{{ID: "runner", Type: world.Runner, CurrentNode: "R2", Awake: true}}
+		calls := 0
+		provider := providerFunc(func(ctx context.Context, input world.WorldSnapshot, s world.Survivor) []world.DecisionResult {
+			calls++
+			if s.VehicleID != "" {
+				t.Fatal("passenger entered pedestrian allocation")
+			}
+			if len(input.Survivors) != 3 || input.Survivors[0].VehicleID != "TRUCK-1" {
+				t.Fatal("passenger hidden from observable input")
+			}
+			forecast := decision.NewRunnerPredictor(2).Predict(ctx, input)
+			if len(forecast.TargetPaths) == 0 || forecast.TargetPaths[0].TargetID != passenger.ID {
+				t.Fatal("observable passenger not considered as runner prey", forecast.TargetPaths)
+			}
+			return choices(ctx, input, s)
+		})
+		planner := coordination.New(provider, coordination.Options{DisableAssignment: disabled})
+		got := planner.Prepare(context.Background(), w)
+		if calls != 2 {
+			t.Fatalf("expected two pedestrian requests, got %d", calls)
+		}
+		stats := planner.Stats()
+		if stats.Active != 2 || stats.Assigned != 1 || stats.Unassigned != 1 {
+			t.Fatal("passenger contaminated pedestrian statistics", stats)
+		}
+		if got.Survivors[0].VehicleID != passenger.VehicleID || got.Survivors[0].TargetShelterID != passenger.TargetShelterID {
+			t.Fatal("passenger reservation changed", got.Survivors[0])
+		}
+		if got.Shelters[0].Occupancy != 1 || got.Shelters[0].Reserved != 1 || got.Shelters[0].Available != 0 {
+			t.Fatal("effective onboard occupancy not respected", got.Shelters[0])
+		}
+		assigned := 0
+		for _, s := range got.Survivors {
+			if s.VehicleID == "" && s.TargetShelterID != "" {
+				assigned++
+			}
+		}
+		if assigned != 1 {
+			t.Fatal("onboard seat allocated a second time", assigned)
+		}
+	}
+}

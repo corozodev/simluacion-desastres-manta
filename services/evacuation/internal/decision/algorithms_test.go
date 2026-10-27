@@ -223,3 +223,21 @@ func TestOnboardSurvivorNeverReceivesWalkingDecision(t *testing.T) {
 		})
 	}
 }
+
+func TestProbabilityPredictorUsesObservableOnboardPrey(t *testing.T) {
+	w := forecastWorld()
+	w.Survivors[0].VehicleID = "TRUCK-1"
+	w.Survivors[1].Status = world.Evacuated
+	predictor := decision.NewRunnerPredictor(2)
+	onboard := predictor.Probabilities(context.Background(), w)
+	visible := w.Clone()
+	visible.Survivors[0].VehicleID = ""
+	if walking := predictor.Probabilities(context.Background(), visible); !reflect.DeepEqual(onboard, walking) {
+		t.Fatal("vehicle credential changed prey visibility")
+	}
+	w.Survivors[0].Status = world.Evacuated
+	absent := predictor.Probabilities(context.Background(), w)
+	if onboard.OneTurnNodes["B"] <= absent.OneTurnNodes["B"] {
+		t.Fatal("onboard prey omitted from chase distribution", onboard, absent)
+	}
+}
