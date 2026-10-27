@@ -8,6 +8,7 @@ import (
 	"hash/fnv"
 	"math"
 	"sort"
+	"sync"
 	"sync/atomic"
 
 	"corodev/evacuation/internal/world"
@@ -16,6 +17,8 @@ import (
 // Options separates estimated exposure from hard movement restrictions. Numeric
 // zero values use defaults; Prediction is explicit for controlled ablations.
 type Options struct {
+	// Algorithm is immutable for the life of an engine; empty preserves FASE 2.
+	Algorithm        string
 	Prediction       bool
 	Horizon          int
 	RiskWeight       float64
@@ -44,6 +47,9 @@ type DeterministicEngine struct {
 
 func New() *DeterministicEngine { return NewWithOptions(Options{Prediction: true}) }
 func NewWithOptions(options Options) *DeterministicEngine {
+	if !ValidAlgorithm(options.Algorithm) {
+		options.Algorithm = LegacyCurrent
+	}
 	if options.Horizon < 1 || options.Horizon > 2 {
 		options.Horizon = 2
 	}
@@ -71,13 +77,16 @@ type choice struct {
 	risk, cost, score float64
 }
 type bundle struct {
-	key        uint64
-	routingKey uint64
-	env        *environment
-	plans      map[string]map[string]choice
-	shelters   map[string]world.Shelter
-	shelterIDs []string
-	forecast   Prediction
+	key         uint64
+	routingKey  uint64
+	env         *environment
+	plans       map[string]map[string]choice
+	shelters    map[string]world.Shelter
+	shelterIDs  []string
+	forecast    Prediction
+	probability ProbabilityPrediction
+	// Candidate cache belongs to this immutable content fingerprint only.
+	candidates sync.Map
 }
 type environment struct {
 	nodes     map[string]bool
@@ -238,6 +247,9 @@ func (e *DeterministicEngine) prepare(ctx context.Context, w world.WorldSnapshot
 		}
 	}
 	if e.options.Prediction {
+		if e.options.Algorithm == PredictiveTemporalAStar {
+			result.probability = NewRunnerPredictor(e.options.Horizon).Probabilities(ctx, w)
+		}
 		result.forecast = NewRunnerPredictor(e.options.Horizon).Predict(ctx, w)
 		e.predictions.Add(1)
 	}
@@ -264,7 +276,11 @@ func (e *DeterministicEngine) search(ctx context.Context, env *environment, sh w
 		for _, edge := range env.reverse[item.node] {
 			risk := item.choice.risk + env.risk[item.node]
 			cost := item.choice.cost + edge.cost
-			candidate := choice{next: item.node, shelter: sh.ID, risk: risk, cost: cost, score: cost + e.options.RiskWeight*risk}
+			riskWeight := e.options.RiskWeight
+			if e.options.Algorithm != "" && e.options.Algorithm != LegacyCurrent {
+				riskWeight, risk = 0, 0
+			}
+			candidate := choice{next: item.node, shelter: sh.ID, risk: risk, cost: cost, score: cost + riskWeight*risk}
 			if old, exists := plan[edge.from]; !exists || better(candidate, old) {
 				plan[edge.from] = candidate
 				heap.Push(q, queued{node: edge.from, choice: candidate})
@@ -300,6 +316,9 @@ func route(plan map[string]choice, start string, limit int) []string {
 }
 
 func (e *DeterministicEngine) candidates(ctx context.Context, b *bundle, s world.Survivor) []world.DecisionResult {
+	if e.options.Algorithm != "" && e.options.Algorithm != LegacyCurrent {
+		return e.algorithmCandidates(ctx, b, s)
+	}
 	if !b.env.nodes[s.CurrentNode] {
 		return nil
 	}
@@ -370,6 +389,9 @@ func (e *DeterministicEngine) candidates(ctx context.Context, b *bundle, s world
 }
 
 func (e *DeterministicEngine) score(b *bundle, path []string, completesRefuge bool) (risk, cost, score float64) {
+	if e.options.Algorithm != "" && e.options.Algorithm != LegacyCurrent {
+		return e.algorithmScore(b, path, completesRefuge, 0)
+	}
 	for i := 1; i < len(path); i++ {
 		from, to := path[i-1], path[i]
 		for _, edge := range b.env.forward[from] {
@@ -445,8 +467,16 @@ func (e *DeterministicEngine) assigned(b *bundle, s world.Survivor) (world.Decis
 	return world.DecisionResult{NextNode: next, TargetShelterID: s.TargetShelterID, Route: append([]string{}, s.PlannedRoute...), EstimatedRisk: risk, Cost: cost}, true
 }
 func (e *DeterministicEngine) escape(b *bundle, s world.Survivor) world.DecisionResult {
+	if e.options.Algorithm == PredictiveTemporalAStar && !b.env.danger[s.CurrentNode] {
+		if cached, ok := b.candidates.Load(s.CurrentNode); ok && cached.(algorithmResult).wait {
+			return wait(s)
+		}
+	}
 	urgent := b.env.danger[s.CurrentNode]
 	currentForecast := b.forecast.OneTurnNodes[s.CurrentNode]
+	if e.options.Algorithm == BaselineShortestPath || e.options.Algorithm == DynamicRiskAStar {
+		currentForecast = 0
+	}
 	if !urgent && currentForecast == 0 {
 		return wait(s)
 	}

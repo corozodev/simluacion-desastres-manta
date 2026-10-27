@@ -21,6 +21,9 @@ type escapeProvider interface {
 }
 
 type Options struct {
+	// DisableAssignment uses independent ID-ordered choices rather than global
+	// constraint/regret allocation. Capacity is still enforced atomically.
+	DisableAssignment bool
 	// Stickiness is a fractional movement-cost tolerance for preserving a target
 	// with the same estimated risk. Zero selects the default 0.15.
 	Stickiness float64
@@ -44,10 +47,11 @@ type Statistics struct {
 // Planner owns no authoritative allocation state. Concurrent Prepare calls use
 // independent snapshots; only the last statistics value needs synchronization.
 type Planner struct {
-	provider   RouteProvider
-	stickiness float64
-	mu         sync.RWMutex
-	statistics Statistics
+	provider          RouteProvider
+	stickiness        float64
+	mu                sync.RWMutex
+	statistics        Statistics
+	disableAssignment bool
 }
 
 func New(provider RouteProvider, options Options) *Planner {
@@ -55,7 +59,7 @@ func New(provider RouteProvider, options Options) *Planner {
 	if stickiness <= 0 || math.IsNaN(stickiness) || math.IsInf(stickiness, 0) {
 		stickiness = .15
 	}
-	return &Planner{provider: provider, stickiness: stickiness}
+	return &Planner{provider: provider, stickiness: stickiness, disableAssignment: options.DisableAssignment}
 }
 
 func (p *Planner) Stats() Statistics {
@@ -279,6 +283,9 @@ func (p *Planner) Prepare(ctx context.Context, input world.WorldSnapshot) world.
 	// Valid existing reservations are released only when risk/cost has become
 	// materially worse or the route/capacity is no longer viable.
 	for _, r := range requests {
+		if p.disableAssignment {
+			break
+		}
 		if len(r.candidates) == 0 || r.survivor.TargetShelterID == "" {
 			continue
 		}
@@ -293,6 +300,9 @@ func (p *Planner) Prepare(ctx context.Context, input world.WorldSnapshot) world.
 	// Most constrained survivors go first. Among equally constrained requests,
 	// prioritize the largest risk/cost regret from losing their best destination.
 	sort.Slice(requests, func(i, j int) bool {
+		if p.disableAssignment {
+			return requests[i].survivor.ID < requests[j].survivor.ID
+		}
 		a, b := requests[i], requests[j]
 		if len(a.candidates) != len(b.candidates) {
 			return len(a.candidates) < len(b.candidates)
@@ -320,7 +330,7 @@ func (p *Planner) Prepare(ctx context.Context, input world.WorldSnapshot) world.
 				continue
 			}
 			choose := !found || candidate.EstimatedRisk < selected.EstimatedRisk || (candidate.EstimatedRisk == selected.EstimatedRisk && candidate.Cost < selected.Cost)
-			if found && candidate.EstimatedRisk == selected.EstimatedRisk && candidate.Cost == selected.Cost {
+			if found && !p.disableAssignment && candidate.EstimatedRisk == selected.EstimatedRisk && candidate.Cost == selected.Cost {
 				a, b := shelters[candidate.TargetShelterID], shelters[selected.TargetShelterID]
 				left, right := (a.Occupancy+reserved[a.ID]+1)*b.Capacity, (b.Occupancy+reserved[b.ID]+1)*a.Capacity
 				choose = left < right || (left == right && candidate.TargetShelterID < selected.TargetShelterID)
