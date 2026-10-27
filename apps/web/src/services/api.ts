@@ -1,5 +1,6 @@
 import type { ErrorResponse, HealthResponse, Graph, WorldSnapshot, Survivor, Shelter, Zombie, SimulationInfo, SimulationCatalog, OperatorSession, StartSimulation } from '@corodev/contracts';
 import type { ScenarioSnapshot, EvacuationMetrics, LabState, LabCatalog, LabSession, LabCandidate, LabRunConfig, LabCandidateValidation, LabComparison, LabAction } from '@corodev/contracts';
+import type { Incident, IncidentCreate, IncidentList, IncidentServiceInfo, IncidentLocation, IncidentResolution, IncidentApplication, IncidentApplyResult, IncidentStatusUpdate } from '@corodev/contracts';
 import { config } from '../lib/config';
 import { ApiError } from './errors';
 export { ApiError } from './errors';
@@ -19,6 +20,7 @@ function isErrorResponse(value: unknown): value is ErrorResponse {
 async function request<T>(path: string, validate: (value: unknown) => value is T, init?: RequestInit, signal?: AbortSignal, baseUrl = config.worldApiBaseUrl): Promise<T> {
   if (baseUrl === config.worldApiBaseUrl && config.error) throw new ApiError(config.error, 'CONFIGURATION_ERROR');
   if (baseUrl === config.floodApiBaseUrl && config.floodError) throw new ApiError(config.floodError, 'CONFIGURATION_ERROR');
+  if (baseUrl === config.incidentsApiBaseUrl && config.incidentsError) throw new ApiError(config.incidentsError, 'CONFIGURATION_ERROR');
   const controller = new AbortController();
   let timedOut = false;
   const onAbort = () => controller.abort();
@@ -207,7 +209,84 @@ function isLabState(value: unknown): value is LabState {
     && Array.isArray(value.timeline) && value.timeline.length <= 1024 && value.timeline.every(entry => isObject(entry)
       && isNatural(entry.step) && isNumber(entry.simulation_time) && entry.simulation_time >= 0
       && isEvacuationMetrics(entry.evacuation_metrics) && isNumber(entry.step_latency_ms) && entry.step_latency_ms >= 0)
-    && (value.comparison === undefined || isLabComparison(value.comparison));
+    && (value.comparison === undefined || isLabComparison(value.comparison))
+    && (value.incident_applications === undefined || Array.isArray(value.incident_applications)
+      && value.incident_applications.every(application => isIncidentApplication(application) && application.run_id === value.run_id));
+}
+
+const incidentTypes = ['flooded_road', 'road_closed', 'landslide', 'fallen_tree', 'bridge_damage', 'other'];
+const incidentStates = ['pending', 'corroborated', 'verified', 'rejected', 'expired'];
+const incidentSources = ['citizen', 'synthetic', 'official'];
+const isId = (value: unknown): value is string => typeof value === 'string' && /^[a-f0-9]{32}$/.test(value);
+const isDate = (value: unknown): value is string => typeof value === 'string' && Number.isFinite(Date.parse(value));
+function isIncident(value: unknown): value is Incident {
+  if (!isObject(value) || !isObject(value.evidence_metadata)) return false;
+  return value.schema_version === 1 && isId(value.incident_id) && incidentTypes.includes(String(value.incident_type))
+    && isNumber(value.latitude) && Math.abs(value.latitude) <= 90 && isNumber(value.longitude) && Math.abs(value.longitude) <= 180
+    && typeof value.description === 'string' && Array.from(value.description).length <= 500
+    && ['low', 'moderate', 'high', 'unknown'].includes(String(value.severity_reported))
+    && ['passable', 'restricted', 'blocked', 'unknown'].includes(String(value.road_passability_reported))
+    && ['event_time', 'received_at', 'expires_at', 'updated_at'].every(key => isDate(value[key]))
+    && incidentSources.includes(String(value.source_type)) && incidentStates.includes(String(value.verification_status))
+    && value.evidence_metadata.attachment_count === 0 && value.evidence_metadata.storage_status === 'not_supported'
+    && isStrings(value.affected_edge_ids) && value.affected_edge_ids.length <= 5 && typeof value.graph_version === 'string'
+    && isNumber(value.snap_distance_m) && value.snap_distance_m >= 0 && isNumber(value.location_precision_m) && value.location_precision_m >= 0
+    && ['manual', 'device'].includes(String(value.location_method));
+}
+
+function isIncidentList(value: unknown): value is IncidentList {
+  return isObject(value) && Array.isArray(value.incidents) && value.incidents.every(isIncident)
+    && isNatural(value.total) && value.total >= value.incidents.length && isNatural(value.limit) && value.limit >= 1 && value.limit <= 200
+    && value.incidents.length <= value.limit && isNatural(value.offset) && typeof value.has_more === 'boolean';
+}
+
+function isIncidentInfo(value: unknown): value is IncidentServiceInfo {
+  if (!isObject(value) || !isObject(value.bounds)) return false;
+  const bounds = value.bounds;
+  return typeof value.enabled === 'boolean' && value.schema_version === 1
+    && ['min_latitude', 'max_latitude', 'min_longitude', 'max_longitude'].every(key => isNumber(bounds[key]))
+    && Number(bounds.min_latitude) < Number(bounds.max_latitude) && Number(bounds.min_longitude) < Number(bounds.max_longitude)
+    && isNatural(value.max_description_length) && value.max_description_length > 0 && isNumber(value.max_snap_distance_m) && value.max_snap_distance_m > 0
+    && typeof value.verification_notice === 'string' && value.photo_uploads_enabled === false;
+}
+
+function isResolution(value: unknown): value is IncidentResolution {
+  return isObject(value) && typeof value.matched === 'boolean' && typeof value.ambiguous === 'boolean'
+    && typeof value.message === 'string' && typeof value.graph_version === 'string' && isNumber(value.max_snap_distance_m)
+    && value.max_snap_distance_m > 0 && Array.isArray(value.candidates) && value.candidates.length <= 5
+    && value.candidates.every(edge => isObject(edge) && ['edge_id', 'road_type', 'from_node_id', 'to_node_id'].every(key => typeof edge[key] === 'string')
+      && isNumber(edge.distance_m) && edge.distance_m >= 0 && isNumber(edge.latitude) && Math.abs(edge.latitude) <= 90
+      && isNumber(edge.longitude) && Math.abs(edge.longitude) <= 180)
+    && (!value.matched || !value.ambiguous && value.candidates.length > 0);
+}
+
+function isIncidentApplication(value: unknown): value is IncidentApplication {
+  return isObject(value) && ['application_id', 'incident_id', 'run_id'].every(key => isId(value[key]))
+    && isStrings(value.affected_edge_ids) && value.affected_edge_ids.length >= 1 && value.affected_edge_ids.length <= 5
+    && isNatural(value.simulation_step) && isNatural(value.world_version) && incidentSources.includes(String(value.source_type))
+    && incidentStates.includes(String(value.verification_status_at_application)) && ['blocked', 'caution'].includes(String(value.effect))
+    && isNatural(value.expires_at_simulation_step) && value.expires_at_simulation_step > value.simulation_step && isDate(value.applied_at);
+}
+
+function isIncidentApplyResult(value: unknown): value is IncidentApplyResult {
+  return isObject(value) && isIncident(value.incident) && isIncidentApplication(value.application) && isLabState(value.state)
+    && typeof value.already_applied === 'boolean' && value.application.incident_id === value.incident.incident_id
+    && value.application.run_id === value.state.run_id && value.application.world_version <= value.state.scenario.world_version;
+}
+
+export interface IncidentFilters {
+  bbox?: string;
+  incident_type?: Incident['incident_type'];
+  verification_status?: Incident['verification_status'];
+  received_after?: string;
+  since?: string;
+  until?: string;
+  limit?: number;
+  offset?: number;
+}
+
+function incidentRequest<T>(path: string, validate: (value: unknown) => value is T, init?: RequestInit, signal?: AbortSignal): Promise<T> {
+  return request(path, validate, init, signal, config.incidentsApiBaseUrl);
 }
 
 function isLabCatalog(value: unknown): value is LabCatalog {
@@ -239,6 +318,21 @@ function labMutation<T>(path: string, validate: (value: unknown) => value is T, 
 }
 
 export const api = {
+  incidentInfo: (signal?: AbortSignal) => incidentRequest('/v1/incidents/config', isIncidentInfo, undefined, signal),
+  incidents: (filters: IncidentFilters = {}, signal?: AbortSignal) => {
+    const query = new URLSearchParams();
+    for (const [key, value] of Object.entries(filters)) if (value !== undefined && value !== '') query.set(key, String(value));
+    return incidentRequest(`/v1/incidents${query.size ? `?${query}` : ''}`, isIncidentList, undefined, signal);
+  },
+  incident: (id: string, signal?: AbortSignal) => incidentRequest(`/v1/incidents/${encodeURIComponent(id)}`, isIncident, undefined, signal),
+  resolveIncident: (input: IncidentLocation) => incidentRequest('/v1/incidents/resolve', isResolution, { method: 'POST', body: JSON.stringify(input) }),
+  createIncident: (input: IncidentCreate, key: string) => incidentRequest('/v1/incidents', isIncident,
+    { method: 'POST', headers: { 'Idempotency-Key': key }, body: JSON.stringify(input) }),
+  createSyntheticIncident: (input: IncidentCreate, key: string, csrf: string) => labRequest('/lab/incidents/synthetic', isIncident,
+    { method: 'POST', credentials: 'include', headers: { 'X-CSRF-Token': csrf, 'Idempotency-Key': key }, body: JSON.stringify(input) }),
+  reviewIncident: (id: string, input: IncidentStatusUpdate, csrf: string) => labMutation(`/lab/incidents/${encodeURIComponent(id)}/status`, isIncident, input, csrf),
+  applyFloodIncident: (id: string, expectedRunId: string, csrf: string, durationSteps = 20, effect: 'blocked' | 'caution' = 'blocked') => labMutation(`/lab/incidents/${encodeURIComponent(id)}/apply`, isIncidentApplyResult,
+    { expected_run_id: expectedRunId, duration_steps: durationSteps, effect, experimental_ack: true }, csrf),
   floodCatalog: (signal?: AbortSignal) => labRequest('/lab/catalog', isLabCatalog, undefined, signal),
   floodState: (signal?: AbortSignal) => labRequest('/lab/state', isLabState, undefined, signal),
   floodSession: (signal?: AbortSignal) => labRequest<LabSession>('/lab/session', (value): value is LabSession => isObject(value)

@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { api } from './api';
+import { api, type IncidentFilters } from './api';
 
 export function useWorld(enabled = true) {
   return useQuery({ queryKey: ['world'], queryFn: ({ signal }) => api.world(signal), retry: false, refetchInterval: 2000, staleTime: 0, enabled });
@@ -23,4 +23,16 @@ export function useFloodGraph(runId?: string, mode?: string) {
 
 export function useFloodSession() {
   return useQuery({ queryKey: ['flood', 'session'], queryFn: ({ signal }) => api.floodSession(signal), retry: false, staleTime: 10 * 60 * 1000 });
+}
+
+export function useIncidents(filters: IncidentFilters = {}, enabled = true) {
+  return useQuery({ queryKey: ['incidents', 'list', filters], queryFn: ({ signal }) => api.incidents(filters, signal), retry: false, refetchInterval: 5000, staleTime: 0, enabled });
+}
+
+export function useIncidentDetail(id?: string) {
+  return useQuery({ queryKey: ['incidents', 'detail', id ?? ''], queryFn: ({ signal }) => api.incident(id ?? '', signal), retry: false, refetchInterval: 5000, staleTime: 0, enabled: Boolean(id) });
+}
+
+export function useIncidentInfo() {
+  return useQuery({ queryKey: ['incidents', 'config'], queryFn: ({ signal }) => api.incidentInfo(signal), retry: false, staleTime: Infinity });
 }

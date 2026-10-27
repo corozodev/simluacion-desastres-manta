@@ -1,17 +1,19 @@
 export interface AppConfig {
   worldApiBaseUrl: string;
   floodApiBaseUrl: string;
+  incidentsApiBaseUrl: string;
   osmTilesEnabled: boolean;
   osmTileUrlTemplate: string;
   timeoutMs: number;
   error?: string;
   floodError?: string;
+  incidentsError?: string;
 }
 
 export function readConfig(env: Record<string, string | undefined>): AppConfig {
   const configuredUrl = env.VITE_WORLD_API_BASE_URL ?? 'https://api.sistemamanta.lexinnovate.com';
   const timeoutMs = Number(env.VITE_API_TIMEOUT_MS ?? 8000);
-  const fallback: AppConfig = { worldApiBaseUrl: '', floodApiBaseUrl: '', osmTilesEnabled: false, osmTileUrlTemplate: '', timeoutMs: 8000 };
+  const fallback: AppConfig = { worldApiBaseUrl: '', floodApiBaseUrl: '', incidentsApiBaseUrl: '', osmTilesEnabled: false, osmTileUrlTemplate: '', timeoutMs: 8000 };
   try {
     const url = new URL(configuredUrl);
     if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password || url.search || url.hash) {
@@ -29,6 +31,13 @@ export function readConfig(env: Record<string, string | undefined>): AppConfig {
       result.floodApiBaseUrl = floodUrl.toString().replace(/\/$/, '');
     } catch {
       result.floodError = 'VITE_FLOOD_API_BASE_URL debe usar HTTP(S), sin credenciales, parámetros ni fragmentos.';
+    }
+    try {
+      const incidentsUrl = new URL(env.VITE_INCIDENTS_API_BASE_URL ?? result.floodApiBaseUrl);
+      if (!['http:', 'https:'].includes(incidentsUrl.protocol) || incidentsUrl.username || incidentsUrl.password || incidentsUrl.search || incidentsUrl.hash) throw new Error('invalid');
+      result.incidentsApiBaseUrl = incidentsUrl.toString().replace(/\/$/, '');
+    } catch {
+      result.incidentsError = 'VITE_INCIDENTS_API_BASE_URL debe usar HTTP(S), sin credenciales, parámetros ni fragmentos.';
     }
     const tileTemplate = env.VITE_OSM_TILE_URL_TEMPLATE ?? 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
     try {

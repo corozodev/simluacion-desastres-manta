@@ -25,6 +25,10 @@ npm run dev:lab
 # http://127.0.0.1:5173/escape
 ```
 
-El comando configura `VITE_WORLD_API_BASE_URL` y `VITE_FLOOD_API_BASE_URL` con el mismo hostname para evitar diferencias de CORS/cookies. El controlador del laboratorio escucha únicamente en loopback, puerto 8082. El servidor de lectura 4A en 8081 se conserva por separado. La [guía 4B](../../docs/laboratorio-inundaciones.md) explica ejecución manual, capas, candidatos, A/B y límites.
+El comando configura `VITE_WORLD_API_BASE_URL`, `VITE_FLOOD_API_BASE_URL` y `VITE_INCIDENTS_API_BASE_URL` con el mismo hostname para evitar diferencias de CORS/cookies. El controlador del laboratorio escucha únicamente en loopback, puerto 8082. El servidor de lectura 4A en 8081 se conserva por separado. La [guía 4B](../../docs/laboratorio-inundaciones.md) explica ejecución manual, capas, candidatos, A/B y límites.
+
+FASE 4C añade una capa independiente de novedades y un panel con filtros de tipo, estado y antigüedad, detalle aproximado y procedencia. Consulta `/v1/incidents` cada cinco segundos mediante TanStack Query; `api.ts` sigue siendo el único adaptador HTTP. Rechazados/caducados requieren filtro explícito de revisión. La aplicación experimental exige dos pasos, aceptación del alcance, sesión/Origin/CSRF y `run_id` actual; invalida el estado observado sin marcar el reporte como verificado. Una respuesta tardía de otra ejecución no sustituye el mundo actual.
+
+`npm run test:incidents:e2e` prueba Flutter real, persistencia tras reinicio y aplicación desde Chromium. [Guía 4C y límites](../../docs/incidentes-ciudadanos.md). La cookie autoriza un laboratorio local compartido; no implementa identidad remota ni un mundo por visitante.
 
 **SIMULACIÓN — DATOS SINTÉTICOS.** Los escenarios de inundación emplean parámetros sintéticos y no constituyen pronósticos hidrológicos ni recomendaciones oficiales de evacuación.

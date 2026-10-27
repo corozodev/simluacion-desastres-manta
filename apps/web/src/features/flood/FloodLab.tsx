@@ -4,8 +4,10 @@ import { Activity, CloudRain, FlaskConical, MapPin, RotateCcw, ShieldCheck, Wave
 import type { EvacuationMetrics, GeoPoint, LabCandidate, LabCandidateValidation, LabCatalog, LabComparison, LabRunConfig, LabState, LabTimelineEntry } from '@corodev/contracts';
 import { Badge, Button, Card, ErrorState, LoadingState, PageHeader, StatusIndicator } from '../../components/ui';
 import { api, ApiError } from '../../services/api';
-import { useFloodCatalog, useFloodGraph, useFloodSession, useFloodState } from '../../services/queries';
+import { useFloodCatalog, useFloodGraph, useFloodSession, useFloodState, useIncidentDetail, useIncidents } from '../../services/queries';
 import { FloodMap } from './FloodMap';
+import { IncidentPanel } from './IncidentPanel';
+import type { IncidentFilterDraft } from './incidentPresentation';
 import './flood.css';
 
 const stateLabels: Record<LabState['state'], string> = { idle: 'Lista para iniciar', running: 'En ejecución', paused: 'Pausada por el servidor', finished: 'Finalizada', failed: 'Interrumpida' };
@@ -49,8 +51,23 @@ function FloodWorkspace({ catalog, backend, csrf, sessionError, retrySession }: 
   const [pickingCandidate, setPickingCandidate] = useState<number>();
   const [selectedAgentId, setSelectedAgentId] = useState('');
   const [agentSearch, setAgentSearch] = useState('');
+  const [incidentFilters, setIncidentFilters] = useState<IncidentFilterDraft>({ type: '', status: '', age: '24' });
+  const [selectedIncidentId, setSelectedIncidentId] = useState('');
   const preview = draft.mode !== backend.mode;
   const graph = useFloodGraph(preview ? undefined : backend.run_id, preview ? draft.mode : undefined);
+  // Advance the age cutoff once per minute, keeping the key stable across the
+  // 500 ms world updates. Incident polling never reloads street geometry.
+  const incidentMinute = Math.floor(Date.now() / 60000);
+  const receivedAfter = useMemo(() => incidentFilters.age ? new Date(incidentMinute * 60000 - Number(incidentFilters.age) * 3600000).toISOString() : undefined, [incidentFilters.age, incidentMinute]);
+  const bbox = useMemo(() => {
+    if (!graph.data?.nodes.length) return undefined;
+    let minLat = Infinity, maxLat = -Infinity, minLng = Infinity, maxLng = -Infinity;
+    for (const node of graph.data.nodes) { minLat = Math.min(minLat, node.lat); maxLat = Math.max(maxLat, node.lat); minLng = Math.min(minLng, node.lng); maxLng = Math.max(maxLng, node.lng); }
+    // Include public coordinates quantized near the street coverage boundary.
+    return [minLng - .0002, minLat - .0002, maxLng + .0002, maxLat + .0002].join(',');
+  }, [graph.data]);
+  const incidents = useIncidents({ bbox, incident_type: incidentFilters.type || undefined, verification_status: incidentFilters.status || undefined, received_after: receivedAfter, limit: 200, offset: 0 }, Boolean(bbox));
+  const incidentDetail = useIncidentDetail(selectedIncidentId || undefined);
   const parsed = useMemo(() => candidateDrafts.map(readCandidate).filter((candidate): candidate is LabCandidate => Boolean(candidate)), [candidateDrafts]);
   const candidateKey = JSON.stringify([draft.mode, candidateDrafts]);
   const currentValidation = validation?.key === candidateKey ? validation.result : undefined;
@@ -111,8 +128,9 @@ function FloodWorkspace({ catalog, backend, csrf, sessionError, retrySession }: 
     </Card>
     <MetricsPanel metrics={backend.scenario.evacuation_metrics} latency={backend.timeline.at(-1)?.step_latency_ms ?? backend.scenario.performance.simulation_step_latency_ms} step={backend.scenario.simulation_step} duration={backend.config.simulation_duration} />
     <Card className="flood-map-card"><div className="flood-card-heading"><div><span className="flood-kicker"><Waves size={16} /> TERRITORIO Y EVACUACIÓN</span><h2>{preview ? 'Previsualización de cobertura' : 'Exposición y rutas en tiempo de simulación'}</h2><p>{preview ? selectedMode?.coverage : `Paso ${backend.scenario.simulation_step} · tiempo ${backend.scenario.simulation_time.toFixed(1)} / ${backend.scenario.simulation_duration} · lluvia ${(backend.scenario.rainfall * 100).toFixed(0)}% sintética`}</p></div><Badge tone="cyan">{preview ? 'Solo geografía' : `${backend.scenario.agents.length} agentes`}</Badge></div>
-      {graph.isPending ? <LoadingState label="Cargando la red vial de inundación…" /> : graph.isError ? <ErrorState error={graph.error} onRetry={() => { if (graph.error instanceof ApiError && (graph.error.code === 'RUN_CHANGED' || graph.error.status === 409)) refresh(); void graph.refetch(); }} /> : !preview && graph.data.version !== backend.graph_version ? <p role="alert">La geografía cambió de ejecución. <Button variant="secondary" onClick={() => { refresh(); void graph.refetch(); }}>Actualizar geografía</Button></p> : <FloodMap key={`${graph.data.version}:${preview ? 'preview' : backend.run_id}`} graph={graph.data} scenario={preview ? undefined : backend.scenario} shelters={currentShelters} candidates={parsed} validation={currentValidation} selectedAgentId={selectedAgentId} onSelectAgent={setSelectedAgentId} pickingCandidate={pickingCandidate} onPickPosition={pickPosition} />}
+      {graph.isPending ? <LoadingState label="Cargando la red vial de inundación…" /> : graph.isError ? <ErrorState error={graph.error} onRetry={() => { if (graph.error instanceof ApiError && (graph.error.code === 'RUN_CHANGED' || graph.error.status === 409)) refresh(); void graph.refetch(); }} /> : !preview && graph.data.version !== backend.graph_version ? <p role="alert">La geografía cambió de ejecución. <Button variant="secondary" onClick={() => { refresh(); void graph.refetch(); }}>Actualizar geografía</Button></p> : <FloodMap key={`${graph.data.version}:${preview ? 'preview' : backend.run_id}`} graph={graph.data} scenario={preview ? undefined : backend.scenario} shelters={currentShelters} candidates={parsed} validation={currentValidation} selectedAgentId={selectedAgentId} onSelectAgent={setSelectedAgentId} pickingCandidate={pickingCandidate} onPickPosition={pickPosition} incidents={incidents.data?.incidents} selectedIncidentId={selectedIncidentId} onSelectIncident={setSelectedIncidentId} />}
     </Card>
+    <IncidentPanel list={incidents.data} loading={incidents.isPending} error={incidents.error} onRetry={() => { void incidents.refetch(); if (selectedIncidentId) void incidentDetail.refetch(); }} filters={incidentFilters} onFilters={setIncidentFilters} selectedId={selectedIncidentId} onSelect={setSelectedIncidentId} selected={incidentDetail.data ?? incidents.data?.incidents.find(incident => incident.incident_id === selectedIncidentId)} detailLoading={Boolean(selectedIncidentId) && incidentDetail.isPending} detailError={incidentDetail.error} backend={backend} preview={preview} csrf={csrf} busy={busy} onApplied={result => { const current = client.getQueryData<LabState>(['flood', 'state']); if (current?.run_id === result.state.run_id && current.scenario.world_version <= result.state.scenario.world_version) syncState(result.state); else refresh(); client.setQueryData(['incidents', 'detail', result.incident.incident_id], result.incident); }} />
     <div className="flood-lab-columns"><Card className="flood-editor-card"><div className="flood-card-heading"><div><span className="flood-kicker"><MapPin size={16} /> REFUGIOS DE LABORATORIO</span><h2>Cuatro candidatos, una estrategia</h2><p>Las ubicaciones propuestas no están habilitadas oficialmente como alojamientos temporales.</p></div><Badge tone={customValid ? 'success' : 'neutral'}>{parsed.length} / 4 candidatos</Badge></div>
       <fieldset className="flood-strategy-selection"><legend>Refugios para iniciar</legend><label><input type="radio" name="flood-shelter-strategy" checked={!useCustom} onChange={() => setUseCustom(false)} />Conservar cuatro refugios originales</label><label><input type="radio" name="flood-shelter-strategy" checked={useCustom} onChange={() => setUseCustom(true)} />Usar cuatro refugios personalizados</label></fieldset>
       <p className="muted">Usa el mapa o introduce coordenadas conocidas de una universidad, instalación deportiva, aeropuerto o terminal. El servidor comprueba acceso vial, ajuste máximo de {catalog.max_snap_distance_m} m y duplicados.</p>

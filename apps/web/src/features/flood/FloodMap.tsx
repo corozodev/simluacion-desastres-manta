@@ -1,13 +1,14 @@
 import { useMemo, useRef, useState } from 'react';
-import type { GeoPoint, Graph, GraphEdge, LabCandidate, LabCandidateValidation, ScenarioSnapshot, Shelter } from '@corodev/contracts';
+import type { GeoPoint, Graph, GraphEdge, Incident, LabCandidate, LabCandidateValidation, ScenarioSnapshot, Shelter } from '@corodev/contracts';
 import { Button } from '../../components/ui';
 import { config } from '../../lib/config';
+import { incidentSourceLabels, incidentStatusGlyphs, incidentStatusLabels, incidentTypeLabels } from './incidentPresentation';
 
 type Point = { x: number; y: number };
 type RoadState = 'passable' | 'caution' | 'blocked';
 type Layer = 'exposure' | 'passable' | 'caution' | 'blocked' | 'routes' | 'agents' | 'shelters' | 'incidents';
 const initialView = { x: 0, y: 0, width: 900, height: 480 };
-const layerLabels: Record<Layer, string> = { exposure: 'Exposición a inundación', passable: 'Calles transitables', caution: 'Calles con precaución', blocked: 'Calles bloqueadas', routes: 'Rutas de evacuación', agents: 'Agentes', shelters: 'Refugios', incidents: 'Incidentes (Fase 4C)' };
+const layerLabels: Record<Layer, string> = { exposure: 'Exposición a inundación', passable: 'Calles transitables', caution: 'Calles con precaución', blocked: 'Calles bloqueadas', routes: 'Rutas de evacuación', agents: 'Agentes', shelters: 'Refugios', incidents: 'Novedades georreferenciadas' };
 
 function mercator(point: GeoPoint): Point {
   const latitude = Math.max(-85.05112878, Math.min(85.05112878, point.lat)) * Math.PI / 180;
@@ -34,11 +35,14 @@ export interface FloodMapProps {
   onSelectAgent: (id: string) => void;
   pickingCandidate?: number;
   onPickPosition: (point: GeoPoint) => void;
+  incidents?: Incident[];
+  selectedIncidentId?: string;
+  onSelectIncident?: (id: string) => void;
 }
 
 // Native SVG retains the existing map's pan/zoom behavior. Street geometry is
 // indexed once and batched into at most three paths, including the master graph.
-export function FloodMap({ graph, scenario, shelters, candidates, validation, selectedAgentId, onSelectAgent, pickingCandidate, onPickPosition }: FloodMapProps) {
+export function FloodMap({ graph, scenario, shelters, candidates, validation, selectedAgentId, onSelectAgent, pickingCandidate, onPickPosition, incidents = [], selectedIncidentId, onSelectIncident }: FloodMapProps) {
   const [view, setView] = useState(initialView);
   const [layers, setLayers] = useState<Record<Layer, boolean>>({ exposure: true, passable: true, caution: true, blocked: true, routes: true, agents: true, shelters: true, incidents: true });
   const [selectedEdgeId, setSelectedEdgeId] = useState('');
@@ -165,8 +169,14 @@ export function FloodMap({ graph, scenario, shelters, candidates, validation, se
       {layers.agents && <g data-layer="agents">{scenario?.agents.map(agent => { const point = model.nodes.get(agent.current_node); return point ? <circle key={agent.id} data-agent-id={agent.id} cx={point.x} cy={point.y} r={agent.id === selectedAgentId ? 6 : 3} className={`flood-agent flood-agent-${agent.state}`} onPointerDown={event => event.stopPropagation()} onClick={event => { event.stopPropagation(); onSelectAgent(agent.id); }}><title>{agent.id} · {agent.state}</title></circle> : null; })}</g>}
       {layers.shelters && <g data-layer="shelters">{shelters.map(shelter => { const point = model.nodes.get(shelter.node_id); const condition = shelterConditions.get(shelter.id); return point ? <g key={shelter.id}><rect x={point.x - 6} y={point.y - 6} width={12} height={12} rx={2} className={`flood-shelter flood-shelter-${condition?.state ?? 'available'}`}><title>{shelter.id} · {condition?.state ?? 'available'} · {shelter.occupancy}/{shelter.capacity} ocupadas · {shelter.reserved} reservadas</title></rect><text x={point.x + 9} y={point.y + 4} className="escape-map-label">{shelter.id}</text></g> : null; })}
         {candidates.map((candidate, index) => { if (!Number.isFinite(candidate.lat) || !Number.isFinite(candidate.lng)) return null; const check = validation?.candidates.find(item => item.id === candidate.id); const point = model.point(candidate); return <g key={candidate.id} data-candidate={candidate.id}><circle cx={point.x} cy={point.y} r={8} className={`flood-candidate ${check?.valid === false ? 'flood-candidate-invalid' : ''}`} /><text x={point.x - 3} y={point.y + 3} className="flood-candidate-label">{index + 1}</text><title>Candidato {index + 1}: {candidate.label} · {check?.message ?? 'Pendiente de validar'}</title></g>; })}</g>}
-      {layers.incidents && <g data-layer="incidents"><title>Incidentes preparados para Fase 4C; no hay incidentes publicados.</title></g>}
-    </svg><figcaption className="flood-legend"><span className="flood-legend-exposure">● Exposición sintética</span><span className="flood-legend-passable">— Transitable</span><span className="flood-legend-caution">— Precaución</span><span className="flood-legend-blocked">┄ Bloqueada</span><span className="flood-legend-shelter">■ Refugio candidato</span><span>○ Ubicación propuesta</span><span>— Ruta del agente seleccionado</span></figcaption>
+      {layers.incidents && <g data-layer="incidents">{incidents.map(incident => {
+        const point = model.point({ lat: incident.latitude, lng: incident.longitude });
+        const label = `${incidentTypeLabels[incident.incident_type]} · ${incidentStatusLabels[incident.verification_status]} · ${incidentSourceLabels[incident.source_type]}`;
+        return <g key={incident.incident_id} data-incident-id={incident.incident_id} data-incident-status={incident.verification_status} data-incident-source={incident.source_type} role="button" tabIndex={0} aria-label={`Seleccionar incidente en mapa ${incident.incident_id}: ${label}`} aria-pressed={selectedIncidentId === incident.incident_id} className={`flood-incident-marker flood-incident-${incident.verification_status} ${incident.source_type === 'synthetic' ? 'flood-incident-marker-synthetic' : ''} ${selectedIncidentId === incident.incident_id ? 'flood-incident-marker-selected' : ''}`} transform={`translate(${point.x},${point.y})`} onPointerDown={event => event.stopPropagation()} onClick={event => { event.stopPropagation(); onSelectIncident?.(incident.incident_id); }} onKeyDown={event => { if (['Enter', ' '].includes(event.key)) { event.preventDefault(); event.stopPropagation(); onSelectIncident?.(incident.incident_id); } }}>
+          <title>{label} · ubicación aproximada</title>{incident.source_type === 'synthetic' ? <path d="M0,-10L10,0L0,10L-10,0Z" /> : <circle r={9} />}<text textAnchor="middle" dy=".35em" aria-hidden="true">{incidentStatusGlyphs[incident.verification_status]}</text>
+        </g>;
+      })}</g>}
+    </svg><figcaption className="flood-legend"><span className="flood-legend-exposure">● Exposición sintética</span><span className="flood-legend-passable">— Transitable</span><span className="flood-legend-caution">— Precaución</span><span className="flood-legend-blocked">┄ Bloqueada</span><span className="flood-legend-shelter">■ Refugio candidato</span><span>○ Ubicación propuesta</span><span>— Ruta del agente seleccionado</span><span>? Pendiente · + Corroborado · ✓ Verificado · × Rechazado · ⌛ Caducado · ◇ Sintético</span></figcaption>
       <p className="flood-map-attribution"><a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">© OpenStreetMap contributors</a> · Base vectorial OSM · {graph.nodes.length.toLocaleString('es-EC')} intersecciones / {graph.edges.length.toLocaleString('es-EC')} aristas</p>
       {tileUnavailable && <p className="muted" role="status">Las teselas de fondo no están disponibles. La red vectorial OpenStreetMap y los controles siguen activos.</p>}
     </figure>
