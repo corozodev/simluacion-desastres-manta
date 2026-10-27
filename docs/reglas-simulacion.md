@@ -203,3 +203,9 @@ Las comparaciones geográficas congelan posiciones originales, refugios y cantid
 Los diagnósticos separan mecanismos de mordida y tipo de zombie, condiciones iniciales contribuyentes, inmovilidad, ausencia de rutas, eficiencia y tiempos. Las plazas sin ocupar (`capacity-occupancy`), reservadas y disponibles (`capacity-occupancy-reserved`) son medidas distintas. La clasificación final se calcula después de todas las admisiones, mientras que la clasificación de cada decisión conserva el estado previo.
 
 La evaluación de pronóstico compara una envolvente de nodos posibles con posiciones observadas después del siguiente turno. Nodos posibles no ocupados son candidatos falsos positivos, no una probabilidad mal calibrada: la envolvente no predice ocupación simultánea. La diferencia neta de mordidas entre ejecuciones con/sin predictor tampoco demuestra una intercepción causal concreta, porque cambian trayectorias posteriores.
+
+## FASE 4A: escenario experimental independiente
+
+Las reglas anteriores siguen correspondiendo a `zombie`, también cuando se omite `scenario_type`. `urban_flood` reutiliza el núcleo y no contiene zombies. La [guía de inundaciones](urban-flood.md) define lluvia sintética, overlay vial, políticas de espera y exclusión de refugios. Un agente sin destino admisible permanece vivo como `active`; el endpoint especializado distingue `isolated` y `waiting`. Capacidad, reservas y movimiento de una sola arista se conservan.
+
+Los escenarios de inundación emplean parámetros sintéticos y no constituyen pronósticos hidrológicos ni recomendaciones oficiales de evacuación.

@@ -63,3 +63,7 @@ go test -race ./internal/decision
 La predicción temporal de runners y la asignación global de capacidad quedan
 para FASE 2. El criterio conservador de exposición puede producir recorridos más
 largos; no garantiza una evacuación cuando el mundo deja de tener rutas seguras.
+
+## Extensión de escenarios FASE 4A
+
+La descripción anterior es histórica de FASE 1; el motor productivo con predicción y reservas se explica en [algoritmo FASE 2](algoritmo-fase2.md). La [extensión de inundación](urban-flood.md) conserva esas búsquedas y añade costos de precaución, cierres temporales y disponibilidad de destinos a sus huellas efectivas. Los datos descriptivos de riesgo y timestamps no obligan a recalcular Dijkstra. La rama zombie conserva sus reglas y resultados de regresión.

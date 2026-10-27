@@ -220,3 +220,11 @@ Se usaron hooks existentes y registros Caddy sanitizados temporales, sin OTel nu
 React distingue previsualización de inicio real. Competición (300/383) conserva prioridad; el maestro (9.179/13.452) y el ampliado (1.000/1.599) son experimentales. El control autenticado sólo inicia entre rondas, usa sesión HttpOnly/CSRF independiente de `/paso` y conserva diez finales observables en RAM. Los visitantes siguen en modo lectura.
 
 El maestro se evalúa por compatibilidad, comportamiento y costo, sin exigirle el rendimiento del preset oficial ni cambiar reglas para favorecerlo. No se habilitan experimentales ni se reemplaza la EC2 automáticamente. Véanse [operación](docs/operacion-multigrafo.md) e [informe y mediciones](docs/informe-fase3b2.md).
+
+## Inundaciones urbanas experimentales — FASE 4A
+
+`npm run simulate:flood` ejecuta lluvia, exposición espacial y drenaje sobre el grafo oficial. `npm run dev:flood` sirve la API experimental en `127.0.0.1:8081`, con polling de `/v1/scenario`. El motor y servidor zombie conservan sus reglas y catálogo.
+
+Los escenarios de inundación emplean parámetros sintéticos y no constituyen pronósticos hidrológicos ni recomendaciones oficiales de evacuación.
+
+La [guía del modelo y contrato React 4B](docs/urban-flood.md) incluye parámetros, límites, procedencia y reproducción. El [informe FASE 4A](docs/informe-fase4a.md) registra pruebas, mediciones, archivos y riesgos. No se despliega esta fase automáticamente.
