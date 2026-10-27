@@ -8,7 +8,7 @@ Validación local: 27 de octubre de 2026. Trabajo sobre el checkout recibido, co
 
 `OperatorAccess.tsx` ofrece el acceso desde inundaciones mediante el `POST /admin/session` existente. El código se lee del input y se borra al enviar; no se conserva en React ni Web Storage. Tras el login se vuelve a consultar `/lab/session`: recibir un ACK del login no concede permiso por sí solo. Cookie HttpOnly, Origin y CSRF siguen siendo obligatorios. Una instancia sin administración habilitada informa que sólo permite observación.
 
-La regresión Go conecta control y laboratorio reales por HTTP: anónimo rechazado, login legítimo, sesión del laboratorio, CSRF falsificado rechazado, inicio real y cookie revocada rechazada. También pasa con race detector. El navegador verifica por separado el modo local autorizado. No se verificó un despliegue remoto ni login de producción con credenciales del propietario.
+La regresión Go conecta control y laboratorio reales por HTTP: anónimo rechazado, login legítimo, sesión del laboratorio, CSRF falsificado rechazado, inicio real y cookie revocada rechazada. También pasa con race detector. El navegador verifica por separado el modo local autorizado. Después se verificaron ambas rutas públicas por HTTPS, la entrada de operador y una sesión privada real con refugio personalizado. No se ejerció un login de producción con el código del propietario; su autorización se cubrió mediante el puente HTTP real de la prueba local.
 
 ## Interfaz y mapas
 
@@ -39,7 +39,7 @@ No se reescribieron rutas, coordinación, amenaza ni reglas de `/paso`. El únic
 | `npm install` | Resolución existente conservada; auditoría sin vulnerabilidades |
 | `contracts:validate`, `contracts:generate`, `tokens:generate`, `generated:check` | Correctos; derivados generados desde sus fuentes |
 | `npm run check` | Contrato, generación, typecheck y lint correctos |
-| `npm test` | 127 tests React y 40 de mock-api correctos |
+| `npm test` | 129 tests React y 40 de mock-api correctos |
 | `build:web`, `build:backend` | Correctos |
 | `test:backend`, `test:race`, Go `vet ./...` | Correctos; race incluye sesiones y autorización del laboratorio |
 | `graph:test` | 10 pruebas correctas |
@@ -73,4 +73,10 @@ Tres escenarios urbanos de 150 turnos: 20/20 evacuados; 60/80 evacuados y 20 act
 
 Archivos centrales: `AppShell.tsx`, `ScenarioScreen.tsx`, `Escape.tsx`, `ShelterEditor.tsx`, `OperatorAccess.tsx`, `FloodLab.tsx`, `WorldMap.tsx`, `FloodMap.tsx`, `features/maps/*`, `api.ts`, contrato generado y `internal/sessions/*`. No se añadieron dependencias.
 
-El propietario autorizó la entrega externa después de completar el trabajo local. El contrato sólo se amplió donde faltaba la capacidad de reubicar refugios zombi; aplicar esa capacidad en un servidor anterior requiere publicar el backend actualizado junto con React. Esta iteración no habilita FULL en producción ni cambia cuotas o acceso. Las evidencias son locales y privadas, y no sustituyen validación de infraestructura AWS. El resultado del push, los identificadores de la entrega AWS y la retirada de la imagen anterior se registrarán tras la publicación autorizada.
+El propietario autorizó la entrega externa después de completar el trabajo local. El contrato sólo se amplió donde faltaba la capacidad de reubicar refugios zombi; aplicar esa capacidad en un servidor anterior requiere publicar el backend actualizado junto con React. Esta iteración no habilita FULL en producción ni cambia cuotas o acceso. La publicación autorizada se completó en la misma EC2 de Ohio (`us-east-2`). La imagen nueva es `sha256:b2e928a730cc9646b570229efe2e83b2ae54c6ed1439ae4beae1a863ad94214e`, etiqueta `corodev-backend:mantasim-1d8b6f6`. Tras comprobar HTTPS se retiraron los dos contenedores sustituidos, la imagen anterior `sha256:b3f8651035f81ac590fa8d98707476a111a821b52a0f0491abb2f5304eb617aa` y sus archivos de imagen en EC2 y S3, incluidas versiones del objeto exacto. No se eliminaron archivos de otras entregas históricas.
+
+React está publicado en [MantaSim](https://sistemamanta.lexinnovate.com/escape), con el laboratorio en [/flood-lab](https://sistemamanta.lexinnovate.com/flood-lab). Se comprobaron credenciales privadas y configuración Docker sin imprimir valores: entorno, límites, seguridad, logging y montajes coinciden; los dos archivos ciudadanos conservan sus hashes. Presupuesto, instancia, cuotas y temporizadores de retirada permanecen iguales.
+
+Una ejecución pública acotada verificó capacidad personalizada de 37 plazas, intervalo efectivo de 2000 ms, pausa, recarga sin recreación, reanudación y finalización de tres turnos. Ambas rutas cargan directamente en escritorio y móvil, con un solo indicador, sin desborde ni errores JavaScript/API. El runtime legacy conserva turno cero y no quedan ejecuciones activas de la prueba. La comprobación final del fallo de teselas también evita que los iconos de imagen rota oculten las calles.
+
+Implementación en GitHub: commit `1d8b6f6`, conservando la historia anterior; un segundo commit registra el ajuste de teselas y la evidencia de entrega. [Resumen verificable de AWS](../deploy/validation-mantasim.json) y [prueba HTTPS privada](../deploy/evidence-private/mantasim-release-20261027/public-smoke.json). La imagen se probó localmente con reemplazo saludable, recuperación ante fallo y eliminación de la anterior antes de operar en EC2.

@@ -71,6 +71,21 @@ describe('cámara y mapa compartidos', () => {
     expect(screen.getByRole('link', { name: '© OpenStreetMap contributors' })).toBeInTheDocument();
   });
 
+  it.each(['zombie', 'flood'])('retira iconos de teselas fallidas y conserva calles y controles: %s', scenario => {
+    config.osmTilesEnabled = true;
+    if (scenario === 'zombie') render(<WorldMap graph={graph} />);
+    else render(<FloodMap graph={graph} shelters={graph.shelters} candidates={[]} selectedAgentId="" onSelectAgent={() => undefined} onPickPosition={() => undefined} />);
+    const tile = document.querySelector('[data-layer="osm-base"] image')!;
+    expect(tile).not.toBeNull();
+    fireEvent.error(tile);
+    expect(tile).toHaveAttribute('visibility', 'hidden');
+    expect(screen.getByText(/conservamos la red vectorial|La red vectorial OpenStreetMap y los controles siguen activos/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Restablecer vista' })).toBeEnabled();
+    expect(document.querySelector('.escape-road, path[data-road-state]')).not.toBeNull();
+    fireEvent.load(tile);
+    expect(tile).not.toHaveAttribute('visibility');
+  });
+
   it('conserva el cursor geográfico al hacer zoom y elige posiciones reales; Escape cancela', () => {
     config.osmTilesEnabled = false;
     const pick = vi.fn(), cancel = vi.fn();

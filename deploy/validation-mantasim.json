@@ -1,0 +1,85 @@
+{
+  "recorded_date": "2026-10-27",
+  "region": "us-east-2",
+  "authorization": {
+    "github_push": true,
+    "backend_replace": true,
+    "previous_image_remove": true,
+    "react_publish": true
+  },
+  "implementation_commit": "1d8b6f60c82491165bce5115d24fdf7b23f926ca",
+  "github_remote": "https://github.com/corozodev/simluacion-desastres-manta",
+  "history_rewritten": false,
+  "backend": {
+    "platform": "linux/amd64",
+    "tag": "corodev-backend:mantasim-1d8b6f6",
+    "image": "sha256:b2e928a730cc9646b570229efe2e83b2ae54c6ed1439ae4beae1a863ad94214e",
+    "previous_image": "sha256:b3f8651035f81ac590fa8d98707476a111a821b52a0f0491abb2f5304eb617aa",
+    "previous_image_removed_from_ec2": true,
+    "previous_image_archive_removed_from_ec2": true,
+    "previous_image_archive_removed_from_s3_including_versions": true,
+    "healthy": true,
+    "private_environment_preserved": true,
+    "docker_limits_security_logging_and_mounts_preserved": true,
+    "citizen_files_unchanged": 2,
+    "same_ec2_instance": true,
+    "legacy_turn": 0,
+    "active_sessions_after_smoke": 0,
+    "engine_errors_after_smoke": 0,
+    "rollback_failure_and_success_tested_locally": true
+  },
+  "web": {
+    "url": "https://sistemamanta.lexinnovate.com",
+    "assets": [
+      "/assets/index-CYP_foJI.js",
+      "/assets/index-C4BS0vyU.css"
+    ],
+    "cache_invalidation": "Completed",
+    "old_hashed_assets_preserved_for_loaded_clients": true,
+    "final_invalidation_id": "IRGGIMMDUQUCYVJ607EDYT8HH",
+    "tile_failure_icons_hidden": true
+  },
+  "verification": {
+    "web_tests": 129,
+    "mock_api_tests": 40,
+    "e2e_tests": 12,
+    "mobile_analyze": true,
+    "mobile_tests_passed": 24,
+    "mobile_tests_opt_in_skipped": 2,
+    "mobile_debug_apk": true,
+    "local_flood_checks": 13,
+    "local_incident_checks_including_real_flutter": 11,
+    "local_reference_checks": 10,
+    "simulation_contract_assertions": 493,
+    "public_https_routes": [
+      "/escape",
+      "/flood-lab"
+    ],
+    "public_viewport_widths": [
+      1366,
+      390
+    ],
+    "public_session": {
+      "custom_shelter_capacity": 37,
+      "interval_ms": 2000,
+      "ticks": 3,
+      "final_status": "COMPLETED",
+      "pause_reload_resume": true,
+      "creations": 1
+    },
+    "public_operator_login_form": true,
+    "public_operator_authenticated_storm": "Not exercised without owner access code; equivalent real HTTP authentication bridge and local authorized storm tested",
+    "browser_page_errors": [],
+    "browser_api_errors": [],
+    "raster_provider_availability": "Not asserted; headless QA blocks public tile traffic",
+    "final_public_read_only_render": true
+  },
+  "preserved": {
+    "budget": true,
+    "instance_type_and_quotas": true,
+    "autokill_schedules_enabled_and_unchanged": true,
+    "historical_reports_graphs_and_frozen_engines": true,
+    "no_new_phase6a_animation_assets": true
+  },
+  "private_evidence_directory": "deploy/evidence-private/mantasim-release-20261027"
+}
