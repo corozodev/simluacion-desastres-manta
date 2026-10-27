@@ -7,9 +7,10 @@ import { AnimatedEntities, catalog, startVisualClock } from '../features/visuali
 import { compatible, direction, entitiesFromFlood, entitiesFromWorld, entityPath, geometryIndex, levelOfDetail, samplePath } from '../features/visualization/model';
 import type { Observation, VisualEntity } from '../features/visualization/model';
 import { useVisualization, VisualizationControls } from '../features/visualization/useVisualization';
+import { observeWorld, sessionLifecycle } from '../features/visualization/observation';
 import { FloodMap } from '../features/flood/FloodMap';
 import { config } from '../lib/config';
-import { graph, managedFlood, world } from './simulation-fixtures';
+import { graph, managedFlood, managedState, world } from './simulation-fixtures';
 
 const project = (p: { lat: number; lng: number }) => ({ x: p.lng * 10000, y: p.lat * 10000 });
 const view = { x: -100, y: -100, width: 300, height: 160 };
@@ -93,6 +94,17 @@ describe('recorridos observados', () => {
 });
 
 describe('reloj, recursos y ciclo de vida', () => {
+  it('sólo RUNNING habilita el reloj y todos los estados finales conservan observación estática', () => {
+    for (const status of ['CREATED', 'RUNNING', 'PAUSED', 'COMPLETED', 'CANCELLED', 'FAILED'] as const) {
+      const value = managedState(world, { status });
+      const observed = observeWorld(value.snapshot, sessionLifecycle(value, true));
+      expect(observed?.running).toBe(status === 'RUNNING');
+      expect(observed?.id).toBe(value.simulation_id);
+      expect(observed?.tick).toBe(world.turn);
+    }
+    expect(sessionLifecycle(managedState(), false).connected).toBe(false);
+    expect(observeWorld(undefined)).toBeUndefined();
+  });
   it('tiene un reloj cancelable y acotado, sin extrapolar al terminar', () => {
     const timer = clock(), update = vi.fn();
     const stop = startVisualClock(update, 1000);

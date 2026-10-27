@@ -166,6 +166,7 @@ try {
     for (const label of ['Exposición a inundación', 'Calles transitables', 'Calles con precaución', 'Calles bloqueadas', 'Rutas de evacuación', 'Agentes', 'Refugios', 'Novedades georreferenciadas']) {
       const checkbox = page.getByRole('checkbox', { name: label, exact: true });
       await expect(checkbox).toBeVisible();
+      if (label === 'Novedades georreferenciadas' && await checkbox.isDisabled()) { await expect(page.locator('[data-incident-id]')).toHaveCount(0); continue; }
       const wasChecked = await checkbox.isChecked();
       await checkbox.click(); await expect(checkbox).toBeChecked({ checked: !wasChecked });
       await checkbox.click(); await expect(checkbox).toBeChecked({ checked: wasChecked });

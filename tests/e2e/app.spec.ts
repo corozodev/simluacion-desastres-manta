@@ -81,8 +81,8 @@ test('inicia una vez, observa movimientos y recupera la misma sesión al recarga
   const map = page.getByRole('img', { name: /Red de evacuación/ });
   const marker = page.locator('.escape-survivor').first();
   await expect(marker).toBeVisible();
-  const first = `${await marker.getAttribute('cx')},${await marker.getAttribute('cy')}`;
-  await expect.poll(async () => `${await marker.getAttribute('cx')},${await marker.getAttribute('cy')}`).not.toBe(first);
+  const first = await marker.getAttribute('transform');
+  await expect.poll(async () => await marker.getAttribute('transform')).not.toBe(first);
   await page.getByRole('searchbox', { name: 'Buscar por ID' }).fill('S-0001');
   await expect(page.getByText('Refugio asignado: R-2')).toBeVisible();
   const view = await map.getAttribute('viewBox');
