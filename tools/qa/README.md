@@ -32,3 +32,9 @@ FLUTTER_BIN=/ruta/flutter/bin/flutter node tools/qa/check_http_contracts.mjs --u
 ```
 
 El modo urbano comprueba cuatro zonas de origen, geometrías y coherencia de ocupación/reservas/disponibilidad. El navegador verifica zoom, desplazamiento/reset, selección de ruta, búsqueda, ausencia de solicitudes al health demo y de credenciales, además del viewport móvil. Las cifras de nodos/aristas se leen del grafo recibido; no se fija 325 para la variante urbana.
+
+## FASE 3B.2
+
+`check_multigraph.mjs` prueba Go y Chromium reales con credenciales efímeras sólo en memoria, origen/listener loopback, simulación acelerada explícita y ningún acceso AWS. Comprueba previsualización de 13.452 aristas, autorización, bloqueo de otra ronda, logout, retención de finales y ancho móvil. `MULTIGRAPH_EVIDENCE_DIR` guarda capturas y métricas locales privadas.
+
+`benchmark_multigraph.py` ejecuta el binario `cmd/multigraph-bench` en Docker sin red externa, con dos CPU, GOMAXPROCS=2 y 1 GB. Declara aceleraciones y conserva errores/OOM además de percentiles y CPU/RSS. Ver comandos, límites y seguridad en [operación multigrafo](../../docs/operacion-multigrafo.md). `/paso` conserva su contrato exacto; los controles administrativos no pertenecen al cliente móvil.

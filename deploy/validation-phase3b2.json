@@ -115,7 +115,9 @@
       "Reference rounds are accelerated deterministic checks; do not compare average CPU or round-wall durations causally.",
       "Master latency is exploratory; competition is the official performance reference per owner clarification.",
       "Two earlier stress series used host-derived GOMAXPROCS=12; failed attempts and interrupted preliminary rounds remain private and are not merged into final percentiles."
-    ]
+    ],
+    "benchmark_binary_sha256": "a0c1c025a10180899f410ef8a3fa32d72699a28bc50a613c6e2dc2dfe4021793",
+    "benchmark_source_scope": "Standalone application/simulator and catalog; not the administrative HTTP manager. Built before the later preview-cache shelter availability normalization. The benchmark does not serve that preview; source graphs, configs, movement and planning code are unchanged. Candidate startup allocation may differ; final Docker/Chromium verification covers the normalization."
   },
   "rounds": [
     {

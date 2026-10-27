@@ -2,7 +2,7 @@
 
 FASE 2 de Track A: backend Go con simulación determinista, planificación dinámica, predicción observable de runners, reservas y clientes React/Flutter. La fuente urbana OSM de Manta tiene **9.179 nodos y 13.452 aristas**; el grafo operativo tiene **300 nodos y 383 aristas**, y el experimental **1.000 nodos y 1.599 aristas**. Los cuatro sectores son zonas de aparición con polígonos municipales: Tarqui, Los Esteros, Barbasquillo y Jocay. La navegación puede salir de ellas. Los cuatro refugios son ficticios. Los turnos duran dos segundos en modo normal y se ejecutan sin esperas en modo acelerado. Entrega prevista por el equipo: **28 de octubre de 2026, 10:00 Ecuador (UTC−05:00)**.
 
-**React y Flutter utilizan únicamente el backend Go de evacuación.** La entrada es `/escape`; se retiraron los modos, adaptadores y pantallas que dependían del servidor de demostración. Ambos clientes observan `/healthz`, `/grafo` y `/estado`, sin recibir la clave de `/paso`. [Abrir Escape en AWS](https://sistemamanta.lexinnovate.com/escape) · [API HTTPS](https://api.sistemamanta.lexinnovate.com/healthz). La infraestructura de Ohio sigue siendo la aprobada en FASE 3A.2; consulta [el informe FASE 3B.1](docs/informe-fase3b1.md).
+**React y Flutter utilizan únicamente el backend Go de evacuación.** La entrada es `/escape`; se retiraron los modos, adaptadores y pantallas que dependían del servidor de demostración. Ambos clientes observan `/healthz`, `/grafo` y `/estado`, sin recibir la clave de `/paso`. [Abrir Escape en AWS](https://sistemamanta.lexinnovate.com/escape) · [API HTTPS](https://api.sistemamanta.lexinnovate.com/healthz). La infraestructura de Ohio sigue siendo la aprobada en FASE 3A.2; consulta [el informe FASE 3B.1](docs/informe-fase3b1.md) y la [operación multigrafo FASE 3B.2](docs/operacion-multigrafo.md).
 
 ## Inicio local
 
@@ -158,7 +158,7 @@ Go no carga `.env` automáticamente: exportar variables. Web usa únicamente `VI
 | `packages/contracts`, `packages/design-tokens` | Contratos e identidad compartidos |
 | `tools/{codegen,geo,qa,scripts}` | Generación, importación, QA y comandos |
 
-Leer [diagnóstico geográfico](docs/diagnostico-geografico.md), [diagnóstico de supervivencia](docs/diagnostico-supervivencia.md), [arquitectura](docs/arquitectura.md), [informe FASE 2](docs/informe-fase2.md), [AWS](docs/despliegue-aws.md) y [costos estimados](docs/costos.md). El [informe histórico FASE 1](docs/informe-fase1.md) permanece intacto. FASE 3A.2 desplegó el change set aprobado y verificó la API externa; las evidencias distinguen mediciones públicas y pruebas locales previas. No se inició FASE 3B.2.
+Leer [diagnóstico geográfico](docs/diagnostico-geografico.md), [diagnóstico de supervivencia](docs/diagnostico-supervivencia.md), [arquitectura](docs/arquitectura.md), [informe FASE 2](docs/informe-fase2.md), [AWS](docs/despliegue-aws.md) y [costos estimados](docs/costos.md). El [informe histórico FASE 1](docs/informe-fase1.md) permanece intacto. FASE 3A.2 desplegó el change set aprobado y verificó la API externa; las evidencias distinguen mediciones públicas y pruebas locales previas. FASE 3B.2 añade catálogo y selector local; el rollout AWS requiere autorización separada.
 
 
 ## Comparaciones controladas
@@ -205,7 +205,7 @@ La simulación existente termina en 150 turnos y conserva el snapshot final. Un 
 
 Se conservaron los artefactos y resultados locales previos, sin repetir la batería de pruebas o los experimentos de FASE 2. [Informe de despliegue](docs/despliegue-aws.md), [evidencia consolidada](deploy/validation-phase3a2-deployment.json) y [probe público](deploy/validation-phase3a-public.json). La API_KEY se generó en EC2 y sólo se compartió cifrada con el cliente externo autorizado; nunca se publica en React, Flutter, comandos o logs.
 
-Git conserva commits reales con fechas auténticas y está publicado en [corozodev/simluacion-desastres-manta](https://github.com/corozodev/simluacion-desastres-manta), usando el remoto configurado por el propietario. La evidencia privada, parámetros, credenciales, bundles y builds permanecen excluidos. La entrega de alertas Budget y una captura auténtica de consola siguen sin confirmar; su configuración sí se verificó por API. No se inició FASE 3B.2.
+Git conserva commits reales con fechas auténticas y está publicado en [corozodev/simluacion-desastres-manta](https://github.com/corozodev/simluacion-desastres-manta), usando el remoto configurado por el propietario. La evidencia privada, parámetros, credenciales, bundles y builds permanecen excluidos. La entrega de alertas Budget y una captura auténtica de consola siguen sin confirmar; su configuración sí se verificó por API. FASE 3B.2 añade catálogo y selector local; el rollout AWS requiere autorización separada.
 
 ## Integración y diagnóstico FASE 3B.1
 
@@ -214,3 +214,9 @@ La retirada del servidor anterior se aplicó en React y Flutter, incluyendo conf
 El diagnóstico distingue el procesamiento Go, la duración dentro de Caddy, el HTTPS desde EC2 y el cliente de Ecuador. Con el snapshot final estable, reutilizar conexiones redujo la mediana del cliente de aproximadamente 361 a 113–115 ms. El navegador ya utiliza conexiones persistentes; esto corrige la metodología del probe y no demuestra una aceleración del motor. La cola del lote posterior conservó un máximo de 606 ms: no se garantiza un máximo externo de 500 ms.
 
 Se usaron hooks existentes y registros Caddy sanitizados temporales, sin OTel nuevo, agente, IAM o infraestructura adicional. No se reinició el backend de producción ni se cambió el algoritmo. Las cifras, controles, archivos publicados y commits están en [docs/informe-fase3b1.md](docs/informe-fase3b1.md) y la [metodología de latencia](docs/latencia-aws-fase3b1.md). No se inicia FASE 3B.2 automáticamente.
+
+## Simulación multigrafo FASE 3B.2
+
+React distingue previsualización de inicio real. Competición (300/383) conserva prioridad; el maestro (9.179/13.452) y el ampliado (1.000/1.599) son experimentales. El control autenticado sólo inicia entre rondas, usa sesión HttpOnly/CSRF independiente de `/paso` y conserva diez finales observables en RAM. Los visitantes siguen en modo lectura.
+
+El maestro se evalúa por compatibilidad, comportamiento y costo, sin exigirle el rendimiento del preset oficial ni cambiar reglas para favorecerlo. No se habilitan experimentales ni se reemplaza la EC2 automáticamente. Véanse [operación](docs/operacion-multigrafo.md) e [informe y mediciones](docs/informe-fase3b2.md).

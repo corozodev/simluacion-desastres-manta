@@ -105,3 +105,7 @@ Se mantienen las verificaciones locales previas, sin repetirlas. cfn-guard no es
 Los recibos completos de autorización, ejecución, AWS, SSM y pruebas están en `deploy/evidence-private/phase3a2-deployment-20261026/`, excluido de Git. Los JSON públicos omiten cuenta, destinatarios, secretos y parámetros privados. El historial local utiliza fechas auténticas. El propietario **aplazó la publicación GitHub**: no hay remoto ni push; no se creó repositorio público.
 
 Quedan como límites: propagación DNS global sin garantizar, simulación finita/RAM, operador con permisos administrativos por decisión del propietario, entrega de alertas Budget sin confirmar y ausencia de captura auténtica de consola. El Budget sí se comprobó por API; no se fabricó una imagen. No se inició FASE 3B.
+
+## Candidata FASE 3B.2
+
+Se preparó localmente el control multigrafo y el selector de cobertura, con pruebas Go/React/Flutter y mediciones separadas de las públicas anteriores. No se ejecutó CloudFormation ni se reemplazó el backend o frontend público durante esta fase. `deploy/rollout.sh` detiene el contenedor y pierde RAM; esa intervención requiere autorización expresa y revisión de los hashes de la candidata. Los experimentales quedan deshabilitados por defecto. Véanse [operación multigrafo](operacion-multigrafo.md) e [informe FASE 3B.2](informe-fase3b2.md).
