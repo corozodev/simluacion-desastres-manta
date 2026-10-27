@@ -17,6 +17,12 @@
   --color-focus: #22D3EE;
   --color-primaryHover: #FBBF24;
   --color-disabled: #64748B;
+  --color-floodLow: #56C5E5;
+  --color-floodMedium: #1685CF;
+  --color-floodHigh: #174EA6;
+  --color-roadClosed: #E04C49;
+  --color-roadRestricted: #D79E35;
+  --color-shelterAvailable: #27A67C;
   --font-family-sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   --font-family-mono: ui-monospace, SFMono-Regular, Consolas, monospace;
   --font-size-xs: 12px;
