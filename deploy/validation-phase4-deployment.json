@@ -1,0 +1,52 @@
+{
+  "phase": "4A-4D",
+  "deployed_at_utc": "2026-10-27T05:25:22.346238+00:00",
+  "region": "us-east-2",
+  "instance_id": "i-05fd56f1bcb3b1aba",
+  "release_commit": "1352ba616166b2c604193235bc2d7949d2ea8381",
+  "frontend_url": "https://sistemamanta.lexinnovate.com/escape",
+  "api_url": "https://api.sistemamanta.lexinnovate.com",
+  "backend_image": {
+    "tag": "corodev-backend:phase4-20261027",
+    "id": "sha256:0d89df208c611a84038afa24ad917c4993849faaa77890fbd50690f20e698ab2"
+  },
+  "previous_backend_image": {
+    "id": "sha256:83d45642f9974f1744b54f1c6303c86ef09a1a8b9e3e8d0dee8b1299c6164ffb",
+    "present_on_ec2": false
+  },
+  "ssm_deployment": {
+    "command_id": "e3de933e-24a7-4242-b37d-43dcddfd92b6",
+    "status": "Success"
+  },
+  "final_container_status": {
+    "command_id": "36c288c8-2805-4be4-8d2e-98838f9ecf5e",
+    "status": "Success",
+    "output": [
+      "/corodev-backend status=running restarting=false restarts=0 health=healthy",
+      "/corodev-flood-lab status=running restarting=false restarts=0 ",
+      "/corodev-tls status=running restarting=false restarts=0 ",
+      "old_image=absent"
+    ]
+  },
+  "cloudfront": {
+    "distribution_id": "E2KCXAAGSCBXQM",
+    "invalidation_id": "IE3XACZ4YYO3A7S4SLKUQD9PMI",
+    "status": "Completed"
+  },
+  "persistent_flood_directory": "/var/lib/corodev/flood",
+  "operator_access": "Existing operator login and CSRF session reused; credentials preserved on EC2.",
+  "builds": [
+    "linux/amd64 Docker image",
+    "React production bundle"
+  ],
+  "test_suites_executed": false,
+  "functional_tests_executed": false,
+  "test_omission_reason": "Explicit user instruction: deployment, removal of the old image and separate Git pushes only.",
+  "git_phase_heads": {
+    "4A": "bff6107",
+    "4B": "8d9cf3d",
+    "4C": "e418fea",
+    "4D": "a9ed495"
+  },
+  "git_history": "Original phase commits pushed separately, preserving their history."
+}
