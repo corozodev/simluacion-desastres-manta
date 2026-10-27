@@ -148,7 +148,7 @@ func (a *api) serve(w http.ResponseWriter, r *http.Request) {
 	switch r.URL.Path {
 	case "/paso":
 		method = "POST"
-	case "/estado", "/grafo", "/healthz":
+	case "/estado", "/grafo", "/healthz", "/v1/scenario":
 	default:
 		fail(w, 404, "NOT_FOUND", "El recurso solicitado no existe.", requestID)
 		return
@@ -190,6 +190,12 @@ func (a *api) serve(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	switch r.URL.Path {
+	case "/v1/scenario":
+		if snapshot.Scenario == nil {
+			fail(w, 404, "NOT_FOUND", "Esta ronda no tiene un escenario de inundación.", requestID)
+			return
+		}
+		writeJSON(w, 200, snapshot.Scenario)
 	case "/estado":
 		if a.options.Metadata != nil {
 			snapshot.Simulation = a.options.Metadata()

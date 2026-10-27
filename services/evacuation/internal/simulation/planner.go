@@ -57,6 +57,11 @@ func (s *Simulator) prepare(ctx context.Context, events []world.Event) {
 		if v.Status != world.Active {
 			continue
 		}
+		if s.scenario.waiting(v.ID) {
+			v.TargetShelterID = ""
+			v.PlannedRoute = []string{v.CurrentNode}
+			continue
+		}
 		proposal, ok := byID[v.ID]
 		if !ok {
 			v.TargetShelterID = ""
@@ -70,7 +75,7 @@ func (s *Simulator) prepare(ctx context.Context, events []world.Event) {
 			valid = s.index.CanMove(route[j-1], route[j], s.blocked)
 		}
 		if proposal.TargetShelterID != "" {
-			valid = valid && hasShelter && assigned[sh.ID] < sh.Capacity-sh.Occupancy && route[len(route)-1] == sh.NodeID
+			valid = valid && hasShelter && s.scenario.admits(sh.ID) && assigned[sh.ID] < sh.Capacity-sh.Occupancy && route[len(route)-1] == sh.NodeID
 		}
 		if !valid {
 			v.TargetShelterID = ""
@@ -83,6 +88,7 @@ func (s *Simulator) prepare(ctx context.Context, events []world.Event) {
 			assigned[sh.ID]++
 		}
 	}
+	s.scenario.planned(before.Survivors, s.survivors)
 	s.reconcileReservations()
 }
 

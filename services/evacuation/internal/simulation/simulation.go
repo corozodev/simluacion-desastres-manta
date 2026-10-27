@@ -43,11 +43,17 @@ type Simulator struct {
 	latencies  []time.Duration
 	planner    world.TurnPlanner
 	diagnostic diagnosticState
+	scenario   threatScenario
 }
 
 func New(g *world.Graph, store *world.Store, cfg Config, client DecisionClient) (*Simulator, error) {
 	if store == nil || client == nil {
 		return nil, fmt.Errorf("snapshot store and decision client are required")
+	}
+	var configErr error
+	cfg, configErr = normalizeScenario(cfg)
+	if configErr != nil {
+		return nil, configErr
 	}
 	idx, err := graph.New(g)
 	if err != nil {
@@ -89,6 +95,10 @@ func New(g *world.Graph, store *world.Store, cfg Config, client DecisionClient) 
 		return nil, err
 	}
 	if err := s.schedule(cfg.Events); err != nil {
+		return nil, err
+	}
+	s.scenario, err = newThreatScenario(s)
+	if err != nil {
 		return nil, err
 	}
 	s.initDiagnostics()
@@ -230,6 +240,9 @@ func (s *Simulator) Step(ctx context.Context) error {
 	if err := ctx.Err(); err != nil {
 		return err
 	}
+	if s.config.ScenarioType == "urban_flood" && s.turn >= s.config.Turns {
+		return fmt.Errorf("urban_flood simulation has completed")
+	}
 	started := time.Now()
 	defer func() { s.diagnostic.turn = append(s.diagnostic.turn, time.Since(started)) }()
 	s.turn++
@@ -238,14 +251,10 @@ func (s *Simulator) Step(ctx context.Context) error {
 		if event.Turn != s.turn {
 			continue
 		}
-		if event.Blocked {
-			s.blocked[event.EdgeID] = true
-		} else {
-			delete(s.blocked, event.EdgeID)
-		}
+		s.scenario.roadEvent(s, event)
 		events = append(events, world.Event{Turn: s.turn, Type: event.Type, EdgeID: event.EdgeID, Message: "Scheduled road state applied"})
 	}
-	s.moveZombies(&events)
+	s.scenario.advance(s, &events)
 	s.version++
 	s.prepare(ctx, events)
 	s.publish(events) // Every HTTP request in this turn observes this exact world.
@@ -261,6 +270,9 @@ func (s *Simulator) Step(ctx context.Context) error {
 		result := results[i]
 		s.latencies = append(s.latencies, result.elapsed)
 		next := result.next
+		if s.scenario.waiting(v.ID) {
+			next = from
+		}
 		valid := result.err == nil && s.index.CanMove(from, next, s.blocked) && (from == next || !hordeBlocked[next])
 		if result.timeout {
 			s.metrics.RequestsTimeout++
@@ -293,7 +305,7 @@ func (s *Simulator) Step(ctx context.Context) error {
 			shelter := &s.shelters[j]
 			ownsReservation := s.planner != nil && v.TargetShelterID == shelter.ID
 			spaceAvailable := s.planner == nil || ownsReservation || shelter.Capacity-shelter.Occupancy-shelter.Reserved > 0
-			if shelter.NodeID == next && shelter.Occupancy < shelter.Capacity && spaceAvailable {
+			if shelter.NodeID == next && shelter.Occupancy < shelter.Capacity && spaceAvailable && s.scenario.admits(shelter.ID) {
 				shelter.Occupancy++
 				if ownsReservation && shelter.Reserved > 0 {
 					shelter.Reserved--
@@ -319,6 +331,7 @@ func (s *Simulator) Step(ctx context.Context) error {
 	// above deliberately retain the pre-movement routes each request observed.
 	s.finishDiagnostics(s.routeAvailability())
 	s.version++
+	s.scenario.finishStep(s, time.Since(started))
 	s.publish(events)
 	return ctx.Err()
 }
@@ -432,6 +445,10 @@ func (s *Simulator) observable(events []world.Event) world.WorldSnapshot {
 		}
 	}
 	sort.Strings(w.BlockedEdges)
+	w.Scenario = s.scenario.snapshot(s)
+	if w.Scenario != nil {
+		w.ScenarioType = w.Scenario.ScenarioType
+	}
 	return w
 }
 

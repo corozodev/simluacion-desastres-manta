@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 
+	"corodev/evacuation/internal/flood"
 	"corodev/evacuation/internal/world"
 )
 
@@ -22,6 +23,8 @@ type ScheduledEvent struct {
 }
 
 type Config struct {
+	ScenarioType           string           `json:"scenario_type,omitempty"`
+	Flood                  *flood.Config    `json:"flood,omitempty"`
 	Name                   string           `json:"name"`
 	Seed                   int64            `json:"seed"`
 	Turns                  int              `json:"turns"`
@@ -61,5 +64,5 @@ func LoadConfig(path string) (Config, error) {
 	if err := d.Decode(new(any)); err != io.EOF {
 		return Config{}, fmt.Errorf("scenario must contain one JSON object")
 	}
-	return cfg, nil
+	return normalizeScenario(cfg)
 }

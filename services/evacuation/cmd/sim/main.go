@@ -18,16 +18,19 @@ import (
 )
 
 type report struct {
-	Scenario     string        `json:"scenario"`
-	Seed         int64         `json:"seed"`
-	GraphVersion string        `json:"graph_version"`
-	GraphSource  string        `json:"graph_source"`
-	Nodes        int           `json:"nodes"`
-	Edges        int           `json:"edges"`
-	Survivors    int           `json:"survivors"`
-	Concurrency  int           `json:"concurrency"`
-	ElapsedMS    float64       `json:"elapsed_ms"`
-	Metrics      world.Metrics `json:"metrics"`
+	ScenarioType      string                       `json:"scenario_type,omitempty"`
+	EvacuationMetrics *world.EvacuationMetrics     `json:"evacuation_metrics,omitempty"`
+	Performance       *world.SimulationPerformance `json:"performance,omitempty"`
+	Scenario          string                       `json:"scenario"`
+	Seed              int64                        `json:"seed"`
+	GraphVersion      string                       `json:"graph_version"`
+	GraphSource       string                       `json:"graph_source"`
+	Nodes             int                          `json:"nodes"`
+	Edges             int                          `json:"edges"`
+	Survivors         int                          `json:"survivors"`
+	Concurrency       int                          `json:"concurrency"`
+	ElapsedMS         float64                      `json:"elapsed_ms"`
+	Metrics           world.Metrics                `json:"metrics"`
 }
 
 func run() error {
@@ -39,6 +42,7 @@ func run() error {
 	interval := flag.Duration("interval", 0, "turn interval; 0 is accelerated")
 	output := flag.String("output", "", "write measured JSON report")
 	initialOutput := flag.String("initial-output", "", "write initial observable snapshot for geographic audit")
+	finalOutput := flag.String("final-output", "", "write final scenario overlay (urban_flood) or observable state")
 	diagnosticsOutput := flag.String("diagnostics-output", "", "write private offline diagnostic report (never publish this file)")
 	flag.Parse()
 	if *turns < 0 || *concurrency < 0 || *interval < 0 {
@@ -89,6 +93,22 @@ func run() error {
 		return err
 	}
 	snapshot := app.Simulator.Snapshot()
+	if *finalOutput != "" {
+		var final any = snapshot
+		if snapshot.Scenario != nil {
+			final = snapshot.Scenario
+		}
+		raw, err := json.MarshalIndent(final, "", "  ")
+		if err != nil {
+			return err
+		}
+		if err := os.MkdirAll(filepath.Dir(*finalOutput), 0755); err != nil {
+			return err
+		}
+		if err := os.WriteFile(*finalOutput, append(raw, '\n'), 0644); err != nil {
+			return err
+		}
+	}
 	if *diagnosticsOutput != "" {
 		diagnostic, err := json.MarshalIndent(app.Simulator.Diagnostics(), "", "  ")
 		if err != nil {
@@ -102,6 +122,11 @@ func run() error {
 		}
 	}
 	result := report{Scenario: cfg.Name, Seed: cfg.Seed, GraphVersion: g.Version, GraphSource: g.Source, Nodes: len(g.Nodes), Edges: len(g.Edges), Survivors: len(snapshot.Survivors), Concurrency: cfg.Concurrency, ElapsedMS: float64(time.Since(started).Microseconds()) / 1000, Metrics: snapshot.Metrics}
+	if snapshot.Scenario != nil {
+		result.ScenarioType = snapshot.Scenario.ScenarioType
+		result.EvacuationMetrics = &snapshot.Scenario.EvacuationMetrics
+		result.Performance = &snapshot.Scenario.Performance
+	}
 	data, err := json.MarshalIndent(result, "", "  ")
 	if err != nil {
 		return err
