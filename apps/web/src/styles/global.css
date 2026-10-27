@@ -228,3 +228,141 @@ main { flex: 1; width: 100%; outline: 0; }
 .session-lab-link { margin: 0 38px 28px; font-size: 12px; }
 .session-config-grid :focus-visible, .session-refuges :focus-visible { outline: 2px solid var(--color-focus); outline-offset: 3px; }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+
+/* MantaSim: shared application layout and compact controls. */
+.mantasim-shell { --sidebar-width: 244px; }
+.mantasim-shell.sidebar-collapsed { --sidebar-width: 76px; }
+.mantasim-shell .sidebar { width: var(--sidebar-width); padding: 24px 14px 100px; background: var(--color-background); overflow: visible; }
+.mantasim-shell .app-body { margin-left: var(--sidebar-width); min-width: 0; }
+.mantasim-shell main, .mantasim-shell .page, .mantasim-shell .card { min-width: 0; }
+.mantasim-shell .page { max-width: none; padding: 24px clamp(16px, 2.1vw, 32px); animation: none; }
+.mantasim-shell .topbar { min-height: 58px; height: 58px; padding: 0 clamp(16px, 2.1vw, 32px); }
+.mantasim-shell .breadcrumb { font-size: 12px; min-width: 0; }
+.mantasim-shell .breadcrumb strong { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sidebar-brand-row { display: flex; align-items: center; justify-content: space-between; }
+.mantasim-shell .brand { padding: 0 8px; gap: 11px; font-size: 24px; letter-spacing: -.04em; }
+.mantasim-shell .brand-symbol { flex: 0 0 34px; border-radius: 9px; }
+.brand-name small { display: block; margin-top: 3px; color: var(--color-textSecondary); font-size: 11px; letter-spacing: .07em; font-weight: 500; }
+.sidebar-description { color: var(--color-textSecondary); font-size: 12px; line-height: 1.65; margin: 22px 8px 32px; }
+.mantasim-shell .nav-label { font-size: 10px; padding: 0 10px; margin-bottom: 12px; }
+.mantasim-shell .nav-item { position: relative; min-height: 46px; padding: 12px 10px; gap: 10px; font-size: 12px; }
+.mantasim-shell .nav-zombie.nav-item-active { color: color-mix(in srgb, var(--color-secondary) 65%, var(--color-textPrimary)); background: color-mix(in srgb, var(--color-secondary) 12%, transparent); border-color: color-mix(in srgb, var(--color-secondary) 25%, transparent); }
+.mantasim-shell .nav-flood.nav-item-active { color: var(--color-accent); background: color-mix(in srgb, var(--color-accent) 9%, transparent); border-color: color-mix(in srgb, var(--color-accent) 23%, transparent); }
+.nav-tooltip { display: none; position: absolute; left: calc(100% + 12px); top: 3px; padding: 10px 12px; border: 1px solid var(--color-border); border-radius: var(--radius-sm); background: var(--color-surfaceElevated); color: var(--color-textPrimary); white-space: nowrap; font-size: 12px; z-index: 60; }
+.mantasim-shell .sidebar-bottom { margin-top: auto; padding-top: 32px; }
+.sidebar-toggle { display: flex; width: 100%; align-items: center; gap: 12px; padding: 10px; border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--color-textSecondary); font-size: 12px; }
+.sidebar-toggle:hover { color: var(--color-textPrimary); background: var(--color-surface); }
+.sidebar-credit { padding: 12px 10px 0; color: var(--color-textSecondary); font-size: 11px; }
+.shell-api-status { position: fixed; z-index: 41; left: 14px; bottom: 22px; width: calc(var(--sidebar-width) - 28px); min-height: 38px; display: flex; gap: 3px; align-items: center; padding: 7px 8px; border-top: 1px solid var(--color-border); }
+.shell-api-status .status-indicator { white-space: normal; font-size: 11px; line-height: 1.5; }
+.shell-api-status .status-dot { flex: 0 0 7px; box-shadow: none; }
+.status-degraded .status-dot { background: var(--color-warning); }
+.mantasim-shell.sidebar-collapsed .brand-name, .mantasim-shell.sidebar-collapsed .sidebar-description, .mantasim-shell.sidebar-collapsed .nav-label, .mantasim-shell.sidebar-collapsed .nav-item-label, .mantasim-shell.sidebar-collapsed .sidebar-toggle span, .mantasim-shell.sidebar-collapsed .sidebar-credit { display: none; }
+.mantasim-shell.sidebar-collapsed .brand { padding: 0 7px; }
+.mantasim-shell.sidebar-collapsed .sidebar nav { margin-top: 40px; }
+.mantasim-shell.sidebar-collapsed .nav-item, .mantasim-shell.sidebar-collapsed .sidebar-toggle { justify-content: center; padding-inline: 8px; }
+.mantasim-shell.sidebar-collapsed .nav-item:hover .nav-tooltip, .mantasim-shell.sidebar-collapsed .nav-item:focus-visible .nav-tooltip { display: block; }
+.mantasim-shell.sidebar-collapsed .shell-api-status { justify-content: center; flex-wrap: wrap; }
+.mantasim-shell.sidebar-collapsed .shell-api-status .status-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.scenario-tag { display: inline-flex; gap: 7px; align-items: center; color: var(--color-textSecondary); font-size: 11px; white-space: nowrap; }
+.scenario-tag-zombie > svg { color: var(--color-secondary); }
+.scenario-tag-flood > svg { color: var(--color-accent); }
+.mantasim-shell .page-header { margin-bottom: 0; gap: 16px; align-items: flex-start; }
+.mantasim-shell .page-header h1 { font-size: clamp(23px, 2vw, 30px); }
+.mantasim-shell .page-description { margin-top: 8px; font-size: 12px; line-height: 1.6; }
+.mantasim-shell .eyebrow { font-size: 10px; margin-bottom: 6px; }
+.mantasim-shell .escape-page { gap: 18px; }
+.mantasim-shell .escape-map-card { padding: 18px; }
+.mantasim-shell .simulation-control { margin-bottom: 0; }
+.mantasim-shell .section-heading { padding: 0 0 14px; }
+.mantasim-shell .section-heading h2 { font-size: 16px; }
+.mantasim-shell .section-heading p { font-size: 12px; }
+.mantasim-shell .session-config-grid { margin: 16px 0; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(min(160px, 100%), 1fr)); }
+.mantasim-shell .escape-metric { padding: 14px 18px; gap: 5px; }
+.mantasim-shell .escape-metric strong { font-size: 24px; }
+.mantasim-shell .session-summary { padding: 10px 0; }
+.mantasim-shell .summary-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.compact-disclosure, .map-shelter-panel { border: 1px solid var(--color-border); border-radius: var(--radius-sm); padding: 12px 14px; min-width: 0; background: var(--color-surface); }
+.compact-disclosure > summary, .map-shelter-panel > summary { cursor: pointer; font-weight: 600; font-size: 13px; }
+.compact-disclosure[open] > summary, .map-shelter-panel[open] > summary { margin-bottom: 14px; }
+.workspace-tools { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
+.map-shelter-panel { margin-block: 12px; }
+.shelter-edit-row { display: grid; grid-template-columns: minmax(90px, 1fr) minmax(100px, .65fr) minmax(180px, 1fr); gap: 12px; align-items: end; padding-block: 12px; border-bottom: 1px solid var(--color-border); }
+.shelter-edit-row:last-child { border-bottom: 0; }
+.shelter-edit-row label { display: grid; gap: 6px; font-size: 12px; min-width: 0; }
+.shelter-edit-row input, .shelter-edit-row select { width: 100%; min-width: 0; min-height: 38px; padding: 7px 10px; color: var(--color-textPrimary); background: var(--color-background); border: 1px solid var(--color-border); border-radius: var(--radius-sm); }
+.shelter-selection-notice { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 12px; border-left: 3px solid var(--color-accent); background: color-mix(in srgb, var(--color-accent) 7%, var(--color-surface)); font-size: 12px; }
+.mantasim-shell details > summary:focus-visible, .mantasim-shell select:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 3px; }
+.mantasim-shell .app-footer { display: flex; flex-wrap: wrap; align-items: start; gap: 14px 32px; padding: 20px clamp(16px, 2.1vw, 32px); margin-top: 0; font-size: 11px; line-height: 1.7; }
+.mantasim-shell .app-footer > div { flex: 1 1 320px; min-width: 0; }
+.mantasim-shell .app-footer strong { color: var(--color-textPrimary); font-weight: 600; }
+.mantasim-shell .app-footer p { margin-top: 5px; max-width: 760px; }
+.footer-sources { flex: 1 1 250px; min-width: 0; }
+.footer-sources summary { cursor: pointer; }
+.footer-sources a { color: var(--color-accent); text-decoration: underline; }
+@media (max-width: 760px) {
+  .mantasim-shell .sidebar { width: 270px; left: -290px; padding: 24px 16px 32px; visibility: hidden; }
+  .mantasim-shell .sidebar.sidebar-open { left: 0; visibility: visible; }
+  .mantasim-shell .app-body { margin-left: 0; }
+  .mantasim-shell .sidebar-close { right: 12px; top: 26px; }
+  .mantasim-shell .sidebar-toggle { display: none; }
+  .mantasim-shell.sidebar-collapsed .brand-name, .mantasim-shell.sidebar-collapsed .sidebar-description, .mantasim-shell.sidebar-collapsed .nav-label, .mantasim-shell.sidebar-collapsed .nav-item-label, .mantasim-shell.sidebar-collapsed .sidebar-credit { display: block; }
+  .mantasim-shell.sidebar-collapsed .sidebar nav { margin-top: 0; }
+  .mantasim-shell.sidebar-collapsed .nav-item { justify-content: start; padding: 12px 10px; }
+  .mantasim-shell.sidebar-collapsed .nav-tooltip { display: none !important; }
+  .mantasim-shell .shell-api-status { left: auto; right: 14px; top: 10px; bottom: auto; width: auto; border: 0; padding: 5px; min-height: 38px; }
+  .mantasim-shell .shell-api-status .status-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .mantasim-shell .shell-api-status .status-dot { flex-basis: 9px; width: 9px; height: 9px; }
+  .mantasim-shell.navigation-open .shell-api-status { visibility: hidden; }
+  .mantasim-shell .topbar { padding: 0 18px; }
+  .mantasim-shell .scenario-tag { display: none; }
+  .mantasim-shell .breadcrumb { padding-right: 56px; }
+  .mantasim-shell .breadcrumb-workspace { display: inline; }
+  .mantasim-shell .breadcrumb-slash, .mantasim-shell .breadcrumb strong { display: none; }
+  .mantasim-shell .page { padding: 18px 16px; }
+  .mantasim-shell .page-header { margin-bottom: 0; }
+  .mantasim-shell .page-description { font-size: 12px; }
+  .mantasim-shell .escape-map-card { padding: 14px; }
+  .mantasim-shell .summary-grid { gap: 8px; }
+  .mantasim-shell .escape-metric { padding: 12px; }
+  .mantasim-shell .escape-metric strong { font-size: 21px; }
+  .shelter-edit-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .shelter-edit-row > :first-child { grid-column: 1 / -1; }
+  .shelter-edit-row .button { white-space: normal; }
+  .mantasim-shell .app-footer > span:first-child { max-width: none; }
+}
+
+.mantasim-shell .operator-access { padding: 8px 12px; font-size: 12px; border-left: 2px solid var(--color-success); background: var(--color-surface); }
+.mantasim-shell .flood-page { gap: 16px; }
+.mantasim-shell .map-shelter-panel fieldset { margin: 0; padding: 0; border: 0; min-width: 0; }
+.mantasim-shell .shelter-edit-row .button { max-width: 100%; white-space: normal; }
+.config-primary-actions { display: flex; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.config-primary-actions > details { flex: 1 1 220px; min-width: 0; }
+.config-primary-actions > .button { flex: 0 0 auto; min-height: 46px; }
+@media (max-width: 560px) { .config-primary-actions > details { flex-basis: 100%; } .config-primary-actions > .button { width: 100%; } }
+@media (min-width: 1024px) {
+  .mantasim-shell .flood-page { position: relative; gap: 12px; }
+  .mantasim-shell .flood-page > p.operator-access { position: absolute; right: 32px; top: 26px; padding: 5px 10px; font-size: 11px; }
+  .mantasim-shell .flood-controls-card { position: relative; padding: 14px 16px; }
+  .mantasim-shell .flood-controls-card > .flood-card-heading { margin: 0; }
+  .mantasim-shell .flood-controls-card > .flood-card-heading > div { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  .mantasim-shell .flood-controls-card > .flood-card-heading > .badge { position: absolute; right: 16px; top: 12px; }
+  .mantasim-shell .flood-parameters > summary { padding-right: 140px; min-height: 28px; font-size: 12px; }
+  .mantasim-shell .flood-run-context { padding: 7px 0; margin-top: 6px; gap: 6px; }
+  .mantasim-shell .flood-controls-card > .flood-actions { margin-top: 10px; }
+  .mantasim-shell .flood-metrics > .card { padding: 10px 12px; }
+  .mantasim-shell .flood-metrics > .card > span { margin-bottom: 3px; }
+  .mantasim-shell .flood-metrics strong { font-size: 22px; line-height: 1.2; }
+  .mantasim-shell .flood-metrics p { margin-top: 3px; font-size: 9px; }
+  .mantasim-shell .flood-map-card { padding: 14px 16px; }
+  .mantasim-shell .flood-map-card > .flood-card-heading { margin-bottom: 8px; align-items: center; }
+  .mantasim-shell .flood-map-card > .flood-card-heading > div:first-child { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 16px; }
+  .mantasim-shell .flood-map-card > .flood-card-heading .flood-kicker { display: none; }
+  .mantasim-shell .flood-map-card > .flood-card-heading h2 { font-size: 16px; }
+  .mantasim-shell .flood-map-card > .flood-card-heading p { margin: 0; font-size: 11px; }
+  .mantasim-shell .flood-map-shelters { margin-block: 8px; }
+  .mantasim-shell .flood-map-shelters > summary { padding-block: 8px; }
+}
+@media (min-width: 1024px) { .mantasim-shell .flood-page { gap: 8px; padding-top: 20px; } }
+.status-short-label { display: none; }
+@media (max-width: 760px) { .mantasim-shell .shell-api-status .status-short-label { display: inline; font-size: 10px; } }

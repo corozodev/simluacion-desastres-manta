@@ -52,11 +52,14 @@ describe('ejecutor independiente bajo demanda', () => {
   it('valida parámetros y envía escenario, semilla, ronda y refugios elegidos', async () => {
     const { create } = setup();
     await screen.findByRole('button', { name: 'Iniciar simulación' });
+    await userEvent.click(screen.getByText('Configuración avanzada'));
     await userEvent.clear(screen.getByLabelText('Semilla'));
     expect(screen.getByRole('button', { name: 'Iniciar simulación' })).toBeDisabled();
     await userEvent.type(screen.getByLabelText('Semilla'), '123');
     await userEvent.selectOptions(screen.getByLabelText('Ronda'), 'round2');
     fireEvent.change(screen.getByLabelText('Agentes'), { target: { value: '12' } });
+    await userEvent.click(screen.getByText(/Refugios ·/));
+    await userEvent.click(screen.getByText('Elegir refugios originales activos'));
     await userEvent.click(screen.getByRole('checkbox', { name: new RegExp(graph.shelters[0]!.id) }));
     await userEvent.click(screen.getByRole('button', { name: 'Iniciar simulación' }));
     await waitFor(() => expect(create).toHaveBeenCalledWith({ scenario: 'zombie_outbreak', graph_profile: 'BASE', seed: 123, max_ticks: 150, tick_interval_ms: 2000, config: { survivors: 12, round: 'round2', refuge_ids: [graph.shelters[0]!.id] } }, expect.any(String)));
@@ -214,17 +217,13 @@ describe('ejecutor independiente bajo demanda', () => {
     expect(create.mock.calls[0]![1]).toBe(create.mock.calls[1]![1]);
   });
 
-  it('inicia inundación disponible, muestra el motor real y distingue exposición y referencia', async () => {
+  it('recupera una sesión anterior de inundación sin crear otra y distingue exposición y referencia', async () => {
     const flood = managedFlood();
+    restoreSession();
     const { create } = setup({ state: flood });
     vi.spyOn(api, 'incidents').mockResolvedValue({ incidents: [], total: 0, limit: 100, offset: 0, has_more: false });
     vi.spyOn(api, 'referenceStatus').mockResolvedValue({ schema_version: 1, mode: 'disabled', availability: 'disabled', refreshing: false, provider_status: 'offline', message: 'Referencia deshabilitada.', feature_count: 0, vertex_count: 0, metrics: { queries: 0, provider_errors: 0, cache_hits: 0, cache_misses: 0, last_query_ms: 0, total_query_ms: 0, response_bytes: 0, last_refresh_ms: 0 } });
-    await screen.findByLabelText('Amenaza');
-    await userEvent.selectOptions(screen.getByLabelText('Amenaza'), 'urban_flood');
-    expect(await screen.findByLabelText('Intensidad de lluvia sintética')).toBeInTheDocument();
-    expect(document.querySelectorAll('[data-agent-id]')).toHaveLength(0);
-    await userEvent.click(screen.getByRole('button', { name: 'Iniciar simulación' }));
-    await waitFor(() => expect(create).toHaveBeenCalledWith(expect.objectContaining({ scenario: 'urban_flood', config: expect.objectContaining({ rainfall_intensity: .8 }) }), expect.any(String)));
+    expect(create).not.toHaveBeenCalled();
     expect(await screen.findByRole('heading', { name: 'Agentes de inundación' })).toBeInTheDocument();
     expect(document.querySelector('[data-agent-id="F-1"]')).toBeInTheDocument();
     expect(screen.getByText('2 rutas recalculadas')).toBeInTheDocument();
@@ -235,7 +234,8 @@ describe('ejecutor independiente bajo demanda', () => {
   it('respeta disponibilidad real de inundación y FULL_MANTA publicada por el backend', async () => {
     setup({ unavailableFlood: true, disabledFull: true });
     await screen.findByRole('button', { name: 'Iniciar simulación' });
-    expect(screen.getByRole('option', { name: /Inundación urbana — No disponible/ })).toBeDisabled();
+    expect(screen.queryByLabelText('Amenaza')).not.toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: /Inundación urbana/ })).not.toBeInTheDocument();
     expect(screen.getByRole('option', { name: /Avanzada experimental.*No disponible/ })).toBeDisabled();
   });
 });

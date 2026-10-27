@@ -8,8 +8,8 @@ export default defineConfig({
     name: 'corodev-brand-metadata',
     transformIndexHtml(html) {
       const escape = (value: string) => value.replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]!);
-      return html.replace(/<title>.*?<\/title>/, `<title>${escape(`${brand.team} — ${brand.name}`)}</title>`)
-        .replace(/<meta name="description" content="[^"]*"\s*\/>/, `<meta name="description" content="${escape(brand.description)}" />`);
+      return html.replace(/<title>.*?<\/title>/, `<title>${escape(`${brand.webName} · ${brand.team}`)}</title>`)
+        .replace(/<meta name="description" content="[^"]*"\s*\/>/, `<meta name="description" content="${escape(brand.webSubtitle)}" />`);
     },
   }],
   server: { port: 5173, strictPort: true },

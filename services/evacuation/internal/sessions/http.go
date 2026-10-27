@@ -260,7 +260,7 @@ func decodeCreate(w http.ResponseWriter, r *http.Request) (CreateRequest, error)
 		if json.Unmarshal(config, &fields) != nil {
 			return req, invalid()
 		}
-		allowedConfig := map[string]bool{"survivors": true, "round": true, "refuge_ids": true, "rainfall_intensity": true}
+		allowedConfig := map[string]bool{"survivors": true, "round": true, "refuge_ids": true, "rainfall_intensity": true, "custom_shelters": true}
 		for k, v := range fields {
 			if !allowedConfig[k] || bytes.Equal(bytes.TrimSpace(v), []byte("null")) {
 				return req, invalid()
@@ -268,7 +268,9 @@ func decodeCreate(w http.ResponseWriter, r *http.Request) (CreateRequest, error)
 		}
 	}
 	encoded, _ := json.Marshal(raw)
-	if json.Unmarshal(encoded, &req) != nil {
+	decoder := json.NewDecoder(bytes.NewReader(encoded))
+	decoder.DisallowUnknownFields()
+	if decoder.Decode(&req) != nil {
 		return req, invalid()
 	}
 	return req, nil

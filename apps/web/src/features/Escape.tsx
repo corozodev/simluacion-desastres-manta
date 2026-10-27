@@ -1,7 +1,7 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import type { Graph, SimulationCapabilities, SimulationCreateRequest, SimulationState, WorldSnapshot } from '@corodev/contracts';
-import { Badge, Button, Card, EmptyState, ErrorState, LoadingState, PageHeader, StatusIndicator } from '../components/ui';
+import { Badge, Button, Card, EmptyState, ErrorState, LoadingState, PageHeader } from '../components/ui';
 import { useGraph, useIncidents, useSusceptibilityReference } from '../services/queries';
 import { api } from '../services/api';
 import { isTerminal, useSimulationCapabilities, useSimulationSession } from '../services/simulation';
@@ -11,12 +11,13 @@ import { ReferencePanel } from './flood/ReferencePanel';
 import { incidentSourceLabels, incidentStatusLabels, incidentTypeLabels } from './flood/incidentPresentation';
 import './flood/flood.css';
 import { sessionLifecycle } from './visualization/observation';
+import { ShelterEditor, useShelterDraft } from './ShelterEditor';
 
 const statusLabels = { CREATED: 'Preparando', RUNNING: 'En ejecución', PAUSED: 'Pausada', COMPLETED: 'Finalizada', CANCELLED: 'Cancelada', FAILED: 'Error del motor' };
 
 export function Escape() {
   const capabilities = useSimulationCapabilities();
-  return <div className="page escape-page"><PageHeader eyebrow="TRACK A · SISTEMA MANTA" title="Escape de Manta Zombie" description="Explora la red vial de Manta y configura tu propia simulación de evacuación." action={<StatusIndicator status={capabilities.isError ? 'offline' : capabilities.isPending ? 'checking' : 'online'} />} />
+  return <div className="page escape-page"><PageHeader eyebrow="ESCENARIO · ZOMBIS" title="Escape de Manta Zombie" description="Explora la red vial de Manta y configura tu propia simulación de evacuación." />
     {capabilities.isError && capabilities.data && <p className="session-notice" role="status">No pudimos actualizar los escenarios y límites. Conservamos tu configuración y el último estado de tu simulación.</p>}
     {capabilities.data ? <SimulationWorkspace capabilities={capabilities.data} /> : capabilities.isPending ? <LoadingState label="Consultando escenarios y límites…" /> : <ErrorState error={capabilities.error!} onRetry={() => void capabilities.refetch()} />}
   </div>;
@@ -24,20 +25,21 @@ export function Escape() {
 
 function SimulationWorkspace({ capabilities }: { capabilities: SimulationCapabilities }) {
   const session = useSimulationSession();
-  const [scenario, setScenario] = useState(capabilities.defaults.scenario);
-  const [profile, setProfile] = useState(capabilities.defaults.graph_profile);
+  const scenario = 'zombie_outbreak' as const;
+  const [profile, setProfile] = useState<SimulationCreateRequest['graph_profile']>('BASE');
   const [seed, setSeed] = useState(String(capabilities.defaults.seed));
   const [survivors, setSurvivors] = useState(String(capabilities.defaults.survivors));
   const [round, setRound] = useState(capabilities.defaults.round);
   const [ticks, setTicks] = useState(String(capabilities.defaults.max_ticks));
-  const [interval, setInterval] = useState(String(capabilities.defaults.tick_interval_ms));
-  const [rain, setRain] = useState('0.8');
+  const interval = 2000;
   const [refuges, setRefuges] = useState<string[]>([]);
   const state = session.state.data;
   const selectedScenario = state?.scenario ?? scenario;
   const selectedProfile = state?.graph_profile ?? profile;
   const flood = selectedScenario === 'urban_flood';
   const graph = useGraph(undefined, selectedProfile === 'BASE' ? 'competition' : 'full');
+  const shelterDraft = useShelterDraft(graph.data);
+  useEffect(() => { setRefuges([]); }, [graph.data?.version]);
   const locked = Boolean(session.id) || session.busy;
   const selectedCapability = capabilities.scenarios.find(item => item.id === scenario);
   const graphCapability = capabilities.graph_profiles.find(item => item.id === profile);
@@ -46,35 +48,34 @@ function SimulationWorkspace({ capabilities }: { capabilities: SimulationCapabil
     && validInteger(seed, -Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER)
     && validInteger(survivors, 1, capabilities.limits.max_survivors)
     && validInteger(ticks, 1, capabilities.limits.max_ticks)
-    && validInteger(interval, capabilities.limits.min_tick_interval_ms, capabilities.limits.max_tick_interval_ms)
-    && (scenario !== 'urban_flood' || rain.trim() !== '' && Number.isFinite(Number(rain)) && Number(rain) >= 0 && Number(rain) <= 1)
+    && interval >= capabilities.limits.min_tick_interval_ms && interval <= capabilities.limits.max_tick_interval_ms && shelterDraft.valid && !shelterDraft.picking
     && refuges.every(id => graph.data?.shelters.some(shelter => shelter.id === id));
   const connected = !session.state.isError && !session.state.isPending;
   return <>
     {session.notice && <p className="session-notice" role="status">{session.notice}</p>}
     {!session.id && <Card className="escape-map-card simulation-control" aria-label="Configuración de simulación">
-      <div className="section-heading"><div><h2>Configura tu simulación</h2><p>Exploración. El motor comienza al pulsar Iniciar simulación.</p></div><Badge tone="cyan">Sin ejecución activa</Badge></div>
+      <div className="section-heading"><div><h2>Preparar brote</h2></div><Badge tone="cyan">Sin ejecución activa</Badge></div>
       <form onSubmit={event => {
         event.preventDefault();
         if (!valid || locked) return;
-        const input: SimulationCreateRequest = { scenario, graph_profile: profile, seed: Number(seed), max_ticks: Number(ticks), tick_interval_ms: Number(interval), config: { survivors: Number(survivors), round, refuge_ids: refuges, ...(scenario === 'urban_flood' ? { rainfall_intensity: Number(rain) } : {}) } };
+        const input: SimulationCreateRequest = { scenario, graph_profile: profile, seed: Number(seed), max_ticks: Number(ticks), tick_interval_ms: Number(interval), config: { survivors: Number(survivors), round, refuge_ids: refuges, ...(shelterDraft.custom ? { custom_shelters: shelterDraft.custom } : {}) } };
         void session.start(input);
       }}>
         <fieldset className="session-config-grid" disabled={locked}>
           <legend className="sr-only">Parámetros de la simulación</legend>
-          <label>Amenaza<select value={scenario} onChange={event => setScenario(event.target.value as typeof scenario)}>{capabilities.scenarios.map(item => <option key={item.id} value={item.id} disabled={!item.available}>{item.name}{item.available ? '' : ' — No disponible'}</option>)}</select></label>
-          <label>Profundidad del grafo<select value={profile} onChange={event => { setProfile(event.target.value as typeof profile); setRefuges([]); }}>{capabilities.graph_profiles.map(item => <option key={item.id} value={item.id} disabled={!item.available}>{item.id === 'BASE' ? 'Básica' : 'Avanzada experimental'}: {item.nodes.toLocaleString('es-EC')} intersecciones{item.available ? '' : ' — No disponible'}</option>)}</select></label>
-          <label>Semilla<input type="number" required step="1" min={-Number.MAX_SAFE_INTEGER} max={Number.MAX_SAFE_INTEGER} value={seed} onChange={event => setSeed(event.target.value)} /></label>
+          <label>Profundidad del grafo<select value={profile} onChange={event => { setProfile(event.target.value as typeof profile); setRefuges([]); shelterDraft.reset(); }}>{capabilities.graph_profiles.map(item => <option key={item.id} value={item.id} disabled={!item.available}>{item.id === 'BASE' ? 'Básica' : 'Avanzada experimental'}: {item.nodes.toLocaleString('es-EC')} intersecciones{item.available ? '' : ' — No disponible'}</option>)}</select></label>
           <label>Agentes<input type="number" required step="1" min="1" max={capabilities.limits.max_survivors} value={survivors} onChange={event => setSurvivors(event.target.value)} /></label>
           <label>Ronda<select value={round} onChange={event => { const next = capabilities.rounds.find(item => item.id === event.target.value); if (next) { setRound(next.id); setSurvivors(String(Math.min(next.survivors, capabilities.limits.max_survivors))); } }}>{capabilities.rounds.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
-          <label>Turnos máximos<input type="number" required step="1" min="1" max={capabilities.limits.max_ticks} value={ticks} onChange={event => setTicks(event.target.value)} /></label>
-          <label>Intervalo entre turnos (ms)<input type="number" required step="1" min={capabilities.limits.min_tick_interval_ms} max={capabilities.limits.max_tick_interval_ms} value={interval} onChange={event => setInterval(event.target.value)} /></label>
-          {scenario === 'urban_flood' && <label>Intensidad de lluvia sintética<input type="number" required min="0" max="1" step="0.05" value={rain} onChange={event => setRain(event.target.value)} /></label>}
         </fieldset>
-        <fieldset className="session-refuges" disabled={locked}><legend>Refugios de la simulación</legend><p>Sin selección se utilizan todos los refugios predeterminados. Son puntos ficticios del escenario.</p>{graph.data?.shelters.map(shelter => <label key={shelter.id}><input type="checkbox" checked={refuges.includes(shelter.id)} onChange={event => setRefuges(previous => event.target.checked ? [...previous, shelter.id] : previous.filter(id => id !== shelter.id))} />{shelter.id} · capacidad {shelter.capacity}</label>)}</fieldset>
+        <div className="config-primary-actions"><details className="compact-disclosure"><summary>Configuración avanzada</summary><fieldset className="session-config-grid" disabled={locked}><legend className="sr-only">Reproducción determinista</legend>
+          <label>Semilla<input type="number" required step="1" min={-Number.MAX_SAFE_INTEGER} max={Number.MAX_SAFE_INTEGER} value={seed} onChange={event => setSeed(event.target.value)} /></label>
+          <label>Turnos máximos<input type="number" required step="1" min="1" max={capabilities.limits.max_ticks} value={ticks} onChange={event => setTicks(event.target.value)} /></label>
+<p>Un turno cada 2 segundos. La semilla conserva la reproducción determinista.</p></fieldset>
         <p className="session-summary">{selectedCapability?.name} · {graphCapability?.name} · {survivors || '—'} agentes · semilla {seed || '—'} · {ticks || '—'} turnos · {refuges.length ? refuges.join(', ') : 'refugios predeterminados'}</p>
+</details>
+
         {capabilities.graph_profiles.filter(item => !item.available).map(item => <p className="muted" key={item.id}>{item.name}: {item.disabled_reason || 'No disponible en esta instancia.'}</p>)}
-        <Button type="submit" disabled={!valid || locked}>{session.busy ? 'Iniciando…' : 'Iniciar simulación'}</Button>
+        <Button type="submit" disabled={!valid || locked}>{session.busy ? 'Iniciando…' : 'Iniciar simulación'}</Button></div>
       </form>
     </Card>}
     {session.error && <><p role="status">{session.error instanceof Error && 'status' in session.error && session.error.status === 503 ? 'Capacidad de ejecución agotada. Conservamos tu configuración; vuelve a intentar más tarde.' : 'La operación no se completó. Puedes volver a intentarlo.'}</p><ErrorState error={session.error} /></>}
@@ -95,8 +96,8 @@ function SimulationWorkspace({ capabilities }: { capabilities: SimulationCapabil
     {state && <LiveMetrics state={state} />}
     {session.results.data && <Card className="escape-map-card session-results" aria-label="Resultados de simulación"><h2>Resultados de simulación</h2><p>{statusLabels[session.results.data.status]} · {state?.tick}/{state?.max_ticks} turnos · {state ? elapsed(state) : ''}</p><dl><div><dt>Agentes iniciales</dt><dd>{session.results.data.results.initial_survivors}</dd></div><div><dt>Evacuados</dt><dd>{session.results.data.results.evacuated}</dd></div>{!flood && <><div><dt>Mordidos</dt><dd>{session.results.data.results.bitten}</dd></div><div><dt>Tasa de supervivencia</dt><dd>{(session.results.data.results.survival_rate * 100).toFixed(1)}%</dd></div></>}<div><dt>Refugios utilizados</dt><dd>{session.results.data.results.refuges_used}</dd></div></dl></Card>}
     {session.results.isError && <ErrorState error={session.results.error} onRetry={() => void session.results.refetch()} />}
-    <Card className="escape-map-card"><div className="section-heading"><div><h2>{session.id ? 'Estado observable de tu simulación' : 'Explora Manta'}</h2><p>{session.id ? 'Datos calculados por Go · consulta cada 2 segundos mientras está activa' : 'Geografía estática · navegar por el mapa no inicia el motor'}</p></div><Badge tone={flood ? 'cyan' : 'purple'}>{flood ? 'SIMULACIÓN — DATOS SINTÉTICOS' : session.id ? 'Sesión independiente' : 'Solo geografía'}</Badge></div>
-      {graph.isPending ? <LoadingState label="Cargando el grafo…" /> : graph.isError ? <ErrorState error={graph.error} onRetry={() => void graph.refetch()} /> : state && state.graph_version !== graph.data.version ? <p role="alert">La versión del grafo no coincide con tu simulación. <Button variant="secondary" onClick={() => void graph.refetch()}>Actualizar grafo</Button></p> : <MapDetails key={session.id ?? `${selectedScenario}:${selectedProfile}`} graph={graph.data} state={state} flood={flood} connected={connected} />}
+    <Card className="escape-map-card"><div className="section-heading"><div><h2>{session.id ? 'Mapa de tu simulación' : 'Explora Manta'}</h2><p>{session.id ? 'Datos calculados por Go · consulta cada 2 segundos mientras está activa' : 'Geografía estática · navegar por el mapa no inicia el motor'}</p></div><Badge tone={flood ? 'cyan' : 'purple'}>{flood ? 'SIMULACIÓN — DATOS SINTÉTICOS' : session.id ? 'Sesión independiente' : 'Solo geografía'}</Badge></div>
+      {graph.isPending ? <LoadingState label="Cargando el grafo…" /> : graph.isError ? <ErrorState error={graph.error} onRetry={() => void graph.refetch()} /> : state && state.graph_version !== graph.data.version ? <p role="alert">La versión del grafo no coincide con tu simulación. <Button variant="secondary" onClick={() => void graph.refetch()}>Actualizar grafo</Button></p> : <MapDetails key={session.id ?? `${selectedScenario}:${selectedProfile}`} graph={graph.data} state={state} flood={flood} connected={connected} shelterTools={!session.id ? <ShelterEditor draft={shelterDraft} disabled={locked} originalIds={graph.data.shelters.map(item => item.id)} selectedIds={refuges} onSelectedIds={setRefuges} /> : undefined} shelterDraft={!session.id ? shelterDraft : undefined} />}
     </Card>
   </>;
 }
@@ -112,7 +113,7 @@ function LiveMetrics({ state }: { state: SimulationState }) {
   </div>;
 }
 
-function MapDetails({ graph, state, flood, connected }: { graph: Graph; state?: SimulationState; flood: boolean; connected: boolean }) {
+function MapDetails({ graph, state, flood, connected, shelterTools, shelterDraft }: { graph: Graph; state?: SimulationState; flood: boolean; connected: boolean; shelterTools?: ReactNode; shelterDraft?: ReturnType<typeof useShelterDraft> }) {
   const lifecycle = useMemo(() => sessionLifecycle(state, connected), [state, connected]);
   const [search, setSearch] = useState('');
   const [selectedId, setSelectedId] = useState('');
@@ -123,21 +124,22 @@ function MapDetails({ graph, state, flood, connected }: { graph: Graph; state?: 
   const selected = matching.find(s => s.id.toLowerCase() === search.trim().toLowerCase()) ?? matching.find(s => s.id === selectedId) ?? (matching.length === 1 ? matching[0] : undefined);
   const position = graph.nodes.find(node => node.id === selected?.current_node);
   const warnings = selected && snapshot ? routeWarnings(graph, snapshot, selected) : [];
-  const shelters = snapshot?.shelters ?? graph.shelters;
+  const shelters = snapshot?.shelters ?? shelterDraft?.shelters ?? graph.shelters;
   const incidents = useIncidents({}, flood);
   const reference = useQuery({ queryKey: ['reference', 'status'], queryFn: ({ signal }) => api.referenceStatus(signal), enabled: flood, retry: false, staleTime: 30_000 });
   const polygons = useSusceptibilityReference(reference.data?.dataset_version, flood && showReference);
   return <>
+    {shelterTools}
     {flood ? <><FloodMap referenceAvailable={['cached', 'stale'].includes(reference.data?.availability ?? '')} lifecycle={lifecycle} graph={graph} scenario={state?.scenario_state} shelters={shelters} candidates={[]} selectedAgentId={selectedId} onSelectAgent={setSelectedId} onPickPosition={() => undefined} incidents={incidents.data?.incidents} selectedIncidentId={selectedIncident} onSelectIncident={setSelectedIncident} reference={polygons.data} showReference={showReference} onShowReference={setShowReference} />
       <p className="muted">Lluvia, exposición, agentes y refugios: sintéticos. Las declaraciones ciudadanas y la referencia territorial se muestran como capas independientes y no modifican esta ejecución.</p>
       {state?.scenario_state && <p className="muted">{state.scenario_state.data_provenance.disclaimer} Modelo: {state.scenario_state.data_provenance.model}.</p>}
       <details><summary>Reportes ciudadanos y otras observaciones</summary>{incidents.isError ? <ErrorState error={incidents.error} onRetry={() => void incidents.refetch()} /> : <ul>{incidents.data?.incidents.map(incident => <li key={incident.incident_id}>{incidentTypeLabels[incident.incident_type]} · {incidentSourceLabels[incident.source_type]} · {incidentStatusLabels[incident.verification_status]} · {incident.description}</li>)}</ul>}</details>
       <ReferencePanel status={reference.data} collection={polygons.data} loading={reference.isPending || polygons.isFetching} error={reference.error ?? polygons.error} retry={() => { void reference.refetch(); if (showReference) void polygons.refetch(); }} csrf="" />
-    </> : <WorldMap graph={graph} world={snapshot} selected={selected} lifecycle={lifecycle} onSelect={setSelectedId} />}
-    <div className="escape-details"><Card className="escape-map-card"><h2>Refugios ficticios</h2><p className="muted">Puntos del escenario; no son instalaciones oficiales de emergencia. La envolvente urbana no implica cobertura vial completa.</p><ul className="escape-shelters">{shelters.map(shelter => <li key={shelter.id}><strong>{shelter.id}</strong><span>{shelter.occupancy} / {shelter.capacity} ocupadas<br />{shelter.reserved ?? 0} reservadas · {shelter.available ?? Math.max(0, shelter.capacity - shelter.occupancy - (shelter.reserved ?? 0))} libres</span></li>)}</ul></Card>
+    </> : <WorldMap graph={graph} world={snapshot} selected={selected} lifecycle={lifecycle} onSelect={setSelectedId} shelters={snapshot?.shelters ?? shelterDraft?.shelters} pickingPosition={Boolean(shelterDraft?.picking)} onPickPosition={shelterDraft?.select} onCancelPick={shelterDraft?.cancel} previewPosition={shelterDraft?.proposal?.node ?? shelterDraft?.proposal?.point} />}
+    <details className="compact-disclosure" open={Boolean(snapshot)}><summary>Agentes y ocupación de refugios</summary><div className="escape-details"><Card className="escape-map-card"><h2>Refugios ficticios</h2><p className="muted">Puntos del escenario; no son instalaciones oficiales de emergencia. La envolvente urbana no implica cobertura vial completa.</p><ul className="escape-shelters">{shelters.map(shelter => <li key={shelter.id}><strong>{shelter.id}</strong><span>{shelter.occupancy} / {shelter.capacity} ocupadas<br />{shelter.reserved ?? 0} reservadas · {shelter.available ?? Math.max(0, shelter.capacity - shelter.occupancy - (shelter.reserved ?? 0))} libres</span></li>)}</ul></Card>
       {snapshot && !flood && <Survivors world={snapshot} search={search} onSearch={setSearch} matching={matching} onSelect={setSelectedId} selected={selected} position={position} graph={graph} warnings={warnings} />}
       {state?.scenario_state && <Card className="escape-map-card"><h2>Agentes de inundación</h2><div className="escape-table"><table><thead><tr><th>ID</th><th>Estado</th><th>Refugio</th><th>Ruta</th></tr></thead><tbody>{state.scenario_state.agents.map(agent => <tr key={agent.id}><td>{agent.id}</td><td>{({ moving: 'En movimiento', waiting: 'Esperando', isolated: 'Aislado', evacuated: 'Evacuado' })[agent.state]}</td><td>{agent.target_shelter_id || 'Sin asignación'}</td><td><button className="text-link" onClick={() => setSelectedId(agent.id)}>Ver ruta de {agent.id}</button></td></tr>)}</tbody></table></div></Card>}
-    </div>
+    </div></details>
   </>;
 }
 

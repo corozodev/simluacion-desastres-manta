@@ -2,6 +2,8 @@
 
 FASE 2 de Track A: backend Go con simulación determinista, planificación dinámica, predicción observable de runners, reservas y clientes React/Flutter. La fuente urbana OSM de Manta tiene **9.179 nodos y 13.452 aristas**; el grafo operativo tiene **300 nodos y 383 aristas**, y el experimental **1.000 nodos y 1.599 aristas**. Los cuatro sectores son zonas de aparición con polígonos municipales: Tarqui, Los Esteros, Barbasquillo y Jocay. La navegación puede salir de ellas. Los cuatro refugios son ficticios. Los turnos duran dos segundos en modo normal y se ejecutan sin esperas en modo acelerado. Entrega prevista por el equipo: **28 de octubre de 2026, 10:00 Ecuador (UTC−05:00)**.
 
+**Interfaz React MantaSim:** navegación directa entre `/escape` y `/flood-lab`, mapas compartidos, refugios editables y acceso de operador desde inundaciones. Consulta [cambios, validación y límites de esta iteración](docs/informe-mantasim-ux.md). No se despliega automáticamente.
+
 **FASE 5: sesiones independientes bajo demanda.** Abrir React `/escape` carga el mapa y las capacidades sin ejecutar turnos. **Iniciar simulación** crea una sesión privada de zombies o inundación urbana sintética; Go avanza sus turnos y permite pausar, reanudar, cancelar y reiniciar. La recarga recupera la misma ejecución mediante una credencial en `sessionStorage`. Flutter conserva los endpoints Go anteriores y no recibe la clave de `/paso`. Consulta [arquitectura, API, pruebas y límites FASE 5](docs/informe-fase5.md).
 
 **FASE 6A validada localmente:** sprites CC0 a 4 FPS, interpolación de recorridos comprobables, agrupación por zoom, focos de inundación, leyenda y controles de movimiento. Incluye símbolos estáticos Flutter y evidencia desktop/móvil. [Implementación, recursos, pruebas y límites](docs/informe-fase6a.md).
@@ -35,7 +37,7 @@ VITE_WORLD_API_BASE_URL=http://127.0.0.1:8080 npm run dev:web
 
 Abre `http://localhost:5173/escape`. La raíz y las rutas retiradas redirigen a Escape. Sin un override explícito, web y móvil utilizan la API HTTPS de AWS. No hay fallback de datos cuando Go falla: se presenta el error y se permite reintentar. `npm run dev:api` es un alias del servidor Go.
 
-Configura amenaza, grafo, semilla, agentes y refugios y pulsa **Iniciar simulación**. El cliente consulta su sesión aproximadamente cada dos segundos mientras está activa; Go continúa sin depender del polling. Los valores predeterminados son 150 turnos de 2 s y BASE (300 nodos). FULL_MANTA requiere `ENABLE_FULL_MODE=true` y conserva un cupo experimental propio. Reiniciar el proceso pierde las sesiones en RAM y vuelve a esperar un inicio explícito. Los puertos locales de desarrollo no cambian los puertos públicos de AWS.
+En `/escape`, configura el grafo, los agentes, la ronda y los refugios y pulsa **Iniciar simulación**. El brote zombi es fijo; semilla y turnos están en **Configuración avanzada**. Inundaciones tiene su entrada propia en la barra lateral. El cliente consulta su sesión aproximadamente cada dos segundos mientras está activa; Go continúa sin depender del polling. Los valores predeterminados son 150 turnos de 2 s y BASE (300 nodos). FULL_MANTA requiere `ENABLE_FULL_MODE=true` y conserva un cupo experimental propio. Reiniciar el proceso pierde las sesiones en RAM y vuelve a esperar un inicio explícito. Los puertos locales de desarrollo no cambian los puertos públicos de AWS.
 
 ```sh
 curl http://127.0.0.1:8080/healthz

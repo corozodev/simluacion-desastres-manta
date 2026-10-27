@@ -16,7 +16,7 @@ import { chromium, expect } from '@playwright/test';
 const root = fileURLToPath(new URL('../../', import.meta.url));
 const backend = path.join(root, 'services/evacuation');
 const temporary = await mkdtemp(path.join(tmpdir(), 'corodev-incidents-lab-'));
-const directory = process.env.INCIDENTS_LAB_EVIDENCE_DIR || path.join(root, 'deploy/evidence-private/phase4c-20261026');
+const directory = process.env.INCIDENTS_LAB_EVIDENCE_DIR || path.join(root, `deploy/evidence-private/mantasim-incidents-${Date.now()}`);
 const origin = 'http://127.0.0.1:5181';
 const children = [];
 let browser;
@@ -133,7 +133,7 @@ async function chooseRoad(base, graph, state) {
   throw new Error('No route street with a genuine nearby association and alternate path was found');
 }
 const report = {
-  phase: '4C', recorded_at: new Date().toISOString(),
+  phase: 'MantaSim incidents regression', recorded_at: new Date().toISOString(),
   source: 'Local real Flutter repository, durable Go HTTP, React and Chromium; checked-in OSM geometry, synthetic agents and test observation, no GPS/AWS.',
   raster_tiles: 'Disabled during headless QA; checked-in OSM vectors remain visible.',
   isolation_scope: 'One explicitly identified experimental run per Manager. Browser operator cookies share that local run; independent Managers are verified by Go tests.',
@@ -208,6 +208,7 @@ try {
   page.on('request', request => { if (request.headers()['x-api-key'] || request.headers().authorization) credentialLeaks.push(new URL(request.url()).pathname); });
   await page.goto(`${origin}/escape?scenario=urban_flood`);
   await page.getByTestId('flood-map').waitFor();
+  await page.getByText('Reportes y herramientas autorizadas', { selector: 'summary', exact: true }).click();
   await page.getByLabel('Tipo de novedad', { exact: true }).selectOption('fallen_tree');
   await expect(page.getByText('No hay novedades con estos filtros en la cobertura mostrada.', { exact: true })).toBeVisible();
   await page.getByLabel('Tipo de novedad', { exact: true }).selectOption('road_closed');
@@ -222,6 +223,7 @@ try {
   const marker = page.locator(`[data-incident-id="${incident.incident_id}"]`);
   await expect(marker).toHaveAttribute('data-incident-status', 'pending');
   await expect(marker).toHaveAttribute('data-incident-source', 'citizen');
+  await page.getByText('Agentes y disponibilidad de refugios', { selector: 'summary', exact: true }).click();
   await page.getByRole('button', { name: `Ver ruta de inundación de ${route.agent_id}`, exact: true }).click();
   const routeBefore = await page.locator('path[data-layer="routes"]').getAttribute('d');
   assert(routeBefore, 'React did not render the selected authoritative route');
@@ -230,6 +232,7 @@ try {
   report.checks.react_pending_marker_provenance_and_detail = true;
   report.checks.react_server_filters_type_status_and_age = true;
   const before = await json(lab.url, '/lab/state', 'LabState');
+  await detail.getByText('Evaluación experimental en esta ejecución', { selector: 'summary', exact: true }).click();
   await detail.getByRole('button', { name: 'Revisar aplicación experimental' }).click();
   await expect(detail.getByRole('button', { name: 'Aplicar incidente a simulación', exact: true })).toBeDisabled();
   await detail.getByRole('checkbox', { name: /Entiendo que esta evaluación es experimental/ }).check();
@@ -291,13 +294,14 @@ try {
   await page.screenshot({ path: path.join(directory, 'citizen-detail-mobile-viewport-390.png') });
   await detail.screenshot({ path: path.join(directory, 'citizen-detail-mobile-card-390.png') });
   report.checks.mobile_390_no_horizontal_overflow = true;
-  await page.getByLabel('Escenarios', { exact: true }).selectOption('zombie');
+  await page.getByRole('button', { name: 'Abrir menú', exact: true }).click();
+  await page.getByRole('link', { name: 'Escape Manta Zombie', exact: true }).click();
   await page.getByRole('img', { name: /Red de evacuación y posiciones observables/ }).waitFor();
   report.checks.existing_zombie_react_screen_remains_usable = true;
   assert(!errors.length && !consoleErrors.length && !failedRequests.length && !httpErrors.length && !credentialLeaks.length && !rasterRequests.length, `Browser errors: ${JSON.stringify({ errors, consoleErrors, failedRequests, httpErrors, credentialLeaks, rasterRequests })}`);
   report.browser = { errors, console_errors: consoleErrors, failed_requests: failedRequests, normal_cancelled_get_requests: cancelledRequests, http_errors: httpErrors, movement_credential_leaks: credentialLeaks, raster_requests: rasterRequests };
   await writeFile(path.join(directory, 'result.json'), `${JSON.stringify(report, null, 2)}\n`);
-  console.log(`FASE 4C real completa: Flutter ${incident.incident_id}, persistencia tras reinicio, React pendiente, arista ${route.edge_id}, rutas/versiones ${before.scenario.world_version}→${after.scenario.world_version}, idempotencia y regresión.`);
+  console.log(`MantaSim incidents regression complete: Flutter ${incident.incident_id}, persistencia tras reinicio, React pendiente, arista ${route.edge_id}, rutas/versiones ${before.scenario.world_version}→${after.scenario.world_version}, idempotencia y regresión.`);
 } finally {
   if (browser) await browser.close();
   for (const child of children.toReversed()) await stop(child);

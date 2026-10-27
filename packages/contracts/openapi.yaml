@@ -1763,10 +1763,19 @@ components:
       name: X-CSRF-Token
       description: Token ligado a la sesión; además se exige Origin permitido.
   schemas:
+    SimulationCustomShelter:
+      type: object
+      additionalProperties: false
+      required: [ id, node_id, capacity ]
+      description: Refugio experimental sobre un nodo real transitable y accesible. Reemplaza la ubicación sin modificar la topología ni los orígenes del brote.
+      properties:
+        id: { type: string, minLength: 1, maxLength: 100 }
+        node_id: { type: string, minLength: 1, maxLength: 100 }
+        capacity: { type: integer, minimum: 1, maximum: 200 }
     SimulationConfigInput:
       type: object
       additionalProperties: false
-      description: Configuración acotada; propiedades desconocidas se rechazan. refuge_ids vacío o ausente usa todos los refugios predeterminados del grafo.
+      description: Configuración acotada; refuge_ids vacío usa los predeterminados. custom_shelters reemplaza exactamente los cuatro originales, conservando sus IDs; no se combina con una selección parcial de refuge_ids. El snapshot publica sus ubicaciones efectivas sobre la topología estática del perfil.
       properties:
         survivors: { type: integer, minimum: 1, maximum: 200 }
         round: { type: string, enum: [ round1, round2, round3 ] }
@@ -1775,6 +1784,11 @@ components:
           maxItems: 4
           uniqueItems: true
           items: { type: string, minLength: 1, maxLength: 100 }
+        custom_shelters:
+          type: array
+          minItems: 4
+          maxItems: 4
+          items: { $ref: '#/components/schemas/SimulationCustomShelter' }
         rainfall_intensity:
           type: number
           minimum: 0
@@ -1791,6 +1805,11 @@ components:
           type: array
           uniqueItems: true
           items: { type: string, minLength: 1 }
+        custom_shelters:
+          type: array
+          minItems: 4
+          maxItems: 4
+          items: { $ref: '#/components/schemas/SimulationCustomShelter' }
         rainfall_intensity: { type: number, minimum: 0, maximum: 1 }
     SimulationCreateRequest:
       type: object

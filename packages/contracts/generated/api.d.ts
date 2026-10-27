@@ -776,12 +776,19 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
-        /** @description Configuración acotada; propiedades desconocidas se rechazan. refuge_ids vacío o ausente usa todos los refugios predeterminados del grafo. */
+        /** @description Refugio experimental sobre un nodo real transitable y accesible. Reemplaza la ubicación sin modificar la topología ni los orígenes del brote. */
+        SimulationCustomShelter: {
+            id: string;
+            node_id: string;
+            capacity: number;
+        };
+        /** @description Configuración acotada; refuge_ids vacío usa los predeterminados. custom_shelters reemplaza exactamente los cuatro originales, conservando sus IDs; no se combina con una selección parcial de refuge_ids. El snapshot publica sus ubicaciones efectivas sobre la topología estática del perfil. */
         SimulationConfigInput: {
             survivors?: number;
             /** @enum {string} */
             round?: "round1" | "round2" | "round3";
             refuge_ids?: string[];
+            custom_shelters?: components["schemas"]["SimulationCustomShelter"][];
             /** @description Parámetro sintético exclusivo de urban_flood; no representa lluvia observada ni un pronóstico. */
             rainfall_intensity?: number;
         };
@@ -790,6 +797,7 @@ export interface components {
             /** @enum {string} */
             round: "round1" | "round2" | "round3";
             refuge_ids: string[];
+            custom_shelters?: components["schemas"]["SimulationCustomShelter"][];
             rainfall_intensity?: number;
         };
         SimulationCreateRequest: {
@@ -3853,6 +3861,7 @@ export interface operations {
     };
 }
 
+export type SimulationCustomShelter = components['schemas']['SimulationCustomShelter'];
 export type SimulationConfigInput = components['schemas']['SimulationConfigInput'];
 export type SimulationConfig = components['schemas']['SimulationConfig'];
 export type SimulationCreateRequest = components['schemas']['SimulationCreateRequest'];

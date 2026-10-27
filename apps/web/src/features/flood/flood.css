@@ -219,3 +219,42 @@
 .flood-roads-blocked { stroke: var(--color-roadClosed); }
 .flood-shelter-available { fill: var(--color-shelterAvailable); }
 .incident-type-glyph { font-size: 10px; paint-order: stroke; stroke: var(--color-background); stroke-width: 3px; }
+
+/* Compact laboratory tools retain detailed configuration on demand. */
+.flood-advanced, .flood-secondary { min-width: 0; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); }
+.flood-advanced { margin-top: 15px; padding: 12px 14px; }
+.flood-secondary > summary { padding: 15px 18px; }
+.flood-advanced > summary, .flood-secondary > summary { cursor: pointer; font-size: 13px; font-weight: 600; color: var(--color-textPrimary); }
+.flood-advanced[open] > summary { margin-bottom: 15px; }
+.flood-secondary > .card { border: 0; }
+.flood-page .flood-metrics { gap: 8px; }
+.flood-page .flood-metrics > .card { padding: 12px 14px; }
+.flood-page .flood-metrics > .card > span { margin-bottom: 6px; }
+.flood-page .flood-metrics strong { font-size: 23px; }
+.flood-page .flood-metrics p { margin-top: 4px; }
+.flood-page .flood-card-heading { margin-bottom: 15px; gap: 10px; }
+.flood-page .flood-card-heading p { margin-top: 5px; line-height: 1.5; }
+.flood-page .flood-kicker { margin-bottom: 5px; }
+.flood-map-panel .flood-edge-inspector { margin-top: 10px; padding-top: 10px; }
+.flood-map-panel .flood-edge-details { margin-top: 10px; gap: 12px; }
+.flood-map-panel .map-layer-panel label { display: flex; font-size: 12px; }
+.flood-map-panel .visual-legend { margin-top: 8px; font-size: 10px; }
+.flood-map-panel .flood-legend { margin: 10px 0 6px; }
+.flood-page .operator-access { padding: 14px 18px; }
+.flood-page .operator-access > summary { cursor: pointer; font-size: 13px; }
+.flood-page .flood-map-card { padding: 18px; }
+.flood-page .flood-configuration-grid { gap: 12px 16px; }
+.flood-page .flood-configuration-grid label { gap: 6px; }
+.flood-page .flood-configuration-grid small { font-size: 10px; line-height: 1.5; }
+@media(max-width:600px) { .flood-page .flood-map-card { padding: 12px; }.flood-secondary > summary { padding: 13px 14px; }.flood-page .flood-metrics > .card { padding: 10px 12px; }.flood-page .flood-metrics strong { font-size: 22px; } }
+.flood-map-shelters { margin-bottom: 13px; border: 1px solid var(--color-border); border-radius: var(--radius-sm); min-width: 0; }
+.flood-map-shelters > summary { padding: 10px 13px; font-size: 12px; font-weight: 600; cursor: pointer; }
+.flood-map-shelters > .flood-editor-card { padding: 14px; border-top: 1px solid var(--color-border); }
+.flood-map-shelters .flood-candidate-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-top: 12px; }
+.flood-map-shelters .flood-candidate-card { padding: 12px; gap: 10px; }
+.flood-map-shelters .flood-candidate-card details > summary { cursor: pointer; font-size: 10px; color: var(--color-textSecondary); }
+.flood-map-shelters .flood-candidate-card details[open] > summary { margin-bottom: 10px; }
+.flood-map-shelters .flood-card-heading { margin-bottom: 10px; }
+.flood-map-shelters .flood-candidate-actions .button { width: auto; flex: 1; }
+@media(max-width:1250px) { .flood-map-shelters .flood-candidate-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media(max-width:600px) { .flood-map-shelters .flood-candidate-grid { grid-template-columns: minmax(0, 1fr); }.flood-map-shelters > .flood-editor-card { padding: 10px; } }

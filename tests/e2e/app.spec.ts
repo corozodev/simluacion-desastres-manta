@@ -86,9 +86,10 @@ test('inicia una vez, observa movimientos y recupera la misma sesión al recarga
   await page.getByRole('searchbox', { name: 'Buscar por ID' }).fill('S-0001');
   await expect(page.getByText('Refugio asignado: R-2')).toBeVisible();
   const view = await map.getAttribute('viewBox');
-  await page.getByRole('button', { name: 'Acercar mapa', exact: true }).click();
+  await map.focus();
+  await map.press('+');
   await expect(map).not.toHaveAttribute('viewBox', view!);
-  await page.getByRole('button', { name: 'Restablecer mapa', exact: true }).click();
+  await page.getByRole('button', { name: 'Restablecer vista', exact: true }).click();
   await expect(map).toHaveAttribute('viewBox', view!);
   await page.reload();
   await expect(page.getByLabel('Tu simulación')).toContainText('browser-simulation-1');
@@ -140,7 +141,8 @@ test('enlaces antiguos regresan a Escape y el menú móvil sigue accesible', asy
   await expect(page.getByRole('heading', { name: 'Escape de Manta Zombie' })).toBeVisible();
   if ((page.viewportSize()?.width ?? 1440) < 768) {
     await page.getByRole('button', { name: 'Abrir menú', exact: true }).click();
-    await expect(page.locator('nav a')).toBeVisible();
+    await expect(page.locator('nav a')).toHaveCount(2);
+    await expect(page.getByRole('link', { name: 'Escape Manta Zombie' })).toBeVisible();
     await page.getByRole('button', { name: 'Cerrar menú', exact: true }).click();
     await expect(page.getByRole('button', { name: 'Abrir menú', exact: true })).toHaveAttribute('aria-expanded', 'false');
   }

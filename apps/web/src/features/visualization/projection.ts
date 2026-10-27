@@ -5,7 +5,10 @@ function mercator(p: GeoPoint): Point {
   return { x: (p.lng + 180) / 360, y: (1 - Math.asinh(Math.tan(Math.max(-85.05112878, Math.min(85.05112878, p.lat)) * Math.PI / 180)) / Math.PI) / 2 };
 }
 export function mapProjection(graph: Graph) {
-  const coordinates = [...graph.nodes, ...(graph.coverage ?? []), ...graph.edges.flatMap(e => e.geometry ?? []), ...(graph.spawn_zones ?? []).flatMap(z => z.geometry)].map(mercator);
+  // Fit the network used by this scenario. The wider urban reference envelope
+  // and origin polygons remain geographic overlays, accessible by panning;
+  // they must not shrink the 300-node operational network at the initial zoom.
+  const coordinates = [...graph.nodes, ...graph.edges.flatMap(e => e.geometry ?? [])].map(mercator);
   let left = Infinity, right = -Infinity, top = Infinity, bottom = -Infinity;
   for (const p of coordinates) { left = Math.min(left, p.x); right = Math.max(right, p.x); top = Math.min(top, p.y); bottom = Math.max(bottom, p.y); }
   const scale = Math.min(850 / Math.max(right - left, 1e-8), 430 / Math.max(bottom - top, 1e-8));

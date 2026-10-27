@@ -21,6 +21,6 @@ export default defineConfig({
     command: 'npm run dev:web',
     url: 'http://localhost:5173',
     reuseExistingServer: false,
-    env: { VITE_WORLD_API_BASE_URL: 'http://127.0.0.1:8089' },
+    env: { VITE_WORLD_API_BASE_URL: 'http://127.0.0.1:8089', VITE_OSM_TILES_ENABLED: 'false' },
   },
 });

@@ -361,6 +361,7 @@ function isManagedMetadata(value: unknown): value is SimulationMetadata {
     && ['graph_version', 'created_at', 'started_at', 'updated_at', 'expires_at'].every(key => typeof value[key] === 'string')
     && ['tick', 'max_ticks', 'state_version', 'tick_interval_ms'].every(key => isNatural(value[key])) && Number.isSafeInteger(value.seed)
     && isObject(value.config) && isNatural(value.config.survivors) && typeof value.config.round === 'string' && isStrings(value.config.refuge_ids)
+    && (value.config.custom_shelters === undefined || Array.isArray(value.config.custom_shelters) && value.config.custom_shelters.length === 4 && value.config.custom_shelters.every(shelter => isObject(shelter) && typeof shelter.id === 'string' && typeof shelter.node_id === 'string' && isNatural(shelter.capacity) && shelter.capacity >= 1 && shelter.capacity <= 200))
     && (value.config.rainfall_intensity === undefined || isNumber(value.config.rainfall_intensity) && value.config.rainfall_intensity >= 0 && value.config.rainfall_intensity <= 1)
     && (value.access_token === undefined || typeof value.access_token === 'string' && value.access_token.length > 0);
 }

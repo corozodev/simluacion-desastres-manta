@@ -33,7 +33,7 @@ describe('observación del mundo', () => {
     });
     renderEscape();
     expect(await screen.findByRole('img', { name: /Red de evacuación/ })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Escape de Manta' })).toHaveAttribute('aria-current', 'page');
+    expect(screen.getByRole('link', { name: 'Escape Manta Zombie' })).toHaveAttribute('aria-current', 'page');
     expect(screen.getByRole('cell', { name: 'S-0001' })).toBeInTheDocument();
     await userEvent.type(screen.getByRole('searchbox', { name: 'Buscar por ID' }), 'S-0002');
     expect(screen.queryByRole('cell', { name: 'S-0001' })).not.toBeInTheDocument();
@@ -72,16 +72,16 @@ describe('observación del mundo', () => {
     renderEscape();
     const map = await screen.findByRole('img', { name: /Red de evacuación/ });
     const initial = map.getAttribute('viewBox');
-    await userEvent.click(screen.getByRole('button', { name: 'Acercar mapa' }));
+    fireEvent.keyDown(map, { key: '+' });
     expect(map.getAttribute('viewBox')).not.toBe(initial);
     fireEvent.keyDown(map, { key: 'ArrowRight' });
-    await userEvent.click(screen.getByRole('button', { name: 'Restablecer mapa' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Restablecer vista' }));
     expect(map.getAttribute('viewBox')).toBe(initial);
     await userEvent.click(screen.getByRole('button', { name: 'Ver ruta de S-0001' }));
     expect(screen.getByText('Refugio asignado: R-2')).toBeInTheDocument();
     expect(screen.getByText('Siguiente movimiento: N-0001')).toBeInTheDocument();
     expect(screen.getByText('Zona de origen: Zona sintética')).toBeInTheDocument();
-    expect(screen.getByText(/1 reservadas/)).toBeInTheDocument();
+    expect(screen.getAllByText(/1 reservadas/).length).toBeGreaterThan(0);
     expect(map.querySelectorAll('.escape-spawn-zone')).toHaveLength(1);
     expect(map.querySelector('.escape-planned-route')?.getAttribute('points')?.split(' ')).toHaveLength(3);
     expect(requests.mock.calls.some(([url]) => new URL(String(url)).pathname === '/health')).toBe(false);

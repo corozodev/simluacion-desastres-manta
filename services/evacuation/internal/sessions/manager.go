@@ -20,6 +20,7 @@ import (
 	"corodev/evacuation/internal/coordination"
 	"corodev/evacuation/internal/decision"
 	"corodev/evacuation/internal/flood"
+	"corodev/evacuation/internal/graph"
 	"corodev/evacuation/internal/simulation"
 	"corodev/evacuation/internal/world"
 )
@@ -157,7 +158,7 @@ func (m *Manager) validate(req CreateRequest) error {
 	if req.Seed != nil && (*req.Seed < -9007199254740991 || *req.Seed > 9007199254740991) || req.MaxTicks != nil && (*req.MaxTicks < 1 || *req.MaxTicks > 150) || req.TickIntervalMS != nil && (*req.TickIntervalMS < 1000 || *req.TickIntervalMS > 5000) || req.Config.Survivors != nil && (*req.Config.Survivors < 1 || *req.Config.Survivors > 200) {
 		return invalid()
 	}
-	if len(req.Config.RefugeIDs) > 4 {
+	if len(req.Config.RefugeIDs) > 4 || req.Config.CustomShelters != nil && len(req.Config.CustomShelters) != 4 {
 		return invalid()
 	}
 	if r := req.Config.RainfallIntensity; r != nil && (req.Scenario != "urban_flood" || math.IsNaN(*r) || math.IsInf(*r, 0) || *r < 0 || *r > 1) {
@@ -218,13 +219,44 @@ func (m *Manager) prepare(req CreateRequest) (*execution, error) {
 	if len(selected) > 0 || len(shelters) == 0 {
 		return nil, invalid()
 	}
+	if len(req.Config.CustomShelters) > 0 {
+		if len(shelters) != 4 {
+			return nil, invalid()
+		}
+		originals, nodes, legal, used := map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}
+		for _, sh := range shelters {
+			originals[sh.ID] = true
+		}
+		for _, n := range g.Nodes {
+			nodes[n.ID] = true
+		}
+		for _, e := range g.Edges {
+			if !e.Blocked {
+				legal[e.From], legal[e.To] = true, true
+			}
+		}
+		shelters = nil
+		for _, sh := range req.Config.CustomShelters {
+			if !originals[sh.ID] || !nodes[sh.NodeID] || !legal[sh.NodeID] || used[sh.NodeID] || sh.Capacity < 1 || sh.Capacity > 200 {
+				return nil, invalid()
+			}
+			delete(originals, sh.ID)
+			used[sh.NodeID] = true
+			shelters = append(shelters, world.Shelter{ID: sh.ID, NodeID: sh.NodeID, Capacity: sh.Capacity, Available: sh.Capacity})
+		}
+	}
 	g.Shelters = shelters
+	if len(req.Config.CustomShelters) > 0 {
+		if err := graph.Validate(g); err != nil {
+			return nil, &Error{400, "VALIDATION_ERROR", "Los refugios deben ser accesibles desde todos los nodos del grafo."}
+		}
+	}
 	refuges := make([]string, 0, len(shelters))
 	for _, sh := range shelters {
 		refuges = append(refuges, sh.ID)
 	}
 	sort.Strings(refuges)
-	config := Config{Survivors: cfg.Survivors, Round: round, RefugeIDs: refuges}
+	config := Config{Survivors: cfg.Survivors, Round: round, RefugeIDs: refuges, CustomShelters: append([]CustomShelter(nil), req.Config.CustomShelters...)}
 	if req.Scenario == "urban_flood" {
 		cfg.ScenarioType = "urban_flood"
 		cfg.Walkers, cfg.Runners, cfg.Hordes, cfg.Sleepers = 0, 0, 0, 0
@@ -546,7 +578,7 @@ func (m *Manager) Restart(ctx context.Context, id, token, key, actor string) (Me
 		return Metadata{}, err
 	}
 	<-s.done // release the previous engine reservation before reserving restart
-	req := CreateRequest{Scenario: i.Scenario, GraphProfile: i.GraphProfile, Seed: &i.Seed, MaxTicks: &i.MaxTicks, TickIntervalMS: &i.TickIntervalMS, Config: InputConfig{Survivors: &i.Config.Survivors, Round: i.Config.Round, RefugeIDs: i.Config.RefugeIDs, RainfallIntensity: i.Config.RainfallIntensity}}
+	req := CreateRequest{Scenario: i.Scenario, GraphProfile: i.GraphProfile, Seed: &i.Seed, MaxTicks: &i.MaxTicks, TickIntervalMS: &i.TickIntervalMS, Config: InputConfig{Survivors: &i.Config.Survivors, Round: i.Config.Round, RefugeIDs: i.Config.RefugeIDs, CustomShelters: i.Config.CustomShelters, RainfallIntensity: i.Config.RainfallIntensity}}
 	return m.CreateAndStart(ctx, req, key, actor+"/restart/"+id)
 }
 

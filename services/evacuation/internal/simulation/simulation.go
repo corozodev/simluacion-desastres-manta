@@ -110,8 +110,12 @@ func (s *Simulator) initialize(cfg Config) error {
 	nodes := append([]world.GraphNode{}, s.graph.Nodes...)
 	sort.Slice(nodes, func(i, j int) bool { return nodes[i].ID < nodes[j].ID })
 	shelterNodes := map[string]bool{}
-	for _, shelter := range s.shelters {
-		shelterNodes[shelter.NodeID] = true
+	// An explicit original exclusion set freezes spawn geography when shelters
+	// are replaced. Unioning the edited locations would change the population/RNG.
+	if len(cfg.SpawnExcludedNodeIDs) == 0 {
+		for _, shelter := range s.shelters {
+			shelterNodes[shelter.NodeID] = true
+		}
 	}
 	for _, node := range cfg.SpawnExcludedNodeIDs {
 		shelterNodes[node] = true

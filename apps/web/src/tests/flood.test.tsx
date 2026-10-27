@@ -32,6 +32,8 @@ function setup(overrides: Partial<Parameters<typeof FloodMap>[0]> = {}) {
   const pickPosition = vi.fn<(point: { lat: number; lng: number }) => void>();
   const props = { graph: fixture, scenario, shelters: fixture.shelters, candidates, selectedAgentId: 'S1', onSelectAgent: vi.fn(), onPickPosition: pickPosition, ...overrides };
   render(<FloodMap {...props} />);
+  fireEvent.click(screen.getByText('Capas', { selector: 'summary' }));
+  fireEvent.click(screen.getByText('Visualización', { selector: 'summary' }));
   return { ...props, pickPosition };
 }
 
@@ -84,7 +86,7 @@ describe('capas y selección del mapa de inundación', () => {
     const view = map.getAttribute('viewBox');
     fireEvent.keyDown(map, { key: 'ArrowRight' });
     expect(map.getAttribute('viewBox')).not.toBe(view);
-    await userEvent.click(screen.getByRole('button', { name: 'Restablecer mapa de inundación' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Restablecer vista' }));
     expect(map.getAttribute('viewBox')).toBe(view);
   });
 

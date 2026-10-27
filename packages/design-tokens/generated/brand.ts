@@ -5,5 +5,9 @@ export const brand = {
   "subtitle": "Simulación de evacuación en Manta.",
   "version": "0.1.0",
   "overviewTitle": "Escape de Manta Zombie",
-  "description": "Observa el mapa, los turnos y el estado de la simulación de evacuación en Manta."
+  "description": "Observa el mapa, los turnos y el estado de la simulación de evacuación en Manta.",
+  "webName": "MantaSim",
+  "webSubtitle": "Laboratorio de simulación y evacuación urbana.",
+  "webCredit": "Desarrollado por CoroDev.",
+  "webLimits": "Simulación experimental. No es un pronóstico hidrológico ni un sistema oficial de alerta o evacuación."
 } as const;

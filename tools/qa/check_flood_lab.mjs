@@ -16,7 +16,7 @@ import { chromium, expect } from '@playwright/test';
 const root = fileURLToPath(new URL('../../', import.meta.url));
 const backend = path.join(root, 'services/evacuation');
 const temporary = await mkdtemp(path.join(tmpdir(), 'corodev-flood-lab-'));
-const directory = process.env.FLOOD_LAB_EVIDENCE_DIR || path.join(root, 'deploy/evidence-private/phase4b-20261026');
+const directory = process.env.FLOOD_LAB_EVIDENCE_DIR || path.join(root, `deploy/evidence-private/mantasim-flood-${Date.now()}`);
 const origin = 'http://127.0.0.1:5179';
 const children = [];
 let browser;
@@ -67,7 +67,7 @@ async function start(binary, args, env, readiness) {
   });
 }
 const report = {
-  phase: '4B', recorded_at: new Date().toISOString(),
+  phase: 'MantaSim UX regression', recorded_at: new Date().toISOString(),
   source: 'Local real Go HTTP, React and Chromium; not AWS or a hydrological validation',
   raster_tiles: 'Disabled during headless QA; screenshots show real OSM street vectors from the checked-in graph.',
   checks: {}, browser: {},
@@ -155,14 +155,13 @@ try {
     page.on('response', response => {
       if ((response.url().startsWith(lab) || response.url().startsWith(zombie)) && response.status() >= 400) httpErrors.push({ path: new URL(response.url()).pathname, status: response.status() });
     });
-    await page.goto(`${origin}/escape`);
-    await expect(page.getByRole('heading', { name: 'Escape de Manta Zombie' })).toBeVisible();
-    await expect(page.getByRole('img', { name: /Red de evacuación/ })).toBeVisible();
     await page.goto(`${origin}/flood-lab`);
-    await expect(page.getByText('SIMULACIÓN — DATOS SINTÉTICOS', { exact: true })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Escape Manta Inundación', exact: true })).toBeVisible();
+    await expect(page.getByText('Simulación con datos sintéticos.', { exact: true })).toBeVisible();
     await expect(page.getByRole('img', { name: /^Red urbana de inundación simulada/ })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Iniciar tormenta', exact: true })).toBeEnabled();
-    report.checks.scenario_switch_and_synthetic_label = true;
+    report.checks.direct_flood_entry_and_synthetic_label = true;
+    await openDetails(page, 'Capas');
     for (const label of ['Exposición a inundación', 'Calles transitables', 'Calles con precaución', 'Calles bloqueadas', 'Rutas de evacuación', 'Agentes', 'Refugios', 'Novedades georreferenciadas']) {
       const checkbox = page.getByRole('checkbox', { name: label, exact: true });
       await expect(checkbox).toBeVisible();
@@ -172,15 +171,31 @@ try {
       await checkbox.click(); await expect(checkbox).toBeChecked({ checked: wasChecked });
     }
     report.checks.eight_independent_layer_controls = true;
+    await page.getByText('Capas', { selector: 'summary', exact: true }).click();
+    await openDetails(page, 'Refugios · cuatro candidatos');
     await page.getByRole('button', { name: 'Eliminar candidato 4', exact: true }).click();
     await expect(page.getByRole('button', { name: 'Validar cuatro candidatos', exact: true })).toBeDisabled();
     await page.getByRole('button', { name: 'Restaurar candidato 4', exact: true }).click();
     await page.getByRole('button', { name: 'Elegir candidato 1 en el mapa', exact: true }).click();
     const candidateMap = page.getByTestId('flood-map');
     await candidateMap.scrollIntoViewIfNeeded();
-    const candidateMapBounds = await candidateMap.boundingBox();
-    if (!candidateMapBounds) throw new Error('Cannot select a refuge on the displayed map');
-    await candidateMap.click({ position: { x: candidateMapBounds.width * .4, y: candidateMapBounds.height * .4 } });
+    const target = await candidateMap.evaluate((svg, { graph, chosen }) => {
+      const mercator = point => ({ x: (point.lng + 180) / 360, y: (1 - Math.asinh(Math.tan(point.lat * Math.PI / 180)) / Math.PI) / 2 });
+      const coordinates = [...graph.nodes, ...graph.edges.flatMap(edge => edge.geometry ?? [])].map(mercator);
+      const left = Math.min(...coordinates.map(p => p.x)), right = Math.max(...coordinates.map(p => p.x)), top = Math.min(...coordinates.map(p => p.y)), bottom = Math.max(...coordinates.map(p => p.y));
+      const scale = Math.min(850 / Math.max(right - left, 1e-8), 430 / Math.max(bottom - top, 1e-8));
+      const point = svg.createSVGPoint(), normalized = mercator(chosen);
+      point.x = (900 - (right - left) * scale) / 2 + (normalized.x - left) * scale;
+      point.y = (480 - (bottom - top) * scale) / 2 + (normalized.y - top) * scale;
+      const screen = point.matrixTransform(svg.getScreenCTM());
+      return { x: screen.x, y: screen.y };
+    }, { graph: baseGraph, chosen: alternatives[0] });
+    await page.mouse.click(target.x, target.y);
+    await expect(page.getByRole('button', { name: 'Confirmar ubicación', exact: true })).toBeEnabled();
+    await expect(candidateMap.locator('[data-layer="shelter-preview"]')).toHaveCount(1);
+    await page.getByRole('button', { name: 'Confirmar ubicación', exact: true }).click();
+    await openDetails(page, 'Refugios · cuatro candidatos');
+    for (const summary of await page.locator('.flood-candidate-card > details > summary').all()) await summary.click();
     await expect(page.getByLabel('Latitud del candidato 1', { exact: true })).not.toHaveValue(String(catalog.original_shelters[0].lat));
     const candidateOneLat = await page.getByLabel('Latitud del candidato 1', { exact: true }).inputValue();
     const candidateOneLng = await page.getByLabel('Longitud del candidato 1', { exact: true }).inputValue();
@@ -201,6 +216,8 @@ try {
     const validatedResponse = page.waitForResponse(response => new URL(response.url()).pathname === '/lab/candidates/validate' && response.request().method() === 'POST');
     await page.getByRole('button', { name: 'Validar cuatro candidatos', exact: true }).click();
     if (!(await (await validatedResponse).json()).valid) throw new Error('UI did not submit its four valid custom candidates');
+    await openDetails(page, /^Parámetros ·/);
+    await openDetails(page, 'Configuración avanzada');
     await page.getByLabel('Cantidad de agentes').fill('20');
     await page.getByLabel('Semilla de inundación').fill('42');
     await page.getByLabel('Duración simulada').fill('80');
@@ -242,6 +259,7 @@ try {
     await expect(page.locator('.flood-edge-details')).toBeVisible();
     const routeAgent = state.scenario.agents.find(agent => agent.state === 'moving' && agent.planned_route.length > 1);
     if (!routeAgent) throw new Error('Paused fixture has no moving agent with a published route');
+    await openDetails(page, 'Agentes y disponibilidad de refugios');
     await page.getByRole('button', { name: `Ver ruta de inundación de ${routeAgent.id}`, exact: true }).click();
     await expect(page.locator('.flood-agent-detail')).toBeVisible();
     await expect(map.locator('[data-layer="routes"]')).not.toHaveAttribute('d', '');
@@ -266,6 +284,7 @@ try {
     report.checks.resume_and_same_seed_replay = true;
     await page.getByRole('button', { name: 'Reiniciar', exact: true }).click();
     await until(() => get('/lab/state', 'LabState'), next => next.state === 'idle', 'Reset before comparison');
+    await openDetails(page, 'Comparar estrategias · A/B');
     await page.getByRole('button', { name: 'Comparar A/B', exact: true }).click();
     state = await until(() => get('/lab/state', 'LabState'), next => next.comparison?.state === 'finished', 'A/B real backend completion', 120000);
     checkComparison(state.comparison, 20);
@@ -286,10 +305,12 @@ try {
     await page.setViewportSize({ width: 1440, height: 1100 });
     await page.getByRole('button', { name: 'Reiniciar', exact: true }).click();
     await until(() => get('/lab/state', 'LabState'), next => next.state === 'idle', 'Reset before master run');
+    await openDetails(page, 'Refugios · cuatro candidatos');
     await page.getByRole('radio', { name: 'Conservar cuatro refugios originales', exact: true }).check();
+    await openDetails(page, /^Parámetros ·/);
     await page.getByLabel('Cobertura de inundación').selectOption('full');
     await expect(page.getByRole('img', { name: /^Red urbana de inundación simulada/ })).toBeVisible();
-    await expect(page.locator('.flood-map-attribution')).toContainText('13.452');
+    await expect(page.getByTestId('flood-map').locator('path[data-road-state="passable"]')).not.toHaveAttribute('d', '');
     const startMaster = performance.now();
     await page.getByRole('button', { name: 'Iniciar tormenta', exact: true }).click();
     state = await until(() => get('/lab/state', 'LabState'), next => next.mode === 'full', 'Master graph used by the engine', 120000);
@@ -302,7 +323,7 @@ try {
     report.browser.master_origin_snap_distance_max_m = Math.max(...state.origins.map(origin => origin.snap_distance_m));
     await page.getByRole('button', { name: 'Pausar', exact: true }).click();
     await until(() => get('/lab/state', 'LabState'), next => next.state === 'paused', 'Master pause acknowledgement');
-    await expect(page.locator('.flood-map-attribution')).toContainText('13.452');
+    await expect(page.getByTestId('flood-map').locator('path[data-road-state="passable"]')).not.toHaveAttribute('d', '');
     await expect(page.getByTestId('flood-map').locator('path[data-road-state="passable"]')).not.toHaveAttribute('d', '');
     report.browser.master_start_to_paused_ms = performance.now() - startMaster;
     report.browser.master_payload_bytes = Buffer.byteLength(masterText);
@@ -316,9 +337,6 @@ try {
     report.browser.master_js_heap_used_bytes = metrics.metrics.find(metric => metric.name === 'JSHeapUsedSize')?.value;
     await page.screenshot({ path: path.join(directory, 'flood-master-desktop.png'), fullPage: true });
     report.checks.master_changes_real_engine_and_keeps_compact_dom = true;
-    await page.goto(`${origin}/escape`);
-    await expect(page.getByRole('heading', { name: 'Escape de Manta Zombie' })).toBeVisible();
-    await expect(page.getByRole('img', { name: /Red de evacuación/ })).toBeVisible();
     if ((await (await fetch(`${zombie}/estado`)).json()).graph_version !== (await (await fetch(`${zombie}/grafo`)).json()).version) throw new Error('Flood laboratory changed the zombie graph');
     report.checks.return_to_zombie_preserves_world = true;
     report.browser.javascript_errors = errors;
@@ -371,4 +389,9 @@ function checkComparison(comparison, total) {
   for (const result of comparison.results) {
     if (result.evacuation_metrics.total_agents !== total || Math.abs(result.evacuated_percentage - 100 * result.evacuation_metrics.evacuated_agents / total) > 1e-9) throw new Error('Comparison used different percentage denominators');
   }
+}
+
+async function openDetails(page, name) {
+  const summary = page.getByText(name, { selector: 'summary', exact: typeof name === 'string' });
+  if (await summary.locator('..').getAttribute('open') === null) await summary.click();
 }

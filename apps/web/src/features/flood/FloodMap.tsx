@@ -1,7 +1,9 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { GeoPoint, Graph, GraphEdge, Incident, LabCandidate, LabCandidateValidation, ScenarioSnapshot, Shelter, ReferenceCollection } from '@corodev/contracts';
 import { Button } from '../../components/ui';
-import { config } from '../../lib/config';
+import { mapProjection, mapTiles } from '../visualization/projection';
+import { useMapCamera } from '../maps/useMapCamera';
+import { MapAttribution, MapTools } from '../maps/MapTools';
 import { mapPointer } from '../visualization/pointer';
 import { AnimatedEntities } from '../visualization/AnimatedEntities';
 import { useVisualization, VisualizationControls } from '../visualization/useVisualization';
@@ -12,16 +14,8 @@ import { incidentDate, incidentSourceLabels, incidentStatusGlyphs, incidentStatu
 type Point = { x: number; y: number };
 type RoadState = 'passable' | 'caution' | 'blocked';
 type Layer = 'exposure' | 'passable' | 'caution' | 'blocked' | 'routes' | 'agents' | 'shelters' | 'incidents';
-const initialView = { x: 0, y: 0, width: 900, height: 480 };
 const layerLabels: Record<Layer, string> = { exposure: 'Exposición a inundación', passable: 'Calles transitables', caution: 'Calles con precaución', blocked: 'Calles bloqueadas', routes: 'Rutas de evacuación', agents: 'Agentes', shelters: 'Refugios', incidents: 'Novedades georreferenciadas' };
 
-function mercator(point: GeoPoint): Point {
-  const latitude = Math.max(-85.05112878, Math.min(85.05112878, point.lat)) * Math.PI / 180;
-  return { x: (point.lng + 180) / 360, y: (1 - Math.asinh(Math.tan(latitude)) / Math.PI) / 2 };
-}
-function geographic(point: Point): GeoPoint {
-  return { lng: point.x * 360 - 180, lat: Math.atan(Math.sinh(Math.PI * (1 - 2 * point.y))) * 180 / Math.PI };
-}
 function distanceToSegment(p: Point, a: Point, b: Point) {
   const dx = b.x - a.x, dy = b.y - a.y;
   const length = dx * dx + dy * dy;
@@ -41,6 +35,9 @@ export interface FloodMapProps {
   selectedAgentId: string;
   onSelectAgent: (id: string) => void;
   pickingCandidate?: number;
+  onCancelPick?: () => void;
+  previewPosition?: GeoPoint;
+  onOpenIncident?: (id: string) => void;
   onPickPosition: (point: GeoPoint) => void;
   incidents?: Incident[];
   selectedIncidentId?: string;
@@ -52,27 +49,21 @@ export interface FloodMapProps {
 
 // Native SVG retains the existing map's pan/zoom behavior. Street geometry is
 // indexed once and batched into at most three paths, including the master graph.
-export function FloodMap({ graph, scenario, shelters, candidates, validation, selectedAgentId, onSelectAgent, pickingCandidate, onPickPosition, incidents = [], selectedIncidentId, onSelectIncident, reference, showReference = false, onShowReference, lifecycle, referenceAvailable = Boolean(reference) }: FloodMapProps) {
+export function FloodMap({ graph, scenario, shelters, candidates, validation, selectedAgentId, onSelectAgent, pickingCandidate, onPickPosition, onCancelPick, previewPosition, onOpenIncident, incidents = [], selectedIncidentId, onSelectIncident, reference, showReference = false, onShowReference, lifecycle, referenceAvailable = Boolean(reference) }: FloodMapProps) {
   const observation = useMemo(() => observeFlood(scenario, lifecycle), [scenario, lifecycle]);
   const controls = useVisualization(observation);
-  const [view, setView] = useState(initialView);
+  const camera = useMapCamera(graph.version, onCancelPick);
+  const { view } = camera;
+  const projection = useMemo(() => mapProjection(graph), [graph]);
+  const [popupId, setPopupId] = useState(selectedIncidentId ?? '');
+  useEffect(() => { setPopupId(selectedIncidentId ?? ''); }, [selectedIncidentId]);
   const [layers, setLayers] = useState<Record<Layer, boolean>>({ exposure: true, passable: true, caution: true, blocked: true, routes: true, agents: true, shelters: true, incidents: true });
   const [selectedEdgeId, setSelectedEdgeId] = useState('');
   const [tileUnavailable, setTileUnavailable] = useState(false);
-  const drag = useRef<{ start: Point; previous: Point } | null>(null);
-  const moved = useRef(false);
   const model = useMemo(() => {
     const positions = new Map(graph.nodes.map(node => [node.id, node]));
-    let left = Infinity, right = -Infinity, top = Infinity, bottom = -Infinity;
-    for (const node of graph.nodes) {
-      const p = mercator(node);
-      left = Math.min(left, p.x); right = Math.max(right, p.x); top = Math.min(top, p.y); bottom = Math.max(bottom, p.y);
-    }
-    const scale = Math.min(850 / Math.max(right - left, 1e-8), 430 / Math.max(bottom - top, 1e-8));
-    const offset = { x: (900 - (right - left) * scale) / 2, y: (480 - (bottom - top) * scale) / 2 };
-    const normalized = (p: Point): Point => ({ x: offset.x + (p.x - left) * scale, y: offset.y + (p.y - top) * scale });
-    const point = (p: GeoPoint) => normalized(mercator(p));
-    const inverse = (p: Point) => geographic({ x: (p.x - offset.x) / scale + left, y: (p.y - offset.y) / scale + top });
+    const point = projection.point;
+    const inverse = (p: Point): GeoPoint => { const normalized = projection.inverse(p); return { lng: normalized.x * 360 - 180, lat: Math.atan(Math.sinh(Math.PI * (1 - 2 * normalized.y))) * 180 / Math.PI }; };
     const nodes = new Map(graph.nodes.map(node => [node.id, point(node)]));
     const byPair = new Map<string, { points: Point[]; reverse: boolean }>();
     const grid = new Map<string, { id: string; a: Point; b: Point }[]>();
@@ -92,8 +83,8 @@ export function FloodMap({ graph, scenario, shelters, candidates, validation, se
       }
       return { edge, points, path: points.map((p, i) => `${i ? 'L' : 'M'}${p.x.toFixed(2)},${p.y.toFixed(2)}`).join('') };
     });
-    return { point, inverse, normalized, scale, nodes, byPair, roads, grid, edges: new Map(graph.edges.map(edge => [edge.id, edge])) };
-  }, [graph]);
+    return { point, inverse, nodes, byPair, roads, grid, edges: new Map(graph.edges.map(edge => [edge.id, edge])) };
+  }, [graph, projection]);
   const referencePaths = useMemo(() => reference?.features.map(feature => ({ id: feature.id, category: feature.properties.susceptibility, path: feature.geometry.coordinates.map(polygon => polygon.map(ring => ring.map((coordinate, i) => { const p = model.point({ lng: coordinate[0]!, lat: coordinate[1]! }); return `${i ? 'L' : 'M'}${p.x.toFixed(2)},${p.y.toFixed(2)}`; }).join('') + 'Z').join('')).join('') })) ?? [], [reference, model]);
   const conditions = useMemo(() => new Map(scenario?.road_conditions.map(road => [road.edge_id, road]) ?? []), [scenario?.road_conditions]);
   const shelterConditions = useMemo(() => new Map(scenario?.shelter_conditions.map(shelter => [shelter.shelter_id, shelter]) ?? []), [scenario?.shelter_conditions]);
@@ -118,26 +109,14 @@ export function FloodMap({ graph, scenario, shelters, candidates, validation, se
     }
     return paths.join('');
   }, [model, scenario?.agents, selectedAgentId]);
-  const tiles = useMemo(() => {
-    if (!config.osmTilesEnabled) return [];
-    const zoom = Math.max(10, Math.min(18, Math.round(Math.log2(model.scale * 900 / view.width / 256))));
-    const count = 2 ** zoom;
-    const first = mercator(model.inverse({ x: view.x, y: view.y })), last = mercator(model.inverse({ x: view.x + view.width, y: view.y + view.height }));
-    const result: { key: string; url: string; x: number; y: number; size: number }[] = [];
-    for (let x = Math.max(0, Math.floor(first.x * count)); x <= Math.min(count - 1, Math.floor(last.x * count)); x++) {
-      for (let y = Math.max(0, Math.floor(first.y * count)); y <= Math.min(count - 1, Math.floor(last.y * count)); y++) {
-        if (result.length >= 32) return result;
-        const p = model.normalized({ x: x / count, y: y / count });
-        result.push({ key: `${zoom}/${x}/${y}`, url: config.osmTileUrlTemplate.replace('{z}', String(zoom)).replace('{x}', String(x)).replace('{y}', String(y)), x: p.x, y: p.y, size: model.scale / count });
-      }
-    }
-    return result;
-  }, [model, view]);
-  const zoom = (factor: number) => setView(previous => {
-    const width = Math.max(112.5, Math.min(1800, previous.width * factor));
-    return { x: previous.x + (previous.width - width) / 2, y: previous.y + (previous.height - width * 480 / 900) / 2, width, height: width * 480 / 900 };
-  });
-  const pan = (dx: number, dy: number) => setView(previous => ({ ...previous, x: previous.x + dx * previous.width, y: previous.y + dy * previous.height }));
+  const tiles = useMemo(() => mapTiles(projection, view), [projection, view]);
+  const selectIncident = (id: string) => { if (pickingCandidate !== undefined) return; setPopupId(id); onSelectIncident?.(id); };
+  const popup = pickingCandidate === undefined && layers.incidents ? incidents.find(incident => incident.incident_id === popupId) : undefined;
+  const closePopup = () => {
+    [...(camera.svg.current?.querySelectorAll<SVGGElement>('[data-incident-id]') ?? [])].find(marker => marker.dataset.incidentId === popupId)?.focus();
+    setPopupId('');
+  };
+  const preview = previewPosition && model.point(previewPosition);
   const selectAt = (position: Point) => {
     if (pickingCandidate !== undefined) { onPickPosition(model.inverse(position)); return; }
     const radius = 10 * view.width / 900;
@@ -163,39 +142,33 @@ export function FloodMap({ graph, scenario, shelters, candidates, validation, se
   }, [graph.edges, selectedEdgeId]);
   const selectedCondition = selectedEdge ? conditions.get(selectedEdge.id) : undefined;
   return <div className="flood-map-panel">
-    <VisualizationControls controls={controls} />
-    <fieldset className="flood-layers"><legend>Capas cartográficas</legend>{(Object.keys(layerLabels) as Layer[]).map(layer => <label key={layer}><input type="checkbox" checked={layers[layer]} disabled={layer === 'exposure' && !scenario || layer === 'incidents' && !incidents.length} onChange={event => setLayers(previous => ({ ...previous, [layer]: event.target.checked }))} />{layerLabels[layer]}</label>)}<label><input type="checkbox" checked={showReference} disabled={!onShowReference || !referenceAvailable} onChange={event => onShowReference?.(event.target.checked)} />Susceptibilidad oficial a inundaciones</label></fieldset>
-    <div className="visual-legend" aria-label="Leyenda del índice sintético"><span className="flood-index-low">Índice 0–0,33</span><span className="flood-index-medium">Índice &gt;0,33–0,66</span><span className="flood-index-high">Índice &gt;0,66–1</span></div>
-    <p className="visual-notice">Bandas de color configurables del índice sintético, sin profundidad ni categorías hidrológicas. Los círculos son focos de exposición del modelo, no superficies inundadas observadas. Ondas decorativas a zoom cercano. Las rutas simuladas no están certificadas para evacuaciones reales.</p>
-    {pickingCandidate !== undefined && <p className="flood-pick-notice" role="status">Haz clic en el mapa para reemplazar el candidato {pickingCandidate + 1}. También puedes introducir coordenadas en el formulario.</p>}
-    <figure className="escape-map flood-map"><div className="escape-map-controls" role="group" aria-label="Controles del mapa de inundación">
-      <Button variant="secondary" aria-label="Acercar mapa de inundación" onClick={() => zoom(.75)}>+</Button><Button variant="secondary" aria-label="Alejar mapa de inundación" onClick={() => zoom(1 / .75)}>−</Button><Button variant="secondary" onClick={() => setView(initialView)}>Restablecer mapa de inundación</Button>
-      <Button variant="secondary" aria-label="Mover mapa de inundación al oeste" onClick={() => pan(-.15, 0)}>←</Button><Button variant="secondary" aria-label="Mover mapa de inundación al norte" onClick={() => pan(0, -.15)}>↑</Button><Button variant="secondary" aria-label="Mover mapa de inundación al sur" onClick={() => pan(0, .15)}>↓</Button><Button variant="secondary" aria-label="Mover mapa de inundación al este" onClick={() => pan(.15, 0)}>→</Button><Button variant="secondary" disabled={!scenario?.agents.some(a => a.id === selectedAgentId)} onClick={() => { const agent = scenario?.agents.find(a => a.id === selectedAgentId), p = agent && model.nodes.get(agent.current_node); if (p) setView({ x: p.x - 150, y: p.y - 80, width: 300, height: 160 }); }}>Centrar agente</Button><Button variant="secondary" disabled={!scenario?.flood_zones.some(zone => zone.intensity > 0)} onClick={() => { const zone = [...(scenario?.flood_zones ?? [])].sort((a, b) => b.intensity - a.intensity)[0]; if (zone) { const p = model.point(zone.center); setView({ x: p.x - 75, y: p.y - 40, width: 150, height: 80 }); } }}>Centrar exposición</Button><output aria-label="Escala del mapa de inundación">{(900 / view.width).toFixed(1)}×</output>
-    </div><svg data-testid="flood-map" viewBox={`${view.x} ${view.y} ${view.width} ${view.height}`} preserveAspectRatio="xMidYMid meet" role="img" tabIndex={0} aria-labelledby="flood-map-title flood-map-description"
-      onKeyDown={event => { const directions: Record<string, [number, number]> = { ArrowLeft: [-.15, 0], ArrowRight: [.15, 0], ArrowUp: [0, -.15], ArrowDown: [0, .15] }; if (directions[event.key]) { event.preventDefault(); pan(...directions[event.key]!); } else if (['+', '=', '-', '0'].includes(event.key)) { event.preventDefault(); if (event.key === '0') setView(initialView); else zoom(event.key === '-' ? 1 / .75 : .75); } }}
-      onPointerDown={event => { if (event.button !== 0) return; const p = { x: event.clientX, y: event.clientY }; drag.current = { start: p, previous: p }; moved.current = false; event.currentTarget.setPointerCapture?.(event.pointerId); }}
-      onPointerMove={event => { if (!drag.current) return; const p = { x: event.clientX, y: event.clientY }, previous = drag.current.previous; if (Math.hypot(p.x - drag.current.start.x, p.y - drag.current.start.y) > 4) moved.current = true; drag.current.previous = p; if (moved.current) { const a = mapPointer(event.currentTarget, previous, view), b = mapPointer(event.currentTarget, p, view); setView(current => ({ ...current, x: current.x - b.x + a.x, y: current.y - b.y + a.y })); } }}
-      onPointerUp={() => { drag.current = null; }} onPointerCancel={() => { drag.current = null; }}
-      onClick={event => { if (moved.current) { moved.current = false; return; } selectAt(mapPointer(event.currentTarget, { x: event.clientX, y: event.clientY }, view)); }}>
-      <title id="flood-map-title">Red urbana de inundación simulada</title><desc id="flood-map-description">Geometría OpenStreetMap, focos de exposición sintética, calles por estado, agentes, rutas y cuatro refugios de laboratorio. Navega con flechas, +, − y 0. Haz clic para inspeccionar una calle o elegir la ubicación de un candidato.</desc>
+    <MapTools onReset={camera.reset} scale={900 / view.width}><details className="map-disclosure"><summary>Capas</summary><div className="map-layer-panel"><fieldset><legend>Territorio y estado de vías</legend>{(['exposure', 'passable', 'caution', 'blocked'] as Layer[]).map(layer => <label key={layer}><input type="checkbox" checked={layers[layer]} disabled={layer === 'exposure' && !scenario} onChange={event => setLayers(previous => ({ ...previous, [layer]: event.target.checked }))} />{layerLabels[layer]}</label>)}</fieldset><fieldset><legend>Evacuación y reportes</legend>{(['routes', 'agents', 'shelters', 'incidents'] as Layer[]).map(layer => <label key={layer}><input type="checkbox" checked={layers[layer]} disabled={layer === 'incidents' && !incidents.length} onChange={event => setLayers(previous => ({ ...previous, [layer]: event.target.checked }))} />{layerLabels[layer]}</label>)}</fieldset><fieldset><legend>Fuentes oficiales</legend><label><input type="checkbox" checked={showReference} disabled={!onShowReference || !referenceAvailable} onChange={event => onShowReference?.(event.target.checked)} />Susceptibilidad oficial a inundaciones</label></fieldset></div></details><details className="map-disclosure"><summary>Visualización</summary><div className="map-layer-panel"><VisualizationControls controls={controls} /></div></details></MapTools>
+    {pickingCandidate !== undefined && <p className="map-pick-instruction" role="status">Selecciona la ubicación del refugio {pickingCandidate + 1}. Se validará sobre el grafo real. Escape cancela.</p>}
+    <figure className="escape-map flood-map"><div className={`map-stage ${pickingCandidate !== undefined ? 'map-picking' : ''}`}><svg ref={camera.svg} data-testid="flood-map" viewBox={`${view.x} ${view.y} ${view.width} ${view.height}`} preserveAspectRatio="xMidYMid meet" role="img" tabIndex={0} aria-labelledby="flood-map-title flood-map-description" {...camera.bindings}
+      onClick={event => { if (camera.consumeClick()) return; selectAt(mapPointer(event.currentTarget, { x: event.clientX, y: event.clientY }, view)); }}>
+      <title id="flood-map-title">Red urbana de inundación simulada</title><desc id="flood-map-description">Geometría OpenStreetMap, focos de exposición sintética, calles por estado, agentes, rutas y cuatro refugios de laboratorio. Arrastra, usa Ctrl y rueda, doble clic o pellizca para zoom; también flechas, +, − y 0. Haz clic para inspeccionar una calle o elegir la ubicación de un candidato.</desc>
       <g data-layer="osm-base" aria-hidden="true">{tiles.map(tile => <image key={tile.key} href={tile.url} x={tile.x} y={tile.y} width={tile.size + .1} height={tile.size + .1} className="flood-osm-tile" onError={() => setTileUnavailable(true)} />)}</g>
       {showReference && <g data-layer="official-susceptibility" pointerEvents="none">{referencePaths.map(feature => <path key={feature.id} data-reference-id={feature.id} d={feature.path} fillRule="evenodd" className={`flood-reference-polygon reference-${feature.category}`}><title>Susceptibilidad estructural {feature.category} · SNGR / CONAGE 2024 · no es inundación actual</title></path>)}</g>}
       {layers.exposure && <g data-layer="exposure">{scenario?.flood_zones.map(zone => { const center = model.point(zone.center); const north = model.point({ lat: zone.center.lat + zone.radius_m / 111195, lng: zone.center.lng }); const radius = Math.abs(center.y - north.y); return <circle key={zone.id} cx={center.x} cy={center.y} r={radius} fillOpacity={.10 + zone.intensity * .3} className={`flood-exposure-zone flood-index-${zone.intensity <= .33 ? 'low' : zone.intensity <= .66 ? 'medium' : 'high'}`}><title>{zone.id} · foco de exposición sintética; no extensión de agua · índice {(zone.intensity * 100).toFixed(1)}%</title></circle>; })}</g>}
       {(['passable', 'caution', 'blocked'] as RoadState[]).map(state => layers[state] && <path key={state} d={roadPaths[state]} data-road-state={state} className={`flood-roads flood-roads-${state}`} aria-label={`${layerLabels[state]} de la red OSM`} />)}
-      <AnimatedEntities graph={graph} observation={layers.agents ? observation : observation && { ...observation, entities: [] }} project={model.point} view={view} active={controls.active} clustering={controls.clustering} selected={selectedAgentId} onSelect={onSelectAgent} water={layers.exposure && waterPoints.length > 0} waterPoints={waterPoints} />
+      <g pointerEvents={pickingCandidate !== undefined ? 'none' : undefined}><AnimatedEntities graph={graph} observation={layers.agents ? observation : observation && { ...observation, entities: [] }} project={model.point} view={view} active={controls.active} clustering={controls.clustering} selected={selectedAgentId} onSelect={pickingCandidate !== undefined ? undefined : onSelectAgent} water={layers.exposure && waterPoints.length > 0} waterPoints={waterPoints} /></g>
       {layers.routes && routePath && <path data-layer="routes" d={routePath} className="flood-route"><title>Ruta publicada de {selectedAgentId}</title></path>}
       {selectedEdge && <path d={model.roads.find(road => road.edge.id === selectedEdge.id)?.path} className="flood-selected-road" />}
       {layers.shelters && <g data-layer="shelters">{shelters.map(shelter => { const point = model.nodes.get(shelter.node_id); const condition = shelterConditions.get(shelter.id); return point ? <g key={shelter.id}><rect x={point.x - 6} y={point.y - 6} width={12} height={12} rx={2} className={`flood-shelter flood-shelter-${condition?.state ?? 'available'}`}><title>{shelter.id} · {condition?.state ?? 'available'} · {shelter.occupancy}/{shelter.capacity} ocupadas · {shelter.reserved} reservadas</title></rect><text x={point.x + 9} y={point.y + 4} className="escape-map-label">{shelter.id}</text></g> : null; })}
-        {candidates.map((candidate, index) => { if (!Number.isFinite(candidate.lat) || !Number.isFinite(candidate.lng)) return null; const check = validation?.candidates.find(item => item.id === candidate.id); const point = model.point(candidate); return <g key={candidate.id} data-candidate={candidate.id}><circle cx={point.x} cy={point.y} r={8} className={`flood-candidate ${check?.valid === false ? 'flood-candidate-invalid' : ''}`} /><text x={point.x - 3} y={point.y + 3} className="flood-candidate-label">{index + 1}</text><title>Candidato {index + 1}: {candidate.label} · {check?.message ?? 'Pendiente de validar'}</title></g>; })}</g>}
+        {candidates.map((candidate, index) => { if (!Number.isFinite(candidate.lat) || !Number.isFinite(candidate.lng)) return null; const check = validation?.candidates.find(item => item.id === candidate.id); const point = model.point(check?.valid ? { lat: check.snapped_lat, lng: check.snapped_lng } : candidate); const proposed = model.point(candidate); return <g key={candidate.id} data-candidate={candidate.id}>{check?.valid && check.snap_distance_m > 0 && <line x1={proposed.x} y1={proposed.y} x2={point.x} y2={point.y} className="map-snap-connector" />}<circle cx={point.x} cy={point.y} r={8} className={`flood-candidate ${check?.valid === false ? 'flood-candidate-invalid' : ''}`} /><text x={point.x - 3} y={point.y + 3} className="flood-candidate-label">{index + 1}</text><title>Candidato {index + 1}: {candidate.label} · {check?.message ?? 'Pendiente de validar'}</title></g>; })}</g>}
       {layers.incidents && <g data-layer="incidents">{incidents.map(incident => {
         const point = model.point({ lat: incident.latitude, lng: incident.longitude });
         const label = `${incidentTypeLabels[incident.incident_type]} · ${incidentStatusLabels[incident.verification_status]} · ${incidentSourceLabels[incident.source_type]}`;
-        return <g key={incident.incident_id} data-incident-id={incident.incident_id} data-incident-status={incident.verification_status} data-incident-source={incident.source_type} role="button" tabIndex={0} aria-label={`Seleccionar incidente en mapa ${incident.incident_id}: ${label}`} aria-pressed={selectedIncidentId === incident.incident_id} className={`flood-incident-marker flood-incident-${incident.verification_status} ${incident.source_type === 'synthetic' ? 'flood-incident-marker-synthetic' : incident.source_type === 'official' ? 'flood-incident-marker-official' : ''} ${selectedIncidentId === incident.incident_id ? 'flood-incident-marker-selected' : ''}`} transform={`translate(${point.x},${point.y})`} onPointerDown={event => event.stopPropagation()} onClick={event => { event.stopPropagation(); onSelectIncident?.(incident.incident_id); }} onKeyDown={event => { if (['Enter', ' '].includes(event.key)) { event.preventDefault(); event.stopPropagation(); onSelectIncident?.(incident.incident_id); } }}>
+        return <g key={incident.incident_id} data-incident-id={incident.incident_id} data-incident-status={incident.verification_status} data-incident-source={incident.source_type} role="button" tabIndex={pickingCandidate !== undefined ? -1 : 0} pointerEvents={pickingCandidate !== undefined ? 'none' : undefined} aria-label={`Seleccionar incidente en mapa ${incident.incident_id}: ${label}`} aria-pressed={popupId === incident.incident_id} className={`flood-incident-marker flood-incident-${incident.verification_status} ${incident.source_type === 'synthetic' ? 'flood-incident-marker-synthetic' : incident.source_type === 'official' ? 'flood-incident-marker-official' : ''} ${popupId === incident.incident_id ? 'flood-incident-marker-selected' : ''}`} transform={`translate(${point.x},${point.y})`} onPointerDown={event => event.stopPropagation()} onClick={event => { event.stopPropagation(); selectIncident(incident.incident_id); }} onKeyDown={event => { if (['Enter', ' '].includes(event.key)) { event.preventDefault(); event.stopPropagation(); selectIncident(incident.incident_id); } }}>
           <title>{label} · {incident.description} · fecha {incidentDate(incident.event_time)} · vigencia {incidentDate(incident.expires_at)} · ubicación aproximada; no modifica esta simulación</title>{incident.source_type === 'synthetic' ? <path d="M0,-10L10,0L0,10L-10,0Z" /> : incident.source_type === 'official' ? <path d="M-5,-9L5,-9L10,0L5,9L-5,9L-10,0Z" /> : <circle r={9} />}<text textAnchor="middle" dy=".35em" aria-hidden="true">{incidentStatusGlyphs[incident.verification_status]}</text><text x={12} y={-9} className="incident-type-glyph" aria-hidden="true">{incidentTypeGlyphs[incident.incident_type]}</text>
         </g>;
       })}</g>}
-    </svg><figcaption className="flood-legend"><span className="flood-legend-exposure">● Exposición sintética</span><span className="flood-legend-passable">— Transitable</span><span className="flood-legend-caution">— Precaución</span><span className="flood-legend-blocked">┄ Bloqueada</span><span className="flood-legend-shelter">■ Refugio candidato</span><span>○ Ubicación propuesta</span><span>— Ruta del agente seleccionado</span><span>? Pendiente · + Corroborado · ✓ Verificado · × Rechazado · ⌛ Caducado · ○ Ciudadano · ⬡ Oficial · ◇ Sintético</span></figcaption>
-      <p className="flood-map-attribution"><a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">© OpenStreetMap contributors</a> · Base vectorial OSM · {graph.nodes.length.toLocaleString('es-EC')} intersecciones / {graph.edges.length.toLocaleString('es-EC')} aristas</p>
+      {preview && <circle data-layer="shelter-preview" cx={preview.x} cy={preview.y} r={10} className="map-preview flood-candidate-preview"><title>Ubicación provisional pendiente de confirmar</title></circle>}
+    </svg><MapAttribution />{popup && <section className="map-popup" aria-label={`Reporte en mapa: ${incidentTypeLabels[popup.incident_type]}`} onKeyDown={event => { if (event.key === 'Escape') closePopup(); }}>
+      <Button variant="ghost" className="map-popup-close" aria-label="Cerrar reporte del mapa" onClick={closePopup}>×</Button><h3>{incidentTypeLabels[popup.incident_type]}</h3><time dateTime={popup.event_time}>{incidentDate(popup.event_time)}</time><p>{popup.description}</p><dl><div><dt>Transitabilidad</dt><dd>{{ passable: 'Transitable', restricted: 'Restringida', blocked: 'Bloqueada', unknown: 'Desconocida' }[popup.road_passability_reported] ?? 'Desconocida'}</dd></div><div><dt>Severidad</dt><dd>{{ low: 'Baja', moderate: 'Moderada', high: 'Alta', unknown: 'Desconocida' }[popup.severity_reported] ?? 'Desconocida'}</dd></div><div><dt>Estado</dt><dd>{incidentStatusLabels[popup.verification_status]}</dd></div></dl><p className="muted">{incidentSourceLabels[popup.source_type]} · ubicación aproximada. {popup.source_type === 'synthetic' ? 'Dato sintético; no es una observación real.' : popup.source_type === 'citizen' && popup.verification_status === 'pending' ? 'Pendiente de verificación; no confirma una condición vial.' : ''}</p>{onOpenIncident && <Button variant="secondary" onClick={() => onOpenIncident(popup.incident_id)}>Detalles y evaluación experimental</Button>}
+    </section>}</div><figcaption className="flood-legend">{layers.exposure && <span className="flood-legend-exposure">● Exposición sintética</span>}{layers.passable && <span className="flood-legend-passable">— Transitable</span>}{layers.caution && <span className="flood-legend-caution">— Precaución</span>}{layers.blocked && <span className="flood-legend-blocked">┄ Bloqueada</span>}{layers.shelters && <span className="flood-legend-shelter">■ Refugio candidato · ○ Propuesta</span>}{layers.agents && <span>● Agentes</span>}{layers.routes && <span>— Ruta seleccionada</span>}{layers.incidents && incidents.length > 0 && <span>? Pendiente · + Corroborado · ✓ Verificado · × Rechazado · ⌛ Caducado · ○ Ciudadano · ⬡ Oficial · ◇ Sintético</span>}{showReference && <span>▧ Susceptibilidad oficial; no es inundación actual</span>}</figcaption>
+      {layers.exposure && <div className="visual-legend" aria-label="Leyenda del índice sintético"><span className="flood-index-low">Índice 0–0,33</span><span className="flood-index-medium">Índice &gt;0,33–0,66</span><span className="flood-index-high">Índice &gt;0,66–1</span></div>}
+      <p className="visual-notice">Exposición sintética: índice normalizado, sin profundidad ni equivalencia en mm/h. Los focos no representan agua observada.</p>
       {tileUnavailable && <p className="muted" role="status">Las teselas de fondo no están disponibles. La red vectorial OpenStreetMap y los controles siguen activos.</p>}
     </figure>
     <div className="flood-edge-inspector"><label>Inspeccionar arista<input type="search" aria-label="Inspeccionar arista" list="flood-road-results" placeholder="ID de calle o clic en el mapa" value={selectedEdgeId} onChange={event => setSelectedEdgeId(event.target.value)} /><datalist id="flood-road-results">{edgeSuggestions.map(edge => <option key={edge.id} value={edge.id} />)}</datalist></label>{selectedEdge && <EdgeDetails edge={selectedEdge} condition={selectedCondition} />}</div>

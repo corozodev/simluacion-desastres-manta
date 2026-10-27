@@ -20,11 +20,18 @@ const (
 
 func terminal(s Status) bool { return s == Completed || s == Cancelled || s == Failed }
 
+type CustomShelter struct {
+	ID       string `json:"id"`
+	NodeID   string `json:"node_id"`
+	Capacity int    `json:"capacity"`
+}
+
 type InputConfig struct {
-	Survivors         *int     `json:"survivors,omitempty"`
-	Round             string   `json:"round,omitempty"`
-	RefugeIDs         []string `json:"refuge_ids,omitempty"`
-	RainfallIntensity *float64 `json:"rainfall_intensity,omitempty"`
+	Survivors         *int            `json:"survivors,omitempty"`
+	Round             string          `json:"round,omitempty"`
+	RefugeIDs         []string        `json:"refuge_ids,omitempty"`
+	CustomShelters    []CustomShelter `json:"custom_shelters,omitempty"`
+	RainfallIntensity *float64        `json:"rainfall_intensity,omitempty"`
 }
 
 type CreateRequest struct {
@@ -37,14 +44,16 @@ type CreateRequest struct {
 }
 
 type Config struct {
-	Survivors         int      `json:"survivors"`
-	Round             string   `json:"round"`
-	RefugeIDs         []string `json:"refuge_ids"`
-	RainfallIntensity *float64 `json:"rainfall_intensity,omitempty"`
+	Survivors         int             `json:"survivors"`
+	Round             string          `json:"round"`
+	RefugeIDs         []string        `json:"refuge_ids"`
+	CustomShelters    []CustomShelter `json:"custom_shelters,omitempty"`
+	RainfallIntensity *float64        `json:"rainfall_intensity,omitempty"`
 }
 
 func (c Config) clone() Config {
 	c.RefugeIDs = append([]string{}, c.RefugeIDs...)
+	c.CustomShelters = append([]CustomShelter(nil), c.CustomShelters...)
 	if c.RainfallIntensity != nil {
 		value := *c.RainfallIntensity
 		c.RainfallIntensity = &value

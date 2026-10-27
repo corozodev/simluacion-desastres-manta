@@ -79,7 +79,7 @@ try {
   const server = await startServer();
   const api = server.url;
   const web = spawn(process.execPath, [path.join(root, 'node_modules/vite/bin/vite.js'), '--host', '127.0.0.1', '--port', String(webPort), '--strictPort'], {
-    cwd: path.join(root, 'apps/web'), stdio: 'ignore', env: { ...process.env, VITE_WORLD_API_BASE_URL: api },
+    cwd: path.join(root, 'apps/web'), stdio: 'ignore', env: { ...process.env, VITE_WORLD_API_BASE_URL: api, VITE_OSM_TILES_ENABLED: 'false' },
   });
   processes.push(web);
   await waitFor(async () => { try { return (await fetch(origin, { signal: AbortSignal.timeout(500) })).ok; } catch { return false; } }, 'Vite readiness');
@@ -105,8 +105,8 @@ try {
   assert.deepEqual(counts, { a: 0, b: 0 }, 'Opening pages created a session');
   if (evidence) await pageA.screenshot({ path: path.join(evidence, 'exploration-desktop.png'), fullPage: true });
   assert.equal((await (await fetch(`${api}/estado`)).json()).turn, 0, 'Legacy startup advanced');
+  await pageA.getByText('Configuración avanzada', { exact: true }).click();
   await pageA.getByLabel('Turnos máximos').fill('8');
-  await pageA.getByLabel('Intervalo entre turnos (ms)').fill('1000');
   const createdA = pageA.waitForResponse(response => response.url() === `${api}/v1/simulations` && response.request().method() === 'POST');
   await pageA.getByRole('button', { name: 'Iniciar simulación', exact: true }).dblclick();
   const credentialsA = await (await createdA).json();
@@ -117,9 +117,10 @@ try {
   const headersA = { Authorization: `Bearer ${credentialsA.access_token}` };
   const stateA = async () => (await fetch(`${api}/v1/simulations/${credentialsA.simulation_id}/state`, { headers: headersA })).json();
   const paused = await stateA();
+  assert.equal(paused.tick_interval_ms, 2000);
   await pageB.getByLabel('Agentes', { exact: true }).fill('5');
+  await pageB.getByText('Configuración avanzada', { exact: true }).click();
   await pageB.getByLabel('Turnos máximos').fill('2');
-  await pageB.getByLabel('Intervalo entre turnos (ms)').fill('1000');
   const createdB = pageB.waitForResponse(response => response.url() === `${api}/v1/simulations` && response.request().method() === 'POST');
   await pageB.getByRole('button', { name: 'Iniciar simulación', exact: true }).click();
   const credentialsB = await (await createdB).json();

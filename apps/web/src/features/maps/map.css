@@ -1,0 +1,33 @@
+.map-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 12px; position: relative; z-index: 2; }
+.map-toolbar > .button, .map-toolbar summary { min-height: 36px; font-size: 12px; }
+.map-toolbar output { font-size: 11px; color: var(--color-textSecondary); margin-left: auto; }
+.map-gesture-help { color: var(--color-textSecondary); font-size: 11px; margin-left: 6px; line-height: 1.5; }
+.map-gesture-help small { display: block; font-size: 10px; }
+.map-disclosure { position: relative; }
+.map-disclosure > summary { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border: 1px solid var(--color-border); border-radius: var(--radius-sm); background: var(--color-surface); cursor: pointer; list-style: none; }
+.map-disclosure > summary::after { content: '⌄'; color: var(--color-textSecondary); }
+.map-disclosure[open] > summary { border-color: var(--color-focus); }
+.map-disclosure > .map-layer-panel { position: absolute; left: 0; top: calc(100% + 7px); z-index: 5; display: grid; gap: 14px; width: min(310px, calc(100vw - 58px)); max-height: 420px; overflow: auto; padding: 16px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); box-shadow: 0 8px 24px #0004; }
+.map-layer-panel fieldset { display: grid; gap: 11px; border: 0; margin: 0; padding: 0; }
+.map-layer-panel legend { color: var(--color-textSecondary); font-size: 11px; margin-bottom: 10px; }
+.map-layer-panel label { display: flex; gap: 8px; align-items: center; color: var(--color-textPrimary); font-size: 12px; min-height: 26px; font-weight: 400; }
+.map-layer-panel .visual-controls { margin: 0; border: 0; padding: 0; }
+.map-layer-panel .visual-controls span { font-size: 10px; line-height: 1.5; }
+.map-stage { position: relative; min-width: 0; isolation: isolate; }
+.escape-map .map-stage > svg, .flood-map .map-stage > svg[data-testid=flood-map] { display: block; width: 100%; height: clamp(360px, 68svh, 850px); min-height: 0; aspect-ratio: auto; border: 1px solid var(--color-border); touch-action: none; }
+.map-stage.map-picking > svg, .map-stage.map-picking > svg:active { cursor: crosshair; }
+.map-attribution { position: absolute; right: 1px; bottom: 1px; z-index: 1; padding: 3px 7px; background: var(--color-surface); border-radius: 3px 0; max-width: calc(100% - 2px); font-size: 10px; line-height: 1.5; }
+.map-attribution a { color: var(--color-textPrimary); text-decoration: underline; text-underline-offset: 2px; }
+.map-popup { position: absolute; z-index: 3; right: 12px; top: 12px; width: min(310px, calc(100% - 24px)); max-height: calc(100% - 56px); overflow: auto; padding: 16px; border-radius: var(--radius-md); border: 1px solid var(--color-border); background: var(--color-surface); box-shadow: 0 6px 24px #0004; font-size: 12px; line-height: 1.6; }
+.map-popup h3 { font-size: 15px; margin: 0 30px 5px 0; }
+.map-popup > .map-popup-close { position: absolute; right: 7px; top: 7px; min-width: 30px; padding: 4px; }
+.map-popup p { margin: 8px 0; overflow-wrap: anywhere; }
+.map-popup dl { display: grid; gap: 5px; }
+.map-popup dl div { display: flex; justify-content: space-between; gap: 10px; }
+.map-popup dt { color: var(--color-textSecondary); }
+.map-popup dd { margin: 0; text-align: right; }
+.map-preview { fill: var(--color-background); stroke: var(--color-warning); stroke-width: 3; stroke-dasharray: 4 2; vector-effect: non-scaling-stroke; pointer-events: none; }
+.map-snap-connector { stroke: var(--color-warning); stroke-width: 1.5; stroke-dasharray: 3 2; vector-effect: non-scaling-stroke; pointer-events: none; }
+.map-pick-instruction { font-size: 12px; color: var(--color-warning); padding: 9px 12px; border: 1px solid var(--color-border); border-radius: var(--radius-sm); margin-bottom: 10px; }
+.map-footer { margin-top: 10px; }
+@media(max-width:600px) { .map-gesture-help { display: none; }.map-toolbar { gap: 6px; }.map-toolbar > .button, .map-toolbar summary { font-size: 11px; padding: 7px 9px; }.map-disclosure { position: static; }.map-disclosure > .map-layer-panel { top: calc(100% + 4px); left: 0; max-width: 100%; }.escape-map .map-stage > svg, .flood-map .map-stage > svg[data-testid=flood-map] { height: clamp(380px, 63svh, 650px); }.map-popup { right: 8px; top: 8px; width: min(280px, calc(100% - 16px)); padding: 13px; } }

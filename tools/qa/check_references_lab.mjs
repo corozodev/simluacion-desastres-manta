@@ -16,7 +16,7 @@ import addFormats from 'ajv-formats';
 const root = fileURLToPath(new URL('../../', import.meta.url));
 const backend = path.join(root, 'services/evacuation');
 const temporary = await mkdtemp(path.join(tmpdir(), 'corodev-reference-'));
-const directory = process.env.REFERENCE_EVIDENCE_DIR || path.join(root, 'deploy/evidence-private/phase4d-20261026');
+const directory = process.env.REFERENCE_EVIDENCE_DIR || path.join(root, `deploy/evidence-private/mantasim-reference-${Date.now()}`);
 const origin = 'http://127.0.0.1:5183';
 const children = [];
 let browser;
@@ -55,7 +55,7 @@ async function operator(base) {
   return async (route, body) => { const result = await fetch(base + route, { method: 'POST', headers, body: JSON.stringify(body) }); assert(result.ok, `${route}: HTTP ${result.status}`); return check('LabState', await result.json()); };
 }
 const stable = value => createHash('sha256').update(JSON.stringify(value)).digest('hex');
-const report = { phase: '4D', recorded_at: new Date().toISOString(), scope: 'Local real Go, React, Chromium, checked-in official copy; no provider/GPS/AWS/raster requests', checks: {}, measurements: {}, browser: {}, provenance: {} };
+const report = { phase: 'MantaSim UX reference regression', recorded_at: new Date().toISOString(), scope: 'Current MantaSim UX regression: local real Go, React, Chromium, checked-in official copy; no provider/GPS/AWS/raster requests', checks: {}, measurements: {}, browser: {}, provenance: {} };
 try {
   await mkdir(directory, { recursive: true, mode: 0o700 });
   const go = process.env.GO_BIN || (existsSync('/usr/local/go/bin/go') ? '/usr/local/go/bin/go' : 'go');
@@ -92,8 +92,11 @@ try {
   page.on('requestfailed', request => { const record = { path: new URL(request.url()).pathname, reason: request.failure()?.errorText }; (record.reason === 'net::ERR_ABORTED' ? cancelled : failed).push(record); });
   page.on('response', response => { if (response.status() >= 400) http.push({ path: new URL(response.url()).pathname, status: response.status() }); });
   await page.route('**/*', route => { const url = route.request().url(); if ([origin, lab.url, zombie.url].some(base => url.startsWith(base))) return route.continue(); external.push(url); return route.abort(); });
-  await page.goto(origin + '/escape?scenario=urban_flood');
-  await expect(page.getByRole('heading', { name: 'Inundaciones urbanas', exact: true })).toBeVisible();
+  await page.goto(origin + '/flood-lab');
+  await expect(page.getByRole('heading', { name: 'Escape Manta Inundación', exact: true })).toBeVisible();
+  const openDetails = async name => { const summary = page.locator('summary').filter({ hasText: name }); if (!await summary.evaluate(element => element.parentElement.open)) await summary.click(); };
+  await openDetails(/^Capas$/);
+  await openDetails(/^Datos y fuentes oficiales$/);
   const officialToggle = page.getByRole('checkbox', { name: 'Susceptibilidad oficial a inundaciones', exact: true });
   const renderStart = performance.now(); await officialToggle.check();
   await expect(page.locator('[data-reference-id]')).toHaveCount(59);
@@ -104,6 +107,8 @@ try {
   const pausedAfterLayer = await get(lab.url, '/lab/state', 'LabState');
   assert(pausedAfterLayer.scenario.world_version === baseline.scenario.world_version && !pausedAfterLayer.scenario.data_provenance.geographic_reference, 'Display layer mutated simulation');
   report.checks.independent_layer_and_provenance_without_mutation = true;
+  await openDetails(/^Parámetros ·/);
+  await openDetails(/^Configuración avanzada$/);
   await page.getByRole('checkbox', { name: 'Usar susceptibilidad geográfica como referencia', exact: true }).check();
   await page.getByRole('spinbutton', { name: 'Peso experimental de susceptibilidad' }).fill('0.25');
   await page.getByRole('button', { name: 'Iniciar tormenta', exact: true }).click();
@@ -153,7 +158,8 @@ try {
   assert(report.measurements.telemetry.reference.queries === 0, 'Offline mode contacted external provider');
   report.checks.offline_simulation_and_telemetry_without_provider_requests = true;
   assert(stable(beforeGraph) === stable(await get(lab.url, '/lab/graph?mode=competition', 'Graph')), 'Base graph mutated');
-  await page.getByRole('combobox', { name: 'Escenarios', exact: true }).selectOption('zombie');
+  await page.getByRole('button', { name: 'Abrir menú', exact: true }).click();
+  await page.getByRole('link', { name: 'Escape Manta Zombie', exact: true }).click();
   await expect(page.getByRole('img', { name: /^Red de evacuación/ })).toBeVisible();
   assert(stable(initialZombie) === stable(await get(zombie.url, '/estado', 'WorldSnapshot')), 'Zombie original world changed');
   report.checks.zombie_and_base_graph_unchanged = true;
@@ -167,7 +173,7 @@ try {
   assert(!errors.length && !failed.length && !http.length && !external.length && !secretLeaks.length, 'Unexpected browser errors/traffic');
   report.passed = true;
   await writeFile(path.join(directory, 'references-e2e.json'), JSON.stringify(report, null, 2) + '\n', { mode: 0o600 });
-  console.log(`FASE 4D: ${Object.keys(report.checks).length} checks, 59 polygons / 3463 vertices, 300 and 9179 nodes, offline reference + hybrid simulation, no provider traffic.`);
+  console.log(`MantaSim referencias: ${Object.keys(report.checks).length} checks, 59 polygons / 3463 vertices, 300 and 9179 nodes, offline reference + hybrid simulation, no provider traffic.`);
 } catch (error) {
   report.passed = false; report.failure = error instanceof Error ? error.message : String(error);
   await writeFile(path.join(directory, 'references-e2e-failure.json'), JSON.stringify(report, null, 2) + '\n', { mode: 0o600 });
