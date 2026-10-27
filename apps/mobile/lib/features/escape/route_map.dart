@@ -82,33 +82,114 @@ class RouteMap extends StatelessWidget {
   const RouteMap({
     super.key,
     required this.graph,
-    required this.world,
+    this.world,
     this.survivor,
+    this.marker,
+    this.onPickPosition,
+    this.highlightedEdgeId,
   });
   final Graph graph;
-  final WorldSnapshot world;
+  final WorldSnapshot? world;
   final Survivor? survivor;
+  final GeoPoint? marker;
+  final ValueChanged<GeoPoint>? onPickPosition;
+  final String? highlightedEdgeId;
 
   @override
   Widget build(BuildContext context) => Semantics(
-    label:
-        'Mapa de calles reales, zonas de aparición, refugios ficticios y ruta seleccionada',
+    label: onPickPosition == null
+        ? 'Mapa de calles reales, zonas de aparición, refugios ficticios y ruta seleccionada'
+        : 'Selecciona la ubicación de la novedad en el mapa. También puedes escribir las coordenadas.',
     child: ClipRRect(
       borderRadius: BorderRadius.circular(SpookyTokens.radiusMd),
       child: SizedBox(
         height: 230,
         width: double.infinity,
-        child: CustomPaint(painter: _MapPainter(graph, world, survivor)),
+        child: LayoutBuilder(
+          builder: (context, constraints) => GestureDetector(
+            onTapUp: onPickPosition == null
+                ? null
+                : (details) {
+                    final projection = MapProjection.forGraph(
+                      graph,
+                      Size(constraints.maxWidth, constraints.maxHeight),
+                    );
+                    if (projection != null) {
+                      onPickPosition!(
+                        projection.unproject(details.localPosition),
+                      );
+                    }
+                  },
+            child: CustomPaint(
+              painter: _MapPainter(
+                graph,
+                world,
+                survivor,
+                marker,
+                highlightedEdgeId,
+              ),
+              child: const SizedBox.expand(),
+            ),
+          ),
+        ),
       ),
     ),
   );
 }
 
+class MapProjection {
+  const MapProjection._(this.left, this.top, this.scale, this.x, this.y);
+  final double left;
+  final double top;
+  final double scale;
+  final double x;
+  final double y;
+
+  static MapProjection? forGraph(Graph graph, Size size) {
+    final coordinates = [
+      for (final node in graph.nodes) GeoPoint(lat: node.lat, lng: node.lng),
+      ...?graph.coverage,
+    ];
+    if (coordinates.isEmpty) return null;
+    final left = coordinates.map((p) => p.lng).reduce(math.min),
+        right = coordinates.map((p) => p.lng).reduce(math.max);
+    final bottom = coordinates.map((p) => p.lat).reduce(math.min),
+        top = coordinates.map((p) => p.lat).reduce(math.max);
+    final scale = math.min(
+      math.max(size.width - 28, 1) / math.max(right - left, .00001),
+      math.max(size.height - 28, 1) / math.max(top - bottom, .00001),
+    );
+    return MapProjection._(
+      left,
+      top,
+      scale,
+      (size.width - (right - left) * scale) / 2,
+      (size.height - (top - bottom) * scale) / 2,
+    );
+  }
+
+  Offset project(GeoPoint point) =>
+      Offset(x + (point.lng - left) * scale, y + (top - point.lat) * scale);
+
+  GeoPoint unproject(Offset point) => GeoPoint(
+    lat: top - (point.dy - y) / scale,
+    lng: left + (point.dx - x) / scale,
+  );
+}
+
 class _MapPainter extends CustomPainter {
-  _MapPainter(this.graph, this.world, this.survivor);
+  _MapPainter(
+    this.graph,
+    this.world,
+    this.survivor,
+    this.marker,
+    this.highlightedEdgeId,
+  );
   final Graph graph;
-  final WorldSnapshot world;
+  final WorldSnapshot? world;
   final Survivor? survivor;
+  final GeoPoint? marker;
+  final String? highlightedEdgeId;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -116,23 +197,9 @@ class _MapPainter extends CustomPainter {
       Offset.zero & size,
       Paint()..color = SpookyTokens.background,
     );
-    final coordinates = [
-      for (final node in graph.nodes) GeoPoint(lat: node.lat, lng: node.lng),
-      ...?graph.coverage,
-    ];
-    if (coordinates.isEmpty) return;
-    final left = coordinates.map((p) => p.lng).reduce(math.min),
-        right = coordinates.map((p) => p.lng).reduce(math.max);
-    final bottom = coordinates.map((p) => p.lat).reduce(math.min),
-        top = coordinates.map((p) => p.lat).reduce(math.max);
-    final scale = math.min(
-      (size.width - 28) / math.max(right - left, .00001),
-      (size.height - 28) / math.max(top - bottom, .00001),
-    );
-    Offset project(GeoPoint p) => Offset(
-      (size.width - (right - left) * scale) / 2 + (p.lng - left) * scale,
-      (size.height - (top - bottom) * scale) / 2 + (top - p.lat) * scale,
-    );
+    final projection = MapProjection.forGraph(graph, size);
+    if (projection == null) return;
+    final project = projection.project;
     final nodes = {
       for (final node in graph.nodes)
         node.id: project(GeoPoint(lat: node.lat, lng: node.lng)),
@@ -175,10 +242,14 @@ class _MapPainter extends CustomPainter {
     }
     for (final edge in graph.edges) {
       final paint = Paint()
-        ..color = edge.blocked || world.blockedEdges.contains(edge.id)
+        ..color = edge.id == highlightedEdgeId
+            ? SpookyTokens.accent
+            : edge.blocked || world?.blockedEdges.contains(edge.id) == true
             ? SpookyTokens.error
             : SpookyTokens.textSecondary.withValues(alpha: .4)
-        ..strokeWidth = edge.blocked || world.blockedEdges.contains(edge.id)
+        ..strokeWidth = edge.id == highlightedEdgeId
+            ? 4
+            : edge.blocked || world?.blockedEdges.contains(edge.id) == true
             ? 2
             : 1
         ..style = PaintingStyle.stroke;
@@ -197,7 +268,7 @@ class _MapPainter extends CustomPainter {
           ..strokeWidth = 2.5,
       );
     }
-    for (final zombie in world.zombies) {
+    for (final zombie in world?.zombies ?? <Zombie>[]) {
       final point = nodes[zombie.currentNode];
       if (point != null) {
         canvas.drawCircle(
@@ -207,7 +278,7 @@ class _MapPainter extends CustomPainter {
         );
       }
     }
-    for (final shelter in world.shelters) {
+    for (final shelter in world?.shelters ?? graph.shelters) {
       final point = nodes[shelter.nodeId];
       if (point != null) {
         canvas.drawRect(
@@ -223,9 +294,32 @@ class _MapPainter extends CustomPainter {
         Paint()..color = SpookyTokens.primary,
       );
     }
+    if (marker != null) {
+      final position = project(marker!);
+      canvas.drawCircle(position, 8, Paint()..color = SpookyTokens.background);
+      canvas.drawCircle(position, 6, Paint()..color = SpookyTokens.primary);
+      canvas.drawLine(
+        position.translate(-11, 0),
+        position.translate(11, 0),
+        Paint()
+          ..color = SpookyTokens.primary
+          ..strokeWidth = 1.5,
+      );
+      canvas.drawLine(
+        position.translate(0, -11),
+        position.translate(0, 11),
+        Paint()
+          ..color = SpookyTokens.primary
+          ..strokeWidth = 1.5,
+      );
+    }
   }
 
   @override
   bool shouldRepaint(_MapPainter old) =>
-      old.graph != graph || old.world != world || old.survivor != survivor;
+      old.graph != graph ||
+      old.world != world ||
+      old.survivor != survivor ||
+      old.marker != marker ||
+      old.highlightedEdgeId != highlightedEdgeId;
 }

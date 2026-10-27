@@ -5,6 +5,7 @@ import '../../core/api/generated/models.dart';
 import '../../core/providers.dart';
 import '../../core/theme/tokens.g.dart';
 import '../../shared/widgets.dart';
+import '../incidents/incident_report_screen.dart';
 import 'route_map.dart';
 
 class EscapeScreen extends ConsumerStatefulWidget {
@@ -47,6 +48,24 @@ class _EscapeScreenState extends ConsumerState<EscapeScreen> {
           style: TextStyle(color: SpookyTokens.textSecondary),
         ),
         const SizedBox(height: SpookyTokens.spacing5),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: OutlinedButton.icon(
+            key: const Key('new-incident'),
+            onPressed: () => Navigator.of(context).push<void>(
+              MaterialPageRoute(
+                builder: (context) => IncidentReportScreen(
+                  graph: graph.asData?.value,
+                  world: state.asData?.value,
+                ),
+              ),
+            ),
+            icon: const Icon(Icons.add_location_alt_outlined),
+            label: const Text('Nueva novedad'),
+          ),
+        ),
+        const Text('Reportes ciudadanos pendientes de verificación.'),
+        const SizedBox(height: SpookyTokens.spacing4),
         state.when(
           data: (world) => Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,

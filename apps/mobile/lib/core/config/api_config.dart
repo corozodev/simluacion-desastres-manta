@@ -29,6 +29,19 @@ class ApiConfig {
     ),
   );
 
+  factory ApiConfig.incidentsFromEnvironment() => ApiConfig(
+    baseUrl: const String.fromEnvironment(
+      'INCIDENTS_API_BASE_URL',
+      defaultValue: String.fromEnvironment(
+        'WORLD_API_BASE_URL',
+        defaultValue: 'https://api.sistemamanta.lexinnovate.com',
+      ),
+    ).replaceFirst(RegExp(r'/+$'), ''),
+    timeout: const Duration(
+      milliseconds: int.fromEnvironment('API_TIMEOUT_MS', defaultValue: 10000),
+    ),
+  );
+
   final String baseUrl;
   final Duration timeout;
 
