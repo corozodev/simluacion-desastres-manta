@@ -1,3 +1,11 @@
+# Ejecutor FASE 5
+
+`cmd/server` compone dos runtimes aislados: la compatibilidad legacy permanece inactiva y `internal/sessions` administra ejecuciones privadas bajo demanda. Los GET de capacidades y grafo son consultas sin efectos. Cada POST de creación valida configuración, reserva cupos y entrega un identificador y un token opaco independiente. El manager controla los turnos; cada instancia del motor conserva RNG, agentes, refugios, overlays y métricas propios.
+
+React `/escape` usa `capabilities → configuración → creación explícita → polling privado`. Pausar, reanudar y cancelar pasan por la máquina de estados; reiniciar crea otro ID y conserva temporalmente el resultado anterior. `sessionStorage` permite recuperar una ejecución al recargar sin crear otra. Los snapshots no transportan el grafo estático ni datos privados del motor.
+
+Se integran los motores existentes de zombies e inundación sintética. Los reportes ciudadanos y referencias del laboratorio mantienen sus APIs, procedencia y almacenamiento independientes; no se incorporan de forma implícita a las sesiones. La API sigue siendo un monolito Go con RAM local y HTTP, sin colas distribuidas ni nueva infraestructura. Ver [contratos, límites, verificación y restricciones](informe-fase5.md).
+
 # Ampliación FASE 2
 
 Se conserva el monolito modular. La fuente urbana OSM se separa en maestro (`manta-master`), operativo representativo (`manta-v2`,300/383) y experimental (`manta-expanded`,1000/1599). Los cuatro polígonos municipales de aparición no son fronteras de navegación; el área visual es una envolvente de referencia. Ver [geografía](grafo-fase2.md) y [diagnóstico](diagnostico-geografico.md).

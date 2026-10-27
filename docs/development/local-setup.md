@@ -1,8 +1,6 @@
 # Desarrollo local
 
-Todos los comandos npm se ejecutan desde `corodev-spooky`, salvo indicación contraria. Se requiere Node `>=22.12`, npm `>=10`, Flutter con Dart `>=3.11` y un SDK Android para compilar APK. El entorno de implementación dispone de Node 22.18, Flutter 3.41.4 y Dart 3.11.1; las ejecuciones reales se registran en [validation.md](validation.md).
-
-## Dependencias y generación
+Ejecutar npm desde `corodev-spooky`. Se requieren Node ≥22.12, npm ≥10, Go compatible con `services/evacuation/go.mod` y Python 3 para las herramientas geográficas. Flutter y un SDK Android se necesitan sólo para móvil. `GO_BIN` y `FLUTTER_BIN` permiten indicar instalaciones fuera de PATH.
 
 ```sh
 npm install
@@ -11,98 +9,63 @@ npm run contracts:generate
 npm run tokens:generate
 ```
 
-Para instalar exactamente el lockfile existente en automatización puede usarse `npm ci`. Conserva `package-lock.json` y `apps/mobile/pubspec.lock`. Flutter administra sus dependencias por separado:
-
-```sh
-cd apps/mobile
-flutter pub get
-flutter doctor -v
-```
-
-Si Flutter no está en `PATH`, configura una ruta real a tu instalación. Ejemplo Linux:
-
-```sh
-export PATH="$HOME/Android/flutter/bin:$PATH"
-export FLUTTER_BIN="$HOME/Android/flutter/bin/flutter"
-```
-
-`FLUTTER_BIN` es una alternativa utilizada por los scripts npm; los comandos `flutter` directos necesitan `PATH`. Para Android, configura el SDK de tu equipo, por ejemplo `ANDROID_HOME=$HOME/Android`, y Java 17 para Gradle. `apps/mobile/android/local.properties` es local e ignorado: no publiques rutas personales. Usa `flutter doctor -v` para comprobar SDK, licencias y toolchain.
-
-## Servidor y web
+## Go y React
 
 Terminal A:
 
 ```sh
-npm run dev:api
+export API_KEY="$(python3 -c 'import secrets; print(secrets.token_urlsafe(32))')"
+export SIM_AUTOSTART=false
+npm run dev:backend
 ```
 
 Terminal B:
 
 ```sh
-npm run dev:web
+VITE_WORLD_API_BASE_URL=http://127.0.0.1:8080 npm run dev:web
 ```
 
-| Componente | Dirección predeterminada |
-| --- | --- |
-| API | `http://127.0.0.1:3001` |
-| Web | `http://localhost:5173` |
+Abrir `http://localhost:5173/escape`, configurar y pulsar **Iniciar simulación**. Go espera solicitudes al arrancar; `SIM_AUTOSTART=true` se rechaza. `npm run dev:api` es un alias del servidor Go. La API local escucha en `127.0.0.1:8080`. Los orígenes localhost y 127.0.0.1 del puerto 5173 están permitidos por defecto.
 
-El servidor lee variables del proceso. La raíz `.env.example` es una referencia; el servidor no carga automáticamente `.env`. Exporta las variables antes de arrancar o colócalas en el entorno de tu terminal. Ejemplo Bash:
+Go lee variables exportadas y no carga `.env` por sí solo. `.env.example` y `deploy/backend.env.example` son referencias sin secretos. FULL_MANTA requiere `ENABLE_FULL_MODE=true`, continúa experimental y tiene un cupo propio.
+
+Vite acepta `apps/web/.env.local` con `VITE_WORLD_API_BASE_URL=http://127.0.0.1:8080`; reiniciarlo tras cambiar variables. Toda variable `VITE_*` es pública: nunca introducir claves de Go, credenciales administrativas ni tokens de sesión. La credencial de la simulación se entrega al crearla y vive únicamente en `sessionStorage` para recuperar la misma ejecución al recargar.
+
+Para arrancar también el laboratorio y sus servicios ciudadanos:
 
 ```sh
-export HOST=127.0.0.1
-export PORT=3001
-export CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
-npm run dev:api
+npm run dev:lab
 ```
 
-Vite sí lee `apps/web/.env.local`. Crea ese archivo si necesitas cambiar la configuración:
+El ejecutor está en `/escape` y el laboratorio avanzado en `/flood-lab`. Los reportes del laboratorio se conservan en `services/evacuation/private/incidents`, excluido de Git. Las sesiones del nuevo ejecutor viven en RAM y se pierden al reiniciar Go.
 
-```dotenv
-VITE_API_MODE=mock
-VITE_API_BASE_URL=http://localhost:3001
-VITE_API_TIMEOUT_MS=8000
-```
-
-El timeout web acepta 100–120000 ms. Reinicia Vite después de cambiar valores. Toda variable `VITE_*` termina en el cliente y es pública. La URL debe ser HTTP(S), sin credenciales, query ni fragmento; puede contener un prefijo de ruta.
-
-## Android
-
-El mock escucha solo en loopback por defecto. Para emulador o equipo físico, arráncalo con una interfaz accesible, en una red local de confianza:
+## Flutter y Android
 
 ```sh
-HOST=0.0.0.0 npm run dev:api
-```
-
-| Cliente | URL de API |
-| --- | --- |
-| Navegador en el host | `http://localhost:3001` |
-| Emulador Android estándar | `http://10.0.2.2:3001` |
-| Android físico en la misma red | `http://<HOST_LAN_IP>:3001` |
-
-`localhost` en Android apunta al propio dispositivo. Flutter elige `10.0.2.2` como valor predeterminado en Android; otros entornos usan `localhost`. Para un dispositivo físico debes pasar la IP LAN del host, sin guardarla en el repositorio. Permite el puerto 3001 en el firewall de esa red si hace falta.
-
-```sh
+export FLUTTER_BIN="$HOME/Android/flutter/bin/flutter"
 cd apps/mobile
-flutter devices
-flutter run -d <DEVICE_ID> \
-  --dart-define=API_MODE=mock \
-  --dart-define=API_BASE_URL=http://10.0.2.2:3001 \
-  --dart-define=API_TIMEOUT_MS=10000
+flutter pub get
+flutter run --dart-define=WORLD_API_BASE_URL=http://10.0.2.2:8080
 ```
 
-Sustituye `<DEVICE_ID>` por el identificador que liste Flutter. Para equipo físico cambia la URL. Las variables `--dart-define` son configuración de compilación pública; cambiar un `export API_BASE_URL` del shell no cambia por sí solo la aplicación. Android permite HTTP local en la configuración de depuración; una integración remota debe usar HTTPS. No se ha configurado ni validado una aplicación iOS.
+El ejemplo presupone Flutter en PATH para los comandos directos; los scripts npm aceptan `FLUTTER_BIN`. Para el emulador Android, iniciar Go con `LISTEN_ADDR=0.0.0.0:8080` en una red local de confianza. Un dispositivo físico necesita la IP LAN del host y acceso al puerto. `localhost` dentro de Android designa el propio dispositivo. Sin override, móvil y web utilizan la API HTTPS de AWS.
 
-Los clientes nativos no aplican CORS. Si pruebas Flutter web, usa un puerto web fijo y añádelo a `CORS_ORIGINS` del servidor. CORS no sustituye un firewall ni autenticación.
+Flutter conserva el flujo anterior de observación y reportes. No crea sesiones FASE 5 ni recibe credenciales de `/paso`. Android permite HTTP local en debug; producción usa HTTPS. Un APK compilado no acredita una prueba física y no se ha preparado iOS.
 
-## Artefactos
+## Verificación y artefactos
 
 ```sh
+npm run check
+npm test
+npm run test:backend
+npm run test:race
+npm run test:contracts:http
+npm run test:contracts:simulations
 npm run build:web
-npm run build:api
+npm run build:backend
+npm run mobile:check
+npm run mobile:test
 npm run mobile:build
 ```
 
-La web queda en `apps/web/dist`, la API en `services/mock-api/dist` y el APK de depuración en `apps/mobile/build/app/outputs/flutter-apk/app-debug.apk`. Para iniciar la API compilada: `npm run start -w @corodev/mock-api`; conserva el YAML del contrato en su ubicación del monorepo.
-
-La URL de API está incorporada al build web y Flutter. Para pasar a AWS cambia modo y URL antes de recompilar; consulta [integración AWS](../aws/integration.md).
+Web: `apps/web/dist`. APK: `apps/mobile/build/app/outputs/flutter-apk/app-debug.apk`. Ambos están excluidos de Git. `npm run test:e2e` ejecuta Chromium con dobles HTTP; la integración de sesiones usa Go real. Consultar [informe FASE 5](../informe-fase5.md) para resultados, endpoints, límites y riesgos. No se publica ni despliega automáticamente.

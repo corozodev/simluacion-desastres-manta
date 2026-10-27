@@ -71,7 +71,7 @@ try {
   launch(path.join(temporary, 'world'), [], { cwd: backend, env: {
     ...process.env, API_KEY: randomBytes(32).toString('hex'), LISTEN_ADDR: `127.0.0.1:${ports.world}`,
     CORS_ORIGINS: origin, GRAPH_PATH: 'data/manta-v2.json', SCENARIO_PATH: 'scenarios/urban/round1.json',
-    INITIAL_ROUND: 'round1', SIM_AUTOSTART: 'true', SIM_INTERVAL: '2s', SIM_CONCURRENCY: '16',
+    INITIAL_ROUND: 'round1', SIM_AUTOSTART: 'false', SIM_INTERVAL: '2s', SIM_CONCURRENCY: '16',
     ENABLE_FULL_MODE: 'false', ENABLE_EXPANDED_MODE: 'false',
     ADMIN_OPERATOR: '', ADMIN_ACCESS_HASH: '', ADMIN_ALLOW_INSECURE_LOOPBACK: 'false',
   } });
@@ -85,7 +85,7 @@ try {
     },
   });
   await ready(origin);
-  console.log(`\nCoroDev: abre ${origin}/escape\nSelecciona «Inundaciones urbanas» para controlar el laboratorio. Ctrl+C cierra los tres procesos.\n`);
+  console.log(`\nCoroDev: abre ${origin}/escape y pulsa «Iniciar simulación» para ejecutar una sesión propia.\nLaboratorio avanzado: ${origin}/flood-lab. Ctrl+C cierra los tres procesos.\n`);
   await stopped;
 } catch (error) {
   if (!stopping) { console.error(error.message); process.exitCode = 1; }

@@ -2,7 +2,9 @@
 
 FASE 2 de Track A: backend Go con simulación determinista, planificación dinámica, predicción observable de runners, reservas y clientes React/Flutter. La fuente urbana OSM de Manta tiene **9.179 nodos y 13.452 aristas**; el grafo operativo tiene **300 nodos y 383 aristas**, y el experimental **1.000 nodos y 1.599 aristas**. Los cuatro sectores son zonas de aparición con polígonos municipales: Tarqui, Los Esteros, Barbasquillo y Jocay. La navegación puede salir de ellas. Los cuatro refugios son ficticios. Los turnos duran dos segundos en modo normal y se ejecutan sin esperas en modo acelerado. Entrega prevista por el equipo: **28 de octubre de 2026, 10:00 Ecuador (UTC−05:00)**.
 
-**React y Flutter utilizan únicamente el backend Go de evacuación.** La entrada es `/escape`; se retiraron los modos, adaptadores y pantallas que dependían del servidor de demostración. Ambos clientes observan `/healthz`, `/grafo` y `/estado`, sin recibir la clave de `/paso`. [Abrir Escape en AWS](https://sistemamanta.lexinnovate.com/escape) · [API HTTPS](https://api.sistemamanta.lexinnovate.com/healthz). La infraestructura de Ohio sigue siendo la aprobada en FASE 3A.2; consulta [el informe FASE 3B.1](docs/informe-fase3b1.md) y la [operación multigrafo FASE 3B.2](docs/operacion-multigrafo.md).
+**FASE 5: sesiones independientes bajo demanda.** Abrir React `/escape` carga el mapa y las capacidades sin ejecutar turnos. **Iniciar simulación** crea una sesión privada de zombies o inundación urbana sintética; Go avanza sus turnos y permite pausar, reanudar, cancelar y reiniciar. La recarga recupera la misma ejecución mediante una credencial en `sessionStorage`. Flutter conserva los endpoints Go anteriores y no recibe la clave de `/paso`. Consulta [arquitectura, API, pruebas y límites FASE 5](docs/informe-fase5.md).
+
+[Abrir Escape en AWS](https://sistemamanta.lexinnovate.com/escape) · [API HTTPS](https://api.sistemamanta.lexinnovate.com/healthz). Esas URLs corresponden al despliegue anterior: esta fase se implementa y valida localmente, sin publicar ni modificar AWS.
 
 ## Inicio local
 
@@ -16,7 +18,7 @@ npm run contracts:generate
 npm run tokens:generate
 ```
 
-Terminal 1, servidor Go y simulación normal. La clave sólo vive en el servidor:
+Terminal 1, servidor Go preparado sin simulación activa. La clave sólo vive en el servidor:
 
 ```sh
 export API_KEY="$(python3 -c 'import secrets; print(secrets.token_urlsafe(32))')"
@@ -31,12 +33,13 @@ VITE_WORLD_API_BASE_URL=http://127.0.0.1:8080 npm run dev:web
 
 Abre `http://localhost:5173/escape`. La raíz y las rutas retiradas redirigen a Escape. Sin un override explícito, web y móvil utilizan la API HTTPS de AWS. No hay fallback de datos cuando Go falla: se presenta el error y se permite reintentar. `npm run dev:api` es un alias del servidor Go.
 
-El cliente consulta el estado cada dos segundos. Go conserva el snapshot final después de 150 turnos; reiniciar el proceso reinicia el escenario y pierde la RAM. Los puertos locales de desarrollo no cambian los puertos públicos de AWS.
+Configura amenaza, grafo, semilla, agentes y refugios y pulsa **Iniciar simulación**. El cliente consulta su sesión aproximadamente cada dos segundos mientras está activa; Go continúa sin depender del polling. Los valores predeterminados son 150 turnos de 2 s y BASE (300 nodos). FULL_MANTA requiere `ENABLE_FULL_MODE=true` y conserva un cupo experimental propio. Reiniciar el proceso pierde las sesiones en RAM y vuelve a esperar un inicio explícito. Los puertos locales de desarrollo no cambian los puertos públicos de AWS.
 
 ```sh
 curl http://127.0.0.1:8080/healthz
 curl http://127.0.0.1:8080/estado
 curl http://127.0.0.1:8080/grafo
+curl http://127.0.0.1:8080/v1/simulations/capabilities
 ```
 
 ## Simulación y medición
@@ -69,6 +72,8 @@ La prueba de contrato genera su propia clave y prueba `/paso` por HTTP real:
 
 ```sh
 npm run test:contracts:http
+npm run test:contracts:simulations
+npm run test:simulations:browser
 npm run check
 npm test
 npm run build:web
@@ -136,13 +141,21 @@ El APK debug actualizado está en `apps/mobile/build/app/outputs/flutter-apk/app
 | `LISTEN_ADDR` | `127.0.0.1:8080` |
 | `GRAPH_PATH` | `data/manta-v2.json`; cambiar junto al escenario |
 | `SCENARIO_PATH` | `scenarios/urban/round1.json` |
-| `SIM_INTERVAL` | `2s`; `0s` acelera |
-| `SIM_TURNS` | JSON del escenario, normalmente 150 |
+| `SIM_AUTOSTART` | `false`; `true` impide el arranque para evitar ejecuciones accidentales |
+| `SIM_INTERVAL` | `2s`; intervalo del runtime legacy, que permanece inactivo |
+| `SIM_TURNS` | `150` en el catálogo; el cliente configura `max_ticks` dentro del límite público |
 | `SIM_SEED` | JSON del escenario |
 | `SIM_CONCURRENCY` | JSON del escenario: 16/16/32 |
 | `PREDICTION_ENABLED` | `true`; comparación sin predicción disponible |
 | `RISK_WEIGHT` / `PREDICTION_WEIGHT` | `0.6` / `12`, riesgos estimados, no garantías |
 | `CORS_ORIGINS` | `http://localhost:5173,http://127.0.0.1:5173` |
+| `SIM_MAX_ACTIVE` / `SIM_MAX_FULL_ACTIVE` | `2` / `1`; cupos de sesiones en ejecución o pausa |
+| `SIM_MAX_RETAINED` / `SIM_MAX_MEMORY_MB` | `8` / `128`; sesiones totales y presupuesto estimado reservado |
+| `SIM_DEFAULT_TICK_INTERVAL` / `SIM_DEFAULT_MAX_TICKS` | `2s` / `150`; valores por defecto de la API de sesiones |
+| `SIM_IDLE_TTL` / `SIM_PAUSED_TTL` | `2m` / `5m`; abandono y pausa |
+| `SIM_COMPLETED_TTL` / `SIM_MAX_WALL_TIME` | `15m` / `15m`; retención final y duración máxima |
+| `SIM_RATE_LIMIT_PER_MINUTE` / `SIM_CREATE_LIMIT_PER_MINUTE` | `120` / `10`; solicitudes y creaciones por dirección remota |
+| `ENABLE_FULL_MODE` | `false`; habilitar el maestro experimental sólo tras medir su presupuesto |
 
 Go no carga `.env` automáticamente: exportar variables. Web usa únicamente `VITE_WORLD_API_BASE_URL` y móvil `WORLD_API_BASE_URL`, ambas URLs públicas sin credenciales. El generador Dart selecciona los modelos alcanzables desde las cuatro operaciones Go; el contrato compartido histórico se conserva.
 
@@ -152,6 +165,7 @@ Go no carga `.env` automáticamente: exportar variables. Web usa únicamente `VI
 | --- | --- |
 | `services/evacuation/cmd/{server,sim,bench}` | Servidor, simulación acelerada y benchmark HTTP |
 | `services/evacuation/internal/{world,graph,simulation,decision,httpapi,application}` | Modelos, datos, reglas, rutas, HTTP y composición |
+| `services/evacuation/internal/sessions` | Sesiones privadas, lifecycle, seguridad, cuotas y resultados |
 | `services/evacuation/{data,scenarios,reports}` | OSM, rondas y mediciones |
 | `apps/web`, `apps/mobile` | Clientes existentes con Escape |
 | `services/mock-api` | Demo conservada y observación sintética |
@@ -231,7 +245,7 @@ La [guía del modelo y contrato React 4B](docs/urban-flood.md) incluye parámetr
 
 ## Laboratorio interactivo React — FASE 4B
 
-`npm run dev:lab` arranca React y los dos servicios locales. Abrir `http://127.0.0.1:5173/escape`, cambiar **Escenarios → Inundaciones urbanas** y pulsar **Iniciar tormenta**. El laboratorio permite pausar/continuar el motor, cambiar parámetros y grafo, validar cuatro refugios candidatos y ejecutar su comparación A/B con orígenes congelados.
+`npm run dev:lab` arranca React y los dos servicios locales sin iniciar simulaciones. Abrir `http://127.0.0.1:5173/escape` para las sesiones independientes; el laboratorio avanzado se conserva en `http://127.0.0.1:5173/flood-lab` (también en el enlace histórico `?scenario=urban_flood`). Allí **Iniciar tormenta** permite pausar/continuar el motor, cambiar parámetros y grafo, validar cuatro refugios candidatos y ejecutar su comparación A/B con orígenes congelados.
 
 Conserva el escenario zombie y añade ocho capas, inspección de calles, rutas, métricas y timeline. El maestro usa la geografía real revisada; las calles de inundación se agrupan en tres paths SVG. No se modifica el servidor publicado ni se despliega esta fase automáticamente. Ver [uso y contratos](docs/laboratorio-inundaciones.md), [resultados y capturas](docs/informe-fase4b.md).
 

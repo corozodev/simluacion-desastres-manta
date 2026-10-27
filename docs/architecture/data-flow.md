@@ -1,48 +1,33 @@
 # Flujo de datos
 
-## Lectura de registros
+1. React `/escape` consulta capacidades y el grafo estático. No crea una ejecución al montar, navegar o recargar.
+2. Al pulsar **Iniciar simulación**, envía configuración validada y una clave de idempotencia a `POST /v1/simulations`.
+3. Go valida escenario, grafo, refugios y parámetros; reserva cupos antes de crear un motor con estado propio.
+4. La respuesta devuelve `simulation_id` y un token opaco. React conserva la credencial en `sessionStorage`, vinculada a la API, y la envía únicamente por `Authorization: Bearer`.
+5. El manager avanza los turnos. El motor publica el estado de decisión, consulta `/paso` por HTTP loopback autenticado y aplica los movimientos en orden estable. El navegador no impulsa turnos.
+6. React observa `/{id}/state` aproximadamente cada dos segundos con solicitudes no acumulativas. La topología se reutiliza; el estado lleva versión, métricas y entidades observables.
+7. Pausar, reanudar y cancelar cambian la máquina de estados. Reiniciar crea un nuevo ID con la misma configuración y semilla, sujeto a los mismos límites.
+8. Al terminar se conserva el resultado hasta su TTL. Una recarga consulta la misma sesión; 404/410 limpia la credencial obsoleta y permite un nuevo inicio explícito.
 
 ```mermaid
 sequenceDiagram
-  actor U as Persona
-  participant V as Pantalla React / Flutter
-  participant S as TanStack Query / Riverpod
-  participant R as api.ts / HttpDemoRepository
-  participant A as Fastify
-  U->>V: Busca o cambia de página
-  V->>S: Consulta con página y búsqueda
-  S->>R: items(page, pageSize, q)
-  R->>A: GET /v1/demo/items
-  A->>A: Valida entrada, filtra fixtures y pagina
-  A-->>R: JSON + x-request-id
-  R->>R: Comprueba / convierte JSON tipado
-  R-->>S: ItemListResponse o error
-  S-->>V: Cargando, datos, vacío o error
+  participant R as React
+  participant M as Manager Go
+  participant E as Motor propio
+  R->>M: GET capabilities / grafo
+  M-->>R: Opciones y topología
+  Note over R: Explorar y configurar
+  R->>M: POST simulations + Idempotency-Key
+  M->>E: Reservar y crear instancia
+  M-->>R: ID y token privado
+  loop Mientras RUNNING
+    M->>E: Ejecutar un turno
+    E-->>M: Snapshot inmutable
+    R->>M: GET state + Bearer
+    M-->>R: Estado versionado / 304
+  end
+  R->>M: POST pause / resume / cancel
+  M-->>R: Estado coherente
 ```
 
-El servidor busca en título y descripción sin distinguir mayúsculas, calcula `pagination.total` sobre el resultado filtrado y luego pagina. `page` comienza en 1. Los clientes piden normalmente seis registros; el valor predeterminado del contrato es diez. Una búsqueda sin coincidencias y una página fuera de rango devuelven `data: []`, no un error.
-
-La web utiliza claves de consulta con página y búsqueda y desactiva reintentos automáticos. Flutter usa una familia de proveedores con página y búsqueda, también sin reintentos automáticos. El botón de reintento inicia una nueva consulta de forma explícita.
-
-## Formulario
-
-La pantalla valida título obligatorio y límites de longitud. Mientras existe una petición activa desactiva el envío. El repositorio manda `POST /v1/demo/submit` con JSON; Fastify valida el cuerpo y responde `202` con `submissionId`, `status: accepted` y mensaje. La confirmación se muestra en la pantalla. No se agrega un fixture, no se almacena una colección de envíos y no existe una consulta posterior de ese envío. Esta prevención de doble clic no constituye idempotencia del servidor.
-
-## Errores y cancelación
-
-| Origen | Resultado |
-| --- | --- |
-| Entrada inválida | HTTP 400, `VALIDATION_ERROR`, `details` por campo cuando están disponibles |
-| Registro o ruta inexistente | HTTP 404, `NOT_FOUND` |
-| Error interno | HTTP 500, `INTERNAL_ERROR`, sin stack privado en la respuesta |
-| API apagada o red inaccesible | Error del cliente `BACKEND_UNAVAILABLE` |
-| Tiempo agotado | Error del cliente `TIMEOUT` |
-| Respuesta no interpretable | Error del cliente `INVALID_RESPONSE` |
-
-La web usa `AbortController` y un temporizador configurable; la cancelación de una consulta no se presenta como timeout. Dio configura tiempos de conexión, envío y recepción. El request ID, cuando existe, permite buscar el error en los registros. Las simulaciones por encabezados requieren desarrollo explícitamente habilitado; véase [pruebas](../development/testing.md).
-
-## Configuración e identidad
-
-Vite lee las variables `VITE_API_*` al iniciar o compilar. Flutter recibe `API_*` mediante `--dart-define` al ejecutar o compilar. Cambiar esos valores requiere reiniciar o recompilar el cliente. El modo no cambia el transporte: ambos usan HTTP.
-
-Los tokens y la marca se leen durante la generación, no con una petición de red en la app. React importa los derivados CSS/TS y Flutter importa `tokens.g.dart` y `brand.g.dart`. La generación y su comprobación están descritas en [design system](../design/design-system.md).
+`/estado`, `/grafo`, `/healthz` y `/paso` conservan compatibilidad, pero el runtime legacy no se inicia por defecto y no representa las sesiones privadas. Los reportes Flutter, referencias oficiales y overlays del laboratorio se mantienen separados. No se copian reportes posteriores a una simulación histórica ni se presentan índices sintéticos como observaciones reales.

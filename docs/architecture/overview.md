@@ -1,47 +1,35 @@
 # Arquitectura
 
-El starter tiene dos clientes independientes y un servidor local. Comparte el contrato y la identidad; no comparte componentes de interfaz entre React y Flutter. Los registros son ejemplos genéricos sin reglas de negocio.
+CoroDev mantiene un monolito modular Go con React y Flutter. OpenAPI 3.0.3 genera modelos TypeScript, Dart y JSON Schema; los tokens y la identidad visual también se generan desde sus fuentes compartidas.
 
 ```mermaid
 flowchart LR
-  O[openapi.yaml] --> G[Generación de modelos]
-  G --> W[React / fetch / TanStack Query]
-  G --> M[Flutter / Dio / Riverpod]
-  O --> A[Fastify / validación Ajv]
-  W -->|HTTP| A
-  M -->|HTTP| A
-  A --> F[12 fixtures determinísticos]
-  T[tokens.json + brand.json] --> C[CSS + TypeScript + Dart]
-  C --> W
-  C --> M
+  C[OpenAPI] --> W[React /escape]
+  C --> M[Flutter]
+  W -->|HTTP privado por sesión| S[SimulationManager]
+  W -->|GET grafo y capacidades| G[Catálogo OSM offline]
+  S --> E[Instancia zombie o inundación]
+  E -->|HTTP loopback autenticado| D[Planificador y decisiones]
+  E --> O[Snapshot observable]
+  O --> S
+  M --> L[API legacy aislada]
+  W --> I[Laboratorio / reportes / referencias]
 ```
 
-## Límites por directorio
+| Módulo | Responsabilidad |
+| --- | --- |
+| `apps/web/src/services/api.ts` | Transporte HTTP y validación de respuestas; credenciales sólo por cabecera |
+| `apps/web/src/services` | Caché de consultas, controles y recuperación de sesión |
+| `apps/mobile/lib/core` | Repositorios Go y reportes ciudadanos; sin cambios de flujo en FASE 5 |
+| `services/evacuation/internal/sessions` | Autorización, idempotencia, capacidad, tiempo, lifecycle y resultados |
+| `internal/simulation`, `decision`, `coordination` | Motor determinista, amenazas y planificación observable |
+| `internal/catalog`, `graph`, `world` | Geografía offline, índices y snapshots seguros |
+| `internal/control` | Compatibilidad con rondas legacy y administración independiente |
+| `internal/floodlab`, `incidents`, `reference` | Laboratorio y procedencia externa separados de las sesiones públicas |
+| `packages/contracts`, `packages/design-tokens` | Fuentes de verdad de contratos y presentación |
 
-| Módulo | Implementación | Punto de extensión |
-| --- | --- | --- |
-| `apps/web/src/services` | Adaptador `api.ts` y consultas `queries.ts` | Cambiar transporte o consultas sin incrustar fixtures en componentes |
-| `apps/mobile/lib/core/api` | `DemoRepository`, `HttpDemoRepository` y configuración Dio | Inyectar otra implementación mediante `repositoryProvider` |
-| `services/mock-api/src` | Rutas Fastify, lectura del contrato, fixtures y error handler | Mantener entradas y salidas alineadas con OpenAPI |
-| `packages/contracts` | OpenAPI 3.0.3, ejemplos y tipos TS generados | Agregar operaciones y regenerar ambos clientes |
-| `packages/design-tokens` | Tokens y marca JSON | Cambiar identidad en origen y regenerar |
+El proceso arranca sin ejecutar turnos. La creación explícita reserva recursos antes de construir una instancia; dos sesiones no comparten posiciones, RNG, ocupación ni overlays. BASE es el perfil operativo de 300 nodos y FULL_MANTA el maestro experimental de 9.179, habilitado de forma explícita. La topología estática se consulta por separado.
 
-React mantiene consultas y mutaciones con TanStack Query; Flutter expone repositorio y consultas con Riverpod. La navegación usa React Router y GoRouter respectivamente: `/`, `/items`, `/items/:id`, `/demo` y `/diagnostics`. La web usa sidebar adaptable y Flutter navegación inferior.
+El manager vive en una sola instancia y conserva un número acotado de snapshots en RAM. El reinicio del proceso pierde las sesiones, sin recrearlas automáticamente. Los reportes ciudadanos del laboratorio conservan su persistencia y procedencia propias. La infraestructura existente de EC2/Docker/Caddy y S3/CloudFront no requiere nuevos servicios para esta fase.
 
-## Contrato y errores
-
-Fastify obtiene esquemas del YAML y valida solicitudes y respuestas. Genera un request ID por petición y lo expone en `x-request-id`; los errores incluyen el mismo identificador en el sobre. Las respuestas exitosas se validan antes de serializar para detectar datos que incumplen el contrato.
-
-Los tipos de TypeScript no validan JSON durante ejecución. El adaptador web comprueba la forma de las respuestas; los modelos Dart realizan parsing tipado. Ninguno de esos mecanismos sustituye todas las reglas de validación del servidor. Los adaptadores traducen fallos de red y timeout a errores comprensibles para la presentación.
-
-## Sustitución del backend
-
-`mock` y `remote` describen el modo activo; ambos hacen HTTP. No existe un repositorio de fixtures oculto en producción. Cambiar la URL permite consumir una API compatible, conservando un posible prefijo de stage. La configuración es pública: nunca contiene secretos.
-
-La arquitectura futura puede ser clientes → API Gateway → Lambda → servicios exigidos por el assignment. Aún no hay funciones Lambda, autenticación, base de datos ni infraestructura como código. La [guía AWS](../aws/integration.md) documenta los pasos sin desplegar recursos.
-
-## Decisiones y límites
-
-El monorepo reduce la coordinación de cambios entre contrato, API y clientes. npm administra los módulos JavaScript; Flutter conserva `pubspec.yaml` y su lockfile. No se introduce un framework de monorepo adicional. Las decisiones están en [ADR-001](../decisions/ADR-001-monorepo.md), [ADR-002](../decisions/ADR-002-contract-first.md) y [ADR-003](../decisions/ADR-003-mock-api.md).
-
-El mock confirma formularios sin persistencia. Sus IDs y fechas fijos hacen repetibles las pruebas de lectura; los request IDs son propios de cada solicitud. Android es la plataforma móvil configurada; el código usa bibliotecas multiplataforma, pero eso no equivale a haber validado iOS.
+Los detalles operativos y resultados de validación están en [FASE 5](../informe-fase5.md). Las decisiones históricas permanecen en `docs/decisions` y los informes de fases previas.

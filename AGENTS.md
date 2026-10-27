@@ -21,3 +21,11 @@ For Track A also run `npm run test:backend`, `npm run test:race`, `npm run build
 
 ## Estado autorizado posterior
 FASE 3B.1 retiró la dependencia del servidor de demostración en React y Flutter; no restaurar sus pantallas, modos o adaptadores. FASE 3B.2 autoriza catálogo multigrafo, selección React y administración autenticada entre rondas. El preset de 300 nodos conserva prioridad; no exigir al maestro experimental el mismo rendimiento ni alterar reglas para favorecerlo. No desplegar intervenciones que interrumpan la instancia sin aprobación expresa. Conservar reportes FASE 2 y los motores originales.
+
+## FASE 5 autorizada
+
+`cmd/server` prepara la API sin ejecutar turnos; `SIM_AUTOSTART=true` es inválido. `internal/sessions` coordina ejecuciones bajo demanda con estado, capacidad, caducidad y credenciales independientes. Cada instancia conserva un único escritor del motor, RNG y overlays propios; nunca publicar secretos, sleepers dormidos ni topología repetida en polling. La misma configuración, grafo y semilla deben producir el mismo resultado lógico, también al pausar/reanudar. Los tiempos HTTP no forman parte de la comparación determinista.
+
+React `/escape` explora el grafo y consulta capacidades antes del inicio explícito. Recuperar una credencial de sesión desde `sessionStorage` sólo observa su ejecución existente. El token opaco de una simulación es la única excepción al almacenamiento de credenciales en el navegador; jamás almacenar claves administrativas o de `/paso`. Flutter y `/estado` conservan su runtime legacy aislado e inactivo. El laboratorio de inundaciones mantiene su API y su almacenamiento ciudadano independientes.
+
+Los grafos públicos son BASE y FULL_MANTA; FULL_MANTA sigue experimental y depende de habilitación explícita. Los límites abarcan ejecuciones y sesiones retenidas. Ejecutar también `npm run test:contracts:simulations` y los tests de sesiones con race detector. No hacer push ni desplegar esta fase sin autorización explícita.
