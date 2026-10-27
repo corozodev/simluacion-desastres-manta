@@ -1,0 +1,54 @@
+{
+  "phase": "7",
+  "deployed_at": "2026-10-27T12:02:17.445420-05:00",
+  "region": "us-east-2",
+  "instance_id": "i-05fd56f1bcb3b1aba",
+  "release": "phase7-5979fb1",
+  "implementation_commit": "5979fb1d8c8fc953ddf30cd11323e282447e5dd6",
+  "repository": "https://github.com/corozodev/simluacion-desastres-manta",
+  "site": "https://sistemamanta.lexinnovate.com/escape",
+  "api": "https://api.sistemamanta.lexinnovate.com/healthz",
+  "tests_executed_for_deployment": false,
+  "builds_executed_for_deployment": false,
+  "method": "Previously compiled Go executable mounted read-only in existing Debian image; previously compiled React dist published to existing S3/CloudFront.",
+  "runtime": {
+    "release": "phase7-5979fb1",
+    "binary_sha256": "2c3e4627fdc38fc7898d4271e36fb353c09432e8f62425bd006dd4c03fc094f4",
+    "deployment_method": "existing precompiled executable, read-only bind mount, existing installed image; no build",
+    "backend_id": "fccf2c5870637ea38c246b00330f6470d6788a48b7b42888ee312d7b165d41a5",
+    "backend_running": true,
+    "lab_running": true,
+    "readiness_healthz": 200,
+    "readiness_lab_catalog": 200,
+    "memory_bytes": 4294967296,
+    "nano_cpus": 2000000000,
+    "persistent_mounts_preserved": true,
+    "tests_run": false,
+    "builds_run": false
+  },
+  "web": {
+    "bucket": "corodev-phase2-webbucket-eolh01x4qp4e",
+    "distribution": "E2KCXAAGSCBXQM",
+    "index_sha256": "36699a430f46d0f7f667091e027aa1a0852b0f3b5ccf6c64d0eac47d402f430a",
+    "published_index_sha256": "36699a430f46d0f7f667091e027aa1a0852b0f3b5ccf6c64d0eac47d402f430a",
+    "assets": [
+      "assets/FloodLab-BYdzSstD.js",
+      "assets/index-DujLlTLh.css",
+      "assets/index-DzDei-6a.js"
+    ],
+    "obsolete_files_deleted": true,
+    "final_invalidation_id": "IC4RI3X6GAGSLVPU24XUOH6R74",
+    "final_invalidation_completed": true
+  },
+  "removed_containers": [
+    "corodev-flood-lab-before-phase7",
+    "corodev-backend-before-phase7",
+    "corodev-flood-lab-before-phase5",
+    "corodev-backend-before-phase5"
+  ],
+  "cleanup_success": true,
+  "citizen_data_preserved": true,
+  "credentials_preserved_and_not_published": true,
+  "infrastructure_and_existing_expiry_unchanged": true,
+  "verification_scope": "Deployment readiness endpoints and artifact digests only; no simulation started, no test suite, no benchmark, no build."
+}
