@@ -55,7 +55,8 @@
     "evaluate": "node tools/scripts/go.mjs run ./cmd/evaluate",
     "graph:generate:v1": "python3 tools/geo/import_manta.py",
     "graph:audit": "python3 tools/geo/audit_graph.py",
-    "test:visualization:browser": "node tools/qa/check_visualization_browser.mjs"
+    "test:visualization:browser": "node tools/qa/check_visualization_browser.mjs",
+    "compare:agents": "node tools/scripts/go.mjs run ./cmd/compare"
   },
   "devDependencies": {
     "@apidevtools/swagger-parser": "12.1.0",

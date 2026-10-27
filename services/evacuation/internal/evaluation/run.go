@@ -29,28 +29,31 @@ type ServerTimings struct {
 	Handler  diagnostics.Timing `json:"handler"`
 }
 type Result struct {
-	Experiment         string                   `json:"experiment"`
-	Strategy           string                   `json:"strategy"`
-	Scenario           string                   `json:"scenario"`
-	Seed               int64                    `json:"seed"`
-	GraphVersion       string                   `json:"graph_version"`
-	Nodes              int                      `json:"nodes"`
-	Edges              int                      `json:"edges"`
-	InitialStateSHA256 string                   `json:"initial_state_sha256"`
-	GraphSHA256        string                   `json:"graph_sha256"`
-	Config             simulation.Config        `json:"config"`
-	Metrics            world.Metrics            `json:"metrics"`
-	EvacuatedRatio     float64                  `json:"evacuated_ratio"`
-	AliveRatio         float64                  `json:"alive_ratio"`
-	BittenRatio        float64                  `json:"bitten_ratio"`
-	ElapsedMS          float64                  `json:"elapsed_ms"`
-	Diagnostics        diagnostics.Report       `json:"diagnostics"`
-	ServerTimings      ServerTimings            `json:"server_timings"`
-	Remapping          []Remapping              `json:"remapping,omitempty"`
-	PredictionAudit    *PredictionAudit         `json:"prediction_audit,omitempty"`
-	EngineStats        *decision.EngineStats    `json:"engine_stats,omitempty"`
-	CoordinationStats  *coordination.Statistics `json:"coordination_stats,omitempty"`
-	AlgorithmOptions   *decision.Options        `json:"algorithm_options,omitempty"`
+	LogicalSHA256      string                    `json:"logical_sha256,omitempty"`
+	FleetMetrics       *world.RescueFleetMetrics `json:"fleet_metrics,omitempty"`
+	ProbabilityAudit   *ProbabilityAudit         `json:"probability_audit,omitempty"`
+	Experiment         string                    `json:"experiment"`
+	Strategy           string                    `json:"strategy"`
+	Scenario           string                    `json:"scenario"`
+	Seed               int64                     `json:"seed"`
+	GraphVersion       string                    `json:"graph_version"`
+	Nodes              int                       `json:"nodes"`
+	Edges              int                       `json:"edges"`
+	InitialStateSHA256 string                    `json:"initial_state_sha256"`
+	GraphSHA256        string                    `json:"graph_sha256"`
+	Config             simulation.Config         `json:"config"`
+	Metrics            world.Metrics             `json:"metrics"`
+	EvacuatedRatio     float64                   `json:"evacuated_ratio"`
+	AliveRatio         float64                   `json:"alive_ratio"`
+	BittenRatio        float64                   `json:"bitten_ratio"`
+	ElapsedMS          float64                   `json:"elapsed_ms"`
+	Diagnostics        diagnostics.Report        `json:"diagnostics"`
+	ServerTimings      ServerTimings             `json:"server_timings"`
+	Remapping          []Remapping               `json:"remapping,omitempty"`
+	PredictionAudit    *PredictionAudit          `json:"prediction_audit,omitempty"`
+	EngineStats        *decision.EngineStats     `json:"engine_stats,omitempty"`
+	CoordinationStats  *coordination.Statistics  `json:"coordination_stats,omitempty"`
+	AlgorithmOptions   *decision.Options         `json:"algorithm_options,omitempty"`
 }
 
 // FalsePositiveCandidates counts possible next-turn runner nodes not occupied
@@ -85,6 +88,12 @@ func Capture(g *world.Graph, cfg simulation.Config) (diagnostics.Report, error) 
 }
 
 func Run(ctx context.Context, g *world.Graph, cfg simulation.Config, experiment, strategy string, engine world.DecisionEngine, planner world.TurnPlanner) (Result, error) {
+	return RunWithInterval(ctx, g, cfg, experiment, strategy, engine, planner, 0)
+}
+
+// RunWithInterval distinguishes accelerated actual HTTP from nominal two-second
+// pacing. Both modes execute the same single-writer turns and authenticated API.
+func RunWithInterval(ctx context.Context, g *world.Graph, cfg simulation.Config, experiment, strategy string, engine world.DecisionEngine, planner world.TurnPlanner, interval time.Duration) (Result, error) {
 	var mu sync.Mutex
 	var snapshotTimes, decisionTimes, handlerTimes []time.Duration
 	observe := func(t httpapi.RequestTiming) {
@@ -109,14 +118,24 @@ func Run(ctx context.Context, g *world.Graph, cfg simulation.Config, experiment,
 	started := time.Now()
 	predictor := decision.NewRunnerPredictor(1)
 	audit := PredictionAudit{}
+	probabilityAudit := ProbabilityAudit{}
 	var runErr error
+	logicalDigest := sha256.New()
 	for turn := 0; turn < cfg.Turns; turn++ {
+		turnStarted := time.Now()
 		before := app.Simulator.Snapshot()
 		prediction := predictor.Predict(ctx, before)
+		probabilities := predictor.Probabilities(ctx, before)
 		if runErr = app.Simulator.Step(ctx); runErr != nil {
 			break
 		}
 		after := app.Simulator.Snapshot()
+		logical := after
+		logical.Metrics.HTTPP50MS, logical.Metrics.HTTPP95MS, logical.Metrics.HTTPP99MS = 0, 0, 0
+		// Encoder sees only observable DTO fields; Graph/Scenario are excluded by
+		// their JSON tags. Hash every tick, including fleet paths and public events.
+		_ = json.NewEncoder(logicalDigest).Encode(logical)
+		probabilityAudit.Observe(probabilities, after)
 		actual := map[string]bool{}
 		for _, z := range after.Zombies {
 			if z.Type == world.Runner {
@@ -138,6 +157,18 @@ func Run(ctx context.Context, g *world.Graph, cfg simulation.Config, experiment,
 				audit.FalsePositiveCandidates++
 			}
 		}
+		if remaining := interval - time.Since(turnStarted); remaining > 0 {
+			timer := time.NewTimer(remaining)
+			select {
+			case <-ctx.Done():
+				timer.Stop()
+				runErr = ctx.Err()
+			case <-timer.C:
+			}
+			if runErr != nil {
+				break
+			}
+		}
 	}
 	elapsed := time.Since(started)
 	final := app.Simulator.Snapshot()
@@ -157,6 +188,9 @@ func Run(ctx context.Context, g *world.Graph, cfg simulation.Config, experiment,
 		count = 1
 	}
 	result := Result{Experiment: experiment, Strategy: strategy, Scenario: cfg.Name, Seed: cfg.Seed, GraphVersion: g.Version, Nodes: len(g.Nodes), Edges: len(g.Edges), GraphSHA256: hash(g), InitialStateSHA256: hash(struct{ Survivors, Zombies []diagnostics.Spawn }{initial.InitialSurvivors, initial.InitialZombies}), Config: cfg, Metrics: final.Metrics, EvacuatedRatio: float64(final.Metrics.Evacuated) / count, AliveRatio: float64(final.Metrics.Evacuated+final.Metrics.Active) / count, BittenRatio: float64(final.Metrics.Bitten) / count, ElapsedMS: float64(elapsed) / float64(time.Millisecond), Diagnostics: report, ServerTimings: timings, PredictionAudit: &audit}
+	result.LogicalSHA256 = hex.EncodeToString(logicalDigest.Sum(nil))
+	result.FleetMetrics = final.FleetMetrics
+	result.ProbabilityAudit = &probabilityAudit
 	if e, ok := engine.(*decision.DeterministicEngine); ok {
 		stats := e.Stats()
 		result.EngineStats = &stats
