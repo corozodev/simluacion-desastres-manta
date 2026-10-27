@@ -31,6 +31,7 @@ func run() error {
 	referenceCache := flag.String("reference-cache", "private/reference.json", "validated official cache; missing/corrupt cache never blocks synthetic simulation")
 	referenceOnline := flag.Bool("reference-online", false, "opt in to asynchronous official provider refresh")
 	referenceBundle := flag.String("reference-bundle", "", "bundled verified snapshot, default data-dir/reference/manta-official.json; a missing file leaves synthetic mode available")
+	operatorSession := flag.String("operator-session-url", "", "reuse the private production operator session instead of automatic local authorization")
 	flag.Parse()
 	host, _, err := net.SplitHostPort(*listen)
 	if err != nil {
@@ -42,6 +43,10 @@ func run() error {
 	}
 	m, err := floodlab.New(*dataDir, *scenarioDir, strings.Split(*origin, ","))
 	if err != nil {
+		return err
+	}
+	if err = m.ConfigureOperatorSession(*operatorSession); err != nil {
+		_ = m.Close()
 		return err
 	}
 	master, err := m.Graph("full", "")

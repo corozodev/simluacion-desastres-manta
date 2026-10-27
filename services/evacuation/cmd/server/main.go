@@ -8,6 +8,8 @@ import (
 	"math"
 	"net"
 	"net/http"
+	"net/http/httputil"
+	"net/url"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -133,7 +135,24 @@ func run(logger *slog.Logger) error {
 	if err != nil {
 		return err
 	}
-	server := &http.Server{Handler: m, ReadHeaderTimeout: 2 * time.Second, ReadTimeout: 2 * time.Second, WriteTimeout: 15 * time.Second, IdleTimeout: 30 * time.Second, MaxHeaderBytes: 16 << 10}
+	var handler http.Handler = m
+	if endpoint := os.Getenv("FLOOD_LAB_UPSTREAM"); endpoint != "" {
+		target, e := url.Parse(endpoint)
+		if e != nil || target.Scheme != "http" || target.Host != "127.0.0.1:8082" || target.User != nil || target.RawQuery != "" || target.Fragment != "" || target.Path != "" {
+			return errors.New("FLOOD_LAB_UPSTREAM must be http://127.0.0.1:8082")
+		}
+		proxy := httputil.NewSingleHostReverseProxy(target)
+		director := proxy.Director
+		proxy.Director = func(r *http.Request) { director(r); r.Host = target.Host }
+		handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if strings.HasPrefix(r.URL.Path, "/lab/") || r.URL.Path == "/v1/incidents" || strings.HasPrefix(r.URL.Path, "/v1/incidents/") || strings.HasPrefix(r.URL.Path, "/v1/reference/") {
+				proxy.ServeHTTP(w, r)
+				return
+			}
+			m.ServeHTTP(w, r)
+		})
+	}
+	server := &http.Server{Handler: handler, ReadHeaderTimeout: 2 * time.Second, ReadTimeout: 2 * time.Second, WriteTimeout: 15 * time.Second, IdleTimeout: 30 * time.Second, MaxHeaderBytes: 16 << 10}
 	done := make(chan error, 1)
 	go func() { done <- server.Serve(listener) }()
 	actualHost, port, _ := net.SplitHostPort(listener.Addr().String())

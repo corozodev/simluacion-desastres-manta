@@ -10,4 +10,5 @@
 **/*secret*
 **/*credentials*
 services/evacuation/reports/
+services/evacuation/private/
 services/evacuation/**/testdata/

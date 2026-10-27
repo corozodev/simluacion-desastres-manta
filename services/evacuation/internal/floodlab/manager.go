@@ -35,24 +35,25 @@ type execution struct {
 }
 
 type Manager struct {
-	mu               sync.RWMutex
-	opMu             sync.Mutex // Step and transitions serialize; GET only reads cached state.
-	state            State
-	current          *execution
-	graphs           map[string]*world.Graph
-	catalog          Catalog
-	origins          []string
-	key              string
-	ctx              context.Context
-	cancel           context.CancelFunc
-	wake             chan struct{}
-	wg               sync.WaitGroup
-	closed           bool
-	compareCancel    context.CancelFunc
-	compareDone      chan struct{}
-	sessions         localSessions
-	incidentStore    *incidents.Store
-	referenceService *reference.Service
+	mu                 sync.RWMutex
+	opMu               sync.Mutex // Step and transitions serialize; GET only reads cached state.
+	state              State
+	current            *execution
+	graphs             map[string]*world.Graph
+	catalog            Catalog
+	origins            []string
+	key                string
+	ctx                context.Context
+	cancel             context.CancelFunc
+	wake               chan struct{}
+	wg                 sync.WaitGroup
+	closed             bool
+	compareCancel      context.CancelFunc
+	compareDone        chan struct{}
+	sessions           localSessions
+	incidentStore      *incidents.Store
+	operatorSessionURL string
+	referenceService   *reference.Service
 }
 
 func randomID() (string, error) {

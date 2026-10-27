@@ -7,11 +7,14 @@ COPY services/evacuation/internal ./internal
 COPY services/evacuation/cmd ./cmd
 COPY deploy/healthcheck/main.go /healthcheck.go
 RUN go build -mod=readonly -trimpath -ldflags="-s -w" -o /out/server ./cmd/server \
+    && go build -mod=readonly -trimpath -ldflags="-s -w" -o /out/flood-lab ./cmd/flood-lab \
     && go build -trimpath -ldflags="-s -w" -o /out/healthcheck /healthcheck.go
 
 FROM debian:bookworm-slim@sha256:7ff6ba31527b9e336162fa061746c366c4b2032f4d2cff2078bea43f78efe3f8
 WORKDIR /app
 COPY --from=build /out/server /usr/local/bin/corodev-server
+COPY --from=build /out/flood-lab /usr/local/bin/corodev-flood-lab
+COPY --from=build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 COPY --from=build /out/healthcheck /usr/local/bin/healthcheck
 COPY --chown=65532:65532 services/evacuation/data ./data
 COPY --chown=65532:65532 services/evacuation/scenarios ./scenarios

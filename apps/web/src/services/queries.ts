@@ -22,7 +22,7 @@ export function useFloodGraph(runId?: string, mode?: string) {
 }
 
 export function useFloodSession() {
-  return useQuery({ queryKey: ['flood', 'session'], queryFn: ({ signal }) => api.floodSession(signal), retry: false, staleTime: 10 * 60 * 1000 });
+  return useQuery({ queryKey: ['flood', 'session'], queryFn: ({ signal }) => api.floodSession(signal), retry: false, staleTime: 0, refetchInterval: 30000 });
 }
 
 export function useIncidents(filters: IncidentFilters = {}, enabled = true) {

@@ -67,6 +67,9 @@ func (m *Manager) allowedOrigin(value string) bool {
 }
 
 func (m *Manager) session(w http.ResponseWriter, r *http.Request) (Session, error) {
+	if m.operatorSessionURL != "" {
+		return m.operatorSession(r)
+	}
 	now := time.Now()
 	m.sessions.mu.Lock()
 	defer m.sessions.mu.Unlock()
@@ -106,6 +109,14 @@ func (m *Manager) session(w http.ResponseWriter, r *http.Request) (Session, erro
 func (m *Manager) authorized(r *http.Request) bool {
 	if !m.allowedOrigin(r.Header.Get("Origin")) {
 		return false
+	}
+	if m.operatorSessionURL != "" {
+		state, err := m.operatorSession(r)
+		if err != nil || !state.Authenticated || state.CSRFToken == "" {
+			return false
+		}
+		left, right := sha256.Sum256([]byte(state.CSRFToken)), sha256.Sum256([]byte(r.Header.Get("X-CSRF-Token")))
+		return subtle.ConstantTimeCompare(left[:], right[:]) == 1
 	}
 	cookie, err := r.Cookie("corodev_flood_lab")
 	if err != nil {
