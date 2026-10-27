@@ -68,6 +68,55 @@ PublishedView frame(String id, int version) => PublishedView(
   graphVersion: fixtureGraph().version,
 );
 void main() {
+  test('hydraulic grid validates depth, shape and spatial bounds', () {
+    Map<String, dynamic> grid() => {
+      'model': 'rainfall_runoff_2d',
+      'terrain_source': 'synthetic-coastal-basin-v1',
+      'grid': {
+        'origin': {'lat': -1.0, 'lng': -80.8},
+        'rows': 2,
+        'cols': 2,
+        'cell_size_m': 200,
+        'lat_step': .0018,
+        'lng_step': .0018,
+      },
+      'depths_m': [0, .02, .12, .35],
+      'rainfall_mm_h': 96,
+      'hydrological_time_seconds': 60,
+      'flooded_area_m2': 120000,
+      'max_depth_m': .35,
+      'mass_balance': {
+        'initial_storage_m3': 0,
+        'rainfall_m3': 19600,
+        'channel_inflow_m3': 0,
+        'sea_inflow_m3': 0,
+        'infiltration_m3': 0,
+        'drainage_m3': 0,
+        'sea_outflow_m3': 0,
+        'stored_m3': 19600,
+        'residual_m3': 0,
+      },
+    };
+    validateHydraulic(HydraulicSnapshot.fromJson(grid()));
+    for (final depths in [
+      [0, .1],
+      [0, .1, -.1, 0],
+      [0, double.nan, 0, 0],
+    ]) {
+      expect(
+        () => validateHydraulic(
+          HydraulicSnapshot.fromJson({...grid(), 'depths_m': depths}),
+        ),
+        throwsFormatException,
+      );
+    }
+    final oversized = grid();
+    (oversized['grid'] as Map<String, dynamic>)['rows'] = 4097;
+    expect(
+      () => validateHydraulic(HydraulicSnapshot.fromJson(oversized)),
+      throwsFormatException,
+    );
+  });
   test(
     'repository observes shared state with GET only and caches geography across turns',
     () async {

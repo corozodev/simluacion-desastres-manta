@@ -40,6 +40,24 @@ async function openAgents() {
 afterEach(() => { clients.splice(0).forEach(client => client.clear()); vi.useRealTimers(); vi.restoreAllMocks(); });
 
 describe('ejecutor independiente bajo demanda', () => {
+  it('prepara una duración personalizada larga, valida límites y sólo comienza al pulsar iniciar', async () => {
+    const { create } = setup();
+    await screen.findByRole('button', { name: 'Iniciar simulación' });
+    await userEvent.click(screen.getByText('Configuración avanzada'));
+    const duration = screen.getByLabelText('Turnos máximos');
+    expect(duration).toHaveAttribute('min', '30');
+    expect(duration).toHaveAttribute('max', '3000');
+    fireEvent.change(duration, { target: { value: '29' } });
+    expect(screen.getByRole('button', { name: 'Iniciar simulación' })).toBeDisabled();
+    fireEvent.change(duration, { target: { value: '3001' } });
+    expect(screen.getByRole('button', { name: 'Iniciar simulación' })).toBeDisabled();
+    await userEvent.click(screen.getByRole('button', { name: '600 turnos' }));
+    expect(duration).toHaveValue(600);
+    expect(create).not.toHaveBeenCalled();
+    await userEvent.click(screen.getByRole('button', { name: 'Iniciar simulación' }));
+    await waitFor(() => expect(create).toHaveBeenCalledWith(expect.objectContaining({ max_ticks: 600, config: expect.objectContaining({ mode: 'experimental' }) }), expect.any(String)));
+  });
+
   it('explora mapa y refugios sin crear ni observar un mundo global', async () => {
     const world = vi.spyOn(api, 'world');
     const { create } = setup();

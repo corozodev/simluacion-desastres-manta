@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 
 import '../../core/api/generated/models.dart';
 import '../../core/theme/tokens.g.dart';
-import '../../core/api/spectator_repository.dart';
 import '../../core/api/reference_repository.dart';
 
 List<GeoPoint> routeGeometry(Graph graph, Survivor survivor) {
@@ -94,7 +93,7 @@ class RouteMap extends StatefulWidget {
     this.shelters,
     this.roads = const {},
     this.shelterStates = const {},
-    this.floodZones = const [],
+    this.hydraulic,
     this.incidents = const [],
     this.onSelectAgent,
     this.onSelectShelter,
@@ -114,7 +113,7 @@ class RouteMap extends StatefulWidget {
   final List<Survivor>? agents;
   final List<Shelter>? shelters;
   final Map<String, String> roads, shelterStates;
-  final List<FloodArea> floodZones;
+  final HydraulicSnapshot? hydraulic;
   final List<Incident> incidents;
   final ValueChanged<Survivor>? onSelectAgent;
   final ValueChanged<Shelter>? onSelectShelter;
@@ -226,9 +225,7 @@ class _RouteMapState extends State<RouteMap> {
                             : const [],
                         roads: widget.showRoads ? widget.roads : const {},
                         shelterStates: widget.shelterStates,
-                        floodZones: widget.showRoads
-                            ? widget.floodZones
-                            : const [],
+                        hydraulic: widget.showRoads ? widget.hydraulic : null,
                         incidents: widget.incidents,
                         showZombies: widget.showAgents,
                         reference: widget.reference,
@@ -317,7 +314,7 @@ class _MapPainter extends CustomPainter {
     this.shelters,
     this.roads = const {},
     this.shelterStates = const {},
-    this.floodZones = const [],
+    this.hydraulic,
     this.incidents = const [],
     this.showZombies = true,
     this.reference,
@@ -330,7 +327,7 @@ class _MapPainter extends CustomPainter {
   final List<Survivor>? agents;
   final List<Shelter>? shelters;
   final Map<String, String> roads, shelterStates;
-  final List<FloodArea> floodZones;
+  final HydraulicSnapshot? hydraulic;
   final List<Incident> incidents;
   final bool showZombies;
   final ReferenceLayer? reference;
@@ -401,17 +398,29 @@ class _MapPainter extends CustomPainter {
           ..strokeWidth = .6,
       );
     }
-    for (final zone in floodZones) {
-      final center = project(zone.center);
-      final radius = zone.radiusM / 111320 * projection.scale;
-      canvas.drawCircle(
-        center,
-        radius,
-        Paint()
-          ..color = SpookyTokens.floodMedium.withValues(
-            alpha: (.08 + zone.intensity.clamp(0, 1) * .22),
-          ),
-      );
+    final water = hydraulic;
+    if (water != null) {
+      final grid = water.grid;
+      for (var i = 0; i < water.depthsM.length; i++) {
+        final depth = water.depthsM[i];
+        if (depth < .01) continue;
+        final row = i ~/ grid.cols, col = i % grid.cols;
+        final south = grid.origin.lat + row * grid.latStep;
+        final west = grid.origin.lng + col * grid.lngStep;
+        final northWest = project(
+          GeoPoint(lat: south + grid.latStep, lng: west),
+        );
+        final southEast = project(
+          GeoPoint(lat: south, lng: west + grid.lngStep),
+        );
+        canvas.drawRect(
+          Rect.fromPoints(northWest, southEast),
+          Paint()
+            ..color = SpookyTokens.floodMedium.withValues(
+              alpha: (.15 + (depth / .5).clamp(0, 1) * .5),
+            ),
+        );
+      }
     }
     for (final edge in graph.edges) {
       final paint = Paint()
@@ -606,7 +615,7 @@ class _MapPainter extends CustomPainter {
       old.agents != agents ||
       old.shelters != shelters ||
       old.roads != roads ||
-      old.floodZones != floodZones ||
+      old.hydraulic != hydraulic ||
       old.incidents != incidents ||
       old.shelterStates != shelterStates ||
       old.showZombies != showZombies ||

@@ -12,7 +12,7 @@ vi.mock('../features/flood/IncidentPanel', () => ({ IncidentPanel: () => null })
 vi.mock('../features/flood/ReferencePanel', () => ({ ReferencePanel: () => null }));
 const graph = JSON.parse(readFileSync('../../packages/contracts/examples/graph.json', 'utf8')) as Graph;
 const shelters = graph.shelters.map(shelter => { const node = graph.nodes.find(node => node.id === shelter.node_id)!; return { id: shelter.id, label: shelter.id, capacity: shelter.capacity, lat: node.lat, lng: node.lng }; });
-const config: LabRunConfig = { mode: 'competition', seed: 42, rainfall_profile: 'storm', rainfall_intensity: .8, simulation_duration: 150, evacuation_behavior: 'preventive', agents: 1, interval_ms: 500, shelters };
+const config: LabRunConfig = { mode: 'competition', seed: 42, rainfall_profile: 'storm', hydraulic_model: 'rainfall_runoff_2d', rainfall_intensity: .8, simulation_duration: 150, evacuation_behavior: 'preventive', agents: 1, interval_ms: 500, shelters };
 const metrics = { total_agents: 1, evacuated_agents: 0, isolated_agents: 0, waiting_agents: 1, average_evacuation_time: 0, blocked_edges: 0, caution_edges: 0, shelters_at_capacity: 0, reroute_count: 0, simulation_total_duration: 0 };
 const state: LabState = { run_id: 'initial-run', state: 'idle', mode: 'competition', graph_version: graph.version, config, shelters: graph.shelters, origins: [], timeline: [], scenario: { scenario_type: 'urban_flood', simulation_step: 0, world_version: 0, graph_version: graph.version, simulation_time: 0, simulation_duration: 150, time_step: 1, rainfall: 0, flood_zones: [], road_conditions: [], shelter_conditions: [], agents: [], evacuation_metrics: metrics, performance: { simulation_step_latency_ms: 0, simulation_total_duration_ms: 0 }, data_provenance: { graph_source: graph.source, model: 'synthetic-test', elevation_source: 'unavailable', disclaimer: 'Sintético' } } };
 const catalog: LabCatalog = { modes: [{ id: 'competition', name: 'Base', nodes: graph.nodes.length, edges: graph.edges.length, coverage: 'Datos de prueba', graph_version: graph.version, source: graph.source, experimental: false, enabled: true, preview_available: true, disabled_reason: '' }], presets: [], default_config: config, original_shelters: shelters, max_snap_distance_m: 500, disclaimer: 'Sintético' };
@@ -42,6 +42,42 @@ function openConfiguration() {
 }
 afterEach(() => { vi.restoreAllMocks(); localStorage.clear(); sessionStorage.clear(); });
 describe('acceso directo al laboratorio', () => {
+  it('prepara hidráulica compuesta y duración sin iniciar al configurar y conserva los perfiles existentes', async () => {
+    const { start } = setup();
+    await screen.findByRole('button', { name: 'Iniciar tormenta' });
+    openConfiguration();
+    const model = screen.getByLabelText('Algoritmo hidráulico');
+    expect(model.querySelectorAll('option')).toHaveLength(2);
+    fireEvent.change(model, { target: { value: 'compound_flood_2d' } });
+    expect(screen.getByLabelText('Perfil de lluvia').querySelectorAll('option')).toHaveLength(3);
+    expect(screen.getByLabelText('Comportamiento de evacuación').querySelectorAll('option')).toHaveLength(3);
+    fireEvent.change(screen.getByLabelText('Perfil de lluvia'), { target: { value: 'pulse' } });
+    fireEvent.change(screen.getByLabelText('Comportamiento de evacuación'), { target: { value: 'adaptive' } });
+    fireEvent.click(screen.getByText('Configuración avanzada', { selector: 'summary' }));
+    const duration = screen.getByLabelText('Duración de la simulación');
+    fireEvent.change(duration, { target: { value: '3001' } });
+    expect(screen.getByRole('button', { name: 'Iniciar tormenta' })).toBeDisabled();
+    fireEvent.click(screen.getByRole('button', { name: '1200 turnos' }));
+    fireEvent.change(screen.getByLabelText('Lluvia antecedente (horas)'), { target: { value: '6' } });
+    fireEvent.change(screen.getByLabelText('Saturación inicial (0–1)'), { target: { value: '.8' } });
+    fireEvent.change(screen.getByLabelText('Nivel marítimo experimental (m)'), { target: { value: '1.5' } });
+    expect(start).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'Iniciar tormenta' }));
+    await waitFor(() => expect(start).toHaveBeenCalledWith(expect.objectContaining({ hydraulic_model: 'compound_flood_2d', simulation_duration: 1200, rainfall_profile: 'pulse', evacuation_behavior: 'adaptive', hydrology: expect.objectContaining({ antecedent_rain_hours: 6, initial_saturation: .8, sea_level_m: 1.5 }) }), state.run_id));
+  });
+
+  it('rechaza umbrales hidráulicos incoherentes antes de iniciar una tormenta', async () => {
+    const { start } = setup();
+    await screen.findByRole('button', { name: 'Iniciar tormenta' });
+    openConfiguration();
+    fireEvent.click(screen.getByText('Configuración avanzada', { selector: 'summary' }));
+    fireEvent.change(screen.getByLabelText('Profundidad de bloqueo vial (m)'), { target: { value: '.05' } });
+    expect(screen.getByRole('button', { name: 'Iniciar tormenta' })).toBeDisabled();
+    expect(start).not.toHaveBeenCalled();
+    fireEvent.change(screen.getByLabelText('Profundidad de bloqueo vial (m)'), { target: { value: '.3' } });
+    expect(screen.getByRole('button', { name: 'Iniciar tormenta' })).toBeEnabled();
+  });
+
   it('inicia directamente sin operador, sesión previa ni credenciales automáticas', async () => {
     const { session, start, login } = setup();
     const storm = await screen.findByRole('button', { name: 'Iniciar tormenta' });

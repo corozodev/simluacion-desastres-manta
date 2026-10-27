@@ -173,6 +173,29 @@ function isEvacuationMetrics(value: unknown): value is EvacuationMetrics {
     && Number(value.evacuated_agents) + Number(value.isolated_agents) + Number(value.waiting_agents) <= Number(value.total_agents);
 }
 
+function isHydraulic(value: unknown): boolean {
+  if (!isObject(value) || !isObject(value.grid) || !isObject(value.mass_balance)) return false;
+  const grid = value.grid, mass = value.mass_balance;
+  const count = Number(grid.rows) * Number(grid.cols);
+  return ['rainfall_runoff_2d', 'compound_flood_2d'].includes(String(value.model)) && typeof value.terrain_source === 'string'
+    && isPoint(grid.origin) && isNatural(grid.rows) && Number(grid.rows) > 0 && isNatural(grid.cols) && Number(grid.cols) > 0
+    && count <= 4096 && isObject(grid.origin) && Number(grid.origin.lat) + Number(grid.lat_step) * Number(grid.rows) <= 90 && Number(grid.origin.lng) + Number(grid.lng_step) * Number(grid.cols) <= 180
+    && ['cell_size_m', 'lat_step', 'lng_step'].every(key => isNumber(grid[key]) && Number(grid[key]) > 0)
+    && Array.isArray(value.depths_m) && value.depths_m.length === count && value.depths_m.every(depth => isNumber(depth) && depth >= 0)
+    && ['flooded_area_m2', 'max_depth_m', 'rainfall_mm_h', 'hydrological_time_seconds'].every(key => isNumber(value[key]) && Number(value[key]) >= 0)
+    && Number(value.rainfall_mm_h) <= 120
+    && ['initial_storage_m3', 'rainfall_m3', 'channel_inflow_m3', 'sea_inflow_m3', 'infiltration_m3', 'drainage_m3', 'sea_outflow_m3', 'stored_m3'].every(key => isNumber(mass[key]) && Number(mass[key]) >= 0)
+    && isNumber(mass.residual_m3);
+}
+
+function isHydrologyConfig(value: unknown): boolean {
+  if (!isObject(value)) return false;
+  const ranges: Record<string, [number, number]> = { seconds_per_turn: [1, 300], antecedent_rain_hours: [0, 24], initial_saturation: [0, 1], initial_water_depth_m: [0, 2], sea_level_m: [-2, 5], channel_inflow_m3_s: [0, 50], cell_size_m: [50, 1000], infiltration_mm_h: [0, 100], drainage_mm_h: [0, 100], caution_depth_m: [.01, 1], blocked_depth_m: [.02, 2], hysteresis_m: [0, 1] };
+  return Object.entries(value).every(([key, parameter]) => ranges[key] && isNumber(parameter) && parameter >= ranges[key][0] && parameter <= ranges[key][1])
+    && Number(value.blocked_depth_m ?? .3) > Number(value.caution_depth_m ?? .1)
+    && Number(value.hysteresis_m ?? .03) < Number(value.caution_depth_m ?? .1);
+}
+
 function isScenario(value: unknown): value is ScenarioSnapshot {
   if (!isObject(value) || !isObject(value.performance) || !isObject(value.data_provenance)) return false;
   const performance = value.performance, provenance = value.data_provenance;
@@ -180,12 +203,14 @@ function isScenario(value: unknown): value is ScenarioSnapshot {
     && typeof value.graph_version === 'string'
     && ['simulation_time', 'simulation_duration', 'time_step', 'rainfall'].every(key => isNumber(value[key]) && Number(value[key]) >= 0)
     && Number(value.rainfall) <= 1 && Number(value.time_step) > 0
+    && (value.hydraulic === undefined || isHydraulic(value.hydraulic))
     && Array.isArray(value.flood_zones) && value.flood_zones.length <= 32 && value.flood_zones.every(zone => isObject(zone)
       && typeof zone.id === 'string' && isPoint(zone.center) && isNumber(zone.radius_m) && zone.radius_m > 0
       && isNumber(zone.intensity) && zone.intensity >= 0 && zone.intensity <= 1)
     && Array.isArray(value.road_conditions) && value.road_conditions.length <= 20000 && value.road_conditions.every(road => isObject(road)
       && typeof road.edge_id === 'string' && ['passable', 'caution', 'blocked'].includes(String(road.state))
       && typeof road.risk_source === 'string' && isNumber(road.risk_score) && road.risk_score >= 0 && road.risk_score <= 1
+      && (road.depth_m === undefined || isNumber(road.depth_m) && road.depth_m >= 0)
       && isNatural(road.updated_at_simulation_step) && isNumber(road.cost_multiplier) && road.cost_multiplier >= 1)
     && Array.isArray(value.shelter_conditions) && value.shelter_conditions.length >= 1 && value.shelter_conditions.length <= 4 && value.shelter_conditions.every(shelter => isObject(shelter)
       && typeof shelter.shelter_id === 'string' && ['available', 'full', 'exposed', 'inaccessible'].includes(String(shelter.state))
@@ -196,6 +221,7 @@ function isScenario(value: unknown): value is ScenarioSnapshot {
       && ['preventive', 'late', 'adaptive'].includes(String(agent.behavior)) && isStrings(agent.planned_route)
       && (agent.evacuation_time === undefined || isNumber(agent.evacuation_time) && agent.evacuation_time >= 0))
     && isEvacuationMetrics(value.evacuation_metrics) && value.evacuation_metrics.total_agents === value.agents.length
+    && ['hydraulic_step_latency_ms', 'evacuation_step_latency_ms'].every(key => performance[key] === undefined || isNumber(performance[key]) && Number(performance[key]) >= 0)
     && ['simulation_step_latency_ms', 'simulation_total_duration_ms'].every(key => isNumber(performance[key]) && Number(performance[key]) >= 0)
     && ['graph_source', 'model', 'elevation_source', 'disclaimer'].every(key => typeof provenance[key] === 'string');
 }
@@ -210,7 +236,9 @@ function isLabConfig(value: unknown): value is LabRunConfig {
   return isObject(value) && ['competition', 'full'].includes(String(value.mode)) && Number.isSafeInteger(value.seed)
     && ['storm', 'constant', 'pulse'].includes(String(value.rainfall_profile))
     && isNumber(value.rainfall_intensity) && value.rainfall_intensity >= 0 && value.rainfall_intensity <= 1
-    && isNumber(value.simulation_duration) && value.simulation_duration >= 1 && value.simulation_duration <= 10000
+    && isNatural(value.simulation_duration) && value.simulation_duration >= 30 && value.simulation_duration <= 3000
+    && (value.hydraulic_model === undefined || ['rainfall_runoff_2d', 'compound_flood_2d'].includes(String(value.hydraulic_model)))
+    && (value.hydrology === undefined || isHydrologyConfig(value.hydrology))
     && ['preventive', 'late', 'adaptive'].includes(String(value.evacuation_behavior))
     && isNatural(value.agents) && value.agents >= 1 && value.agents <= 200
     && isNatural(value.interval_ms) && value.interval_ms <= 5000
@@ -238,8 +266,9 @@ function isLabComparison(value: unknown): value is LabComparison {
 
 function isLabState(value: unknown): value is LabState {
   return isObject(value) && typeof value.run_id === 'string' && value.run_id.length > 0
-    && ['idle', 'running', 'paused', 'finished', 'failed'].includes(String(value.state)) && isLabConfig(value.config)
+    && ['idle', 'running', 'paused', 'finished', 'failed', 'cancelled'].includes(String(value.state)) && isLabConfig(value.config)
     && value.mode === value.config.mode && typeof value.graph_version === 'string'
+    && (value.runtime_elapsed_ms === undefined || isNumber(value.runtime_elapsed_ms) && value.runtime_elapsed_ms >= 0)
     && isScenario(value.scenario) && value.graph_version === value.scenario.graph_version
     && Array.isArray(value.shelters) && value.shelters.length === 4 && value.shelters.every(isShelter)
     && Array.isArray(value.origins) && value.origins.length === value.config.agents && value.origins.every(origin => isObject(origin)
@@ -328,8 +357,13 @@ function incidentRequest<T>(path: string, validate: (value: unknown) => value is
   return request(path, validate, init, signal, config.incidentsApiBaseUrl);
 }
 
+function isDurationLimits(value: unknown): boolean {
+  return isObject(value) && ['min_ticks', 'max_ticks', 'default_ticks'].every(key => isNatural(value[key]) && Number(value[key]) > 0)
+    && Number(value.min_ticks) <= Number(value.default_ticks) && Number(value.default_ticks) <= Number(value.max_ticks);
+}
+
 function isLabCatalog(value: unknown): value is LabCatalog {
-  return isObject(value) && isLabConfig(value.default_config) && Array.isArray(value.modes) && value.modes.length === 2
+  return isObject(value) && isLabConfig(value.default_config) && (value.duration_limits === undefined || isDurationLimits(value.duration_limits)) && Array.isArray(value.modes) && value.modes.length === 2
     && value.modes.every(mode => isObject(mode) && ['competition', 'full'].includes(String(mode.id))
       && ['name', 'graph_version', 'source', 'coverage', 'disabled_reason'].every(key => typeof mode[key] === 'string')
       && isNatural(mode.nodes) && isNatural(mode.edges) && ['enabled', 'experimental', 'preview_available'].every(key => typeof mode[key] === 'boolean'))
@@ -438,6 +472,8 @@ function isCapabilities(value: unknown): value is SimulationCapabilities {
     && ['zombie_outbreak', 'urban_flood'].includes(String(defaults.scenario))
     && ['BASE', 'FULL_MANTA'].includes(String(defaults.graph_profile)) && Number.isSafeInteger(defaults.seed)
     && ['max_ticks', 'tick_interval_ms', 'survivors'].every(key => isNatural(defaults[key])) && typeof defaults.round === 'string'
+    && (limits.min_ticks === undefined || isNatural(limits.min_ticks) && limits.min_ticks > 0 && limits.min_ticks <= Number(limits.max_ticks))
+    && (limits.official_max_ticks === undefined || limits.official_max_ticks === 150)
     && ['max_active', 'max_full_active', 'max_retained', 'max_memory_bytes', 'min_tick_interval_ms', 'max_tick_interval_ms', 'max_ticks', 'max_survivors'].every(key => isNatural(limits[key]))
     && Array.isArray(value.rounds) && value.rounds.every(round => isObject(round) && typeof round.id === 'string' && typeof round.name === 'string' && isNatural(round.survivors) && isNatural(round.turns));
 }

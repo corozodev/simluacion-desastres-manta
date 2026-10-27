@@ -584,9 +584,7 @@ class _ScenarioPaneState extends State<_ScenarioPane> {
                       roads: widget.citizen
                           ? const {}
                           : view?.roads ?? const {},
-                      floodZones: widget.citizen
-                          ? const []
-                          : view?.floodZones ?? const [],
+                      hydraulic: widget.citizen ? null : view?.hydraulic,
                       incidents: widget.citizen ? widget.reports : const [],
                       showAgents: showAgents,
                       showShelters: showShelters,

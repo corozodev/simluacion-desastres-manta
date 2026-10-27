@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Graph, LabComparison, LabRunConfig, LabState, ScenarioSnapshot } from '@corodev/contracts';
 import { api } from '../services/api';
 import { config, readConfig } from '../lib/config';
+import { hydraulicFixture } from './hydraulic-fixture';
 
 const graph = JSON.parse(readFileSync('../../packages/contracts/examples/graph.json', 'utf8')) as Graph;
 const originalConfig = { ...config };
@@ -10,7 +11,7 @@ const candidates = graph.shelters.map(shelter => {
   const node = graph.nodes.find(node => node.id === shelter.node_id)!;
   return { id: shelter.id, label: `Candidato ${shelter.id}`, lat: node.lat, lng: node.lng, capacity: shelter.capacity };
 });
-const runConfig: LabRunConfig = { mode: 'competition', seed: 42, rainfall_profile: 'storm', rainfall_intensity: .8, simulation_duration: 150, evacuation_behavior: 'preventive', agents: 1, interval_ms: 500, shelters: candidates };
+const runConfig: LabRunConfig = { mode: 'competition', seed: 42, rainfall_profile: 'storm', hydraulic_model: 'rainfall_runoff_2d', rainfall_intensity: .8, simulation_duration: 150, evacuation_behavior: 'preventive', agents: 1, interval_ms: 500, shelters: candidates };
 const metrics = { total_agents: 1, evacuated_agents: 0, isolated_agents: 0, waiting_agents: 1, average_evacuation_time: 0, blocked_edges: 1, caution_edges: 0, shelters_at_capacity: 0, reroute_count: 0, simulation_total_duration: 3 };
 const scenario: ScenarioSnapshot = {
   scenario_type: 'urban_flood', simulation_step: 3, world_version: 7, graph_version: graph.version,
@@ -35,6 +36,22 @@ function comparison(): LabComparison {
 afterEach(() => { vi.restoreAllMocks(); Object.assign(config, originalConfig); });
 
 describe('contrato HTTP del laboratorio de inundación', () => {
+  it('valida profundidad, dimensiones y balance antes de aceptar una malla hidráulica', async () => {
+    const fetch = vi.spyOn(globalThis, 'fetch');
+    const hydraulic = hydraulicFixture();
+    fetch.mockResolvedValueOnce(response({ ...state, scenario: { ...scenario, hydraulic } }));
+    await expect(api.floodState()).resolves.toHaveProperty('scenario.hydraulic.mass_balance.residual_m3', 0);
+    for (const invalid of [
+      { ...hydraulic, depths_m: [-.01, 0, 0, 0] },
+      { ...hydraulic, depths_m: [0] },
+      { ...hydraulic, grid: { ...hydraulic.grid, rows: 4096, cols: 4096 } },
+      { ...hydraulic, mass_balance: { ...hydraulic.mass_balance, stored_m3: -1 } },
+    ]) {
+      fetch.mockResolvedValueOnce(response({ ...state, scenario: { ...scenario, hydraulic: invalid } }));
+      await expect(api.floodState()).rejects.toMatchObject({ code: 'INVALID_RESPONSE' });
+    }
+  });
+
   it('usa una URL propia para flood sin cambiar el origen zombie ni enviar claves de movimiento', async () => {
     config.worldApiBaseUrl = 'http://127.0.0.1:8080';
     config.floodApiBaseUrl = 'http://127.0.0.1:8082';

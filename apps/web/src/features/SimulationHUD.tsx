@@ -5,7 +5,7 @@ import './simulation-hud.css';
 export function SimulationHUD({ label = 'Estado de simulación', status, tick, maxTicks, elapsed, children, progressLabel = 'Turno' }: { label?: string; status: string; tick?: number; maxTicks?: number; elapsed?: string; progressLabel?: string; children?: ReactNode }) {
   const progress = tick !== undefined && maxTicks !== undefined && maxTicks > 0;
   return <div className="simulation-hud" role="group" aria-label={label}>
-    <div className="hud-state"><strong>{status}</strong>{progress && <><span>{progressLabel} {tick}/{maxTicks}{elapsed ? ` · ${elapsed}` : ''}</span><progress aria-label="Progreso de simulación" value={tick} max={maxTicks} /></>}</div>
+    <div className="hud-state"><strong>{status}</strong>{progress && <><span>{progressLabel} {tick}/{maxTicks} · {Math.min(100, Math.max(0, tick! / maxTicks! * 100)).toFixed(1)}%{elapsed ? ` · ${elapsed}` : ''}</span><progress aria-label="Progreso de simulación" value={tick} max={maxTicks} /></>}</div>
     <div className="hud-actions">{children}</div>
   </div>;
 }

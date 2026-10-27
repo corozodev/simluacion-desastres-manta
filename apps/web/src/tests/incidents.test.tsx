@@ -24,7 +24,7 @@ const graph: Graph = {
 const metrics = { total_agents: 1, evacuated_agents: 0, isolated_agents: 0, waiting_agents: 0, average_evacuation_time: 0, blocked_edges: 0, caution_edges: 0, shelters_at_capacity: 0, reroute_count: 0, simulation_total_duration: 1 };
 const backend: LabState = {
   run_id: 'test-run', state: 'paused', mode: 'competition', graph_version: graph.version,
-  config: { mode: 'competition', seed: 42, rainfall_profile: 'constant', rainfall_intensity: 0, simulation_duration: 80, evacuation_behavior: 'preventive', agents: 1, interval_ms: 500, shelters: [] },
+  config: { mode: 'competition', seed: 42, rainfall_profile: 'constant', hydraulic_model: 'rainfall_runoff_2d', rainfall_intensity: 0, simulation_duration: 80, evacuation_behavior: 'preventive', agents: 1, interval_ms: 500, shelters: [] },
   scenario: { scenario_type: 'urban_flood', simulation_step: 1, world_version: 3, graph_version: graph.version, simulation_time: 1, simulation_duration: 80, time_step: 1, rainfall: 0, flood_zones: [], road_conditions: [], shelter_conditions: [], agents: [{ id: 'S1', current_node: 'A', state: 'moving', behavior: 'preventive', target_shelter_id: 'R1', planned_route: ['A', 'B'] }], evacuation_metrics: metrics, performance: { simulation_step_latency_ms: 1, simulation_total_duration_ms: 1 }, data_provenance: { graph_source: graph.source, model: 'test', elevation_source: 'unavailable', disclaimer: 'Synthetic test' } },
   shelters: [], timeline: [], origins: [], incident_applications: [],
 };

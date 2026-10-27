@@ -16,6 +16,7 @@ import { AgentShelterPanel } from './maps/AgentShelterPanel';
 import { MetricsOverlay, SimulationHUD } from './SimulationHUD';
 import { AgentPolicies, defaultAgentConfiguration, policyConfiguration, algorithmLabels, zombiePolicyLabels } from './AgentPolicies';
 import { ComparisonLab } from './ComparisonLab';
+import { DurationControl } from './DurationControl';
 import './flood/flood.css';
 
 const statusLabels = { CREATED: 'Preparando', RUNNING: 'En ejecución', PAUSED: 'Pausada', COMPLETED: 'Finalizada', CANCELLED: 'Cancelada', FAILED: 'Error del motor' };
@@ -60,7 +61,7 @@ function SimulationWorkspace({ capabilities }: { capabilities: SimulationCapabil
   const integer = (value: string, min: number, max: number) => value.trim() !== '' && Number.isSafeInteger(Number(value)) && Number(value) >= min && Number(value) <= max;
   const valid = selectedCapability?.available && graphCapability?.available && graph.isSuccess
     && integer(seed, -Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER)
-    && integer(survivors, 1, capabilities.limits.max_survivors) && integer(ticks, 1, capabilities.limits.max_ticks)
+    && integer(survivors, 1, capabilities.limits.max_survivors) && integer(ticks, official ? 150 : capabilities.limits.min_ticks ?? 30, capabilities.limits.max_ticks)
     && 2000 >= capabilities.limits.min_tick_interval_ms && 2000 <= capabilities.limits.max_tick_interval_ms && shelterDraft.valid && !shelterDraft.picking
     && refuges.every(id => graph.data?.shelters.some(shelter => shelter.id === id));
   const connected = !session.state.isError && !session.state.isPending;
@@ -76,13 +77,14 @@ function SimulationWorkspace({ capabilities }: { capabilities: SimulationCapabil
     </fieldset>
     <details className="workspace-advanced"><summary>Configuración avanzada</summary><div className="config-popover"><fieldset disabled={locked}><legend className="sr-only">Reproducción determinista</legend>
       <label>Semilla<input type="number" required step="1" min={-Number.MAX_SAFE_INTEGER} max={Number.MAX_SAFE_INTEGER} value={seed} onChange={event => setSeed(event.target.value)} /></label>
-      <label>Turnos máximos<input type="number" required step="1" min="1" max={capabilities.limits.max_ticks} value={ticks} disabled={official} onChange={event => setTicks(event.target.value)} /></label>
+      <DurationControl label="Turnos máximos" value={ticks} min={capabilities.limits.min_ticks ?? 30} max={capabilities.limits.max_ticks} official={official} onChange={setTicks} />
     </fieldset><AgentPolicies value={policies} onChange={changePolicies} disabled={locked} /><p>Un turno cada 2 segundos. La semilla conserva la reproducción determinista.</p>{capabilities.graph_profiles.filter(item => !item.available).map(item => <p key={item.id}>{item.name}: {item.disabled_reason || 'No disponible en esta instancia.'}</p>)}</div></details>
-    <Button type="submit" disabled={!valid || locked}><Play size={14} />{session.busy ? 'Iniciando…' : 'Iniciar simulación'}</Button><span className="config-status">Sin ejecución activa</span>
+    <Button type="submit" disabled={!valid || locked}><Play size={14} />{session.busy ? 'Iniciando…' : 'Iniciar simulación'}</Button><span className="config-status">{official ? 'Preset oficial · 150 turnos' : 'Sin ejecución activa'}</span>
   </form>;
   const hud = <>
     {configuration}
     {session.id && <SimulationHUD label={state ? 'Tu simulación' : 'Preparación de simulación'} status={state ? statusLabels[state.status] : session.id ? 'Recuperando ejecución' : 'Sin ejecución activa'} tick={state?.tick} maxTicks={state?.max_ticks} elapsed={state ? elapsed(state) : undefined}>
+      {state?.config.mode === 'official' && <span>Preset oficial · 150 turnos</span>}
       {state?.status === 'RUNNING' && <Button variant="secondary" disabled={session.busy || !connected} onClick={() => void session.control('pause')}><Pause size={14} />Pausar</Button>}
       {state?.status === 'PAUSED' && <Button variant="secondary" disabled={session.busy || !connected} onClick={() => void session.control('resume')}><Play size={14} />Continuar</Button>}
       {state && ['RUNNING', 'PAUSED'].includes(state.status) && <Button variant="secondary" disabled={session.busy || !connected} onClick={() => void session.control('cancel')}><Square size={14} />Cancelar</Button>}
@@ -106,7 +108,7 @@ function SimulationWorkspace({ capabilities }: { capabilities: SimulationCapabil
 
 function elapsed(state: SimulationState) {
   const seconds = Math.max(0, Math.floor((Date.parse(state.ended_at ?? state.updated_at) - Date.parse(state.started_at)) / 1000));
-  return `${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`;
+  return `Simulado ${(state.tick * 2).toLocaleString('es-EC')} s · ejecución ${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`;
 }
 function LiveMetrics({ state }: { state: SimulationState }) {
   const metrics = state.scenario_state?.evacuation_metrics;

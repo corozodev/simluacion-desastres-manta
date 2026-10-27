@@ -10,6 +10,7 @@ import { useVisualization, VisualizationControls } from '../features/visualizati
 import { observeWorld, sessionLifecycle } from '../features/visualization/observation';
 import { FloodMap } from '../features/flood/FloodMap';
 import { config } from '../lib/config';
+import { hydraulicFixture } from './hydraulic-fixture';
 import { graph, managedFlood, managedState, world } from './simulation-fixtures';
 
 const project = (p: { lat: number; lng: number }) => ({ x: p.lng * 10000, y: p.lat * 10000 });
@@ -206,12 +207,13 @@ describe('LOD y separación de fuentes', () => {
   it('representa riesgo y restricción desde el contrato y reportes puntuales independientes', () => {
     config.osmTilesEnabled = false;
     const state = managedFlood().scenario_state!;
+    state.hydraulic = hydraulicFixture();
     state.road_conditions = [{ edge_id: graph.edges[0]!.id, state: 'caution', risk_score: .9, risk_source: 'synthetic', cost_multiplier: 2, updated_at_simulation_step: 3 }];
     const incident = { incident_id: 'report', incident_type: 'road_closed', source_type: 'citizen', verification_status: 'pending', latitude: graph.nodes[0]!.lat, longitude: graph.nodes[0]!.lng, description: 'Declaración', event_time: '2026-10-27T10:00:00Z', expires_at: '2026-10-28T10:00:00Z' } as Incident;
     const { container } = render(<FloodMap graph={graph as Graph} scenario={state} shelters={graph.shelters} candidates={[]} selectedAgentId="" onSelectAgent={() => undefined} onPickPosition={() => undefined} incidents={[incident]} />);
     expect(container.querySelector('[data-road-state="caution"]')?.getAttribute('d')).toBeTruthy();
     expect(container.querySelector('[data-road-state="blocked"]')?.getAttribute('d')).toBe('');
-    expect(container.querySelector('.flood-index-high.flood-exposure-zone')).toBeInTheDocument();
+    expect(container.querySelector('.flood-index-high.flood-water-cell')).toBeInTheDocument();
     expect(container.querySelector('[data-incident-id="report"]')).toHaveAttribute('data-incident-source', 'citizen');
     expect(container.querySelector('[data-incident-id="report"] title')).toHaveTextContent('Pendiente de verificación');
     expect(container.querySelector('[data-incident-id="report"] title')).toHaveTextContent('no modifica esta simulación');

@@ -22,7 +22,7 @@ class PublishedView {
     this.agentStates = const {},
     this.shelterNames = const {},
     this.shelterStates = const {},
-    this.floodZones = const [],
+    this.hydraulic,
     this.rainfall = 0,
     this.evacuated = 0,
     this.waiting = 0,
@@ -34,7 +34,7 @@ class PublishedView {
   final List<Survivor> agents;
   final List<Shelter> shelters;
   final Map<String, String> roads, agentStates, shelterNames, shelterStates;
-  final List<FloodArea> floodZones;
+  final HydraulicSnapshot? hydraulic;
   final double rainfall;
   bool get terminal => const [
     'COMPLETED',
@@ -42,6 +42,7 @@ class PublishedView {
     'FAILED',
     'finished',
     'failed',
+    'cancelled',
   ].contains(status);
   bool get active => availability == 'available';
 
@@ -66,7 +67,7 @@ class PublishedView {
         value.containsKey('access_token') ||
         (value['state_version'] as int) < 0 ||
         (value['max_ticks'] as int) < 1 ||
-        (value['max_ticks'] as int) > 150 ||
+        (value['max_ticks'] as int) > 3000 ||
         (value['tick'] as int) > (value['max_ticks'] as int)) {
       throw const FormatException('Invalid public simulation');
     }
@@ -118,6 +119,7 @@ class PublishedView {
           'paused',
           'finished',
           'failed',
+          'cancelled',
         ].contains(state) ||
         !const ['competition', 'full'].contains(json['mode'])) {
       throw const FormatException('Invalid flood lifecycle');
@@ -187,6 +189,10 @@ class PublishedView {
         (scenario['simulation_step'] as int) < 0) {
       throw const FormatException('Invalid flood time');
     }
+    final hydraulic = scenario['hydraulic'] == null
+        ? null
+        : HydraulicSnapshot.fromJson(_object(scenario['hydraulic']));
+    if (hydraulic != null) validateHydraulic(hydraulic);
     return PublishedView(
       scenario: 'urban_flood',
       availability: state == 'idle' ? 'none' : 'available',
@@ -210,33 +216,36 @@ class PublishedView {
         for (final raw in cfg['shelters'] as List)
           (_object(raw)['id'] as String): (_object(raw)['label'] as String),
       },
-      floodZones: [
-        for (final raw in scenario['flood_zones'] as List)
-          FloodArea.fromJson(_object(raw)),
-      ],
+      hydraulic: hydraulic,
     );
   }
 }
 
-class FloodArea {
-  const FloodArea(this.center, this.radiusM, this.intensity);
-  final GeoPoint center;
-  final double radiusM, intensity;
-  factory FloodArea.fromJson(Map<String, dynamic> json) {
-    final area = FloodArea(
-      GeoPoint.fromJson(_object(json['center'])),
-      (json['radius_m'] as num).toDouble(),
-      (json['intensity'] as num).toDouble(),
-    );
-    if (!area.radiusM.isFinite ||
-        area.radiusM < 0 ||
-        !area.intensity.isFinite ||
-        area.intensity < 0 ||
-        !area.center.lat.isFinite ||
-        !area.center.lng.isFinite) {
-      throw const FormatException('Invalid flood area');
-    }
-    return area;
+/// Reject malformed remote grids before allocating paths in the observer.
+void validateHydraulic(HydraulicSnapshot value) {
+  final grid = value.grid;
+  if (!const [
+        'rainfall_runoff_2d',
+        'compound_flood_2d',
+      ].contains(value.model) ||
+      grid.rows < 1 ||
+      grid.cols < 1 ||
+      grid.rows * grid.cols > 4096 ||
+      value.depthsM.length != grid.rows * grid.cols ||
+      !grid.cellSizeM.isFinite ||
+      grid.cellSizeM <= 0 ||
+      !grid.latStep.isFinite ||
+      grid.latStep <= 0 ||
+      !grid.lngStep.isFinite ||
+      grid.lngStep <= 0 ||
+      !grid.origin.lat.isFinite ||
+      !grid.origin.lng.isFinite ||
+      grid.origin.lat < -90 ||
+      grid.origin.lat + grid.rows * grid.latStep > 90 ||
+      grid.origin.lng < -180 ||
+      grid.origin.lng + grid.cols * grid.lngStep > 180 ||
+      value.depthsM.any((depth) => !depth.isFinite || depth < 0)) {
+    throw const FormatException('Invalid hydraulic grid');
   }
 }
 

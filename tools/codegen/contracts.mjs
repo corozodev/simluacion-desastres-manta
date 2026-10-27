@@ -34,7 +34,7 @@ function collectMobileSchemas(value) {
   }
   for (const entry of Object.values(value)) collectMobileSchemas(entry);
 }
-for (const route of ['/healthz', '/grafo', '/estado', '/paso', '/v1/incidents/config', '/v1/incidents/resolve', '/v1/incidents', '/v1/incidents/{incident_id}']) {
+for (const route of ['/healthz', '/grafo', '/estado', '/paso', '/lab/published', '/v1/incidents/config', '/v1/incidents/resolve', '/v1/incidents', '/v1/incidents/{incident_id}']) {
   if (!contract.paths[route]) throw new Error(`Missing evacuation operation ${route}`);
   collectMobileSchemas(contract.paths[route]);
 }

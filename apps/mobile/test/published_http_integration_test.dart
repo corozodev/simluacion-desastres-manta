@@ -49,6 +49,14 @@ void main() {
       for (final scenario in ['zombie_outbreak', 'urban_flood']) {
         final current = await repository.published(scenario);
         final graph = await repository.graph(current);
+        if (scenario == 'urban_flood' && current.active) {
+          expect(current.hydraulic, isNotNull);
+          validateHydraulic(current.hydraulic!);
+          expect(
+            current.hydraulic!.massBalance.residualM3.abs(),
+            lessThan(.01),
+          );
+        }
         expect(graph.nodes, isNotEmpty);
         if (current.graphVersion.isNotEmpty) {
           expect(graph.version, current.graphVersion);

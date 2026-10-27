@@ -9,7 +9,7 @@ export const capabilities: SimulationCapabilities = {
   scenarios: [{ id: 'zombie_outbreak', name: 'Brote zombie', available: true, synthetic: true }, { id: 'urban_flood', name: 'Inundación urbana', available: true, synthetic: true }],
   graph_profiles: [{ id: 'BASE', name: 'BASE', available: true, graph_version: graph.version, nodes: 300, edges: 383 }, { id: 'FULL_MANTA', name: 'FULL_MANTA', available: true, graph_version: 'master', nodes: 9179, edges: 13452 }],
   defaults: { scenario: 'zombie_outbreak', graph_profile: 'BASE', seed: 20261026, max_ticks: 150, tick_interval_ms: 2000, survivors: 20, round: 'round1' },
-  limits: { max_active: 2, max_full_active: 1, max_retained: 10, max_memory_bytes: 100000000, min_tick_interval_ms: 1000, max_tick_interval_ms: 5000, max_ticks: 150, max_survivors: 200 },
+  limits: { max_active: 2, max_full_active: 1, max_retained: 10, max_memory_bytes: 100000000, min_tick_interval_ms: 1000, max_tick_interval_ms: 5000, min_ticks: 30, max_ticks: 3000, official_max_ticks: 150, max_survivors: 200 },
   rounds: [{ id: 'round1', name: 'Ronda 1', survivors: 20, turns: 150 }, { id: 'round2', name: 'Ronda 2', survivors: 80, turns: 150 }],
 };
 export function managedState(snapshot: WorldSnapshot = world, overrides: Partial<SimulationState> = {}): SimulationState {

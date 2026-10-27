@@ -20,7 +20,7 @@ describe('referencia territorial oficial', () => {
     expect(screen.getByText(/CONAGE 2024 — resoluciones/)).toBeInTheDocument();
     expect(screen.getByText(/EPSG:32717 → EPSG:4326/)).toBeInTheDocument();
     expect(screen.getByText('2025')).toBeInTheDocument();
-    expect(screen.getByText(/Esta ejecución utiliza exposición totalmente sintética/)).toBeInTheDocument();
+    expect(screen.getByText(/Esta ejecución utiliza terreno y parámetros sintéticos/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Actualizar copia oficial' })).toBeDisabled();
     expect(screen.getByText(/Un polígono ALTA no significa que esté inundado ahora/)).toBeInTheDocument();
   });

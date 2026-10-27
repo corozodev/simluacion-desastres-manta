@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Graph, LabCandidate, ScenarioSnapshot } from '@corodev/contracts';
 import { FloodMap } from '../features/flood/FloodMap';
 import { config } from '../lib/config';
+import { hydraulicFixture } from './hydraulic-fixture';
 
 const osmTilesEnabled = config.osmTilesEnabled;
 const fixture: Graph = {
@@ -17,6 +18,7 @@ const candidates: LabCandidate[] = fixture.nodes.map((node, i) => ({ id: `C${i +
 const scenario: ScenarioSnapshot = {
   scenario_type: 'urban_flood', simulation_step: 8, world_version: 17, graph_version: fixture.version,
   simulation_time: 8, simulation_duration: 150, time_step: 1, rainfall: .8,
+  hydraulic: hydraulicFixture(),
   flood_zones: [{ id: 'synthetic-zone', center: { lat: fixture.nodes[0]!.lat, lng: fixture.nodes[0]!.lng }, radius_m: 50, intensity: .8 }],
   road_conditions: [{ edge_id: 'E1', state: 'blocked', risk_score: .8, risk_source: 'synthetic_urban_flood', cost_multiplier: 1, updated_at_simulation_step: 8 }, { edge_id: 'E2', state: 'caution', risk_score: .4, risk_source: 'synthetic_urban_flood', cost_multiplier: 3, updated_at_simulation_step: 8 }],
   shelter_conditions: fixture.shelters.map((shelter, i) => ({ shelter_id: shelter.id, state: i === 0 ? 'exposed' : 'available', risk_score: i === 0 ? .8 : 0, updated_at_simulation_step: 8 })),
@@ -38,13 +40,30 @@ function setup(overrides: Partial<Parameters<typeof FloodMap>[0]> = {}) {
 }
 
 describe('capas y selección del mapa de inundación', () => {
+  it('representa profundidades por celda y retira el agua al recibir un estado seco, sin dibujar focos radiales', () => {
+    config.osmTilesEnabled = false;
+    const props = { graph: fixture, scenario, shelters: fixture.shelters, candidates: [], selectedAgentId: '', onSelectAgent: vi.fn(), onPickPosition: vi.fn() };
+    const view = render(<FloodMap {...props} />);
+    const map = screen.getByTestId('flood-map');
+    expect(map.querySelector('[data-hydraulic-depth-band="0"]')).toBeInTheDocument();
+    expect(map.querySelector('[data-hydraulic-depth-band="1"]')).toBeInTheDocument();
+    expect(map.querySelector('[data-hydraulic-depth-band="2"]')).toBeInTheDocument();
+    expect(map.querySelector('[data-layer="exposure"] circle')).not.toBeInTheDocument();
+    expect(screen.getByLabelText('Profundidad calculada experimental')).toHaveTextContent('0,01–0,10 m');
+    expect(screen.getByLabelText('Profundidad calculada experimental')).toHaveTextContent('>0,30 m');
+    view.rerender(<FloodMap {...props} scenario={{ ...scenario, hydraulic: hydraulicFixture([0, 0, 0, 0]), simulation_step: 150 }} />);
+    expect(map.querySelector('[data-hydraulic-depth-band]')).not.toBeInTheDocument();
+    expect(map.querySelectorAll('[data-road-state]')).toHaveLength(3);
+  });
+
   it('mantiene ocho capas independientes, exposición y rutas publicadas sin representar resultados de muerte', async () => {
     setup();
     const map = screen.getByRole('img', { name: /^Red urbana de inundación simulada/ });
     expect(screen.getAllByRole('checkbox')).toHaveLength(11);
     expect(screen.getByRole('checkbox', { name: 'Susceptibilidad oficial a inundaciones' })).not.toBeChecked();
     expect(map.querySelectorAll('[data-road-state]')).toHaveLength(3);
-    expect(map.querySelector('.flood-exposure-zone')).toBeInTheDocument();
+    expect(map.querySelectorAll('[data-hydraulic-depth-band]')).toHaveLength(3);
+    expect(map.querySelector('.flood-exposure-zone')).not.toBeInTheDocument();
     expect(map.querySelector('[data-layer="routes"]')).toBeInTheDocument();
     expect(map.querySelector('.flood-shelter-exposed')).toBeInTheDocument();
     expect(map.querySelectorAll('[data-candidate]')).toHaveLength(4);

@@ -510,6 +510,330 @@ class WorldSnapshot {
   };
 }
 
+class FloodZone {
+  const FloodZone({
+    required this.id,
+    required this.center,
+    required this.radiusM,
+    required this.intensity,
+  });
+
+  final String id;
+  final GeoPoint center;
+  final double radiusM;
+  final double intensity;
+
+  factory FloodZone.fromJson(Map<String, dynamic> json) => FloodZone(
+    id: json['id'] as String,
+    center: GeoPoint.fromJson(Map<String, dynamic>.from(json['center'] as Map)),
+    radiusM: (json['radius_m'] as num).toDouble(),
+    intensity: (json['intensity'] as num).toDouble(),
+  );
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'center': center.toJson(),
+    'radius_m': radiusM,
+    'intensity': intensity,
+  };
+}
+
+class RoadCondition {
+  const RoadCondition({
+    required this.edgeId,
+    required this.state,
+    required this.riskScore,
+    this.depthM,
+    required this.riskSource,
+    required this.updatedAtSimulationStep,
+    required this.costMultiplier,
+  });
+
+  final String edgeId;
+  final String state;
+  final double riskScore;
+  final double? depthM;
+  final String riskSource;
+  final int updatedAtSimulationStep;
+  final double costMultiplier;
+
+  factory RoadCondition.fromJson(Map<String, dynamic> json) => RoadCondition(
+    edgeId: json['edge_id'] as String,
+    state: json['state'] as String,
+    riskScore: (json['risk_score'] as num).toDouble(),
+    depthM: json['depth_m'] == null ? null : (json['depth_m'] as num).toDouble(),
+    riskSource: json['risk_source'] as String,
+    updatedAtSimulationStep: json['updated_at_simulation_step'] as int,
+    costMultiplier: (json['cost_multiplier'] as num).toDouble(),
+  );
+
+  Map<String, dynamic> toJson() => {
+    'edge_id': edgeId,
+    'state': state,
+    'risk_score': riskScore,
+    if (depthM != null) 'depth_m': depthM!,
+    'risk_source': riskSource,
+    'updated_at_simulation_step': updatedAtSimulationStep,
+    'cost_multiplier': costMultiplier,
+  };
+}
+
+class ShelterCondition {
+  const ShelterCondition({
+    required this.shelterId,
+    required this.state,
+    required this.riskScore,
+    required this.updatedAtSimulationStep,
+  });
+
+  final String shelterId;
+  final String state;
+  final double riskScore;
+  final int updatedAtSimulationStep;
+
+  factory ShelterCondition.fromJson(Map<String, dynamic> json) => ShelterCondition(
+    shelterId: json['shelter_id'] as String,
+    state: json['state'] as String,
+    riskScore: (json['risk_score'] as num).toDouble(),
+    updatedAtSimulationStep: json['updated_at_simulation_step'] as int,
+  );
+
+  Map<String, dynamic> toJson() => {
+    'shelter_id': shelterId,
+    'state': state,
+    'risk_score': riskScore,
+    'updated_at_simulation_step': updatedAtSimulationStep,
+  };
+}
+
+class FloodAgent {
+  const FloodAgent({
+    required this.id,
+    required this.currentNode,
+    required this.state,
+    required this.behavior,
+    required this.targetShelterId,
+    required this.plannedRoute,
+    this.evacuationTime,
+  });
+
+  final String id;
+  final String currentNode;
+  final String state;
+  final String behavior;
+  final String targetShelterId;
+  final List<String> plannedRoute;
+  final double? evacuationTime;
+
+  factory FloodAgent.fromJson(Map<String, dynamic> json) => FloodAgent(
+    id: json['id'] as String,
+    currentNode: json['current_node'] as String,
+    state: json['state'] as String,
+    behavior: json['behavior'] as String,
+    targetShelterId: json['target_shelter_id'] as String,
+    plannedRoute: (json['planned_route'] as List).map((value) => value as String).toList(),
+    evacuationTime: json['evacuation_time'] == null ? null : (json['evacuation_time'] as num).toDouble(),
+  );
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'current_node': currentNode,
+    'state': state,
+    'behavior': behavior,
+    'target_shelter_id': targetShelterId,
+    'planned_route': plannedRoute.map((value) => value).toList(),
+    if (evacuationTime != null) 'evacuation_time': evacuationTime!,
+  };
+}
+
+class EvacuationMetrics {
+  const EvacuationMetrics({
+    required this.totalAgents,
+    required this.evacuatedAgents,
+    required this.isolatedAgents,
+    required this.waitingAgents,
+    required this.averageEvacuationTime,
+    required this.blockedEdges,
+    required this.cautionEdges,
+    required this.sheltersAtCapacity,
+    required this.rerouteCount,
+    required this.simulationTotalDuration,
+  });
+
+  final int totalAgents;
+  final int evacuatedAgents;
+  final int isolatedAgents;
+  final int waitingAgents;
+  final double averageEvacuationTime;
+  final int blockedEdges;
+  final int cautionEdges;
+  final int sheltersAtCapacity;
+  final int rerouteCount;
+  final double simulationTotalDuration;
+
+  factory EvacuationMetrics.fromJson(Map<String, dynamic> json) => EvacuationMetrics(
+    totalAgents: json['total_agents'] as int,
+    evacuatedAgents: json['evacuated_agents'] as int,
+    isolatedAgents: json['isolated_agents'] as int,
+    waitingAgents: json['waiting_agents'] as int,
+    averageEvacuationTime: (json['average_evacuation_time'] as num).toDouble(),
+    blockedEdges: json['blocked_edges'] as int,
+    cautionEdges: json['caution_edges'] as int,
+    sheltersAtCapacity: json['shelters_at_capacity'] as int,
+    rerouteCount: json['reroute_count'] as int,
+    simulationTotalDuration: (json['simulation_total_duration'] as num).toDouble(),
+  );
+
+  Map<String, dynamic> toJson() => {
+    'total_agents': totalAgents,
+    'evacuated_agents': evacuatedAgents,
+    'isolated_agents': isolatedAgents,
+    'waiting_agents': waitingAgents,
+    'average_evacuation_time': averageEvacuationTime,
+    'blocked_edges': blockedEdges,
+    'caution_edges': cautionEdges,
+    'shelters_at_capacity': sheltersAtCapacity,
+    'reroute_count': rerouteCount,
+    'simulation_total_duration': simulationTotalDuration,
+  };
+}
+
+class SimulationPerformance {
+  const SimulationPerformance({
+    this.hydraulicStepLatencyMs,
+    this.evacuationStepLatencyMs,
+    required this.simulationStepLatencyMs,
+    required this.simulationTotalDurationMs,
+  });
+
+  final double? hydraulicStepLatencyMs;
+  final double? evacuationStepLatencyMs;
+  final double simulationStepLatencyMs;
+  final double simulationTotalDurationMs;
+
+  factory SimulationPerformance.fromJson(Map<String, dynamic> json) => SimulationPerformance(
+    hydraulicStepLatencyMs: json['hydraulic_step_latency_ms'] == null ? null : (json['hydraulic_step_latency_ms'] as num).toDouble(),
+    evacuationStepLatencyMs: json['evacuation_step_latency_ms'] == null ? null : (json['evacuation_step_latency_ms'] as num).toDouble(),
+    simulationStepLatencyMs: (json['simulation_step_latency_ms'] as num).toDouble(),
+    simulationTotalDurationMs: (json['simulation_total_duration_ms'] as num).toDouble(),
+  );
+
+  Map<String, dynamic> toJson() => {
+    if (hydraulicStepLatencyMs != null) 'hydraulic_step_latency_ms': hydraulicStepLatencyMs!,
+    if (evacuationStepLatencyMs != null) 'evacuation_step_latency_ms': evacuationStepLatencyMs!,
+    'simulation_step_latency_ms': simulationStepLatencyMs,
+    'simulation_total_duration_ms': simulationTotalDurationMs,
+  };
+}
+
+class DataProvenance {
+  const DataProvenance({
+    required this.graphSource,
+    required this.model,
+    required this.elevationSource,
+    required this.disclaimer,
+    this.geographicReference,
+  });
+
+  final String graphSource;
+  final String model;
+  final String elevationSource;
+  final String disclaimer;
+  final ReferenceUse? geographicReference;
+
+  factory DataProvenance.fromJson(Map<String, dynamic> json) => DataProvenance(
+    graphSource: json['graph_source'] as String,
+    model: json['model'] as String,
+    elevationSource: json['elevation_source'] as String,
+    disclaimer: json['disclaimer'] as String,
+    geographicReference: json['geographic_reference'] == null ? null : ReferenceUse.fromJson(Map<String, dynamic>.from(json['geographic_reference'] as Map)),
+  );
+
+  Map<String, dynamic> toJson() => {
+    'graph_source': graphSource,
+    'model': model,
+    'elevation_source': elevationSource,
+    'disclaimer': disclaimer,
+    if (geographicReference != null) 'geographic_reference': geographicReference!.toJson(),
+  };
+}
+
+class ScenarioSnapshot {
+  const ScenarioSnapshot({
+    required this.scenarioType,
+    required this.simulationStep,
+    required this.worldVersion,
+    required this.graphVersion,
+    required this.simulationTime,
+    required this.simulationDuration,
+    required this.timeStep,
+    required this.rainfall,
+    required this.floodZones,
+    required this.roadConditions,
+    required this.shelterConditions,
+    required this.agents,
+    required this.evacuationMetrics,
+    required this.performance,
+    this.hydraulic,
+    required this.dataProvenance,
+  });
+
+  final String scenarioType;
+  final int simulationStep;
+  final int worldVersion;
+  final String graphVersion;
+  final double simulationTime;
+  final double simulationDuration;
+  final double timeStep;
+  final double rainfall;
+  final List<FloodZone> floodZones;
+  final List<RoadCondition> roadConditions;
+  final List<ShelterCondition> shelterConditions;
+  final List<FloodAgent> agents;
+  final EvacuationMetrics evacuationMetrics;
+  final SimulationPerformance performance;
+  final HydraulicSnapshot? hydraulic;
+  final DataProvenance dataProvenance;
+
+  factory ScenarioSnapshot.fromJson(Map<String, dynamic> json) => ScenarioSnapshot(
+    scenarioType: json['scenario_type'] as String,
+    simulationStep: json['simulation_step'] as int,
+    worldVersion: json['world_version'] as int,
+    graphVersion: json['graph_version'] as String,
+    simulationTime: (json['simulation_time'] as num).toDouble(),
+    simulationDuration: (json['simulation_duration'] as num).toDouble(),
+    timeStep: (json['time_step'] as num).toDouble(),
+    rainfall: (json['rainfall'] as num).toDouble(),
+    floodZones: (json['flood_zones'] as List).map((value) => FloodZone.fromJson(Map<String, dynamic>.from(value as Map))).toList(),
+    roadConditions: (json['road_conditions'] as List).map((value) => RoadCondition.fromJson(Map<String, dynamic>.from(value as Map))).toList(),
+    shelterConditions: (json['shelter_conditions'] as List).map((value) => ShelterCondition.fromJson(Map<String, dynamic>.from(value as Map))).toList(),
+    agents: (json['agents'] as List).map((value) => FloodAgent.fromJson(Map<String, dynamic>.from(value as Map))).toList(),
+    evacuationMetrics: EvacuationMetrics.fromJson(Map<String, dynamic>.from(json['evacuation_metrics'] as Map)),
+    performance: SimulationPerformance.fromJson(Map<String, dynamic>.from(json['performance'] as Map)),
+    hydraulic: json['hydraulic'] == null ? null : HydraulicSnapshot.fromJson(Map<String, dynamic>.from(json['hydraulic'] as Map)),
+    dataProvenance: DataProvenance.fromJson(Map<String, dynamic>.from(json['data_provenance'] as Map)),
+  );
+
+  Map<String, dynamic> toJson() => {
+    'scenario_type': scenarioType,
+    'simulation_step': simulationStep,
+    'world_version': worldVersion,
+    'graph_version': graphVersion,
+    'simulation_time': simulationTime,
+    'simulation_duration': simulationDuration,
+    'time_step': timeStep,
+    'rainfall': rainfall,
+    'flood_zones': floodZones.map((value) => value.toJson()).toList(),
+    'road_conditions': roadConditions.map((value) => value.toJson()).toList(),
+    'shelter_conditions': shelterConditions.map((value) => value.toJson()).toList(),
+    'agents': agents.map((value) => value.toJson()).toList(),
+    'evacuation_metrics': evacuationMetrics.toJson(),
+    'performance': performance.toJson(),
+    if (hydraulic != null) 'hydraulic': hydraulic!.toJson(),
+    'data_provenance': dataProvenance.toJson(),
+  };
+}
+
 class StepRequest {
   const StepRequest({
     required this.sobrevivienteId,
@@ -691,6 +1015,302 @@ class SimulationInfo {
     if (startedAt != null) 'started_at': startedAt!,
     if (endedAt != null) 'ended_at': endedAt!,
     if (failure != null) 'failure': failure!,
+  };
+}
+
+class LabCandidate {
+  const LabCandidate({
+    required this.id,
+    required this.label,
+    required this.lat,
+    required this.lng,
+    required this.capacity,
+  });
+
+  final String id;
+  final String label;
+  final double lat;
+  final double lng;
+  final int capacity;
+
+  factory LabCandidate.fromJson(Map<String, dynamic> json) => LabCandidate(
+    id: json['id'] as String,
+    label: json['label'] as String,
+    lat: (json['lat'] as num).toDouble(),
+    lng: (json['lng'] as num).toDouble(),
+    capacity: json['capacity'] as int,
+  );
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'label': label,
+    'lat': lat,
+    'lng': lng,
+    'capacity': capacity,
+  };
+}
+
+class LabRunConfig {
+  const LabRunConfig({
+    this.hydraulicModel,
+    this.hydrology,
+    required this.mode,
+    required this.seed,
+    required this.rainfallProfile,
+    required this.rainfallIntensity,
+    required this.simulationDuration,
+    required this.evacuationBehavior,
+    required this.agents,
+    required this.intervalMs,
+    required this.shelters,
+    this.geographicReference,
+  });
+
+  final String? hydraulicModel;
+  final HydrologyConfig? hydrology;
+  final String mode;
+  final int seed;
+  final String rainfallProfile;
+  final double rainfallIntensity;
+  final int simulationDuration;
+  final String evacuationBehavior;
+  final int agents;
+  final int intervalMs;
+  final List<LabCandidate> shelters;
+  final LabGeographicReference? geographicReference;
+
+  factory LabRunConfig.fromJson(Map<String, dynamic> json) => LabRunConfig(
+    hydraulicModel: json['hydraulic_model'] == null ? null : json['hydraulic_model'] as String,
+    hydrology: json['hydrology'] == null ? null : HydrologyConfig.fromJson(Map<String, dynamic>.from(json['hydrology'] as Map)),
+    mode: json['mode'] as String,
+    seed: json['seed'] as int,
+    rainfallProfile: json['rainfall_profile'] as String,
+    rainfallIntensity: (json['rainfall_intensity'] as num).toDouble(),
+    simulationDuration: json['simulation_duration'] as int,
+    evacuationBehavior: json['evacuation_behavior'] as String,
+    agents: json['agents'] as int,
+    intervalMs: json['interval_ms'] as int,
+    shelters: (json['shelters'] as List).map((value) => LabCandidate.fromJson(Map<String, dynamic>.from(value as Map))).toList(),
+    geographicReference: json['geographic_reference'] == null ? null : LabGeographicReference.fromJson(Map<String, dynamic>.from(json['geographic_reference'] as Map)),
+  );
+
+  Map<String, dynamic> toJson() => {
+    if (hydraulicModel != null) 'hydraulic_model': hydraulicModel!,
+    if (hydrology != null) 'hydrology': hydrology!.toJson(),
+    'mode': mode,
+    'seed': seed,
+    'rainfall_profile': rainfallProfile,
+    'rainfall_intensity': rainfallIntensity,
+    'simulation_duration': simulationDuration,
+    'evacuation_behavior': evacuationBehavior,
+    'agents': agents,
+    'interval_ms': intervalMs,
+    'shelters': shelters.map((value) => value.toJson()).toList(),
+    if (geographicReference != null) 'geographic_reference': geographicReference!.toJson(),
+  };
+}
+
+class LabOrigin {
+  const LabOrigin({
+    required this.id,
+    required this.nodeId,
+    required this.lat,
+    required this.lng,
+    required this.snapDistanceM,
+  });
+
+  final String id;
+  final String nodeId;
+  final double lat;
+  final double lng;
+  final double snapDistanceM;
+
+  factory LabOrigin.fromJson(Map<String, dynamic> json) => LabOrigin(
+    id: json['id'] as String,
+    nodeId: json['node_id'] as String,
+    lat: (json['lat'] as num).toDouble(),
+    lng: (json['lng'] as num).toDouble(),
+    snapDistanceM: (json['snap_distance_m'] as num).toDouble(),
+  );
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'node_id': nodeId,
+    'lat': lat,
+    'lng': lng,
+    'snap_distance_m': snapDistanceM,
+  };
+}
+
+class LabTimelineEntry {
+  const LabTimelineEntry({
+    required this.step,
+    required this.simulationTime,
+    required this.evacuationMetrics,
+    required this.stepLatencyMs,
+  });
+
+  final int step;
+  final double simulationTime;
+  final EvacuationMetrics evacuationMetrics;
+  final double stepLatencyMs;
+
+  factory LabTimelineEntry.fromJson(Map<String, dynamic> json) => LabTimelineEntry(
+    step: json['step'] as int,
+    simulationTime: (json['simulation_time'] as num).toDouble(),
+    evacuationMetrics: EvacuationMetrics.fromJson(Map<String, dynamic>.from(json['evacuation_metrics'] as Map)),
+    stepLatencyMs: (json['step_latency_ms'] as num).toDouble(),
+  );
+
+  Map<String, dynamic> toJson() => {
+    'step': step,
+    'simulation_time': simulationTime,
+    'evacuation_metrics': evacuationMetrics.toJson(),
+    'step_latency_ms': stepLatencyMs,
+  };
+}
+
+class LabComparisonResult {
+  const LabComparisonResult({
+    required this.strategy,
+    required this.mode,
+    required this.seed,
+    required this.graphVersion,
+    required this.totalAgents,
+    required this.evacuatedPercentage,
+    required this.evacuationMetrics,
+    required this.stepLatencyMs,
+    required this.originsHash,
+    required this.configHash,
+  });
+
+  final String strategy;
+  final String mode;
+  final int seed;
+  final String graphVersion;
+  final int totalAgents;
+  final double evacuatedPercentage;
+  final EvacuationMetrics evacuationMetrics;
+  final double stepLatencyMs;
+  final String originsHash;
+  final String configHash;
+
+  factory LabComparisonResult.fromJson(Map<String, dynamic> json) => LabComparisonResult(
+    strategy: json['strategy'] as String,
+    mode: json['mode'] as String,
+    seed: json['seed'] as int,
+    graphVersion: json['graph_version'] as String,
+    totalAgents: json['total_agents'] as int,
+    evacuatedPercentage: (json['evacuated_percentage'] as num).toDouble(),
+    evacuationMetrics: EvacuationMetrics.fromJson(Map<String, dynamic>.from(json['evacuation_metrics'] as Map)),
+    stepLatencyMs: (json['step_latency_ms'] as num).toDouble(),
+    originsHash: json['origins_hash'] as String,
+    configHash: json['config_hash'] as String,
+  );
+
+  Map<String, dynamic> toJson() => {
+    'strategy': strategy,
+    'mode': mode,
+    'seed': seed,
+    'graph_version': graphVersion,
+    'total_agents': totalAgents,
+    'evacuated_percentage': evacuatedPercentage,
+    'evacuation_metrics': evacuationMetrics.toJson(),
+    'step_latency_ms': stepLatencyMs,
+    'origins_hash': originsHash,
+    'config_hash': configHash,
+  };
+}
+
+class LabComparison {
+  const LabComparison({
+    required this.id,
+    required this.state,
+    required this.progress,
+    required this.message,
+    required this.results,
+  });
+
+  final String id;
+  final String state;
+  final int progress;
+  final String message;
+  final List<LabComparisonResult> results;
+
+  factory LabComparison.fromJson(Map<String, dynamic> json) => LabComparison(
+    id: json['id'] as String,
+    state: json['state'] as String,
+    progress: json['progress'] as int,
+    message: json['message'] as String,
+    results: (json['results'] as List).map((value) => LabComparisonResult.fromJson(Map<String, dynamic>.from(value as Map))).toList(),
+  );
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'state': state,
+    'progress': progress,
+    'message': message,
+    'results': results.map((value) => value.toJson()).toList(),
+  };
+}
+
+class LabState {
+  const LabState({
+    this.runtimeElapsedMs,
+    required this.runId,
+    required this.state,
+    required this.mode,
+    required this.graphVersion,
+    required this.config,
+    required this.scenario,
+    required this.shelters,
+    required this.timeline,
+    required this.origins,
+    this.comparison,
+    this.incidentApplications,
+  });
+
+  final double? runtimeElapsedMs;
+  final String runId;
+  final String state;
+  final String mode;
+  final String graphVersion;
+  final LabRunConfig config;
+  final ScenarioSnapshot scenario;
+  final List<Shelter> shelters;
+  final List<LabTimelineEntry> timeline;
+  final List<LabOrigin> origins;
+  final LabComparison? comparison;
+  final List<IncidentApplication>? incidentApplications;
+
+  factory LabState.fromJson(Map<String, dynamic> json) => LabState(
+    runtimeElapsedMs: json['runtime_elapsed_ms'] == null ? null : (json['runtime_elapsed_ms'] as num).toDouble(),
+    runId: json['run_id'] as String,
+    state: json['state'] as String,
+    mode: json['mode'] as String,
+    graphVersion: json['graph_version'] as String,
+    config: LabRunConfig.fromJson(Map<String, dynamic>.from(json['config'] as Map)),
+    scenario: ScenarioSnapshot.fromJson(Map<String, dynamic>.from(json['scenario'] as Map)),
+    shelters: (json['shelters'] as List).map((value) => Shelter.fromJson(Map<String, dynamic>.from(value as Map))).toList(),
+    timeline: (json['timeline'] as List).map((value) => LabTimelineEntry.fromJson(Map<String, dynamic>.from(value as Map))).toList(),
+    origins: (json['origins'] as List).map((value) => LabOrigin.fromJson(Map<String, dynamic>.from(value as Map))).toList(),
+    comparison: json['comparison'] == null ? null : LabComparison.fromJson(Map<String, dynamic>.from(json['comparison'] as Map)),
+    incidentApplications: json['incident_applications'] == null ? null : (json['incident_applications'] as List).map((value) => IncidentApplication.fromJson(Map<String, dynamic>.from(value as Map))).toList(),
+  );
+
+  Map<String, dynamic> toJson() => {
+    if (runtimeElapsedMs != null) 'runtime_elapsed_ms': runtimeElapsedMs!,
+    'run_id': runId,
+    'state': state,
+    'mode': mode,
+    'graph_version': graphVersion,
+    'config': config.toJson(),
+    'scenario': scenario.toJson(),
+    'shelters': shelters.map((value) => value.toJson()).toList(),
+    'timeline': timeline.map((value) => value.toJson()).toList(),
+    'origins': origins.map((value) => value.toJson()).toList(),
+    if (comparison != null) 'comparison': comparison!.toJson(),
+    if (incidentApplications != null) 'incident_applications': incidentApplications!.map((value) => value.toJson()).toList(),
   };
 }
 
@@ -1055,5 +1675,341 @@ class IncidentList {
     'limit': limit,
     'offset': offset,
     'has_more': hasMore,
+  };
+}
+
+class IncidentApplication {
+  const IncidentApplication({
+    required this.applicationId,
+    required this.incidentId,
+    required this.runId,
+    required this.affectedEdgeIds,
+    required this.simulationStep,
+    required this.worldVersion,
+    required this.sourceType,
+    required this.verificationStatusAtApplication,
+    required this.effect,
+    required this.expiresAtSimulationStep,
+    required this.appliedAt,
+  });
+
+  final String applicationId;
+  final String incidentId;
+  final String runId;
+  final List<String> affectedEdgeIds;
+  final int simulationStep;
+  final int worldVersion;
+  final String sourceType;
+  final String verificationStatusAtApplication;
+  final String effect;
+  final int expiresAtSimulationStep;
+  final String appliedAt;
+
+  factory IncidentApplication.fromJson(Map<String, dynamic> json) => IncidentApplication(
+    applicationId: json['application_id'] as String,
+    incidentId: json['incident_id'] as String,
+    runId: json['run_id'] as String,
+    affectedEdgeIds: (json['affected_edge_ids'] as List).map((value) => value as String).toList(),
+    simulationStep: json['simulation_step'] as int,
+    worldVersion: json['world_version'] as int,
+    sourceType: json['source_type'] as String,
+    verificationStatusAtApplication: json['verification_status_at_application'] as String,
+    effect: json['effect'] as String,
+    expiresAtSimulationStep: json['expires_at_simulation_step'] as int,
+    appliedAt: json['applied_at'] as String,
+  );
+
+  Map<String, dynamic> toJson() => {
+    'application_id': applicationId,
+    'incident_id': incidentId,
+    'run_id': runId,
+    'affected_edge_ids': affectedEdgeIds.map((value) => value).toList(),
+    'simulation_step': simulationStep,
+    'world_version': worldVersion,
+    'source_type': sourceType,
+    'verification_status_at_application': verificationStatusAtApplication,
+    'effect': effect,
+    'expires_at_simulation_step': expiresAtSimulationStep,
+    'applied_at': appliedAt,
+  };
+}
+
+class LabGeographicReference {
+  const LabGeographicReference({
+    required this.enabled,
+    this.datasetVersion,
+    required this.strength,
+  });
+
+  final bool enabled;
+  final String? datasetVersion;
+  final double strength;
+
+  factory LabGeographicReference.fromJson(Map<String, dynamic> json) => LabGeographicReference(
+    enabled: json['enabled'] as bool,
+    datasetVersion: json['dataset_version'] == null ? null : json['dataset_version'] as String,
+    strength: (json['strength'] as num).toDouble(),
+  );
+
+  Map<String, dynamic> toJson() => {
+    'enabled': enabled,
+    if (datasetVersion != null) 'dataset_version': datasetVersion!,
+    'strength': strength,
+  };
+}
+
+class ReferenceZoneUse {
+  const ReferenceZoneUse({
+    required this.zoneId,
+    required this.susceptibility,
+    required this.factor,
+    required this.featureIds,
+  });
+
+  final String zoneId;
+  final String susceptibility;
+  final double factor;
+  final List<String> featureIds;
+
+  factory ReferenceZoneUse.fromJson(Map<String, dynamic> json) => ReferenceZoneUse(
+    zoneId: json['zone_id'] as String,
+    susceptibility: json['susceptibility'] as String,
+    factor: (json['factor'] as num).toDouble(),
+    featureIds: (json['feature_ids'] as List).map((value) => value as String).toList(),
+  );
+
+  Map<String, dynamic> toJson() => {
+    'zone_id': zoneId,
+    'susceptibility': susceptibility,
+    'factor': factor,
+    'feature_ids': featureIds.map((value) => value).toList(),
+  };
+}
+
+class ReferenceUse {
+  const ReferenceUse({
+    required this.category,
+    required this.datasetVersion,
+    required this.sourceUrl,
+    required this.consultedAt,
+    required this.strength,
+    required this.zones,
+  });
+
+  final String category;
+  final String datasetVersion;
+  final String sourceUrl;
+  final String consultedAt;
+  final double strength;
+  final List<ReferenceZoneUse> zones;
+
+  factory ReferenceUse.fromJson(Map<String, dynamic> json) => ReferenceUse(
+    category: json['category'] as String,
+    datasetVersion: json['dataset_version'] as String,
+    sourceUrl: json['source_url'] as String,
+    consultedAt: json['consulted_at'] as String,
+    strength: (json['strength'] as num).toDouble(),
+    zones: (json['zones'] as List).map((value) => ReferenceZoneUse.fromJson(Map<String, dynamic>.from(value as Map))).toList(),
+  );
+
+  Map<String, dynamic> toJson() => {
+    'category': category,
+    'dataset_version': datasetVersion,
+    'source_url': sourceUrl,
+    'consulted_at': consultedAt,
+    'strength': strength,
+    'zones': zones.map((value) => value.toJson()).toList(),
+  };
+}
+
+class HydrologyConfig {
+  const HydrologyConfig({
+    this.secondsPerTurn,
+    this.antecedentRainHours,
+    this.initialSaturation,
+    this.initialWaterDepthM,
+    this.seaLevelM,
+    this.channelInflowM3S,
+    this.cellSizeM,
+    this.infiltrationMmH,
+    this.drainageMmH,
+    this.cautionDepthM,
+    this.blockedDepthM,
+    this.hysteresisM,
+  });
+
+  final double? secondsPerTurn;
+  final double? antecedentRainHours;
+  final double? initialSaturation;
+  final double? initialWaterDepthM;
+  final double? seaLevelM;
+  final double? channelInflowM3S;
+  final double? cellSizeM;
+  final double? infiltrationMmH;
+  final double? drainageMmH;
+  final double? cautionDepthM;
+  final double? blockedDepthM;
+  final double? hysteresisM;
+
+  factory HydrologyConfig.fromJson(Map<String, dynamic> json) => HydrologyConfig(
+    secondsPerTurn: json['seconds_per_turn'] == null ? null : (json['seconds_per_turn'] as num).toDouble(),
+    antecedentRainHours: json['antecedent_rain_hours'] == null ? null : (json['antecedent_rain_hours'] as num).toDouble(),
+    initialSaturation: json['initial_saturation'] == null ? null : (json['initial_saturation'] as num).toDouble(),
+    initialWaterDepthM: json['initial_water_depth_m'] == null ? null : (json['initial_water_depth_m'] as num).toDouble(),
+    seaLevelM: json['sea_level_m'] == null ? null : (json['sea_level_m'] as num).toDouble(),
+    channelInflowM3S: json['channel_inflow_m3_s'] == null ? null : (json['channel_inflow_m3_s'] as num).toDouble(),
+    cellSizeM: json['cell_size_m'] == null ? null : (json['cell_size_m'] as num).toDouble(),
+    infiltrationMmH: json['infiltration_mm_h'] == null ? null : (json['infiltration_mm_h'] as num).toDouble(),
+    drainageMmH: json['drainage_mm_h'] == null ? null : (json['drainage_mm_h'] as num).toDouble(),
+    cautionDepthM: json['caution_depth_m'] == null ? null : (json['caution_depth_m'] as num).toDouble(),
+    blockedDepthM: json['blocked_depth_m'] == null ? null : (json['blocked_depth_m'] as num).toDouble(),
+    hysteresisM: json['hysteresis_m'] == null ? null : (json['hysteresis_m'] as num).toDouble(),
+  );
+
+  Map<String, dynamic> toJson() => {
+    if (secondsPerTurn != null) 'seconds_per_turn': secondsPerTurn!,
+    if (antecedentRainHours != null) 'antecedent_rain_hours': antecedentRainHours!,
+    if (initialSaturation != null) 'initial_saturation': initialSaturation!,
+    if (initialWaterDepthM != null) 'initial_water_depth_m': initialWaterDepthM!,
+    if (seaLevelM != null) 'sea_level_m': seaLevelM!,
+    if (channelInflowM3S != null) 'channel_inflow_m3_s': channelInflowM3S!,
+    if (cellSizeM != null) 'cell_size_m': cellSizeM!,
+    if (infiltrationMmH != null) 'infiltration_mm_h': infiltrationMmH!,
+    if (drainageMmH != null) 'drainage_mm_h': drainageMmH!,
+    if (cautionDepthM != null) 'caution_depth_m': cautionDepthM!,
+    if (blockedDepthM != null) 'blocked_depth_m': blockedDepthM!,
+    if (hysteresisM != null) 'hysteresis_m': hysteresisM!,
+  };
+}
+
+class HydraulicGrid {
+  const HydraulicGrid({
+    required this.origin,
+    required this.rows,
+    required this.cols,
+    required this.cellSizeM,
+    required this.latStep,
+    required this.lngStep,
+  });
+
+  final GeoPoint origin;
+  final int rows;
+  final int cols;
+  final double cellSizeM;
+  final double latStep;
+  final double lngStep;
+
+  factory HydraulicGrid.fromJson(Map<String, dynamic> json) => HydraulicGrid(
+    origin: GeoPoint.fromJson(Map<String, dynamic>.from(json['origin'] as Map)),
+    rows: json['rows'] as int,
+    cols: json['cols'] as int,
+    cellSizeM: (json['cell_size_m'] as num).toDouble(),
+    latStep: (json['lat_step'] as num).toDouble(),
+    lngStep: (json['lng_step'] as num).toDouble(),
+  );
+
+  Map<String, dynamic> toJson() => {
+    'origin': origin.toJson(),
+    'rows': rows,
+    'cols': cols,
+    'cell_size_m': cellSizeM,
+    'lat_step': latStep,
+    'lng_step': lngStep,
+  };
+}
+
+class HydraulicMassBalance {
+  const HydraulicMassBalance({
+    required this.initialStorageM3,
+    required this.rainfallM3,
+    required this.channelInflowM3,
+    required this.seaInflowM3,
+    required this.infiltrationM3,
+    required this.drainageM3,
+    required this.seaOutflowM3,
+    required this.storedM3,
+    required this.residualM3,
+  });
+
+  final double initialStorageM3;
+  final double rainfallM3;
+  final double channelInflowM3;
+  final double seaInflowM3;
+  final double infiltrationM3;
+  final double drainageM3;
+  final double seaOutflowM3;
+  final double storedM3;
+  final double residualM3;
+
+  factory HydraulicMassBalance.fromJson(Map<String, dynamic> json) => HydraulicMassBalance(
+    initialStorageM3: (json['initial_storage_m3'] as num).toDouble(),
+    rainfallM3: (json['rainfall_m3'] as num).toDouble(),
+    channelInflowM3: (json['channel_inflow_m3'] as num).toDouble(),
+    seaInflowM3: (json['sea_inflow_m3'] as num).toDouble(),
+    infiltrationM3: (json['infiltration_m3'] as num).toDouble(),
+    drainageM3: (json['drainage_m3'] as num).toDouble(),
+    seaOutflowM3: (json['sea_outflow_m3'] as num).toDouble(),
+    storedM3: (json['stored_m3'] as num).toDouble(),
+    residualM3: (json['residual_m3'] as num).toDouble(),
+  );
+
+  Map<String, dynamic> toJson() => {
+    'initial_storage_m3': initialStorageM3,
+    'rainfall_m3': rainfallM3,
+    'channel_inflow_m3': channelInflowM3,
+    'sea_inflow_m3': seaInflowM3,
+    'infiltration_m3': infiltrationM3,
+    'drainage_m3': drainageM3,
+    'sea_outflow_m3': seaOutflowM3,
+    'stored_m3': storedM3,
+    'residual_m3': residualM3,
+  };
+}
+
+class HydraulicSnapshot {
+  const HydraulicSnapshot({
+    required this.model,
+    required this.terrainSource,
+    required this.grid,
+    required this.depthsM,
+    required this.rainfallMmH,
+    required this.hydrologicalTimeSeconds,
+    required this.floodedAreaM2,
+    required this.maxDepthM,
+    required this.massBalance,
+  });
+
+  final String model;
+  final String terrainSource;
+  final HydraulicGrid grid;
+  final List<double> depthsM;
+  final double rainfallMmH;
+  final double hydrologicalTimeSeconds;
+  final double floodedAreaM2;
+  final double maxDepthM;
+  final HydraulicMassBalance massBalance;
+
+  factory HydraulicSnapshot.fromJson(Map<String, dynamic> json) => HydraulicSnapshot(
+    model: json['model'] as String,
+    terrainSource: json['terrain_source'] as String,
+    grid: HydraulicGrid.fromJson(Map<String, dynamic>.from(json['grid'] as Map)),
+    depthsM: (json['depths_m'] as List).map((value) => (value as num).toDouble()).toList(),
+    rainfallMmH: (json['rainfall_mm_h'] as num).toDouble(),
+    hydrologicalTimeSeconds: (json['hydrological_time_seconds'] as num).toDouble(),
+    floodedAreaM2: (json['flooded_area_m2'] as num).toDouble(),
+    maxDepthM: (json['max_depth_m'] as num).toDouble(),
+    massBalance: HydraulicMassBalance.fromJson(Map<String, dynamic>.from(json['mass_balance'] as Map)),
+  );
+
+  Map<String, dynamic> toJson() => {
+    'model': model,
+    'terrain_source': terrainSource,
+    'grid': grid.toJson(),
+    'depths_m': depthsM.map((value) => value).toList(),
+    'rainfall_mm_h': rainfallMmH,
+    'hydrological_time_seconds': hydrologicalTimeSeconds,
+    'flooded_area_m2': floodedAreaM2,
+    'max_depth_m': maxDepthM,
+    'mass_balance': massBalance.toJson(),
   };
 }

@@ -45,7 +45,7 @@
 .flood-roads-passable { stroke: var(--color-textSecondary); stroke-width: 1.25; opacity: .58; }
 .flood-roads-caution { stroke: var(--color-warning); stroke-width: 2.5; opacity: 1; }
 .flood-roads-blocked { stroke: var(--color-error); stroke-width: 3; stroke-dasharray: 5 3; opacity: 1; }
-.flood-exposure-zone { fill: var(--color-accent); stroke: var(--color-accent); stroke-width: 1; stroke-dasharray: 5 4; vector-effect: non-scaling-stroke; pointer-events: none; }
+.flood-water-cell { fill: var(--swatch); fill-opacity: .4; stroke: none; pointer-events: none; }
 .flood-route { stroke: var(--color-secondary); stroke-width: 4; opacity: 1; pointer-events: none; }
 .flood-selected-road { stroke: var(--color-textPrimary); stroke-width: 5; stroke-opacity: .85; pointer-events: none; }
 .flood-agent { fill: var(--color-accent); stroke: var(--color-background); stroke-width: .9; cursor: pointer; }
@@ -214,7 +214,16 @@
 .flood-index-low { --swatch: var(--color-floodLow); }
 .flood-index-medium { --swatch: var(--color-floodMedium); }
 .flood-index-high { --swatch: var(--color-floodHigh); }
-.flood-exposure-zone { fill: var(--swatch); stroke: var(--swatch); }
+.hydrology-parameters { margin: 14px 0; padding: 12px; border: 1px solid var(--color-border); border-radius: 8px; }
+.hydrology-parameters legend { font-size: 12px; }
+.duration-control { min-width: 0; }
+.duration-presets { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 7px; }
+.duration-presets .button { padding: 5px 7px; font-size: 10px; min-height: 30px; }
+.duration-presets .button[aria-pressed=true] { border-color: var(--color-accent); }
+.hydraulic-metrics { margin-bottom: 22px; }
+.hydraulic-metrics dl { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
+.hydraulic-metrics dt { color: var(--color-textSecondary); font-size: 11px; }
+.hydraulic-metrics dd { margin: 4px 0 0; font-variant-numeric: tabular-nums; }
 .flood-roads-caution { stroke: var(--color-roadRestricted); }
 .flood-roads-blocked { stroke: var(--color-roadClosed); }
 .flood-shelter-available { fill: var(--color-shelterAvailable); }
@@ -321,12 +330,13 @@
   .flood-workspace-preparation .flood-prepared-summary { display: none; }
   .flood-workspace-preparation > .flood-hud-disclosure { flex: 0 1 auto; }
   .mantasim-shell .flood-workspace-hud .flood-hud-disclosure > summary { padding: 6px 8px; min-height: 34px; font-size: 11px; white-space: nowrap; }
-  .flood-workspace-hud .simulation-hud { display: grid; gap: 6px; padding: 7px 9px; }
-  .flood-workspace-hud .hud-state { width: 100%; flex-wrap: nowrap; gap: 6px; font-size: 10px; }
-  .flood-workspace-hud .hud-state strong { flex: 0 0 auto; font-size: 11px; }
-  .flood-workspace-hud .hud-state > span { min-width: 0; flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .flood-workspace-hud .simulation-hud { display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; padding: 7px 9px; }
+  .flood-workspace-hud .hud-state { display: grid; grid-template-columns: minmax(0, 1fr) 40px; width: 100%; min-width: 0; gap: 6px; font-size: 10px; }
+  .flood-workspace-hud .hud-state strong { grid-column: 1; grid-row: 1; font-size: 11px; }
+  .flood-workspace-hud .hud-state > span { grid-column: 1 / -1; min-width: 0; white-space: normal; overflow-wrap: anywhere; }
+  .flood-workspace-hud .hud-state > progress { grid-column: 2; grid-row: 1; }
   .flood-page .flood-workspace-hud .hud-state progress { width: 40px; height: 4px; flex: 0 0 40px; }
-  .flood-workspace-hud .hud-actions { flex-wrap: nowrap; gap: 6px; }
+  .flood-workspace-hud .hud-actions { min-width: 0; flex-wrap: wrap; gap: 6px; }
   .flood-workspace-hud .hud-actions > .button { flex: 0 1 auto; min-height: 36px; padding: 7px 9px; font-size: 11px; }
   .flood-workspace-hud .hud-actions > .flood-actions-disclosure { flex: 0 0 auto; }
   .flood-actions-disclosure .flood-config-popover { width: min(300px, 100%); }
