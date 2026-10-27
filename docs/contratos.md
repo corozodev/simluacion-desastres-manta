@@ -19,9 +19,9 @@ Los GET no crean ni avanzan ejecuciones. El manager Go es dueño del reloj. El n
 
 El servidor público conserva los DTO de `/estado` y `/paso` sobre su mundo legacy inactivo. `SIM_AUTOSTART=true` se rechaza y el inicio legacy de `/admin/runs` devuelve `409` tras autenticación/validación. Las ejecuciones públicas pasan por el manager para respetar los mismos límites globales; las CLI y el laboratorio conservan su ejecución explícita separada.
 
-La configuración usa `scenario: zombie_outbreak | urban_flood`, `graph_profile: BASE | FULL_MANTA`, `seed`, `max_ticks`, `tick_interval_ms` y `config`. Este último sólo acepta `survivors`, `round`, `refuge_ids` y `rainfall_intensity`. Los límites públicos son 1–150 turnos, 1.000–5.000 ms por turno, 1–200 agentes y semilla entera representable exactamente por JavaScript. `round` admite `round1`, `round2` y `round3`; proporciona los parámetros de amenaza originales. Los valores omitidos se resuelven con los defaults publicados.
+La configuración usa `scenario: zombie_outbreak | urban_flood`, `graph_profile: BASE | FULL_MANTA`, `seed`, `max_ticks`, `tick_interval_ms` y `config`. Este último acepta los campos definidos en `SimulationConfigInput`, incluidos población, ronda, refugios, modo, políticas y opciones experimentales. Los límites personalizados son 30–3.000 turnos, 1.000–5.000 ms por turno, 1–200 agentes y semilla entera representable exactamente por JavaScript. `round` admite `round1`, `round2` y `round3`; proporciona los parámetros de amenaza originales. Los valores omitidos se resuelven con los defaults publicados. El modo `official` exige 150 turnos y 2.000 ms, además de sus condiciones oficiales; no admite alterar el horizonte.
 
-`refuge_ids` vacío o ausente selecciona los refugios predeterminados del grafo. Una lista explícita contiene hasta cuatro IDs existentes y distintos. La respuesta conserva los IDs efectivos ordenados; los refugios de otras topologías o desconocidos producen `400`. Cambiar refugios conserva los nodos de aparición iniciales para comparar la misma población. `rainfall_intensity` sólo aplica a inundaciones: índice sintético 0–1, sin unidades meteorológicas ni valor oficial.
+`refuge_ids` vacío o ausente selecciona los refugios predeterminados del grafo. Una lista explícita contiene hasta cuatro IDs existentes y distintos. La respuesta conserva los IDs efectivos ordenados; los refugios de otras topologías o desconocidos producen `400`. Cambiar refugios conserva los nodos de aparición iniciales para comparar la misma población. `rainfall_intensity` sólo aplica a inundaciones: índice de escenario 0–1, sin valor meteorológico observado ni oficial. En el motor hidráulico equivale a 0–120 mm/h de escenario, sin calibración.
 
 `BASE` utiliza 300 nodos / 383 aristas, versión `manta-v2-0ab03290b16a`. `FULL_MANTA` utiliza 9.179 / 13.452, versión `manta-master-57caa90f3aa7`; es experimental y sólo aparece habilitado con `ENABLE_FULL_MODE=true`. Consultar capacidades antes de ofrecerlo. El catálogo histórico mantiene los perfiles intermedios.
 
@@ -135,3 +135,13 @@ El contrato de `/paso` no cambia. Los campos nuevos de observación son opcional
 `GET /grafo` describe el grafo base y refugios iniciales; la ocupación/reserva viva se toma de `/estado`. Las respuestas no incluyen diagnósticos privados, PRNG, eventos futuros ni sleepers dormidos. No se añadió un endpoint administrativo ni un selector de IA.
 
 La simulación publica el plan después de actualizar zombies; cada solicitud del turno usa ese snapshot. Preparar otro turno no toma el mutex del simulador desde HTTP. El deadline de450ms cubre lectura/snapshot/decisión y el cliente mantiene500ms para HTTP completo.
+
+## FASE 8: laboratorio hidráulico
+
+`LabRunConfig` conserva perfiles y comportamientos e incorpora `hydraulic_model`
+y `hydrology`; `simulation_duration` cuenta turnos enteros 30–3.000. Sólo existen
+`rainfall_runoff_2d` y `compound_flood_2d`, sin runtime radial. El catálogo publica
+`duration_limits`. `ScenarioSnapshot.hydraulic` entrega profundidades, descriptor
+compacto de malla y balance de masa, separados de la geografía vial. `depth_m`
+expone el máximo vial muestreado. `cancel` conserva un final `cancelled`.
+Ver [ecuaciones, tiempos, limitaciones y validación](informe-fase8.md).

@@ -117,7 +117,6 @@ try {
   await openDetails(/^Configurar tormenta$/);
   await openDetails(/^Configuración avanzada$/);
   await page.getByRole('checkbox', { name: 'Usar susceptibilidad geográfica como referencia', exact: true }).check();
-  await page.getByRole('spinbutton', { name: 'Peso experimental de susceptibilidad' }).fill('0.25');
   await page.getByText('Configurar tormenta', { selector: 'summary', exact: true }).click();
   await startStorm();
   state = await until(() => get(lab.url, '/lab/state', 'LabState'), value => value.run_id !== baseline.run_id && value.scenario.simulation_step >= 1, 'hybrid run');
@@ -125,7 +124,7 @@ try {
   state = await until(() => get(lab.url, '/lab/state', 'LabState'), value => value.state === 'paused', 'hybrid pause');
   assert(state.config.seed === baseline.config.seed && stable(state.origins) === stable(baseline.origins), 'Reference changed seed/origins');
   const use = state.scenario.data_provenance.geographic_reference;
-  assert(use?.dataset_version === status.dataset_version && use.strength === .25 && use.zones.length === 3 && use.zones.some(zone => zone.factor > 1), 'No pinned categorical reference influence');
+  assert(use?.dataset_version === status.dataset_version && use.strength === 0 && use.zones.length === 0, 'No pinned contextual reference metadata');
   assert(state.config.rainfall_profile === baseline.config.rainfall_profile && state.config.rainfall_intensity === baseline.config.rainfall_intensity, 'Reference replaced synthetic rain');
   report.measurements.reference_use = use;
   report.checks.ui_opt_in_pins_version_and_preserves_seed_origins_and_rain = true;

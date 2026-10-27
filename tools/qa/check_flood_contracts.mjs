@@ -35,7 +35,7 @@ try {
   await writeFile(scenarioFile, JSON.stringify({
     name: 'Synthetic local HTTP contract check', scenario_type: 'urban_flood',
     seed: 20261026, turns: 6, survivors: 8, concurrency: 4, events: [],
-    flood: { simulation_duration: 6, time_step: 1, rainfall_profile: 'constant', rainfall_intensity: 1, flood_growth_rate: .4, drainage_factor: .05 },
+    flood: { simulation_duration: 6, time_step: 1, rainfall_profile: 'constant', rainfall_intensity: 1, hydraulic_model: 'rainfall_runoff_2d', hydrology: { initial_water_depth_m: .4 } },
   }));
   const key = randomBytes(32).toString('hex');
   server = spawn(binary, ['-listen', '127.0.0.1:0', '-interval', '0', '-scenario', scenarioFile], {
@@ -84,6 +84,7 @@ try {
   if (state.turn !== 6 || overlay.simulation_step !== state.turn || overlay.world_version !== state.world_version || overlay.graph_version !== graph.version || overlay.evacuation_metrics.total_agents !== 8) throw new Error('Scenario and legacy snapshots disagree');
   if (state.scenario_type !== 'urban_flood' || 'flood_zones' in state || 'agents' in state) throw new Error('Legacy state must retain a compact scenario marker');
   if (state.metrics.bitten !== 0 || state.zombies.length || state.metrics.requests_invalid || state.metrics.requests_timeout) throw new Error('Flood run introduced zombie outcomes or failed movement HTTP');
+  if (!overlay.hydraulic || overlay.hydraulic.depths_m.some(depth => depth < 0) || Math.abs(overlay.hydraulic.mass_balance.residual_m3) > .001) throw new Error('Invalid physical hydraulic snapshot');
   if (!overlay.road_conditions.some(road => road.state === 'blocked')) throw new Error('Contract fixture did not exercise dynamic road closure');
   for (const road of overlay.road_conditions) {
     if (road.state === 'blocked' && !state.blocked_edges.includes(road.edge_id)) throw new Error('Road overlay disagrees with shared blocked-edge state');

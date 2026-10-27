@@ -1,5 +1,8 @@
 # Inundaciones urbanas experimentales — FASE 4A
 
+> Documento histórico. [FASE 8](informe-fase8.md) sustituyó el motor radial por
+> hidrología conservativa; sus índices y parámetros radiales no describen el runtime actual.
+
 Los escenarios de inundación emplean parámetros sintéticos y no constituyen pronósticos hidrológicos ni recomendaciones oficiales de evacuación.
 
 ## Ejecución local

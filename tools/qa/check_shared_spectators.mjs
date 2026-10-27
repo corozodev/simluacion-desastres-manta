@@ -64,7 +64,7 @@ async function request(base, route, schema, options = {}) {
   return { value, response };
 }
 async function until(callback, predicate, label) {
-  const deadline = performance.now() + 20000;
+  const deadline = performance.now() + 45000;
   while (performance.now() < deadline) { const value = await callback(); if (predicate(value)) return value; await delay(100); }
   throw new Error(`Timeout: ${label}`);
 }
@@ -145,7 +145,7 @@ try {
   await request(world.url, `/v1/simulations/${created.simulation_id}/cancel`, 'SimulationMetadata', { method: 'POST', headers: auth });
   const final = (await request(world.url, publicRoute, 'PublishedSimulation')).value;
   assert.equal(final.simulation.status, 'CANCELLED'); assert.ok(final.simulation.results);
-  const replacement = (await request(world.url, '/v1/simulations', 'SimulationCreated', { method: 'POST', headers: { 'Idempotency-Key': randomUUID() }, body: { ...input, max_ticks: 2 }, status: 201 })).value;
+  const replacement = (await request(world.url, '/v1/simulations', 'SimulationCreated', { method: 'POST', headers: { 'Idempotency-Key': randomUUID() }, body: { ...input, max_ticks: 30 }, status: 201 })).value;
   assert.equal((await request(world.url, publicRoute, 'PublishedSimulation')).value.simulation.simulation_id, replacement.simulation_id);
   await request(world.url, '/v1/simulations', 'SimulationCreated', { method: 'POST', headers: { 'Idempotency-Key': creationKey }, body: input, status: 201 });
   assert.equal((await request(world.url, publicRoute, 'PublishedSimulation')).value.simulation.simulation_id, replacement.simulation_id, 'Idempotent replay never republishes old run');
@@ -186,7 +186,7 @@ try {
   await request(flood.url, '/lab/actions', 'LabState', { method: 'POST', body: { action: 'restart', expected_run_id: running.run_id } });
   initialFlood = (await request(flood.url, '/lab/published', 'LabState')).value;
   assert.equal(initialFlood.state, 'idle');
-  const fastFlood = (await request(flood.url, '/lab/runs', 'LabState', { method: 'POST', body: { config: { ...floodConfig, simulation_duration: 4, interval_ms: 0 }, expected_run_id: initialFlood.run_id } })).value;
+  const fastFlood = (await request(flood.url, '/lab/runs', 'LabState', { method: 'POST', body: { config: { ...floodConfig, simulation_duration: 30, interval_ms: 0 }, expected_run_id: initialFlood.run_id } })).value;
   const finished = await until(async () => (await request(flood.url, '/lab/published', 'LabState')).value, value => value.state === 'finished', 'final flood');
   assert.equal(finished.run_id, fastFlood.run_id); assert.ok(finished.scenario.evacuation_metrics);
   report.checks.push('Anonymous flood start/pause/resume/restart; stale create returns 409; late join and final retained; real citizen report pending and cannot mutate simulation; moderation remains authenticated');

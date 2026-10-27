@@ -110,7 +110,7 @@ try {
       await page.getByLabel('Profundidad del grafo').selectOption(profile);
       await page.getByLabel('Agentes', { exact: true }).fill('80');
       await page.getByText('Configuración avanzada', { selector: 'summary', exact: true }).click();
-      await page.getByLabel('Turnos máximos').fill('12');
+      await page.getByLabel('Turnos máximos').fill('30');
       await page.getByText('Configuración avanzada', { selector: 'summary', exact: true }).click();
       const response = page.waitForResponse(r => r.url() === `${api}/v1/simulations` && r.request().method() === 'POST');
       await page.getByRole('button', { name: 'Iniciar simulación', exact: true }).click();
@@ -118,7 +118,7 @@ try {
     } else {
       // The zombie route intentionally has no threat selector. Exercise its
       // supported recovery observer using a legitimately created flood session.
-      const response = await fetch(`${api}/v1/simulations`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Idempotency-Key': randomUUID() }, body: JSON.stringify({ scenario, graph_profile: profile, seed: 20261026, max_ticks: 12, tick_interval_ms: 2000, config: { survivors: 80, round: 'round1', rainfall_intensity: .8 } }) });
+      const response = await fetch(`${api}/v1/simulations`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Idempotency-Key': randomUUID() }, body: JSON.stringify({ scenario, graph_profile: profile, seed: 20261026, max_ticks: 30, tick_interval_ms: 2000, config: { survivors: 80, round: 'round1', rainfall_intensity: .8 } }) });
       assert.equal(response.status, 201);
       credentials = await response.json(); explicitApiCreates++;
       await page.evaluate(value => sessionStorage.setItem('corodev.simulation-session.v1', JSON.stringify(value)), { simulation_id: credentials.simulation_id, access_token: credentials.access_token, endpoint: api });
@@ -170,7 +170,7 @@ try {
     assert.equal((await current()).tick, paused.tick);
     await map.screenshot({ path: path.join(evidence, `${name}-close-paused.png`) });
     await page.screenshot({ path: path.join(evidence, `${name}-page.png`), fullPage: true });
-    if (scenario === 'urban_flood') { await expect(page.locator('[data-layer=exposure] circle').first()).toBeAttached(); await map.screenshot({ path: path.join(evidence, `${name}-exposure.png`) }); }
+    if (scenario === 'urban_flood') { await expect(page.locator('[data-layer=exposure] path[data-hydraulic-depth-band]').first()).toBeAttached(); await map.screenshot({ path: path.join(evidence, `${name}-exposure.png`) }); }
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await expect(page.getByText(/Movimiento reducido: efectos detenidos/)).toBeVisible();
     await page.emulateMedia({ reducedMotion: 'no-preference' });
@@ -189,7 +189,7 @@ try {
     await page.getByText('Configuración e información técnica', { selector: 'summary', exact: true }).click();
     await expect(page.locator('details').filter({ has: page.getByText('Configuración e información técnica', { selector: 'summary', exact: true }) })).toContainText(credentials.simulation_id);
     assert.equal(creates + explicitApiCreates, 1, 'Refresh created another simulation');
-    await expect(page.getByLabel('Resultados de simulación')).toContainText('Finalizada', { timeout: 35_000 });
+    await expect(page.getByLabel('Resultados de simulación')).toContainText('Finalizada', { timeout: credentials.max_ticks * credentials.tick_interval_ms + 30_000 });
     await expect(page.locator('[data-layer="animated-entities"]')).toHaveAttribute('data-animation-active', 'false');
     const final = await current();
     assert.equal(final.status, 'COMPLETED');

@@ -209,3 +209,13 @@ La evaluación de pronóstico compara una envolvente de nodos posibles con posic
 Las reglas anteriores siguen correspondiendo a `zombie`, también cuando se omite `scenario_type`. `urban_flood` reutiliza el núcleo y no contiene zombies. La [guía de inundaciones](urban-flood.md) define lluvia sintética, overlay vial, políticas de espera y exclusión de refugios. Un agente sin destino admisible permanece vivo como `active`; el endpoint especializado distingue `isolated` y `waiting`. Capacidad, reservas y movimiento de una sola arista se conservan.
 
 Los escenarios de inundación emplean parámetros sintéticos y no constituyen pronósticos hidrológicos ni recomendaciones oficiales de evacuación.
+
+## FASE 8: duración y sustitución hidráulica
+
+El reto oficial conserva sus tres rondas de 150 turnos a 2 s/turno. Las sesiones
+experimentales zombie y el laboratorio de inundaciones admiten 30–3.000 turnos.
+No terminan antes por haber evacuado o alcanzado estado terminal todos los
+agentes; avanzan hasta el horizonte configurado salvo cancelación o caducidad.
+Los tiempos de HTTP no alteran resultados lógicos. La física de inundaciones
+usa [otro reloj y una malla conservativa](informe-fase8.md); no conserva el motor
+radial ni introduce cambios en ataques, sleepers, refugios o RNG zombie.

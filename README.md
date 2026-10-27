@@ -163,7 +163,7 @@ El APK debug está en `apps/mobile/build/app/outputs/flutter-apk/app-debug.apk`,
 | `SIM_MAX_RETAINED` / `SIM_MAX_MEMORY_MB` | `8` / `128`; sesiones totales y presupuesto estimado reservado |
 | `SIM_DEFAULT_TICK_INTERVAL` / `SIM_DEFAULT_MAX_TICKS` | `2s` / `150`; valores por defecto de la API de sesiones |
 | `SIM_IDLE_TTL` / `SIM_PAUSED_TTL` | `2m` / `5m`; abandono y pausa |
-| `SIM_COMPLETED_TTL` / `SIM_MAX_WALL_TIME` | `15m` / `15m`; retención final y duración máxima |
+| `SIM_COMPLETED_TTL` / `SIM_MAX_WALL_TIME` | `15m` / `6h`; retención final y límite de pared para ejecuciones extendidas |
 | `SIM_RATE_LIMIT_PER_MINUTE` / `SIM_CREATE_LIMIT_PER_MINUTE` | `120` / `10`; solicitudes y creaciones por dirección remota |
 | `ENABLE_FULL_MODE` | `false`; habilitar el maestro experimental sólo tras medir su presupuesto |
 
@@ -274,3 +274,11 @@ El laboratorio incorpora una capa independiente de **Susceptibilidad oficial a i
 **Usar susceptibilidad geográfica como referencia** permite un experimento opcional con pesos adimensionales por clase, manteniendo lluvia sintética, semilla y grafo. Cada ejecución fija su versión y registra las intersecciones. `npm run dev:lab` funciona sin Internet con la copia versionada; una fuente ausente deja disponible el modo totalmente sintético. `LAB_REFERENCE_ONLINE=true` habilita actualización externa asíncrona; no se despliega automáticamente.
 
 `npm run test:references:e2e` valida Go/React reales en 300 y 9.179 nodos, polígonos, modo offline, procedencia e independencia del escenario zombie. Ver [fuentes, endpoints y demos A–E](docs/datos-oficiales-y-demo.md), [pruebas y benchmarks](docs/informe-fase4d.md) y [copia de datos](services/evacuation/data/reference/README.md).
+
+## FASE 8: hidrología y horizontes extendidos
+
+El laboratorio usa malla conservativa y profundidades calculadas sobre relieve
+sintético, sin motor radial. Conserva sus tres perfiles de lluvia y políticas de
+evacuación. Inundaciones y zombis personalizados admiten 30–3.000 turnos; official
+permanece en 150/2.000 ms. `npm run bench:hydrology` reproduce 25 escenarios por
+HTTP autenticado y genera evidencia local. Ver [implementación, pruebas y límites](docs/informe-fase8.md).

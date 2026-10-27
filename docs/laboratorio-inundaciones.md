@@ -1,5 +1,9 @@
 # Laboratorio React de inundaciones — FASE 4B
 
+> Evolución vigente: [FASE 8](informe-fase8.md), con malla hidráulica, profundidades,
+> duración 30–3.000 turnos y sin motor radial. Las comparaciones de focos descritas
+> aquí se conservan como documentación histórica.
+
 Los escenarios de inundación emplean parámetros sintéticos y no constituyen pronósticos hidrológicos ni recomendaciones oficiales de evacuación.
 
 ## Abrir y usar

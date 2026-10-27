@@ -137,6 +137,8 @@ try {
     }, Boolean, 'Vite readiness');
     browser = await chromium.launch(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE } : {});
     const page = await browser.newPage({ viewport: { width: 1440, height: 1100 } });
+    const cdp = await page.context().newCDPSession(page);
+    await cdp.send('Performance.enable');
     page.on('dialog', dialog => dialog.accept());
     const errors = [], failedRequests = [], cancelledRequests = [], httpErrors = [], credentialLeaks = [], rasterRequests = [];
     await page.route(/https?:\/\/[^/]*tile\.openstreetmap\.org\//, route => { rasterRequests.push(route.request().url()); return route.abort(); });
@@ -216,8 +218,15 @@ try {
     await openDetails(page, 'Configurar tormenta');
     await openDetails(page, 'Configuración avanzada');
     await page.getByLabel('Cantidad de agentes').fill('20');
+    await page.getByLabel('Perfil de lluvia').selectOption('constant');
+    await page.getByLabel('Profundidad inicial sintética (m)', { exact: true }).fill('0.06');
+    await page.getByLabel('Saturación inicial (0–1)', { exact: true }).fill('0.8');
+    await page.getByLabel('Infiltración máxima (mm/h)', { exact: true }).fill('0');
+    await page.getByLabel('Capacidad de drenaje (mm/h)', { exact: true }).fill('0');
+    await page.getByLabel('Profundidad de bloqueo vial (m)', { exact: true }).fill('0.15');
+    await page.getByLabel('Histéresis de reapertura (m)', { exact: true }).fill('0.02');
     await page.getByLabel('Semilla de inundación').fill('42');
-    await page.getByLabel('Duración simulada').fill('80');
+    await page.getByLabel('Duración de la simulación', { exact: true }).fill('80');
     await page.getByLabel('Velocidad de reproducción').selectOption('25');
     await page.getByText('Configurar tormenta', { selector: 'summary', exact: true }).click();
     await closeAgentPanel(page);
@@ -293,7 +302,18 @@ try {
     report.comparison = state.comparison;
     await page.screenshot({ path: path.join(directory, 'flood-comparison-desktop.png'), fullPage: true });
     await page.setViewportSize({ width: 390, height: 844 });
-    if (await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)) throw new Error('Flood UI overflows a 390px viewport');
+    const narrowLayout = await page.evaluate(() => ({
+      viewport: innerWidth, scroll_width: document.documentElement.scrollWidth,
+      offenders: Array.from(document.querySelectorAll('body *')).filter(element => element instanceof HTMLElement && element.getClientRects().length && element.getBoundingClientRect().right > innerWidth + 1).map(element => {
+        const rect = element.getBoundingClientRect(), style = getComputedStyle(element);
+        return { element: element.tagName.toLowerCase(), class: element.className, text: element.textContent?.trim().slice(0, 100), left: rect.left, right: rect.right, width: rect.width, scroll_width: element.scrollWidth, min_width: style.minWidth, display: style.display, overflow_x: style.overflowX, white_space: style.whiteSpace };
+      }).slice(0, 40),
+    }));
+    if (narrowLayout.scroll_width > narrowLayout.viewport) {
+      report.browser.narrow_layout = narrowLayout;
+      await page.screenshot({ path: path.join(directory, 'flood-narrow-overflow.png'), fullPage: false });
+      throw new Error(`Flood UI overflows a 390px viewport: ${JSON.stringify(narrowLayout)}`);
+    }
     await page.keyboard.press('Escape');
     await expect.poll(async () => {
       const sidebar = await page.locator('aside.sidebar').boundingBox();
@@ -316,6 +336,7 @@ try {
     await closeAgentPanel(page);
     await expect(page.getByRole('img', { name: /^Red urbana de inundación simulada/ })).toBeVisible();
     await expect(page.getByTestId('flood-map').locator('path[data-road-state="passable"]')).not.toHaveAttribute('d', '');
+    const clientBeforeMaster = await cdp.send('Performance.getMetrics');
     const startMaster = performance.now();
     await page.getByRole('button', { name: 'Iniciar tormenta', exact: true }).click();
     state = await until(() => get('/lab/state', 'LabState'), next => next.mode === 'full', 'Master graph used by the engine', 120000);
@@ -336,10 +357,10 @@ try {
     report.browser.master_edges = masterGraph.edges.length;
     report.browser.master_dom_nodes = await page.locator('*').count();
     if (report.browser.master_dom_nodes > 10000) throw new Error('Master flood map created unbounded individual road DOM objects');
-    const cdp = await page.context().newCDPSession(page);
-    await cdp.send('Performance.enable');
     const metrics = await cdp.send('Performance.getMetrics');
     report.browser.master_js_heap_used_bytes = metrics.metrics.find(metric => metric.name === 'JSHeapUsedSize')?.value;
+    report.browser.master_client_work_ms = Object.fromEntries(['TaskDuration', 'ScriptDuration', 'LayoutDuration', 'RecalcStyleDuration'].map(name => [name, 1000 * ((metrics.metrics.find(metric => metric.name === name)?.value ?? 0) - (clientBeforeMaster.metrics.find(metric => metric.name === name)?.value ?? 0))]));
+    report.browser.client_work_method = 'Chromium CDP counters during master start/pause workflow: main-thread work, script, layout and style separately from HTTP wait. Not paint FPS or a per-frame latency claim.';
     await page.screenshot({ path: path.join(directory, 'flood-master-desktop.png'), fullPage: true });
     report.checks.master_changes_real_engine_and_keeps_compact_dom = true;
     if ((await (await fetch(`${zombie}/estado`)).json()).graph_version !== (await (await fetch(`${zombie}/grafo`)).json()).version) throw new Error('Flood laboratory changed the zombie graph');
@@ -353,7 +374,7 @@ try {
     report.browser.screenshots = ['flood-desktop-paused.png', 'flood-desktop-exposure.png', 'flood-comparison-desktop.png', 'flood-mobile.png', 'flood-mobile-viewport.png', 'flood-mobile-map.png', 'flood-master-desktop.png'];
     if (errors.length || failedRequests.length || httpErrors.length || credentialLeaks.length || rasterRequests.length) throw new Error(`Browser errors=${errors.length}, failed API requests=${failedRequests.length}, API HTTP errors=${httpErrors.length}, leaked movement keys=${credentialLeaks.length}, raster requests=${rasterRequests.length}`);
   } else {
-    const config = { ...catalog.default_config, shelters: alternatives, agents: 8, simulation_duration: 20, interval_ms: 10 };
+    const config = { ...catalog.default_config, shelters: alternatives, agents: 8, simulation_duration: 30, interval_ms: 10 };
     let state = await mutate('/lab/runs', { config, expected_run_id: initial.run_id });
     await until(() => get('/lab/state', 'LabState'), next => next.scenario.simulation_step > 0, 'API first step');
     state = await mutate('/lab/actions', { action: 'pause', expected_run_id: state.run_id });

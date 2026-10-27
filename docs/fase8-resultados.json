@@ -1,0 +1,1903 @@
+{
+  "recorded_at": "2026-10-27T22:13:24.283Z",
+  "environment": "Local Linux; accelerated real authenticated loopback HTTP. No EC2 capacity claim.",
+  "methodology": "Full scenarios, one execution at a time. Processing excludes pacing; CPU/RSS include setup, validation, serialization and forced GC. Logical hashes exclude timings. Historical Legacy evidence is retained separately; no Legacy runtime.",
+  "result": "PASS",
+  "runs": [
+    {
+      "name": "duration-30",
+      "graph": "data/manta-v2.json",
+      "turns": 30,
+      "agents": 80,
+      "profile": "storm",
+      "behavior": "preventive",
+      "model": "rainfall_runoff_2d",
+      "grid": {
+        "origin": {
+          "lat": -0.9936515432118375,
+          "lng": -80.79009320104625
+        },
+        "rows": 27,
+        "cols": 61,
+        "cell_size_m": 200,
+        "lat_step": 0.001798643211837461,
+        "lng_step": 0.001798901046237249
+      },
+      "metrics": {
+        "total_agents": 80,
+        "evacuated_agents": 80,
+        "isolated_agents": 0,
+        "waiting_agents": 0,
+        "average_evacuation_time": 10.7875,
+        "blocked_edges": 0,
+        "caution_edges": 0,
+        "shelters_at_capacity": 0,
+        "reroute_count": 0,
+        "simulation_total_duration": 30
+      },
+      "mass_balance": {
+        "initial_storage_m3": 0,
+        "rainfall_m3": 1739232.0000000254,
+        "channel_inflow_m3": 0,
+        "sea_inflow_m3": 0,
+        "infiltration_m3": 258403.6075735522,
+        "drainage_m3": 194413.06352130053,
+        "sea_outflow_m3": 6619.363465001918,
+        "stored_m3": 1279795.9654400197,
+        "residual_m3": 1.511070877313614e-07
+      },
+      "step_latency": {
+        "count": 30,
+        "total_ms": 481.569734,
+        "p50_ms": 12.702423,
+        "p95_ms": 34.395091,
+        "p99_ms": 37.736132
+      },
+      "serialization_latency": {
+        "count": 31,
+        "total_ms": 19.277848000000006,
+        "p50_ms": 0.647101,
+        "p95_ms": 0.954415,
+        "p99_ms": 1.165524
+      },
+      "resources": {
+        "wall_seconds": 0.534575926,
+        "process_cpu_seconds": 1.7322749999999998,
+        "average_cpu_one_core_percent": 324.0465789325499,
+        "peak_rss_kib_linux": 26360,
+        "note": "Linux ru_maxrss is KiB and includes the whole process lifetime; CPU is percent of one core. Three forced-GC samples characterize retained heap; they do not prove a long-term memory bound. TotalAlloc is cumulative allocation, not retained memory."
+      },
+      "peak_snapshot_bytes": 167922,
+      "peak_blocked_edges": 0,
+      "logical_hash": "7742c1953f11418bd9cd396a62bf967d81d008c40937852ca64cc0a1e7ee9366",
+      "validation_passed": true,
+      "heap_final_bytes_after_gc": 2947656
+    },
+    {
+      "name": "duration-30-replay",
+      "graph": "data/manta-v2.json",
+      "turns": 30,
+      "agents": 80,
+      "profile": "storm",
+      "behavior": "preventive",
+      "model": "rainfall_runoff_2d",
+      "grid": {
+        "origin": {
+          "lat": -0.9936515432118375,
+          "lng": -80.79009320104625
+        },
+        "rows": 27,
+        "cols": 61,
+        "cell_size_m": 200,
+        "lat_step": 0.001798643211837461,
+        "lng_step": 0.001798901046237249
+      },
+      "metrics": {
+        "total_agents": 80,
+        "evacuated_agents": 80,
+        "isolated_agents": 0,
+        "waiting_agents": 0,
+        "average_evacuation_time": 10.7875,
+        "blocked_edges": 0,
+        "caution_edges": 0,
+        "shelters_at_capacity": 0,
+        "reroute_count": 0,
+        "simulation_total_duration": 30
+      },
+      "mass_balance": {
+        "initial_storage_m3": 0,
+        "rainfall_m3": 1739232.0000000254,
+        "channel_inflow_m3": 0,
+        "sea_inflow_m3": 0,
+        "infiltration_m3": 258403.6075735522,
+        "drainage_m3": 194413.06352130053,
+        "sea_outflow_m3": 6619.363465001918,
+        "stored_m3": 1279795.9654400197,
+        "residual_m3": 1.511070877313614e-07
+      },
+      "step_latency": {
+        "count": 30,
+        "total_ms": 471.21828400000004,
+        "p50_ms": 13.347628,
+        "p95_ms": 36.860244,
+        "p99_ms": 37.750533
+      },
+      "serialization_latency": {
+        "count": 31,
+        "total_ms": 20.861541999999996,
+        "p50_ms": 0.648086,
+        "p95_ms": 1.113197,
+        "p99_ms": 1.270038
+      },
+      "resources": {
+        "wall_seconds": 0.529563924,
+        "process_cpu_seconds": 1.648739,
+        "average_cpu_one_core_percent": 311.3389952144852,
+        "peak_rss_kib_linux": 28412,
+        "note": "Linux ru_maxrss is KiB and includes the whole process lifetime; CPU is percent of one core. Three forced-GC samples characterize retained heap; they do not prove a long-term memory bound. TotalAlloc is cumulative allocation, not retained memory."
+      },
+      "peak_snapshot_bytes": 167922,
+      "peak_blocked_edges": 0,
+      "logical_hash": "7742c1953f11418bd9cd396a62bf967d81d008c40937852ca64cc0a1e7ee9366",
+      "validation_passed": true,
+      "heap_final_bytes_after_gc": 2937072
+    },
+    {
+      "name": "duration-150",
+      "graph": "data/manta-v2.json",
+      "turns": 150,
+      "agents": 80,
+      "profile": "storm",
+      "behavior": "preventive",
+      "model": "rainfall_runoff_2d",
+      "grid": {
+        "origin": {
+          "lat": -0.9936515432118375,
+          "lng": -80.79009320104625
+        },
+        "rows": 27,
+        "cols": 61,
+        "cell_size_m": 200,
+        "lat_step": 0.001798643211837461,
+        "lng_step": 0.001798901046237249
+      },
+      "metrics": {
+        "total_agents": 80,
+        "evacuated_agents": 80,
+        "isolated_agents": 0,
+        "waiting_agents": 0,
+        "average_evacuation_time": 10.7875,
+        "blocked_edges": 14,
+        "caution_edges": 275,
+        "shelters_at_capacity": 0,
+        "reroute_count": 0,
+        "simulation_total_duration": 150
+      },
+      "mass_balance": {
+        "initial_storage_m3": 0,
+        "rainfall_m3": 8696160.00000087,
+        "channel_inflow_m3": 0,
+        "sea_inflow_m3": 0,
+        "infiltration_m3": 1194561.5331684311,
+        "drainage_m3": 977459.3476310914,
+        "sea_outflow_m3": 435019.2175486907,
+        "stored_m3": 6089119.901651704,
+        "residual_m3": 9.527429938316345e-07
+      },
+      "step_latency": {
+        "count": 150,
+        "total_ms": 843.7839430000002,
+        "p50_ms": 3.290741,
+        "p95_ms": 21.704471,
+        "p99_ms": 33.945658
+      },
+      "serialization_latency": {
+        "count": 151,
+        "total_ms": 104.82833400000003,
+        "p50_ms": 0.648665,
+        "p95_ms": 1.166263,
+        "p99_ms": 1.642463
+      },
+      "resources": {
+        "wall_seconds": 1.026920258,
+        "process_cpu_seconds": 2.480959,
+        "average_cpu_one_core_percent": 241.59217628366233,
+        "peak_rss_kib_linux": 29776,
+        "note": "Linux ru_maxrss is KiB and includes the whole process lifetime; CPU is percent of one core. Three forced-GC samples characterize retained heap; they do not prove a long-term memory bound. TotalAlloc is cumulative allocation, not retained memory."
+      },
+      "peak_snapshot_bytes": 167923,
+      "peak_blocked_edges": 14,
+      "logical_hash": "9296f5642199a04f51cb03b31e50e69bdd4acac835704980f8ebafd888152199",
+      "validation_passed": true,
+      "heap_final_bytes_after_gc": 3051152
+    },
+    {
+      "name": "duration-150-replay",
+      "graph": "data/manta-v2.json",
+      "turns": 150,
+      "agents": 80,
+      "profile": "storm",
+      "behavior": "preventive",
+      "model": "rainfall_runoff_2d",
+      "grid": {
+        "origin": {
+          "lat": -0.9936515432118375,
+          "lng": -80.79009320104625
+        },
+        "rows": 27,
+        "cols": 61,
+        "cell_size_m": 200,
+        "lat_step": 0.001798643211837461,
+        "lng_step": 0.001798901046237249
+      },
+      "metrics": {
+        "total_agents": 80,
+        "evacuated_agents": 80,
+        "isolated_agents": 0,
+        "waiting_agents": 0,
+        "average_evacuation_time": 10.7875,
+        "blocked_edges": 14,
+        "caution_edges": 275,
+        "shelters_at_capacity": 0,
+        "reroute_count": 0,
+        "simulation_total_duration": 150
+      },
+      "mass_balance": {
+        "initial_storage_m3": 0,
+        "rainfall_m3": 8696160.00000087,
+        "channel_inflow_m3": 0,
+        "sea_inflow_m3": 0,
+        "infiltration_m3": 1194561.5331684311,
+        "drainage_m3": 977459.3476310914,
+        "sea_outflow_m3": 435019.2175486907,
+        "stored_m3": 6089119.901651704,
+        "residual_m3": 9.527429938316345e-07
+      },
+      "step_latency": {
+        "count": 150,
+        "total_ms": 857.9815579999998,
+        "p50_ms": 3.486217,
+        "p95_ms": 19.883646,
+        "p99_ms": 32.166686
+      },
+      "serialization_latency": {
+        "count": 151,
+        "total_ms": 108.36770500000002,
+        "p50_ms": 0.668961,
+        "p95_ms": 1.302142,
+        "p99_ms": 1.728682
+      },
+      "resources": {
+        "wall_seconds": 1.054850444,
+        "process_cpu_seconds": 2.457058,
+        "average_cpu_one_core_percent": 232.92951280210107,
+        "peak_rss_kib_linux": 25196,
+        "note": "Linux ru_maxrss is KiB and includes the whole process lifetime; CPU is percent of one core. Three forced-GC samples characterize retained heap; they do not prove a long-term memory bound. TotalAlloc is cumulative allocation, not retained memory."
+      },
+      "peak_snapshot_bytes": 167923,
+      "peak_blocked_edges": 14,
+      "logical_hash": "9296f5642199a04f51cb03b31e50e69bdd4acac835704980f8ebafd888152199",
+      "validation_passed": true,
+      "heap_final_bytes_after_gc": 3027544
+    },
+    {
+      "name": "duration-300",
+      "graph": "data/manta-v2.json",
+      "turns": 300,
+      "agents": 80,
+      "profile": "storm",
+      "behavior": "preventive",
+      "model": "rainfall_runoff_2d",
+      "grid": {
+        "origin": {
+          "lat": -0.9936515432118375,
+          "lng": -80.79009320104625
+        },
+        "rows": 27,
+        "cols": 61,
+        "cell_size_m": 200,
+        "lat_step": 0.001798643211837461,
+        "lng_step": 0.001798901046237249
+      },
+      "metrics": {
+        "total_agents": 80,
+        "evacuated_agents": 80,
+        "isolated_agents": 0,
+        "waiting_agents": 0,
+        "average_evacuation_time": 10.7875,
+        "blocked_edges": 26,
+        "caution_edges": 327,
+        "shelters_at_capacity": 0,
+        "reroute_count": 0,
+        "simulation_total_duration": 300
+      },
+      "mass_balance": {
+        "initial_storage_m3": 0,
+        "rainfall_m3": 17392319.999999683,
+        "channel_inflow_m3": 0,
+        "sea_inflow_m3": 0,
+        "infiltration_m3": 2170921.740709178,
+        "drainage_m3": 1962924.9365255763,
+        "sea_outflow_m3": 3209119.2801693315,
+        "stored_m3": 10049354.042597141,
+        "residual_m3": -1.5422701835632324e-06
+      },
+      "step_latency": {
+        "count": 300,
+        "total_ms": 1401.7986090000002,
+        "p50_ms": 3.573391,
+        "p95_ms": 13.280146,
+        "p99_ms": 27.790677
+      },
+      "serialization_latency": {
+        "count": 301,
+        "total_ms": 242.17520599999997,
+        "p50_ms": 0.765345,
+        "p95_ms": 1.300894,
+        "p99_ms": 1.66834
+      },
+      "resources": {
+        "wall_seconds": 1.771039053,
+        "process_cpu_seconds": 3.749694,
+        "average_cpu_one_core_percent": 211.72282980707368,
+        "peak_rss_kib_linux": 28704,
+        "note": "Linux ru_maxrss is KiB and includes the whole process lifetime; CPU is percent of one core. Three forced-GC samples characterize retained heap; they do not prove a long-term memory bound. TotalAlloc is cumulative allocation, not retained memory."
+      },
+      "peak_snapshot_bytes": 167923,
+      "peak_blocked_edges": 26,
+      "logical_hash": "664c505f4d81398b10d76717b4b2f2c08176a1b5dd5b7ba64c8b400b26175abc",
+      "validation_passed": true,
+      "heap_final_bytes_after_gc": 3077312
+    },
+    {
+      "name": "duration-300-replay",
+      "graph": "data/manta-v2.json",
+      "turns": 300,
+      "agents": 80,
+      "profile": "storm",
+      "behavior": "preventive",
+      "model": "rainfall_runoff_2d",
+      "grid": {
+        "origin": {
+          "lat": -0.9936515432118375,
+          "lng": -80.79009320104625
+        },
+        "rows": 27,
+        "cols": 61,
+        "cell_size_m": 200,
+        "lat_step": 0.001798643211837461,
+        "lng_step": 0.001798901046237249
+      },
+      "metrics": {
+        "total_agents": 80,
+        "evacuated_agents": 80,
+        "isolated_agents": 0,
+        "waiting_agents": 0,
+        "average_evacuation_time": 10.7875,
+        "blocked_edges": 26,
+        "caution_edges": 327,
+        "shelters_at_capacity": 0,
+        "reroute_count": 0,
+        "simulation_total_duration": 300
+      },
+      "mass_balance": {
+        "initial_storage_m3": 0,
+        "rainfall_m3": 17392319.999999683,
+        "channel_inflow_m3": 0,
+        "sea_inflow_m3": 0,
+        "infiltration_m3": 2170921.740709178,
+        "drainage_m3": 1962924.9365255763,
+        "sea_outflow_m3": 3209119.2801693315,
+        "stored_m3": 10049354.042597141,
+        "residual_m3": -1.5422701835632324e-06
+      },
+      "step_latency": {
+        "count": 300,
+        "total_ms": 1537.9536259999995,
+        "p50_ms": 3.825335,
+        "p95_ms": 16.193499,
+        "p99_ms": 30.793648
+      },
+      "serialization_latency": {
+        "count": 301,
+        "total_ms": 250.1771749999999,
+        "p50_ms": 0.778215,
+        "p95_ms": 1.392897,
+        "p99_ms": 1.872208
+      },
+      "resources": {
+        "wall_seconds": 1.9344491750000001,
+        "process_cpu_seconds": 3.8266370000000003,
+        "average_cpu_one_core_percent": 197.8153290070286,
+        "peak_rss_kib_linux": 28612,
+        "note": "Linux ru_maxrss is KiB and includes the whole process lifetime; CPU is percent of one core. Three forced-GC samples characterize retained heap; they do not prove a long-term memory bound. TotalAlloc is cumulative allocation, not retained memory."
+      },
+      "peak_snapshot_bytes": 167923,
+      "peak_blocked_edges": 26,
+      "logical_hash": "664c505f4d81398b10d76717b4b2f2c08176a1b5dd5b7ba64c8b400b26175abc",
+      "validation_passed": true,
+      "heap_final_bytes_after_gc": 3144624
+    },
+    {
+      "name": "duration-600",
+      "graph": "data/manta-v2.json",
+      "turns": 600,
+      "agents": 80,
+      "profile": "storm",
+      "behavior": "preventive",
+      "model": "rainfall_runoff_2d",
+      "grid": {
+        "origin": {
+          "lat": -0.9936515432118375,
+          "lng": -80.79009320104625
+        },
+        "rows": 27,
+        "cols": 61,
+        "cell_size_m": 200,
+        "lat_step": 0.001798643211837461,
+        "lng_step": 0.001798901046237249
+      },
+      "metrics": {
+        "total_agents": 80,
+        "evacuated_agents": 80,
+        "isolated_agents": 0,
+        "waiting_agents": 0,
+        "average_evacuation_time": 10.7875,
+        "blocked_edges": 17,
+        "caution_edges": 133,
+        "shelters_at_capacity": 0,
+        "reroute_count": 0,
+        "simulation_total_duration": 600
+      },
+      "mass_balance": {
+        "initial_storage_m3": 0,
+        "rainfall_m3": 34784639.99996034,
+        "channel_inflow_m3": 0,
+        "sea_inflow_m3": 0,
+        "infiltration_m3": 3601205.965732525,
+        "drainage_m3": 3899397.4330106797,
+        "sea_outflow_m3": 16336310.396211818,
+        "stored_m3": 10947726.205053601,
+        "residual_m3": -4.828348755836487e-05
+      },
+      "step_latency": {
+        "count": 600,
+        "total_ms": 2593.909903000002,
+        "p50_ms": 3.600335,
+        "p95_ms": 5.740087,
+        "p99_ms": 26.970297
+      },
+      "serialization_latency": {
+        "count": 601,
+        "total_ms": 504.39031999999986,
+        "p50_ms": 0.766982,
+        "p95_ms": 1.453499,
+        "p99_ms": 1.724478
+      },
+      "resources": {
+        "wall_seconds": 3.363634249,
+        "process_cpu_seconds": 6.343030000000001,
+        "average_cpu_one_core_percent": 188.57668612114315,
+        "peak_rss_kib_linux": 28084,
+        "note": "Linux ru_maxrss is KiB and includes the whole process lifetime; CPU is percent of one core. Three forced-GC samples characterize retained heap; they do not prove a long-term memory bound. TotalAlloc is cumulative allocation, not retained memory."
+      },
+      "peak_snapshot_bytes": 167923,
+      "peak_blocked_edges": 142,
+      "logical_hash": "90538e2070a5d413f173b2693a739b17114148a8575f4453a30fd83ccd80bf64",
+      "validation_passed": true,
+      "heap_final_bytes_after_gc": 3136216
+    },
+    {
+      "name": "duration-600-replay",
+      "graph": "data/manta-v2.json",
+      "turns": 600,
+      "agents": 80,
+      "profile": "storm",
+      "behavior": "preventive",
+      "model": "rainfall_runoff_2d",
+      "grid": {
+        "origin": {
+          "lat": -0.9936515432118375,
+          "lng": -80.79009320104625
+        },
+        "rows": 27,
+        "cols": 61,
+        "cell_size_m": 200,
+        "lat_step": 0.001798643211837461,
+        "lng_step": 0.001798901046237249
+      },
+      "metrics": {
+        "total_agents": 80,
+        "evacuated_agents": 80,
+        "isolated_agents": 0,
+        "waiting_agents": 0,
+        "average_evacuation_time": 10.7875,
+        "blocked_edges": 17,
+        "caution_edges": 133,
+        "shelters_at_capacity": 0,
+        "reroute_count": 0,
+        "simulation_total_duration": 600
+      },
+      "mass_balance": {
+        "initial_storage_m3": 0,
+        "rainfall_m3": 34784639.99996034,
+        "channel_inflow_m3": 0,
+        "sea_inflow_m3": 0,
+        "infiltration_m3": 3601205.965732525,
+        "drainage_m3": 3899397.4330106797,
+        "sea_outflow_m3": 16336310.396211818,
+        "stored_m3": 10947726.205053601,
+        "residual_m3": -4.828348755836487e-05
+      },
+      "step_latency": {
+        "count": 600,
+        "total_ms": 2581.402515000004,
+        "p50_ms": 3.641843,
+        "p95_ms": 5.562942,
+        "p99_ms": 26.59934
+      },
+      "serialization_latency": {
+        "count": 601,
+        "total_ms": 495.2501840000001,
+        "p50_ms": 0.766187,
+        "p95_ms": 1.402271,
+        "p99_ms": 1.712221
+      },
+      "resources": {
+        "wall_seconds": 3.340753737,
+        "process_cpu_seconds": 6.201981,
+        "average_cpu_one_core_percent": 185.6461591679423,
+        "peak_rss_kib_linux": 28636,
+        "note": "Linux ru_maxrss is KiB and includes the whole process lifetime; CPU is percent of one core. Three forced-GC samples characterize retained heap; they do not prove a long-term memory bound. TotalAlloc is cumulative allocation, not retained memory."
+      },
+      "peak_snapshot_bytes": 167923,
+      "peak_blocked_edges": 142,
+      "logical_hash": "90538e2070a5d413f173b2693a739b17114148a8575f4453a30fd83ccd80bf64",
+      "validation_passed": true,
+      "heap_final_bytes_after_gc": 3126800
+    },
+    {
+      "name": "duration-1200",
+      "graph": "data/manta-v2.json",
+      "turns": 1200,
+      "agents": 80,
+      "profile": "storm",
+      "behavior": "preventive",
+      "model": "rainfall_runoff_2d",
+      "grid": {
+        "origin": {
+          "lat": -0.9936515432118375,
+          "lng": -80.79009320104625
+        },
+        "rows": 27,
+        "cols": 61,
+        "cell_size_m": 200,
+        "lat_step": 0.001798643211837461,
+        "lng_step": 0.001798901046237249
+      },
+      "metrics": {
+        "total_agents": 80,
+        "evacuated_agents": 80,
+        "isolated_agents": 0,
+        "waiting_agents": 0,
+        "average_evacuation_time": 10.7875,
+        "blocked_edges": 1,
+        "caution_edges": 4,
+        "shelters_at_capacity": 0,
+        "reroute_count": 0,
+        "simulation_total_duration": 1200
+      },
+      "mass_balance": {
+        "initial_storage_m3": 0,
+        "rainfall_m3": 69569279.99998437,
+        "channel_inflow_m3": 0,
+        "sea_inflow_m3": 0,
+        "infiltration_m3": 5129551.885232849,
+        "drainage_m3": 7486406.589769374,
+        "sea_outflow_m3": 53659978.44367407,
+        "stored_m3": 3293343.0813209745,
+        "residual_m3": -1.29002146422863e-05
+      },
+      "step_latency": {
+        "count": 1200,
+        "total_ms": 9678.763889999995,
+        "p50_ms": 4.516225,
+        "p95_ms": 25.758739,
+        "p99_ms": 43.422701
+      },
+      "serialization_latency": {
+        "count": 1201,
+        "total_ms": 1783.3180729999974,
+        "p50_ms": 0.996753,
+        "p95_ms": 3.557622,
+        "p99_ms": 13.066646
+      },
+      "resources": {
+        "wall_seconds": 12.410789635,
+        "process_cpu_seconds": 13.250028,
+        "average_cpu_one_core_percent": 106.7621673534232,
+        "peak_rss_kib_linux": 54524,
+        "note": "Linux ru_maxrss is KiB and includes the whole process lifetime; CPU is percent of one core. Three forced-GC samples characterize retained heap; they do not prove a long-term memory bound. TotalAlloc is cumulative allocation, not retained memory."
+      },
+      "peak_snapshot_bytes": 167924,
+      "peak_blocked_edges": 185,
+      "logical_hash": "6281040efe308bc02079992781047f34dba4ccad56df1186c419515ee62deb2a",
+      "validation_passed": true,
+      "heap_final_bytes_after_gc": 3050552
+    },
+    {
+      "name": "duration-1200-replay",
+      "graph": "data/manta-v2.json",
+      "turns": 1200,
+      "agents": 80,
+      "profile": "storm",
+      "behavior": "preventive",
+      "model": "rainfall_runoff_2d",
+      "grid": {
+        "origin": {
+          "lat": -0.9936515432118375,
+          "lng": -80.79009320104625
+        },
+        "rows": 27,
+        "cols": 61,
+        "cell_size_m": 200,
+        "lat_step": 0.001798643211837461,
+        "lng_step": 0.001798901046237249
+      },
+      "metrics": {
+        "total_agents": 80,
+        "evacuated_agents": 80,
+        "isolated_agents": 0,
+        "waiting_agents": 0,
+        "average_evacuation_time": 10.7875,
+        "blocked_edges": 1,
+        "caution_edges": 4,
+        "shelters_at_capacity": 0,
+        "reroute_count": 0,
+        "simulation_total_duration": 1200
+      },
+      "mass_balance": {
+        "initial_storage_m3": 0,
+        "rainfall_m3": 69569279.99998437,
+        "channel_inflow_m3": 0,
+        "sea_inflow_m3": 0,
+        "infiltration_m3": 5129551.885232849,
+        "drainage_m3": 7486406.589769374,
+        "sea_outflow_m3": 53659978.44367407,
+        "stored_m3": 3293343.0813209745,
+        "residual_m3": -1.29002146422863e-05
+      },
+      "step_latency": {
+        "count": 1200,
+        "total_ms": 15297.48692,
+        "p50_ms": 8.446835,
+        "p95_ms": 30.007948,
+        "p99_ms": 68.617259
+      },
+      "serialization_latency": {
+        "count": 1201,
+        "total_ms": 2782.976367000001,
+        "p50_ms": 1.214348,
+        "p95_ms": 9.651113,
+        "p99_ms": 20.504427
+      },
+      "resources": {
+        "wall_seconds": 19.873738929,
+        "process_cpu_seconds": 16.539741,
+        "average_cpu_one_core_percent": 83.22410322028034,
+        "peak_rss_kib_linux": 52304,
+        "note": "Linux ru_maxrss is KiB and includes the whole process lifetime; CPU is percent of one core. Three forced-GC samples characterize retained heap; they do not prove a long-term memory bound. TotalAlloc is cumulative allocation, not retained memory."
+      },
+      "peak_snapshot_bytes": 167924,
+      "peak_blocked_edges": 185,
+      "logical_hash": "6281040efe308bc02079992781047f34dba4ccad56df1186c419515ee62deb2a",
+      "validation_passed": true,
+      "heap_final_bytes_after_gc": 3089216
+    },
+    {
+      "name": "duration-3000",
+      "graph": "data/manta-v2.json",
+      "turns": 3000,
+      "agents": 80,
+      "profile": "storm",
+      "behavior": "preventive",
+      "model": "rainfall_runoff_2d",
+      "grid": {
+        "origin": {
+          "lat": -0.9936515432118375,
+          "lng": -80.79009320104625
+        },
+        "rows": 27,
+        "cols": 61,
+        "cell_size_m": 200,
+        "lat_step": 0.001798643211837461,
+        "lng_step": 0.001798901046237249
+      },
+      "metrics": {
+        "total_agents": 80,
+        "evacuated_agents": 80,
+        "isolated_agents": 0,
+        "waiting_agents": 0,
+        "average_evacuation_time": 10.7875,
+        "blocked_edges": 0,
+        "caution_edges": 0,
+        "shelters_at_capacity": 0,
+        "reroute_count": 0,
+        "simulation_total_duration": 3000
+      },
+      "mass_balance": {
+        "initial_storage_m3": 0,
+        "rainfall_m3": 173923200.000198,
+        "channel_inflow_m3": 0,
+        "sea_inflow_m3": 0,
+        "infiltration_m3": 6268517.66370948,
+        "drainage_m3": 15114964.241373649,
+        "sea_outflow_m3": 152472279.97281507,
+        "stored_m3": 67438.12207858815,
+        "residual_m3": 0.00022120223729871213
+      },
+      "step_latency": {
+        "count": 3000,
+        "total_ms": 14858.319723999983,
+        "p50_ms": 3.939232,
+        "p95_ms": 7.878023,
+        "p99_ms": 21.86778
+      },
+      "serialization_latency": {
+        "count": 3001,
+        "total_ms": 3000.2507630000036,
+        "p50_ms": 0.893117,
+        "p95_ms": 1.775783,
+        "p99_ms": 3.272177
+      },
+      "resources": {
+        "wall_seconds": 19.456945623,
+        "process_cpu_seconds": 27.044392,
+        "average_cpu_one_core_percent": 138.9960815228414,
+        "peak_rss_kib_linux": 32888,
+        "note": "Linux ru_maxrss is KiB and includes the whole process lifetime; CPU is percent of one core. Three forced-GC samples characterize retained heap; they do not prove a long-term memory bound. TotalAlloc is cumulative allocation, not retained memory."
+      },
+      "peak_snapshot_bytes": 167924,
+      "peak_blocked_edges": 205,
+      "logical_hash": "45f1b705a6909621213d02f4585cfac57e5fc806958690a197d307c1d359bfff",
+      "validation_passed": true,
+      "heap_final_bytes_after_gc": 3306952
+    },
+    {
+      "name": "duration-3000-replay",
+      "graph": "data/manta-v2.json",
+      "turns": 3000,
+      "agents": 80,
+      "profile": "storm",
+      "behavior": "preventive",
+      "model": "rainfall_runoff_2d",
+      "grid": {
+        "origin": {
+          "lat": -0.9936515432118375,
+          "lng": -80.79009320104625
+        },
+        "rows": 27,
+        "cols": 61,
+        "cell_size_m": 200,
+        "lat_step": 0.001798643211837461,
+        "lng_step": 0.001798901046237249
+      },
+      "metrics": {
+        "total_agents": 80,
+        "evacuated_agents": 80,
+        "isolated_agents": 0,
+        "waiting_agents": 0,
+        "average_evacuation_time": 10.7875,
+        "blocked_edges": 0,
+        "caution_edges": 0,
+        "shelters_at_capacity": 0,
+        "reroute_count": 0,
+        "simulation_total_duration": 3000
+      },
+      "mass_balance": {
+        "initial_storage_m3": 0,
+        "rainfall_m3": 173923200.000198,
+        "channel_inflow_m3": 0,
+        "sea_inflow_m3": 0,
+        "infiltration_m3": 6268517.66370948,
+        "drainage_m3": 15114964.241373649,
+        "sea_outflow_m3": 152472279.97281507,
+        "stored_m3": 67438.12207858815,
+        "residual_m3": 0.00022120223729871213
+      },
+      "step_latency": {
+        "count": 3000,
+        "total_ms": 12298.135863999996,
+        "p50_ms": 3.754378,
+        "p95_ms": 6.140762,
+        "p99_ms": 12.774749
+      },
+      "serialization_latency": {
+        "count": 3001,
+        "total_ms": 2706.0192110000044,
+        "p50_ms": 0.83411,
+        "p95_ms": 1.529343,
+        "p99_ms": 2.474968
+      },
+      "resources": {
+        "wall_seconds": 16.349571354,
+        "process_cpu_seconds": 25.430052,
+        "average_cpu_one_core_percent": 155.53956400073093,
+        "peak_rss_kib_linux": 30784,
+        "note": "Linux ru_maxrss is KiB and includes the whole process lifetime; CPU is percent of one core. Three forced-GC samples characterize retained heap; they do not prove a long-term memory bound. TotalAlloc is cumulative allocation, not retained memory."
+      },
+      "peak_snapshot_bytes": 167924,
+      "peak_blocked_edges": 205,
+      "logical_hash": "45f1b705a6909621213d02f4585cfac57e5fc806958690a197d307c1d359bfff",
+      "validation_passed": true,
+      "heap_final_bytes_after_gc": 3272704
+    },
+    {
+      "name": "storm-preventive",
+      "graph": "data/manta-v2.json",
+      "turns": 150,
+      "agents": 80,
+      "profile": "storm",
+      "behavior": "preventive",
+      "model": "rainfall_runoff_2d",
+      "grid": {
+        "origin": {
+          "lat": -0.9936515432118375,
+          "lng": -80.79009320104625
+        },
+        "rows": 27,
+        "cols": 61,
+        "cell_size_m": 200,
+        "lat_step": 0.001798643211837461,
+        "lng_step": 0.001798901046237249
+      },
+      "metrics": {
+        "total_agents": 80,
+        "evacuated_agents": 80,
+        "isolated_agents": 0,
+        "waiting_agents": 0,
+        "average_evacuation_time": 10.7875,
+        "blocked_edges": 14,
+        "caution_edges": 275,
+        "shelters_at_capacity": 0,
+        "reroute_count": 0,
+        "simulation_total_duration": 150
+      },
+      "mass_balance": {
+        "initial_storage_m3": 0,
+        "rainfall_m3": 8696160.00000087,
+        "channel_inflow_m3": 0,
+        "sea_inflow_m3": 0,
+        "infiltration_m3": 1194561.5331684311,
+        "drainage_m3": 977459.3476310914,
+        "sea_outflow_m3": 435019.2175486907,
+        "stored_m3": 6089119.901651704,
+        "residual_m3": 9.527429938316345e-07
+      },
+      "step_latency": {
+        "count": 150,
+        "total_ms": 1284.370071,
+        "p50_ms": 4.842137,
+        "p95_ms": 30.69117,
+        "p99_ms": 47.109097
+      },
+      "serialization_latency": {
+        "count": 151,
+        "total_ms": 157.01597999999998,
+        "p50_ms": 0.987983,
+        "p95_ms": 1.641735,
+        "p99_ms": 2.023427
+      },
+      "resources": {
+        "wall_seconds": 1.5630902039999999,
+        "process_cpu_seconds": 2.8945879999999997,
+        "average_cpu_one_core_percent": 185.18368246392004,
+        "peak_rss_kib_linux": 25400,
+        "note": "Linux ru_maxrss is KiB and includes the whole process lifetime; CPU is percent of one core. Three forced-GC samples characterize retained heap; they do not prove a long-term memory bound. TotalAlloc is cumulative allocation, not retained memory."
+      },
+      "peak_snapshot_bytes": 167923,
+      "peak_blocked_edges": 14,
+      "logical_hash": "9296f5642199a04f51cb03b31e50e69bdd4acac835704980f8ebafd888152199",
+      "validation_passed": true,
+      "heap_final_bytes_after_gc": 3017984
+    },
+    {
+      "name": "storm-late",
+      "graph": "data/manta-v2.json",
+      "turns": 150,
+      "agents": 80,
+      "profile": "storm",
+      "behavior": "late",
+      "model": "rainfall_runoff_2d",
+      "grid": {
+        "origin": {
+          "lat": -0.9936515432118375,
+          "lng": -80.79009320104625
+        },
+        "rows": 27,
+        "cols": 61,
+        "cell_size_m": 200,
+        "lat_step": 0.001798643211837461,
+        "lng_step": 0.001798901046237249
+      },
+      "metrics": {
+        "total_agents": 80,
+        "evacuated_agents": 80,
+        "isolated_agents": 0,
+        "waiting_agents": 0,
+        "average_evacuation_time": 88.6375,
+        "blocked_edges": 14,
+        "caution_edges": 275,
+        "shelters_at_capacity": 0,
+        "reroute_count": 0,
+        "simulation_total_duration": 150
+      },
+      "mass_balance": {
+        "initial_storage_m3": 0,
+        "rainfall_m3": 8696160.00000087,
+        "channel_inflow_m3": 0,
+        "sea_inflow_m3": 0,
+        "infiltration_m3": 1194561.5331684311,
+        "drainage_m3": 977459.3476310914,
+        "sea_outflow_m3": 435019.2175486907,
+        "stored_m3": 6089119.901651704,
+        "residual_m3": 9.527429938316345e-07
+      },
+      "step_latency": {
+        "count": 150,
+        "total_ms": 2451.5652979999995,
+        "p50_ms": 15.615559,
+        "p95_ms": 31.909999,
+        "p99_ms": 48.938304
+      },
+      "serialization_latency": {
+        "count": 151,
+        "total_ms": 170.21328999999997,
+        "p50_ms": 1.029203,
+        "p95_ms": 1.758875,
+        "p99_ms": 3.368991
+      },
+      "resources": {
+        "wall_seconds": 2.706941863,
+        "process_cpu_seconds": 6.854125,
+        "average_cpu_one_core_percent": 253.2054749193555,
+        "peak_rss_kib_linux": 27324,
+        "note": "Linux ru_maxrss is KiB and includes the whole process lifetime; CPU is percent of one core. Three forced-GC samples characterize retained heap; they do not prove a long-term memory bound. TotalAlloc is cumulative allocation, not retained memory."
+      },
+      "peak_snapshot_bytes": 155329,
+      "peak_blocked_edges": 14,
+      "logical_hash": "ae74c99daa5ac168c8ab8d6fe53224a2d76ce92a8135d2fb9626279eaf69d21d",
+      "validation_passed": true,
+      "heap_final_bytes_after_gc": 3026224
+    },
+    {
+      "name": "storm-adaptive",
+      "graph": "data/manta-v2.json",
+      "turns": 150,
+      "agents": 80,
+      "profile": "storm",
+      "behavior": "adaptive",
+      "model": "rainfall_runoff_2d",
+      "grid": {
+        "origin": {
+          "lat": -0.9936515432118375,
+          "lng": -80.79009320104625
+        },
+        "rows": 27,
+        "cols": 61,
+        "cell_size_m": 200,
+        "lat_step": 0.001798643211837461,
+        "lng_step": 0.001798901046237249
+      },
+      "metrics": {
+        "total_agents": 80,
+        "evacuated_agents": 80,
+        "isolated_agents": 0,
+        "waiting_agents": 0,
+        "average_evacuation_time": 10.7875,
+        "blocked_edges": 14,
+        "caution_edges": 275,
+        "shelters_at_capacity": 0,
+        "reroute_count": 0,
+        "simulation_total_duration": 150
+      },
+      "mass_balance": {
+        "initial_storage_m3": 0,
+        "rainfall_m3": 8696160.00000087,
+        "channel_inflow_m3": 0,
+        "sea_inflow_m3": 0,
+        "infiltration_m3": 1194561.5331684311,
+        "drainage_m3": 977459.3476310914,
+        "sea_outflow_m3": 435019.2175486907,
+        "stored_m3": 6089119.901651704,
+        "residual_m3": 9.527429938316345e-07
+      },
+      "step_latency": {
+        "count": 150,
+        "total_ms": 1164.576043,
+        "p50_ms": 4.345221,
+        "p95_ms": 27.977606,
+        "p99_ms": 46.860394
+      },
+      "serialization_latency": {
+        "count": 151,
+        "total_ms": 144.21834100000004,
+        "p50_ms": 0.93374,
+        "p95_ms": 1.327348,
+        "p99_ms": 2.218966
+      },
+      "resources": {
+        "wall_seconds": 1.387812378,
+        "process_cpu_seconds": 2.693196,
+        "average_cpu_one_core_percent": 194.06052595389085,
+        "peak_rss_kib_linux": 32616,
+        "note": "Linux ru_maxrss is KiB and includes the whole process lifetime; CPU is percent of one core. Three forced-GC samples characterize retained heap; they do not prove a long-term memory bound. TotalAlloc is cumulative allocation, not retained memory."
+      },
+      "peak_snapshot_bytes": 167763,
+      "peak_blocked_edges": 14,
+      "logical_hash": "8314bd435da444b78ccd4c2185a363d56a8053b69ddde21e86675c809cbfc3a9",
+      "validation_passed": true,
+      "heap_final_bytes_after_gc": 3085080
+    },
+    {
+      "name": "constant-preventive",
+      "graph": "data/manta-v2.json",
+      "turns": 150,
+      "agents": 80,
+      "profile": "constant",
+      "behavior": "preventive",
+      "model": "rainfall_runoff_2d",
+      "grid": {
+        "origin": {
+          "lat": -0.9936515432118375,
+          "lng": -80.79009320104625
+        },
+        "rows": 27,
+        "cols": 61,
+        "cell_size_m": 200,
+        "lat_step": 0.001798643211837461,
+        "lng_step": 0.001798901046237249
+      },
+      "metrics": {
+        "total_agents": 80,
+        "evacuated_agents": 80,
+        "isolated_agents": 0,
+        "waiting_agents": 0,
+        "average_evacuation_time": 10.7875,
+        "blocked_edges": 25,
+        "caution_edges": 352,
+        "shelters_at_capacity": 0,
+        "reroute_count": 0,
+        "simulation_total_duration": 150
+      },
+      "mass_balance": {
+        "initial_storage_m3": 0,
+        "rainfall_m3": 15811200.000001121,
+        "channel_inflow_m3": 0,
+        "sea_inflow_m3": 0,
+        "infiltration_m3": 1194561.5331684311,
+        "drainage_m3": 978539.6140973618,
+        "sea_outflow_m3": 751406.1175503441,
+        "stored_m3": 12886692.735183785,
+        "residual_m3": 1.1995434761047363e-06
+      },
+      "step_latency": {
+        "count": 150,
+        "total_ms": 1178.177635,
+        "p50_ms": 4.352425,
+        "p95_ms": 30.488566,
+        "p99_ms": 62.699619
+      },
+      "serialization_latency": {
+        "count": 151,
+        "total_ms": 158.05905399999997,
+        "p50_ms": 0.920585,
+        "p95_ms": 1.550705,
+        "p99_ms": 4.082952
+      },
+      "resources": {
+        "wall_seconds": 1.514665284,
+        "process_cpu_seconds": 2.817734,
+        "average_cpu_one_core_percent": 186.03014340955875,
+        "peak_rss_kib_linux": 25644,
+        "note": "Linux ru_maxrss is KiB and includes the whole process lifetime; CPU is percent of one core. Three forced-GC samples characterize retained heap; they do not prove a long-term memory bound. TotalAlloc is cumulative allocation, not retained memory."
+      },
+      "peak_snapshot_bytes": 167923,
+      "peak_blocked_edges": 25,
+      "logical_hash": "014c767c4f5ee780e0de4443aef6c9390cbc7fdc0a8b6cdce0c12a3f0450ca0a",
+      "validation_passed": true,
+      "heap_final_bytes_after_gc": 3107176
+    },
+    {
+      "name": "constant-late",
+      "graph": "data/manta-v2.json",
+      "turns": 150,
+      "agents": 80,
+      "profile": "constant",
+      "behavior": "late",
+      "model": "rainfall_runoff_2d",
+      "grid": {
+        "origin": {
+          "lat": -0.9936515432118375,
+          "lng": -80.79009320104625
+        },
+        "rows": 27,
+        "cols": 61,
+        "cell_size_m": 200,
+        "lat_step": 0.001798643211837461,
+        "lng_step": 0.001798901046237249
+      },
+      "metrics": {
+        "total_agents": 80,
+        "evacuated_agents": 80,
+        "isolated_agents": 0,
+        "waiting_agents": 0,
+        "average_evacuation_time": 88.6375,
+        "blocked_edges": 25,
+        "caution_edges": 352,
+        "shelters_at_capacity": 0,
+        "reroute_count": 0,
+        "simulation_total_duration": 150
+      },
+      "mass_balance": {
+        "initial_storage_m3": 0,
+        "rainfall_m3": 15811200.000001121,
+        "channel_inflow_m3": 0,
+        "sea_inflow_m3": 0,
+        "infiltration_m3": 1194561.5331684311,
+        "drainage_m3": 978539.6140973618,
+        "sea_outflow_m3": 751406.1175503441,
+        "stored_m3": 12886692.735183785,
+        "residual_m3": 1.1995434761047363e-06
+      },
+      "step_latency": {
+        "count": 150,
+        "total_ms": 2434.9510220000006,
+        "p50_ms": 15.817438,
+        "p95_ms": 35.640351,
+        "p99_ms": 38.64467
+      },
+      "serialization_latency": {
+        "count": 151,
+        "total_ms": 169.68746699999997,
+        "p50_ms": 1.037169,
+        "p95_ms": 1.887736,
+        "p99_ms": 2.53009
+      },
+      "resources": {
+        "wall_seconds": 2.694494978,
+        "process_cpu_seconds": 6.931823,
+        "average_cpu_one_core_percent": 257.2587092051355,
+        "peak_rss_kib_linux": 35004,
+        "note": "Linux ru_maxrss is KiB and includes the whole process lifetime; CPU is percent of one core. Three forced-GC samples characterize retained heap; they do not prove a long-term memory bound. TotalAlloc is cumulative allocation, not retained memory."
+      },
+      "peak_snapshot_bytes": 155309,
+      "peak_blocked_edges": 25,
+      "logical_hash": "533c3e8bad4606d0c675412020f079dca260d356ea39e7484b539c2f61caa2c2",
+      "validation_passed": true,
+      "heap_final_bytes_after_gc": 3023216
+    },
+    {
+      "name": "constant-adaptive",
+      "graph": "data/manta-v2.json",
+      "turns": 150,
+      "agents": 80,
+      "profile": "constant",
+      "behavior": "adaptive",
+      "model": "rainfall_runoff_2d",
+      "grid": {
+        "origin": {
+          "lat": -0.9936515432118375,
+          "lng": -80.79009320104625
+        },
+        "rows": 27,
+        "cols": 61,
+        "cell_size_m": 200,
+        "lat_step": 0.001798643211837461,
+        "lng_step": 0.001798901046237249
+      },
+      "metrics": {
+        "total_agents": 80,
+        "evacuated_agents": 80,
+        "isolated_agents": 0,
+        "waiting_agents": 0,
+        "average_evacuation_time": 10.7875,
+        "blocked_edges": 25,
+        "caution_edges": 352,
+        "shelters_at_capacity": 0,
+        "reroute_count": 0,
+        "simulation_total_duration": 150
+      },
+      "mass_balance": {
+        "initial_storage_m3": 0,
+        "rainfall_m3": 15811200.000001121,
+        "channel_inflow_m3": 0,
+        "sea_inflow_m3": 0,
+        "infiltration_m3": 1194561.5331684311,
+        "drainage_m3": 978539.6140973618,
+        "sea_outflow_m3": 751406.1175503441,
+        "stored_m3": 12886692.735183785,
+        "residual_m3": 1.1995434761047363e-06
+      },
+      "step_latency": {
+        "count": 150,
+        "total_ms": 1346.071822,
+        "p50_ms": 4.788153,
+        "p95_ms": 33.093492,
+        "p99_ms": 56.794462
+      },
+      "serialization_latency": {
+        "count": 151,
+        "total_ms": 180.382128,
+        "p50_ms": 1.002887,
+        "p95_ms": 2.063081,
+        "p99_ms": 5.794638
+      },
+      "resources": {
+        "wall_seconds": 1.621727607,
+        "process_cpu_seconds": 2.9252269999999996,
+        "average_cpu_one_core_percent": 180.37720930281972,
+        "peak_rss_kib_linux": 25960,
+        "note": "Linux ru_maxrss is KiB and includes the whole process lifetime; CPU is percent of one core. Three forced-GC samples characterize retained heap; they do not prove a long-term memory bound. TotalAlloc is cumulative allocation, not retained memory."
+      },
+      "peak_snapshot_bytes": 167763,
+      "peak_blocked_edges": 25,
+      "logical_hash": "00e23436efa5e0e4462859bfe07c58324f5eacd50c2de4d522eee14371246c74",
+      "validation_passed": true,
+      "heap_final_bytes_after_gc": 3036720
+    },
+    {
+      "name": "pulse-preventive",
+      "graph": "data/manta-v2.json",
+      "turns": 150,
+      "agents": 80,
+      "profile": "pulse",
+      "behavior": "preventive",
+      "model": "rainfall_runoff_2d",
+      "grid": {
+        "origin": {
+          "lat": -0.9936515432118375,
+          "lng": -80.79009320104625
+        },
+        "rows": 27,
+        "cols": 61,
+        "cell_size_m": 200,
+        "lat_step": 0.001798643211837461,
+        "lng_step": 0.001798901046237249
+      },
+      "metrics": {
+        "total_agents": 80,
+        "evacuated_agents": 80,
+        "isolated_agents": 0,
+        "waiting_agents": 0,
+        "average_evacuation_time": 10.7875,
+        "blocked_edges": 0,
+        "caution_edges": 14,
+        "shelters_at_capacity": 0,
+        "reroute_count": 0,
+        "simulation_total_duration": 150
+      },
+      "mass_balance": {
+        "initial_storage_m3": 0,
+        "rainfall_m3": 4743360.000000468,
+        "channel_inflow_m3": 0,
+        "sea_inflow_m3": 0,
+        "infiltration_m3": 1030251.2763312052,
+        "drainage_m3": 828565.6537203541,
+        "sea_outflow_m3": 131647.525511805,
+        "stored_m3": 2752895.544436136,
+        "residual_m3": 9.685754776000977e-07
+      },
+      "step_latency": {
+        "count": 150,
+        "total_ms": 1225.6835330000001,
+        "p50_ms": 4.38403,
+        "p95_ms": 31.184655,
+        "p99_ms": 53.529756
+      },
+      "serialization_latency": {
+        "count": 151,
+        "total_ms": 139.21131999999994,
+        "p50_ms": 0.873333,
+        "p95_ms": 1.550214,
+        "p99_ms": 1.641017
+      },
+      "resources": {
+        "wall_seconds": 1.495258192,
+        "process_cpu_seconds": 2.8049,
+        "average_cpu_one_core_percent": 187.5863322472939,
+        "peak_rss_kib_linux": 27932,
+        "note": "Linux ru_maxrss is KiB and includes the whole process lifetime; CPU is percent of one core. Three forced-GC samples characterize retained heap; they do not prove a long-term memory bound. TotalAlloc is cumulative allocation, not retained memory."
+      },
+      "peak_snapshot_bytes": 144894,
+      "peak_blocked_edges": 0,
+      "logical_hash": "742ff4683288f5467dabfe5f60a337f7898c81e306c5202a7f49266250623f08",
+      "validation_passed": true,
+      "heap_final_bytes_after_gc": 3027840
+    },
+    {
+      "name": "pulse-late",
+      "graph": "data/manta-v2.json",
+      "turns": 150,
+      "agents": 80,
+      "profile": "pulse",
+      "behavior": "late",
+      "model": "rainfall_runoff_2d",
+      "grid": {
+        "origin": {
+          "lat": -0.9936515432118375,
+          "lng": -80.79009320104625
+        },
+        "rows": 27,
+        "cols": 61,
+        "cell_size_m": 200,
+        "lat_step": 0.001798643211837461,
+        "lng_step": 0.001798901046237249
+      },
+      "metrics": {
+        "total_agents": 80,
+        "evacuated_agents": 80,
+        "isolated_agents": 0,
+        "waiting_agents": 0,
+        "average_evacuation_time": 92.7875,
+        "blocked_edges": 0,
+        "caution_edges": 14,
+        "shelters_at_capacity": 0,
+        "reroute_count": 0,
+        "simulation_total_duration": 150
+      },
+      "mass_balance": {
+        "initial_storage_m3": 0,
+        "rainfall_m3": 4743360.000000468,
+        "channel_inflow_m3": 0,
+        "sea_inflow_m3": 0,
+        "infiltration_m3": 1030251.2763312052,
+        "drainage_m3": 828565.6537203541,
+        "sea_outflow_m3": 131647.525511805,
+        "stored_m3": 2752895.544436136,
+        "residual_m3": 9.685754776000977e-07
+      },
+      "step_latency": {
+        "count": 150,
+        "total_ms": 2935.4078389999995,
+        "p50_ms": 17.141382,
+        "p95_ms": 39.490031,
+        "p99_ms": 58.716167
+      },
+      "serialization_latency": {
+        "count": 151,
+        "total_ms": 168.67606499999997,
+        "p50_ms": 1.021231,
+        "p95_ms": 2.067708,
+        "p99_ms": 3.424372
+      },
+      "resources": {
+        "wall_seconds": 3.215827645,
+        "process_cpu_seconds": 7.19657,
+        "average_cpu_one_core_percent": 223.78593613962167,
+        "peak_rss_kib_linux": 31896,
+        "note": "Linux ru_maxrss is KiB and includes the whole process lifetime; CPU is percent of one core. Three forced-GC samples characterize retained heap; they do not prove a long-term memory bound. TotalAlloc is cumulative allocation, not retained memory."
+      },
+      "peak_snapshot_bytes": 164086,
+      "peak_blocked_edges": 0,
+      "logical_hash": "1ff77d21a5cfc54453efc2f4efe053ad9ccf36c3b65a48d4f7f02b72bcb8bb31",
+      "validation_passed": true,
+      "heap_final_bytes_after_gc": 3166144
+    },
+    {
+      "name": "pulse-adaptive",
+      "graph": "data/manta-v2.json",
+      "turns": 150,
+      "agents": 80,
+      "profile": "pulse",
+      "behavior": "adaptive",
+      "model": "rainfall_runoff_2d",
+      "grid": {
+        "origin": {
+          "lat": -0.9936515432118375,
+          "lng": -80.79009320104625
+        },
+        "rows": 27,
+        "cols": 61,
+        "cell_size_m": 200,
+        "lat_step": 0.001798643211837461,
+        "lng_step": 0.001798901046237249
+      },
+      "metrics": {
+        "total_agents": 80,
+        "evacuated_agents": 80,
+        "isolated_agents": 0,
+        "waiting_agents": 0,
+        "average_evacuation_time": 33.7875,
+        "blocked_edges": 0,
+        "caution_edges": 14,
+        "shelters_at_capacity": 0,
+        "reroute_count": 0,
+        "simulation_total_duration": 150
+      },
+      "mass_balance": {
+        "initial_storage_m3": 0,
+        "rainfall_m3": 4743360.000000468,
+        "channel_inflow_m3": 0,
+        "sea_inflow_m3": 0,
+        "infiltration_m3": 1030251.2763312052,
+        "drainage_m3": 828565.6537203541,
+        "sea_outflow_m3": 131647.525511805,
+        "stored_m3": 2752895.544436136,
+        "residual_m3": 9.685754776000977e-07
+      },
+      "step_latency": {
+        "count": 150,
+        "total_ms": 2651.4585799999995,
+        "p50_ms": 8.397587,
+        "p95_ms": 56.295177,
+        "p99_ms": 77.479389
+      },
+      "serialization_latency": {
+        "count": 151,
+        "total_ms": 207.18200800000005,
+        "p50_ms": 1.204256,
+        "p95_ms": 2.956453,
+        "p99_ms": 5.218537
+      },
+      "resources": {
+        "wall_seconds": 3.05936202,
+        "process_cpu_seconds": 4.280464,
+        "average_cpu_one_core_percent": 139.91361506148266,
+        "peak_rss_kib_linux": 24976,
+        "note": "Linux ru_maxrss is KiB and includes the whole process lifetime; CPU is percent of one core. Three forced-GC samples characterize retained heap; they do not prove a long-term memory bound. TotalAlloc is cumulative allocation, not retained memory."
+      },
+      "peak_snapshot_bytes": 167880,
+      "peak_blocked_edges": 0,
+      "logical_hash": "8b8da107ecf7a10533ba66ff6fa52da8c5ad47aa3e1eb43d210f330f332c35db",
+      "validation_passed": true,
+      "heap_final_bytes_after_gc": 3099528
+    },
+    {
+      "name": "compound-high-sea",
+      "graph": "data/manta-v2.json",
+      "turns": 150,
+      "agents": 80,
+      "profile": "storm",
+      "behavior": "preventive",
+      "model": "compound_flood_2d",
+      "grid": {
+        "origin": {
+          "lat": -0.9936515432118375,
+          "lng": -80.79009320104625
+        },
+        "rows": 27,
+        "cols": 61,
+        "cell_size_m": 200,
+        "lat_step": 0.001798643211837461,
+        "lng_step": 0.001798901046237249
+      },
+      "metrics": {
+        "total_agents": 80,
+        "evacuated_agents": 80,
+        "isolated_agents": 0,
+        "waiting_agents": 0,
+        "average_evacuation_time": 10.7875,
+        "blocked_edges": 28,
+        "caution_edges": 343,
+        "shelters_at_capacity": 0,
+        "reroute_count": 48,
+        "simulation_total_duration": 150
+      },
+      "mass_balance": {
+        "initial_storage_m3": 0,
+        "rainfall_m3": 15020640.000001093,
+        "channel_inflow_m3": 63000,
+        "sea_inflow_m3": 1855743.1198297963,
+        "infiltration_m3": 0,
+        "drainage_m3": 1279234.3689159343,
+        "sea_outflow_m3": 1871977.7485634875,
+        "stored_m3": 13788171.002350511,
+        "residual_m3": 9.592622518539429e-07
+      },
+      "step_latency": {
+        "count": 150,
+        "total_ms": 1947.1043249999998,
+        "p50_ms": 6.423795,
+        "p95_ms": 55.358388,
+        "p99_ms": 85.319562
+      },
+      "serialization_latency": {
+        "count": 151,
+        "total_ms": 236.81674399999997,
+        "p50_ms": 1.152728,
+        "p95_ms": 4.029371,
+        "p99_ms": 10.029868
+      },
+      "resources": {
+        "wall_seconds": 2.422737906,
+        "process_cpu_seconds": 3.308195,
+        "average_cpu_one_core_percent": 136.54778718767443,
+        "peak_rss_kib_linux": 27268,
+        "note": "Linux ru_maxrss is KiB and includes the whole process lifetime; CPU is percent of one core. Three forced-GC samples characterize retained heap; they do not prove a long-term memory bound. TotalAlloc is cumulative allocation, not retained memory."
+      },
+      "peak_snapshot_bytes": 165028,
+      "peak_blocked_edges": 28,
+      "logical_hash": "d075b2aed39694e564c2a5c8ea8762f03cd81f747e214b6cbe4b9b7a806fdc2a",
+      "validation_passed": true,
+      "heap_final_bytes_after_gc": 3005096
+    },
+    {
+      "name": "master-resolution-50",
+      "graph": "data/manta-master.json",
+      "turns": 150,
+      "agents": 200,
+      "profile": "storm",
+      "behavior": "preventive",
+      "model": "rainfall_runoff_2d",
+      "grid": {
+        "origin": {
+          "lat": -1.0191144080787544,
+          "lng": -80.82081758860586
+        },
+        "rows": 47,
+        "cols": 85,
+        "cell_size_m": 216.0971187575334,
+        "lat_step": 0.0019434080787543555,
+        "lng_step": 0.0019436886058648657
+      },
+      "metrics": {
+        "total_agents": 200,
+        "evacuated_agents": 197,
+        "isolated_agents": 0,
+        "waiting_agents": 0,
+        "average_evacuation_time": 45.025380710659896,
+        "blocked_edges": 487,
+        "caution_edges": 10173,
+        "shelters_at_capacity": 2,
+        "reroute_count": 602,
+        "simulation_total_duration": 150
+      },
+      "mass_balance": {
+        "initial_storage_m3": 0,
+        "rainfall_m3": 24625704.72351279,
+        "channel_inflow_m3": 0,
+        "sea_inflow_m3": 0,
+        "infiltration_m3": 3382748.2003513626,
+        "drainage_m3": 2787158.56309705,
+        "sea_outflow_m3": 833006.7620736199,
+        "stored_m3": 17622791.197944693,
+        "residual_m3": 4.606693983078003e-05
+      },
+      "step_latency": {
+        "count": 150,
+        "total_ms": 63464.52906600002,
+        "p50_ms": 317.591613,
+        "p95_ms": 1208.152061,
+        "p99_ms": 1601.884292
+      },
+      "serialization_latency": {
+        "count": 151,
+        "total_ms": 1817.605156999999,
+        "p50_ms": 10.981991,
+        "p95_ms": 18.872733,
+        "p99_ms": 21.266198
+      },
+      "resources": {
+        "wall_seconds": 67.960293936,
+        "process_cpu_seconds": 170.074362,
+        "average_cpu_one_core_percent": 250.25548323873278,
+        "peak_rss_kib_linux": 240800,
+        "note": "Linux ru_maxrss is KiB and includes the whole process lifetime; CPU is percent of one core. Three forced-GC samples characterize retained heap; they do not prove a long-term memory bound. TotalAlloc is cumulative allocation, not retained memory."
+      },
+      "peak_snapshot_bytes": 3180104,
+      "peak_blocked_edges": 487,
+      "logical_hash": "f5e64e12df4ab3a4ba31e56f89da7390f15204898d77eeb9662dc58dfbf1fad8",
+      "validation_passed": true,
+      "heap_final_bytes_after_gc": 43030808
+    },
+    {
+      "name": "master-resolution-200",
+      "graph": "data/manta-master.json",
+      "turns": 150,
+      "agents": 200,
+      "profile": "storm",
+      "behavior": "preventive",
+      "model": "rainfall_runoff_2d",
+      "grid": {
+        "origin": {
+          "lat": -1.019154004141051,
+          "lng": -80.82085719038378
+        },
+        "rows": 47,
+        "cols": 84,
+        "cell_size_m": 220.5,
+        "lat_step": 0.001983004141050801,
+        "lng_step": 0.00198329038377455
+      },
+      "metrics": {
+        "total_agents": 200,
+        "evacuated_agents": 197,
+        "isolated_agents": 2,
+        "waiting_agents": 0,
+        "average_evacuation_time": 45.01015228426396,
+        "blocked_edges": 540,
+        "caution_edges": 10042,
+        "shelters_at_capacity": 2,
+        "reroute_count": 602,
+        "simulation_total_duration": 150
+      },
+      "mass_balance": {
+        "initial_storage_m3": 0,
+        "rainfall_m3": 25337762.60400514,
+        "channel_inflow_m3": 0,
+        "sea_inflow_m3": 0,
+        "infiltration_m3": 3480561.137703869,
+        "drainage_m3": 2867931.308567131,
+        "sea_outflow_m3": 850235.413435093,
+        "stored_m3": 18139034.744340215,
+        "residual_m3": -4.116818308830261e-05
+      },
+      "step_latency": {
+        "count": 150,
+        "total_ms": 55703.66537600002,
+        "p50_ms": 224.786764,
+        "p95_ms": 1010.665242,
+        "p99_ms": 1168.31481
+      },
+      "serialization_latency": {
+        "count": 151,
+        "total_ms": 1594.7016959999996,
+        "p50_ms": 9.745702,
+        "p95_ms": 16.146623,
+        "p99_ms": 18.151582
+      },
+      "resources": {
+        "wall_seconds": 58.935949536,
+        "process_cpu_seconds": 159.197265,
+        "average_cpu_one_core_percent": 270.11911448505145,
+        "peak_rss_kib_linux": 233840,
+        "note": "Linux ru_maxrss is KiB and includes the whole process lifetime; CPU is percent of one core. Three forced-GC samples characterize retained heap; they do not prove a long-term memory bound. TotalAlloc is cumulative allocation, not retained memory."
+      },
+      "peak_snapshot_bytes": 3179378,
+      "peak_blocked_edges": 540,
+      "logical_hash": "865f3766464f11b5cf2f4379c786e3e3a01747c6a98489113abd60730008ca8e",
+      "validation_passed": true,
+      "heap_final_bytes_after_gc": 42887848
+    },
+    {
+      "name": "master-resolution-500",
+      "graph": "data/manta-master.json",
+      "turns": 150,
+      "agents": 200,
+      "profile": "storm",
+      "behavior": "preventive",
+      "model": "rainfall_runoff_2d",
+      "grid": {
+        "origin": {
+          "lat": -1.0216676080295937,
+          "lng": -80.82337115710607
+        },
+        "rows": 22,
+        "cols": 38,
+        "cell_size_m": 500,
+        "lat_step": 0.004496608029593652,
+        "lng_step": 0.00449725710606474
+      },
+      "metrics": {
+        "total_agents": 200,
+        "evacuated_agents": 200,
+        "isolated_agents": 0,
+        "waiting_agents": 0,
+        "average_evacuation_time": 46.17,
+        "blocked_edges": 37,
+        "caution_edges": 13043,
+        "shelters_at_capacity": 3,
+        "reroute_count": 625,
+        "simulation_total_duration": 150
+      },
+      "mass_balance": {
+        "initial_storage_m3": 0,
+        "rainfall_m3": 27587999.999993596,
+        "channel_inflow_m3": 0,
+        "sea_inflow_m3": 0,
+        "infiltration_m3": 3789668.4947199174,
+        "drainage_m3": 3114615.924289928,
+        "sea_outflow_m3": 897096.9067395778,
+        "stored_m3": 19786618.674249448,
+        "residual_m3": -5.27501106262207e-06
+      },
+      "step_latency": {
+        "count": 150,
+        "total_ms": 59505.318413,
+        "p50_ms": 403.441024,
+        "p95_ms": 794.517035,
+        "p99_ms": 939.201348
+      },
+      "serialization_latency": {
+        "count": 151,
+        "total_ms": 2031.9650340000005,
+        "p50_ms": 11.754433,
+        "p95_ms": 21.813615,
+        "p99_ms": 31.347719
+      },
+      "resources": {
+        "wall_seconds": 63.456501157,
+        "process_cpu_seconds": 162.73713700000002,
+        "average_cpu_one_core_percent": 256.45463275286204,
+        "peak_rss_kib_linux": 236224,
+        "note": "Linux ru_maxrss is KiB and includes the whole process lifetime; CPU is percent of one core. Three forced-GC samples characterize retained heap; they do not prove a long-term memory bound. TotalAlloc is cumulative allocation, not retained memory."
+      },
+      "peak_snapshot_bytes": 3110523,
+      "peak_blocked_edges": 37,
+      "logical_hash": "37dea4a3fb6fbb79ab9ec0aa443af2a2f9f2c683dbb78014a7b8da39e2346199",
+      "validation_passed": true,
+      "heap_final_bytes_after_gc": 43166504
+    }
+  ],
+  "historical_radial_reference": {
+    "source": "services/evacuation/reports/phase4a/flood-300.json (evidencia histórica local, no runtime conservado)",
+    "artifact_sha256": "4d082167b08e3f0ee9a53b77d0dc212b03c7f201f3a66d94e0d3edfb0590b4b5",
+    "recorded_at": "2026-10-27T02:54:18.674404679Z",
+    "phase": "4A",
+    "graph_sha256": "8ab40819880d7cfda5094ca8a7878e28676404c3f3b48276d095b49c697c58d5",
+    "scenario_sha256": "dfbc071edf14f7eae936c7a75e991564ea0383fe4761c429bb3184e398799643",
+    "seed": 20261026,
+    "turn_limit": 150,
+    "completed_step": 150,
+    "evacuation_metrics": {
+      "total_agents": 80,
+      "evacuated_agents": 80,
+      "isolated_agents": 0,
+      "waiting_agents": 0,
+      "average_evacuation_time": 10.7875,
+      "blocked_edges": 0,
+      "caution_edges": 0,
+      "shelters_at_capacity": 0,
+      "reroute_count": 0,
+      "simulation_total_duration": 150
+    },
+    "peak_blocked_edges": 69,
+    "simulation_step_latency": {
+      "count": 150,
+      "total_ms": 738.3371200000001,
+      "p50_ms": 2.52024,
+      "p95_ms": 22.954008,
+      "p99_ms": 36.066242
+    },
+    "interpretation": "80/80 evacuados en ambos casos por evacuación preventiva temprana;69 cierres máximos radiales frente a14 físicos. Índice anterior y profundidad nueva no son magnitudes comparables. Configuraciones y tiempos físicos distintos impiden inferir precisión o mejora de supervivencia."
+  },
+  "browser": {
+    "master_client_work_ms": {
+      "TaskDuration": 759.2489999999996,
+      "ScriptDuration": 495.65100000000007,
+      "LayoutDuration": 4.182999999999993,
+      "RecalcStyleDuration": 7.615000000000011
+    },
+    "client_work_method": "Chromium CDP counters during master start/pause workflow: main-thread work, script, layout and style separately from HTTP wait. Not paint FPS or a per-frame latency claim.",
+    "master_js_heap_used_bytes": 109844264,
+    "master_dom_nodes": 627,
+    "master_payload_bytes": 4543303,
+    "master_start_to_paused_ms": 1130.963522,
+    "javascript_errors": [],
+    "failed_api_requests": [],
+    "checks": {
+      "reviewed_base_and_master_graphs": true,
+      "anonymous_lifecycle_preserves_conflict_validation": true,
+      "candidate_count_duplicate_and_far_snap_validation": true,
+      "direct_flood_entry_and_synthetic_label": true,
+      "eight_independent_layer_controls": true,
+      "ui_map_pick_remove_restore_and_reject_candidates": true,
+      "pause_ack_stops_backend_clock": true,
+      "edge_click_and_agent_route_inspection": true,
+      "rain_evolution_blocks_visible_streets": true,
+      "resume_and_same_seed_replay": true,
+      "ui_original_vs_four_alternative_shelters": true,
+      "master_changes_real_engine_and_keeps_compact_dom": true,
+      "return_to_zombie_preserves_world": true
+    }
+  },
+  "zombie_http": {
+    "arch": "amd64",
+    "availability": 1,
+    "concurrency": 16,
+    "edges": 383,
+    "elapsed_ms": 1453.535052,
+    "go": "go1.26.1",
+    "gomaxprocs": 12,
+    "http_max_ms": 53.805818,
+    "http_p50_ms": 1.276613,
+    "http_p95_ms": 6.991917,
+    "http_p99_ms": 14.153927,
+    "methodology": "real loopback HTTP /paso; initial unchanged observable snapshot; one warmup per active survivor; latency includes transport and decoding; nearest-rank percentiles; full scenarios measure invalidation separately",
+    "nodes": 300,
+    "os": "linux",
+    "requests": 10000,
+    "requests_invalid": 0,
+    "requests_per_second": 6879.779050557084,
+    "requests_success": 10000,
+    "requests_timeout": 0,
+    "scenario": "Ronda 3 — Apocalipsis — aparición urbana por zonas",
+    "seed": 20261028,
+    "survivors": 200,
+    "synchronized_bursts": false
+  },
+  "validation": {
+    "npm_install": "PASS",
+    "contracts_validate_generate_tokens_consistency": "PASS",
+    "check": "PASS",
+    "web_tests": {
+      "status": "PASS",
+      "count": 166,
+      "workers": 2
+    },
+    "mock_tests": {
+      "status": "PASS",
+      "count": 40
+    },
+    "web_build": "PASS",
+    "backend_tests_race_vet_build": "PASS",
+    "geography_tests": {
+      "status": "PASS",
+      "count": 10
+    },
+    "http_contracts": "PASS",
+    "flood_http_contracts": "PASS",
+    "simulation_http_contracts": {
+      "status": "PASS",
+      "assertions": 4692
+    },
+    "lab_browser_base_full_and_390px": "PASS",
+    "shared_spectators_http_browser": "PASS",
+    "contextual_reference_browser": "PASS",
+    "citizen_incidents_http_browser_flutter": "PASS",
+    "flutter_analyze": "PASS",
+    "flutter_generic_tests": {
+      "status": "PASS",
+      "count": 30,
+      "optional_integrations_skipped": 3
+    },
+    "flutter_published_incident_real_http": "PASS",
+    "flutter_debug_apk_build": "PASS",
+    "hydrology_full_scenarios": {
+      "status": "PASS",
+      "count": 25
+    },
+    "deployment": "NOT_EXECUTED",
+    "limitations": [
+      "Synthetic terrain, experimental shoreline and drainage; no conditioned real DEM or observed flood calibration",
+      "Local timings from shared workstation, not EC2 capacity or Safari evidence",
+      "Android APK compiled; no physical-device installation verified"
+    ],
+    "visualization_browser": "PASS"
+  },
+  "visualization_browser": {
+    "checks": "Real React/Go zombie BASE + flood FULL_MANTA; explicit start, SVG atlases, LOD, opt-out, pause/resume, offline, reduced motion, reload, completion; desktop/mobile screenshots and measured RAF/DOM/heap",
+    "measurements": [
+      {
+        "scenario": "zombie_outbreak",
+        "profile": "BASE",
+        "viewport": {
+          "width": 1440,
+          "height": 1100
+        },
+        "samples": 150,
+        "raf_p50_ms": 16.699999999999818,
+        "raf_p95_ms": 16.799999999999727,
+        "dom": 345,
+        "displayed": 14,
+        "js_heap_bytes": 24880328
+      },
+      {
+        "scenario": "urban_flood",
+        "profile": "FULL_MANTA",
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "samples": 147,
+        "raf_p50_ms": 16.69999999999891,
+        "raf_p95_ms": 16.799999999999272,
+        "dom": 528,
+        "displayed": 38,
+        "js_heap_bytes": 72218000
+      }
+    ],
+    "note": "Intervals between Chromium RAF callbacks, not paint FPS; real HTTP and actual SVG. No Safari claim."
+  }
+}

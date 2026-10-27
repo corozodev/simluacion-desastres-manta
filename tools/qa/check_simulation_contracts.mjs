@@ -51,8 +51,8 @@ async function start(binary, overrides = {}) {
       ...process.env, API_KEY: key(), LISTEN_ADDR: '127.0.0.1:0',
       SIM_AUTOSTART: 'false', ENABLE_FULL_MODE: 'false',
       SIM_MAX_ACTIVE: '2', SIM_MAX_FULL_ACTIVE: '1', SIM_MAX_RETAINED: '8',
-      SIM_IDLE_TTL: '30s', SIM_PAUSED_TTL: '30s', SIM_COMPLETED_TTL: '30s',
-      SIM_MAX_WALL_TIME: '30s', SIM_RATE_LIMIT_PER_MINUTE: '10000',
+      SIM_IDLE_TTL: '30s', SIM_PAUSED_TTL: '30s', SIM_COMPLETED_TTL: '5m',
+      SIM_MAX_WALL_TIME: '90s', SIM_RATE_LIMIT_PER_MINUTE: '10000',
       SIM_CREATE_LIMIT_PER_MINUTE: '1000', CORS_ORIGINS: 'http://localhost:5173',
       ...overrides,
     },
@@ -109,13 +109,13 @@ async function start(binary, overrides = {}) {
     token: created.access_token, ...options,
   });
   async function completed(created) {
-    for (let attempt = 0; attempt < 150; attempt++) {
+    for (let attempt = 0; attempt < 750; attempt++) {
       const { value } = await session(created, '/state', { schema: 'SimulationState' });
       if (value.status === 'COMPLETED') return (await session(created, '/results', { schema: 'SimulationResults' })).value;
       assert(value.status === 'RUNNING', `Unexpected status while waiting for completion: ${value.status}`);
       await delay(100);
     }
-    throw new Error('Simulation did not complete within 15 seconds');
+    throw new Error('Simulation did not complete within 75 seconds');
   }
   return { child, logs, baseURL, request, create, session, completed };
 }
@@ -146,11 +146,11 @@ try {
   assert(preflight.headers.get('access-control-allow-headers')?.includes('Authorization'), 'Private bearer header missing from CORS');
   await api.request('/v1/simulations/capabilities', { headers: { Origin: 'https://unexpected.invalid' }, expected: 403 });
 
-  const config = { scenario: 'zombie_outbreak', graph_profile: 'BASE', seed: 20261026, max_ticks: 3, tick_interval_ms: 1000, config: { survivors: 8, refuge_ids: [] } };
+  const config = { scenario: 'zombie_outbreak', graph_profile: 'BASE', seed: 20261026, max_ticks: 30, tick_interval_ms: 1000, config: { survivors: 8, refuge_ids: [] } };
   check('SimulationCreateRequest', config);
   await api.request('/v1/simulations', { method: 'POST', body: config, expected: 400 });
   for (const invalid of [
-    { ...config, tick_interval_ms: 1 }, { ...config, max_ticks: 151 },
+    { ...config, tick_interval_ms: 1 }, { ...config, max_ticks: 3001 },
     { ...config, graph_profile: 'FULL_MANTA' }, { ...config, secret: 'unexpected' },
     { ...config, config: { survivors: 201 } }, { ...config, config: { refuge_ids: ['missing-refuge'] } },
     { ...config, config: { refuge_ids: [graph.shelters[0].id, graph.shelters[0].id] } },
@@ -217,7 +217,7 @@ try {
 
   // FASE 7: real sessions consume policies, fleet and probabilistic forecasts.
   const phase7 = await start(binary, { SIM_MAX_RETAINED: '16' });
-  const agentConfig = { ...config, max_ticks: 2, tick_interval_ms: 1000, config: {
+  const agentConfig = { ...config, max_ticks: 30, tick_interval_ms: 1000, config: {
     survivors: 8, round: 'round3', mode: 'experimental', zombie_policy: 'adaptive_exploration',
     evacuation_algorithm: 'predictive_temporal_astar',
     pro: { runner_prediction: true, shelter_assignment: true, rescue_fleet: true },

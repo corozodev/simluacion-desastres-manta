@@ -22,6 +22,7 @@ import (
 
 	"corodev/evacuation/internal/application"
 	"corodev/evacuation/internal/diagnostics"
+	"corodev/evacuation/internal/flood"
 	"corodev/evacuation/internal/graph"
 	"corodev/evacuation/internal/reference"
 	"corodev/evacuation/internal/simulation"
@@ -96,6 +97,18 @@ type benchmarkReport struct {
 	Failures                    []string                    `json:"failures"`
 	GeographicReference         *world.ReferenceUse         `json:"geographic_reference,omitempty"`
 	OperationalStats            simulation.OperationalStats `json:"operational_stats"`
+	EffectiveConfig             simulation.Config           `json:"effective_config"`
+	Hydraulic                   *world.HydraulicSnapshot    `json:"hydraulic,omitempty"`
+	HydraulicHistory            []hydraulicSample           `json:"hydraulic_history"`
+	SerializationLatency        diagnostics.Timing          `json:"serialization_latency"`
+	PeakSnapshotBytes           int                         `json:"peak_snapshot_bytes"`
+}
+
+type hydraulicSample struct {
+	Step      int                        `json:"step"`
+	AreaM2    float64                    `json:"flooded_area_m2"`
+	MaxDepthM float64                    `json:"max_depth_m"`
+	Balance   world.HydraulicMassBalance `json:"mass_balance"`
 }
 
 func usage() (syscall.Rusage, error) {
@@ -257,6 +270,10 @@ func run() error {
 	expectHash := flag.String("expect-hash", "", "optional expected deterministic timeline SHA-256")
 	referencePath := flag.String("reference", "", "optional validated official bundle; never fetches online")
 	strength := flag.Float64("reference-strength", .25, "dimensionless experimental weight, 0 to 1")
+	turns := flag.Int("turns", 0, "optional configured duration, 30..3000 turns")
+	model := flag.String("model", "", "rainfall_runoff_2d or compound_flood_2d")
+	cellSize := flag.Float64("cell-size", 0, "optional requested grid resolution in metres")
+	agents := flag.Int("agents", 0, "optional agent count, 1..200")
 	flag.Parse()
 	if *output == "" || flag.NArg() != 0 {
 		return errors.New("-output is required; no positional arguments accepted")
@@ -283,6 +300,29 @@ func run() error {
 	}
 	if cfg.ScenarioType != "urban_flood" || cfg.Turns < 1 {
 		return errors.New("benchmark requires a bounded urban_flood scenario")
+	}
+	if *turns != 0 {
+		if *turns < 30 || *turns > 3000 {
+			return errors.New("-turns must be 30..3000")
+		}
+		cfg.Turns = *turns
+		cfg.Flood.SimulationDuration = float64(*turns) * cfg.Flood.TimeStep
+	}
+	if *model != "" {
+		cfg.Flood.HydraulicModel = *model
+	}
+	if *cellSize != 0 {
+		if cfg.Flood.Hydrology == nil {
+			h := flood.DefaultHydrologyConfig()
+			cfg.Flood.Hydrology = &h
+		}
+		cfg.Flood.Hydrology.CellSizeM = *cellSize
+	}
+	if *agents != 0 {
+		if *agents < 1 || *agents > 200 {
+			return errors.New("-agents must be 1..200")
+		}
+		cfg.Survivors = *agents
 	}
 	if *seedOverride != "" {
 		cfg.Seed, err = strconv.ParseInt(*seedOverride, 10, 64)
@@ -328,7 +368,7 @@ func run() error {
 		baselineOccupancy[shelter.ID] = shelter.Occupancy
 	}
 	report := benchmarkReport{
-		RecordedAt: time.Now().UTC().Format(time.RFC3339Nano), Phase: "4A", Scenario: cfg.Name, ScenarioType: cfg.ScenarioType,
+		RecordedAt: time.Now().UTC().Format(time.RFC3339Nano), Phase: "8", Scenario: cfg.Name, ScenarioType: cfg.ScenarioType,
 		Seed: cfg.Seed, GraphPath: *graphPath, GraphSHA256: graphSHA, ScenarioPath: *scenarioPath, ScenarioSHA256: scenarioSHA,
 		GraphVersion: g.Version, Nodes: len(g.Nodes), Edges: len(g.Edges), Agents: len(state.Survivors), TurnLimit: cfg.Turns,
 		Concurrency: cfg.Concurrency, Go: runtime.Version(), GOMAXPROCS: runtime.GOMAXPROCS(0), OS: runtime.GOOS, Arch: runtime.GOARCH,
@@ -336,25 +376,38 @@ func run() error {
 		Methodology:     "One local process; one graph/scenario; accelerated steps without pacing; real authenticated loopback HTTP /paso; full Step wall latency with nearest-rank percentiles; validation at initial and every completed step; GC checkpoints at zero, midpoint and final are outside Step latency but included in process resources. CPU/RSS include graph load, initialization, checks, snapshots, hashing and GC. Heap checkpoints include a retained observable snapshot. No infrastructure latency or improvement is inferred. Hashes include observable world/scenario outputs and exclude performance and HTTP latency percentiles.",
 		ModelLimitation: "Los escenarios de inundación emplean parámetros sintéticos y no constituyen pronósticos hidrológicos ni recomendaciones oficiales de evacuación",
 	}
+	report.EffectiveConfig = cfg
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 	timeline := sha256.New()
 	latencies := make([]time.Duration, 0, cfg.Turns)
+	serialization := make([]time.Duration, 0, cfg.Turns)
 	observe := func() error {
 		if err := validateSnapshot(state, initialIDs, baselineOccupancy); err != nil {
 			return err
 		}
+		serializeStart := time.Now()
 		stable, err := stableSnapshot(state)
+		serialization = append(serialization, time.Since(serializeStart))
 		if err != nil {
 			return err
 		}
 		_, _ = timeline.Write(stable)
+		report.PeakSnapshotBytes = max(report.PeakSnapshotBytes, len(stable))
 		_, _ = timeline.Write([]byte{'\n'})
 		hash := sha256.Sum256(stable)
 		report.DeterministicStateSHA256 = hex.EncodeToString(hash[:])
 		report.PeakRoadConditionEntries = max(report.PeakRoadConditionEntries, len(state.Scenario.RoadConditions))
 		report.PeakBlockedEdges = max(report.PeakBlockedEdges, state.Scenario.EvacuationMetrics.BlockedEdges)
 		report.PeakCautionEdges = max(report.PeakCautionEdges, state.Scenario.EvacuationMetrics.CautionEdges)
+		if h := state.Scenario.Hydraulic; h != nil {
+			if math.Abs(h.MassBalance.ResidualM3) > math.Max(.001, h.MassBalance.RainfallM3*1e-9) {
+				return errors.New("hydraulic mass balance residual exceeded tolerance")
+			}
+			if state.Turn%max(1, cfg.Turns/20) == 0 || state.Turn == cfg.Turns {
+				report.HydraulicHistory = append(report.HydraulicHistory, hydraulicSample{Step: state.Turn, AreaM2: h.FloodedAreaM2, MaxDepthM: h.MaxDepthM, Balance: h.MassBalance})
+			}
+		}
 		return nil
 	}
 	if err := observe(); err != nil {
@@ -382,9 +435,11 @@ func run() error {
 	report.RunElapsedMS = float64(time.Since(runStart)) / float64(time.Millisecond)
 	report.HeapCheckpoints = append(report.HeapCheckpoints, checkpoint(state.Turn))
 	report.StepLatency = diagnostics.Measure(latencies)
+	report.SerializationLatency = diagnostics.Measure(serialization)
 	report.DeterministicTimelineSHA256 = hex.EncodeToString(timeline.Sum(nil))
 	if state.Scenario != nil {
 		report.EvacuationMetrics, report.Performance = state.Scenario.EvacuationMetrics, state.Scenario.Performance
+		report.Hydraulic = state.Scenario.Hydraulic
 	}
 	report.Requests = requestCounts{Success: state.Metrics.RequestsSuccess, Invalid: state.Metrics.RequestsInvalid, Timeout: state.Metrics.RequestsTimeout}
 	if *expectHash != "" && report.DeterministicTimelineSHA256 != *expectHash {
@@ -401,9 +456,6 @@ func run() error {
 	report.ValidationPassed = len(report.Failures) == 0 && report.CompletedStep == cfg.Turns
 	report.GeographicReference = cfg.Flood.GeographicReference.Clone()
 	report.OperationalStats = app.Simulator.OperationalStats()
-	if report.GeographicReference != nil {
-		report.Phase = "4D"
-	}
 	if err := writePrivate(*output, report); err != nil {
 		return err
 	}

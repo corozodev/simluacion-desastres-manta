@@ -279,7 +279,11 @@ func TestWriteFailureAndCorruptSnapshotFailClosed(t *testing.T) {
 }
 
 func TestApplicationAuditPersistsAndDiskFailureAddsNoReceipt(t *testing.T) {
-	s, now := testStore(t)
+	s, _ := testStore(t)
+	// Open refreshes expiry using wall time before a test clock can be injected.
+	// Keep this persistence fixture current across that reopen.
+	now := time.Now().UTC()
+	s.now = func() time.Time { return now }
 	i, _, err := s.Create(testCreate(now), "application_record_key_123", "citizen", "test")
 	if err != nil {
 		t.Fatal(err)
@@ -305,6 +309,9 @@ func TestApplicationAuditPersistsAndDiskFailureAddsNoReceipt(t *testing.T) {
 	if err != nil || !exists || got.ApplicationID != a.ApplicationID {
 		t.Fatal("restart lost audit", got, exists, err)
 	}
+	// Reopening restores the real clock; retain the fixture clock when exercising
+	// the disk error so this test cannot expire with the calendar date.
+	s.now = func() time.Time { return now }
 	a.ApplicationID = strings.Repeat("c", 32)
 	a.RunID = strings.Repeat("d", 32)
 	s.write = func(diskState) error { return errors.New("disk failure") }
