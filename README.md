@@ -20,7 +20,7 @@ Las extensiones no acreditan puntos del núcleo zombie. La geografía vial provi
 
 ## Demo en cinco minutos
 
-Las mejoras de esta revisión se verifican localmente; su publicación está pendiente de autorización. La URL pública puede servir la versión anterior.
+Versión publicada en AWS el 27 de octubre de 2026: [`47f51fa`](https://github.com/corozodev/simluacion-desastres-manta/commit/47f51fa3ec3d00f19874de50703b4fabc013de37). Se verificaron por HTTPS el inicio, avance, pausa, cancelación repetida y reinicio de inundaciones. [Registro del despliegue](deploy/deployment-delivery-20261027.json).
 
 1. **0:00–0:45:** abrir [Escape](https://sistemamanta.lexinnovate.com/escape). Explorar BASE antes de iniciar; abrir la página no crea una simulación.
 2. **0:45–2:00:** configurar una ronda y pulsar **Iniciar simulación**. Seleccionar un sobreviviente para ver su ruta; observar zombies, bloqueos y ocupación de refugios. Cada sesión posee su propio motor.
@@ -111,7 +111,7 @@ No crear una imagen ficticia ni un PNG vacío. -->
 
 BASE es una muestra urbana, no cobertura completa. FULL_MANTA es experimental. Reiniciar Go pierde las sesiones en RAM. Predicción/flota pueden empeorar resultados; inundación usa relieve/lluvia sintéticos. Android compilado y Chromium móvil no acreditan Safari real ni capacidad EC2. [Limitaciones y pendientes verificables](docs/limitaciones.md).
 
-Entrega **miércoles 28 de octubre de 2026, 10:00 Ecuador**; pitch **viernes 30 de octubre, ULEAM**. Antes de publicar: revisar diff e historial real, ejecutar verificaciones, incorporar Budget auténtico y gasto real, confirmar URL y adjuntar presentación PDF/PPT/PPTX ≤20 MB. No se generan diapositivas ni se hace commit, push o despliegue automáticamente. [Lista de entrega](docs/limitaciones.md).
+Entrega **miércoles 28 de octubre de 2026, 10:00 Ecuador**; pitch **viernes 30 de octubre, ULEAM**. Antes de publicar: revisar diff e historial real, ejecutar verificaciones, incorporar Budget auténtico y gasto real, confirmar URL y adjuntar presentación PDF/PPT/PPTX ≤20 MB. La publicación Git y AWS de esta versión fue autorizada y ejecutada; las diapositivas y evidencias pendientes corresponden al propietario. [Lista de entrega](docs/limitaciones.md).
 
 ## Repositorio y documentación
 

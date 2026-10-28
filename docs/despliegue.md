@@ -3,8 +3,9 @@
 [Índice](INDEX.md) · [Arquitectura](arquitectura.md) · [Costos](costos.md) · [Pruebas](pruebas.md)
 
 Esta guía describe la infraestructura existente y la preparación local de una
-release. **Esta consolidación no ejecuta push, despliegue, reinicios ni cambios
-AWS.** Sustituir servicios interrumpe sesiones en RAM y requiere autorización
+release. La publicación posterior autorizada desplegó el commit `47f51fa`
+el 27 de octubre de 2026; [registro y verificaciones](../deploy/deployment-delivery-20261027.json).
+Sustituir servicios interrumpe sesiones en RAM y requiere autorización
 expresa del propietario para la cuenta/región y el cambio concreto.
 
 ## Estado respaldado por evidencia
@@ -23,10 +24,11 @@ expresa del propietario para la cuenta/región y el cambio concreto.
 | Externos a AWS | DNS Cloudflare; certificado de la API Let's Encrypt gestionado por Caddy; datos OSM/GeoManta/SNGR |
 
 Fuentes: [resize y límites](../deploy/validation-phase5-deployment.json),
-[última publicación registrada](../deploy/deployment-report-controls-20261027.json),
+[última publicación registrada](../deploy/deployment-delivery-20261027.json),
 [plantilla](../deploy/aws/stack.yaml) y [perfil operativo](../deploy/backend.phase5-ec2.env.example).
-La última publicación registrada corresponde a `e4863a9`, el 27 de octubre;
-no acredita que los cambios locales posteriores estén desplegados. Los GET
+La última publicación corresponde a `47f51fa`, el 27 de octubre. API y laboratorio
+ejecutan los binarios verificados mediante montajes read-only; se conservan imagen
+base, credenciales, límites y montaje persistente. React sirve el build HTTPS nuevo. Los GET
 públicos a `/escape` y `/healthz` devolvieron 200 durante esta auditoría, usando
 DNS y TLS normales; no se inició ninguna simulación pública. La lectura AWS
 del 27 de octubre, aproximadamente 18:58 de Ecuador, confirmó identidad vigente
@@ -78,7 +80,9 @@ La revisión local construyó y verificó `corodev-backend:delivery-review` y de
 `web/` compilado con los tres endpoints HTTPS, OpenAPI, script de rollout actual,
 manifest y `SHA256SUMS`. El manifest identifica el commit base y el árbol
 modificado; no inventa un commit de release. Los checksums se comprobaron tras
-empaquetar. No incluye credenciales ni implica publicación/despliegue.
+empaquetar. No incluye credenciales. La publicación autorizada posterior utilizó los binarios
+extraídos de esa imagen y su build web; el registro anterior identifica exactamente
+los hashes activos, respaldos y comprobaciones realizadas.
 
 `python3 tools/qa/verify_docker.py --image corodev-backend:delivery-review`
 verificó inicio idle, health, usuario no-root/readonly y una sesión official R3
@@ -175,8 +179,11 @@ aws cloudformation describe-stack-events --stack-name corodev-phase2 --region us
 Health 200 prueba disponibilidad de un endpoint, no avance del mapa. La
 verificación funcional posterior debe iniciar una ejecución explícita autorizada,
 observar cambios y controles, probar móvil y `/paso`, y conservar errores y
-mediciones. La última publicación histórica omitió tests y navegador: esta guía
-no transforma esa omisión en evidencia positiva.
+mediciones. La publicación anterior de controles omitió tests y navegador. Esta release
+reutiliza la validación local completa documentada en [pruebas](pruebas.md); durante
+el despliegue sólo se hicieron comprobaciones HTTP puntuales, sin nuevas suites
+ni cargas. Dos archivos persistentes quedaron idénticos al backup; la caché oficial
+sólo actualizó metadatos de consulta por su configuración online ya existente.
 
 Rollback del par: conservar los contenedores anteriores y su namespace, detener
 primero el laboratorio nuevo y luego el backend nuevo, restaurar los dos nombres

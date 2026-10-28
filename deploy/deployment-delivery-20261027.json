@@ -1,0 +1,157 @@
+{
+  "recorded_at": "2026-10-27T19:37:45.572508-05:00",
+  "release": "final-47f51fa-20261027",
+  "implementation_commit": "47f51fa3ec3d00f19874de50703b4fabc013de37",
+  "repository": "https://github.com/corozodev/simluacion-desastres-manta",
+  "branch": "main",
+  "region": "us-east-2",
+  "instance_id": "i-05fd56f1bcb3b1aba",
+  "site": "https://sistemamanta.lexinnovate.com",
+  "api": "https://api.sistemamanta.lexinnovate.com",
+  "authorization": "Explicit user request to publish Git and deploy the new AWS version",
+  "publication_method": "Verified linux/amd64 executables extracted from delivery-review image and mounted read-only over existing container image; complete React HTTPS build in existing S3/CloudFront. No new infrastructure.",
+  "source_tree": "25ff4332ca4c133c9164114ee9efaf56738bbfba",
+  "prior_local_validation": "make verify, Go race/vet, web/Flutter builds, real HTTP/browser integrations and scenario benchmarks completed before publication; deployment reused the exact verified source tree.",
+  "during_this_deployment": {
+    "automated_test_suites": false,
+    "browser_e2e": false,
+    "load_benchmarks": false,
+    "full_150_turn_round": false,
+    "bounded_http_checks": true
+  },
+  "artifacts": {
+    "server": {
+      "sha256": "b0e9835fdfe37ad0f7a0d3c178c614da62ef55ad1524afea9cbb1f9a8dd23cda",
+      "bytes": 7868578
+    },
+    "flood-lab": {
+      "sha256": "e15c59ccee3534f32e0b5aa9772342f43cf1b81f96ac4b5827d1a760199a2923",
+      "bytes": 7950498
+    }
+  },
+  "web_index_sha256": "e1d6fe4d015a40d48fd609d99f2392a6144a695e6c6c034f5dae9f1652c2fb86",
+  "runtime": {
+    "release": "final-47f51fa-20261027",
+    "implementation_commit": "47f51fa3ec3d00f19874de50703b4fabc013de37",
+    "status": "DEPLOYED",
+    "container_ids": {
+      "corodev-backend": "2b82bdac0705e566c7771d754ffa500b41eca2039433c975874eb8d9cc04ec2b",
+      "corodev-flood-lab": "e4decddcdf1fcfbc474be09871231b650e4e9f17261a631d0a9d076b77d2d3b4"
+    },
+    "backend_health": "healthy",
+    "lab_running": true,
+    "persistent_data_preserved": true,
+    "credentials_and_environment_preserved": true,
+    "tests_run": false,
+    "rollback_containers": {
+      "corodev-backend": "corodev-backend-before-final-47f51fa-20261027",
+      "corodev-flood-lab": "corodev-flood-lab-before-final-47f51fa-20261027"
+    },
+    "images": {
+      "corodev-backend": "sha256:b2e928a730cc9646b570229efe2e83b2ae54c6ed1439ae4beae1a863ad94214e",
+      "corodev-flood-lab": "sha256:b2e928a730cc9646b570229efe2e83b2ae54c6ed1439ae4beae1a863ad94214e"
+    },
+    "resources": {
+      "corodev-backend": {
+        "memory": 4294967296,
+        "nano_cpus": 2000000000
+      },
+      "corodev-flood-lab": {
+        "memory": 805306368,
+        "nano_cpus": 500000000
+      }
+    }
+  },
+  "host_verification": {
+    "commit": "47f51fa3ec3d00f19874de50703b4fabc013de37",
+    "live_executable_digests_match": true,
+    "environment_and_limits_preserved": true,
+    "byte_identical_persistent_files": 2,
+    "reference_refresh_metadata_only": true,
+    "private_backup_present": true,
+    "legacy_turn": 0,
+    "paso": {
+      "unauthorized": 401,
+      "authorized": 200,
+      "neighbor_or_wait": true
+    },
+    "containers": {
+      "corodev-backend": {
+        "running": true,
+        "health": "healthy",
+        "restart_count": 0
+      },
+      "corodev-flood-lab": {
+        "running": true,
+        "health": null,
+        "restart_count": 0
+      }
+    }
+  },
+  "public_http_verification": {
+    "health": "ok",
+    "capabilities": true,
+    "zombie_published_get": true,
+    "flood": {
+      "start_advanced_to": 1,
+      "pause_froze_turn": true,
+      "resume": true,
+      "cancel": true,
+      "repeated_cancel": true,
+      "restart_idle": true,
+      "second_start_advanced_to": 1,
+      "published_final": "cancelled",
+      "agents": 8,
+      "configured_turns": 30,
+      "full_round_executed": false
+    }
+  },
+  "web_verification": {
+    "cloudfront_status": "Completed",
+    "pages": {
+      "/escape": {
+        "http": 200,
+        "sha256": "e1d6fe4d015a40d48fd609d99f2392a6144a695e6c6c034f5dae9f1652c2fb86"
+      },
+      "/flood-lab": {
+        "http": 200,
+        "sha256": "e1d6fe4d015a40d48fd609d99f2392a6144a695e6c6c034f5dae9f1652c2fb86"
+      },
+      "/mobile": {
+        "http": 200,
+        "sha256": "e1d6fe4d015a40d48fd609d99f2392a6144a695e6c6c034f5dae9f1652c2fb86"
+      }
+    },
+    "assets": {
+      "/assets/ScenarioScreen-Ddu8WkS5.js": {
+        "http": 200,
+        "sha256": "75ee69cda9f1c008a8f0614e211184a9a3cee3d5b544f1cc7000db6aaa22794b"
+      },
+      "/assets/index-B1vk_Ozd.js": {
+        "http": 200,
+        "sha256": "609f64c3fcdccf23c49e015a9e3d6cc3b5b0d292fe4927ba5f6f87e807d71080"
+      },
+      "/assets/index-VoNEYHsc.css": {
+        "http": 200,
+        "sha256": "1b5be9c423ae68616d20d26a8bdecc8b132f4e04dac213069a25860730a94113"
+      }
+    }
+  },
+  "recovery": {
+    "previous_containers_retained": true,
+    "private_data_and_container_configuration_backup": "/opt/corodev/releases/final-47f51fa-20261027/recovery-private",
+    "previous_web_index_saved_privately": true,
+    "previous_web_assets_retained": true,
+    "expiry_configuration_modified": false
+  },
+  "ssm_commands": {
+    "rollout": "206c257d-43df-4116-b4a6-42a3d315ef16",
+    "verification": "c742d6cd-03d0-4602-aa35-690a143ad39f"
+  },
+  "limitations": [
+    "Public flood checks used BASE, eight agents and a short observation; they do not certify FULL_MANTA latency, sustained capacity or AWS SLA.",
+    "Reference cache changed only refresh metadata; citizen data files remained byte-identical to the backup.",
+    "In-memory executions were replaced during the authorized service update.",
+    "Budget screenshot, attributed event spend and presentation remain owner deliverables."
+  ]
+}

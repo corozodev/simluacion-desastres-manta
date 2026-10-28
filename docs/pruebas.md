@@ -228,3 +228,19 @@ iniciales de web/Flutter por expectativas obsoletas también se corrigieron ante
 de ejecutar sus suites finales completas.
 
 `make verify` final terminó **PASS** (salida 0): documentos, contrato/derivados, lint/tipos, Go/race, geografía, HTTP real y builds; después 166 pruebas web y 40 mock. Navegador, Flutter, benchmarks y Docker se ejecutaron además, según la tabla.
+
+
+## Publicación AWS autorizada
+
+El commit `47f51fa` se publicó y desplegó el 27 de octubre de 2026, preservando
+credenciales, límites y datos ciudadanos. [Evidencia y hashes activos](../deploy/deployment-delivery-20261027.json).
+Por HTTPS se verificaron health, capacidades y publicados; una tormenta BASE de
+ocho agentes avanzó, pausó, reanudó, aceptó doble cancelación, reinició y volvió
+a avanzar. Se dejó cancelada. `/paso` conservó 401/200 y vecino/espera válido;
+`/estado` permaneció en turno 0. CloudFront completó invalidación; las tres páginas
+y los assets comprobados coinciden por hash con el build preparado.
+
+No se ejecutaron suites, E2E, benchmarks ni una ronda de 150 turnos durante el
+despliegue. Estas comprobaciones acotadas no certifican rendimiento FULL_MANTA
+ni capacidad sostenida de EC2. Los contenedores anteriores y backup privado se
+conservan para reversión.

@@ -56,23 +56,23 @@ auditoría; los cambios de esta consolidación siguen locales, sin commits ni pu
 
 | Requisito | Evidencia / estado | Acción antes de enviar |
 | --- | --- | --- |
-| Repositorio público | CONFIRMADO mediante lectura GitHub `get_repo` | Publicar los cambios revisados de esta consolidación |
-| Historial real | CONFIRMADO: 80 commits existentes, HEAD de partida `b26ff44`; intactos | Revisar diff y autorizar commits/push; no se crearon automáticamente |
-| README completo | LISTO LOCAL | Revisar y publicar con la versión de entrega |
-| Arquitectura enlazada | LISTO LOCAL: documento, fuente editable y SVG | Publicar junto con README |
+| Repositorio público | CONFIRMADO mediante lectura GitHub `get_repo` | Publicado `47f51fa`; completar los entregables pendientes |
+| Historial real | CONFIRMADO: 80 commits existentes, HEAD de partida `b26ff44`; preservados | Nuevos commits reales publicados con autorización |
+| README completo | PUBLICADO | Publicado; revisar campos pendientes del propietario |
+| Arquitectura enlazada | PUBLICADO: documento, fuente editable y SVG | Publicado junto con README |
 | Captura AWS Budget | PENDIENTE: no existe `docs/budget.png` | Incorporar captura auténtica sanitizada y verificar alerta |
 | Costos mensuales | MODELO DOCUMENTADO: USD 77,68/mes bajo los supuestos de [costos](costos.md) | Validar recursos, horas, tarifas y rubros variables; no equivale a factura |
 | Gasto real del evento | PENDIENTE: Budget consultado a nivel de cuenta, sin atribución al proyecto | Completar cifra, período, fecha y fuente de consola |
-| URL pública | CONFIRMADO: web y health previos devolvieron HTTP 200; versión nueva sin publicar | Revisar desde otra red; desplegar sólo con autorización y verificar artefacto elegido |
-| `POST /paso` documentado | LISTO LOCAL, autenticación preservada | Provisionar clave fuera del repositorio y acordar runtime de evaluación |
-| Simulador documentado | LISTO LOCAL, rondas completas aceleradas medidas | Ejecutar los quince minutos nominales si se requiere esa evidencia |
-| Método de medición | LISTO LOCAL en [pruebas](pruebas.md) | Confirmar definición del jurado para supervivencia/eficiencia y aceptación del modelo vehicular |
+| URL pública | CONFIRMADO: nueva versión `47f51fa` publicada y verificada por HTTPS | Revisar desde otra red; futuras actualizaciones requieren autorización |
+| `POST /paso` documentado | PUBLICADO, autenticación preservada | Provisionar clave fuera del repositorio y acordar runtime de evaluación |
+| Simulador documentado | PUBLICADO, rondas completas aceleradas medidas | Ejecutar los quince minutos nominales si se requiere esa evidencia |
+| Método de medición | PUBLICADO en [pruebas](pruebas.md) | Confirmar definición del jurado para supervivencia/eficiencia y aceptación del modelo vehicular |
 | Presentación PDF/PPT/PPTX ≤20 MB | PENDIENTE: no hay archivo de presentación | Preparar y adjuntar; no se generaron diapositivas |
 
-Antes de publicar, revisar el diff, completar los campos pendientes y ejecutar
-`make verify` sobre la versión final. Después del push autorizado, comprobar los
-enlaces y archivos públicos. El despliegue requiere autorización independiente;
-no confundir una verificación HTTP con publicación de esta consolidación.
+La publicación Git y AWS autorizada quedó completada; su [registro](../deploy/deployment-delivery-20261027.json)
+identifica versión, artefactos y comprobaciones. Para la entrega, completar los
+campos pendientes del propietario. Nuevos cambios requieren su revisión y
+autorización de publicación; no confundir health HTTP con rendimiento sostenido.
 
 Entrega indicada: **miércoles 28 de octubre de 2026, 10:00 (Ecuador)**.
 Pitch indicado: **viernes 30 de octubre, ULEAM**. Fechas proporcionadas por el

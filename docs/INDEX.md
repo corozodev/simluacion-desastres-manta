@@ -4,7 +4,8 @@ La descripción vigente parte del [README](../README.md). La arquitectura y los
 manuales siguientes corresponden al código actual; los informes de fases
 conservan evidencia histórica y no prueban que una versión esté desplegada.
 Entrega prevista: **28 de octubre de 2026, 10:00 de Ecuador**; pitch el **30 de
-Octubre en ULEAM**. No se generaron diapositivas en esta consolidación.
+Octubre en ULEAM**. No se generaron diapositivas en esta consolidación. La publicación Git/AWS
+autorizada del commit `47f51fa` está en el [registro de entrega](../deploy/deployment-delivery-20261027.json).
 
 ## Guías actuales
 
