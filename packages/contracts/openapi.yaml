@@ -1853,11 +1853,22 @@ components:
         id: { type: string, minLength: 1, maxLength: 100 }
         node_id: { type: string, minLength: 1, maxLength: 100 }
         capacity: { type: integer, minimum: 1, maximum: 200 }
+    SimulationZombieCounts:
+      type: object
+      additionalProperties: false
+      required: [ walker, runner, horde, sleeper ]
+      description: Cantidades iniciales del proyecto, no oficiales. R1 exige walker y excluye los otros tipos; R2 exige walker/runner/horde y excluye sleeper; R3 exige los cuatro. Cada tipo requerido es al menos 1. Sólo zombie_outbreak. La reserva de memoria del proceso limita el total antes de construir el motor; no se recorta la población.
+      properties:
+        walker: { type: integer, minimum: 0, maximum: 9007199254740991 }
+        runner: { type: integer, minimum: 0, maximum: 9007199254740991 }
+        horde: { type: integer, minimum: 0, maximum: 9007199254740991 }
+        sleeper: { type: integer, minimum: 0, maximum: 9007199254740991 }
     SimulationConfigInput:
       type: object
       additionalProperties: false
       description: Configuración acotada; refuge_ids vacío usa los predeterminados. custom_shelters reemplaza exactamente los cuatro originales, conservando sus IDs; no se combina con una selección parcial de refuge_ids. El snapshot publica sus ubicaciones efectivas sobre la topología estática del perfil.
       properties:
+        zombie_counts: { $ref: '#/components/schemas/SimulationZombieCounts' }
         mode: { type: string, enum: [ official, experimental ] }
         zombie_policy: { type: string, enum: [ classic_random, correlated_random_walk, adaptive_exploration ] }
         evacuation_algorithm: { type: string, enum: [ legacy_current, baseline_shortest_path, dynamic_risk_astar, predictive_temporal_astar ] }
@@ -1884,6 +1895,7 @@ components:
       additionalProperties: false
       required: [ survivors, round, refuge_ids ]
       properties:
+        zombie_counts: { $ref: '#/components/schemas/SimulationZombieCounts' }
         mode: { type: string, enum: [ official, experimental ] }
         zombie_policy: { type: string, enum: [ classic_random, correlated_random_walk, adaptive_exploration ] }
         evacuation_algorithm: { type: string, enum: [ legacy_current, baseline_shortest_path, dynamic_risk_astar, predictive_temporal_astar ] }
@@ -1907,7 +1919,7 @@ components:
       properties:
         scenario: { type: string, enum: [ zombie_outbreak, urban_flood ] }
         graph_profile: { type: string, enum: [ BASE, FULL_MANTA ], default: BASE }
-        seed: { type: integer, minimum: -9007199254740991, maximum: 9007199254740991, default: 20261026 }
+        seed: { type: integer, minimum: -9007199254740991, maximum: 9007199254740991, description: "Opcional; si se omite se genera una semilla y se registra en los metadatos. Reiniciar conserva la semilla efectiva." }
         max_ticks: { type: integer, minimum: 30, maximum: 3000, default: 150, description: "Duración personalizada; official exige exactamente 150." }
         tick_interval_ms: { type: integer, minimum: 1000, maximum: 5000, default: 2000 }
         config: { $ref: '#/components/schemas/SimulationConfigInput' }
@@ -2063,7 +2075,7 @@ components:
       properties:
         scenario: { type: string, enum: [ zombie_outbreak, urban_flood ] }
         graph_profile: { type: string, enum: [ BASE, FULL_MANTA ] }
-        seed: { type: integer, minimum: -9007199254740991, maximum: 9007199254740991 }
+        seed: { type: integer, minimum: -9007199254740991, maximum: 9007199254740991, description: "Sugerencia para solicitudes con semilla explícita; omitir seed en creación genera una nueva." }
         max_ticks: { type: integer, minimum: 1, maximum: 3000 }
         tick_interval_ms: { type: integer, minimum: 1000, maximum: 5000 }
         survivors: { type: integer, minimum: 1, maximum: 200 }
@@ -2615,6 +2627,7 @@ components:
         - survivors
         - turns
       properties:
+        zombie_counts: { $ref: '#/components/schemas/SimulationZombieCounts' }
         id:
           type: string
           enum:

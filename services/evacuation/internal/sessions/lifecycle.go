@@ -48,6 +48,8 @@ func (m *Manager) run(s *execution) {
 		if s.info.GraphProfile == "FULL_MANTA" {
 			retained = 8 << 20
 		}
+		// Keep the extra population reservation while its compact state is retained.
+		retained += max(int64(0), s.reserved-reservation(s.info.GraphProfile))
 		if _, ok := m.sessions[s.info.SimulationID]; !ok {
 			retained = 0
 		}

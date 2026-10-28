@@ -4,6 +4,7 @@ package sessions
 import (
 	"time"
 
+	"corodev/evacuation/internal/simulation"
 	"corodev/evacuation/internal/world"
 )
 
@@ -37,15 +38,16 @@ type ProOptions struct {
 	RescueFleet       bool `json:"rescue_fleet"`
 }
 type InputConfig struct {
-	Mode                string          `json:"mode,omitempty"`
-	ZombiePolicy        string          `json:"zombie_policy,omitempty"`
-	EvacuationAlgorithm string          `json:"evacuation_algorithm,omitempty"`
-	Pro                 *ProInput       `json:"pro,omitempty"`
-	Survivors           *int            `json:"survivors,omitempty"`
-	Round               string          `json:"round,omitempty"`
-	RefugeIDs           []string        `json:"refuge_ids,omitempty"`
-	CustomShelters      []CustomShelter `json:"custom_shelters,omitempty"`
-	RainfallIntensity   *float64        `json:"rainfall_intensity,omitempty"`
+	ZombieCounts        *simulation.ZombieCounts `json:"zombie_counts,omitempty"`
+	Mode                string                   `json:"mode,omitempty"`
+	ZombiePolicy        string                   `json:"zombie_policy,omitempty"`
+	EvacuationAlgorithm string                   `json:"evacuation_algorithm,omitempty"`
+	Pro                 *ProInput                `json:"pro,omitempty"`
+	Survivors           *int                     `json:"survivors,omitempty"`
+	Round               string                   `json:"round,omitempty"`
+	RefugeIDs           []string                 `json:"refuge_ids,omitempty"`
+	CustomShelters      []CustomShelter          `json:"custom_shelters,omitempty"`
+	RainfallIntensity   *float64                 `json:"rainfall_intensity,omitempty"`
 }
 
 type CreateRequest struct {
@@ -58,18 +60,23 @@ type CreateRequest struct {
 }
 
 type Config struct {
-	Mode                string          `json:"mode,omitempty"`
-	ZombiePolicy        string          `json:"zombie_policy,omitempty"`
-	EvacuationAlgorithm string          `json:"evacuation_algorithm,omitempty"`
-	Pro                 *ProOptions     `json:"pro,omitempty"`
-	Survivors           int             `json:"survivors"`
-	Round               string          `json:"round"`
-	RefugeIDs           []string        `json:"refuge_ids"`
-	CustomShelters      []CustomShelter `json:"custom_shelters,omitempty"`
-	RainfallIntensity   *float64        `json:"rainfall_intensity,omitempty"`
+	ZombieCounts        *simulation.ZombieCounts `json:"zombie_counts,omitempty"`
+	Mode                string                   `json:"mode,omitempty"`
+	ZombiePolicy        string                   `json:"zombie_policy,omitempty"`
+	EvacuationAlgorithm string                   `json:"evacuation_algorithm,omitempty"`
+	Pro                 *ProOptions              `json:"pro,omitempty"`
+	Survivors           int                      `json:"survivors"`
+	Round               string                   `json:"round"`
+	RefugeIDs           []string                 `json:"refuge_ids"`
+	CustomShelters      []CustomShelter          `json:"custom_shelters,omitempty"`
+	RainfallIntensity   *float64                 `json:"rainfall_intensity,omitempty"`
 }
 
 func (c Config) clone() Config {
+	if c.ZombieCounts != nil {
+		counts := *c.ZombieCounts
+		c.ZombieCounts = &counts
+	}
 	if c.Pro != nil {
 		p := *c.Pro
 		c.Pro = &p

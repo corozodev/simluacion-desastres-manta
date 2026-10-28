@@ -8,14 +8,14 @@ import { algorithmLabels } from './AgentPolicies';
 
 type Algorithm = keyof typeof algorithmLabels;
 type ComparisonRow = { input: SimulationCreateRequest; key: string; metadata?: SimulationCreated; state?: SimulationState; results?: SimulationResults };
-export type ComparisonExport = { configuration: SimulationCreateRequest; status: string; tick: number; metrics: SimulationState['snapshot']['metrics'] | null; shelters: SimulationState['snapshot']['shelters']; analytics: SimulationResults['results']['analytics'] | null; fleet: SimulationState['snapshot']['fleet_metrics'] | null; };
+export type ComparisonExport = { configuration: SimulationCreateRequest; graph_version?: string; status: string; tick: number; metrics: SimulationState['snapshot']['metrics'] | null; shelters: SimulationState['snapshot']['shelters']; analytics: SimulationResults['results']['analytics'] | null; fleet: SimulationState['snapshot']['fleet_metrics'] | null; };
 export function comparisonExport(rows: Pick<ComparisonRow, 'input' | 'state' | 'results'>[]): ComparisonExport[] {
-  return rows.map(row => ({ configuration: row.input, status: row.state?.status ?? 'PENDING', tick: row.state?.tick ?? 0, metrics: row.state?.snapshot.metrics ?? null, shelters: row.state?.snapshot.shelters ?? [], analytics: row.results?.results.analytics ?? null, fleet: row.state?.snapshot.fleet_metrics ?? null }));
+  return rows.map(row => ({ configuration: row.state ? { ...row.input, seed: row.state.seed, max_ticks: row.state.max_ticks, tick_interval_ms: row.state.tick_interval_ms, config: row.state.config } : row.input, graph_version: row.state?.graph_version, status: row.state?.status ?? 'PENDING', tick: row.state?.tick ?? 0, metrics: row.state?.snapshot.metrics ?? null, shelters: row.state?.snapshot.shelters ?? [], analytics: row.results?.results.analytics ?? null, fleet: row.state?.snapshot.fleet_metrics ?? null }));
 }
 export function comparisonCSV(rows: ComparisonExport[]) {
-  const header = ['configuration', 'status', 'tick', 'survivors', 'evacuated', 'bitten', 'active', 'http_p50_ms', 'http_p95_ms', 'http_p99_ms', 'requests_invalid', 'requests_timeout', 'replans', 'oscillations', 'mean_arrival_turn', 'mean_route_efficiency', 'prediction_hits', 'prediction_misses', 'prediction_false_positives', 'prediction_brier_score', 'fleet_pickups', 'fleet_delivered'];
+  const header = ['configuration', 'status', 'tick', 'survivors', 'evacuated', 'bitten', 'active', 'http_p50_ms', 'http_p95_ms', 'http_p99_ms', 'requests_invalid', 'requests_timeout', 'replans', 'oscillations', 'mean_arrival_turn', 'mean_route_efficiency', 'prediction_hits', 'prediction_misses', 'prediction_false_positives', 'prediction_brier_score', 'fleet_pickups', 'fleet_delivered', 'graph_version'];
   const quote = (value: unknown) => `"${String(value ?? '').replaceAll('"', '""')}"`;
-  return [header, ...rows.map(row => [JSON.stringify(row.configuration), row.status, row.tick, row.configuration.config?.survivors, row.metrics?.evacuated, row.metrics?.bitten, row.metrics?.active, row.metrics?.http_p50_ms, row.metrics?.http_p95_ms, row.metrics?.http_p99_ms, row.metrics?.requests_invalid, row.metrics?.requests_timeout, row.analytics?.replans, row.analytics?.oscillations, row.analytics?.mean_arrival_turn, row.analytics?.mean_route_efficiency, row.analytics?.prediction.hits, row.analytics?.prediction.misses, row.analytics?.prediction.false_positives, row.analytics?.prediction.brier_score, row.fleet?.pickups, row.fleet?.delivered])].map(values => values.map(quote).join(',')).join('\r\n');
+  return [header, ...rows.map(row => [JSON.stringify(row.configuration), row.status, row.tick, row.configuration.config?.survivors, row.metrics?.evacuated, row.metrics?.bitten, row.metrics?.active, row.metrics?.http_p50_ms, row.metrics?.http_p95_ms, row.metrics?.http_p99_ms, row.metrics?.requests_invalid, row.metrics?.requests_timeout, row.analytics?.replans, row.analytics?.oscillations, row.analytics?.mean_arrival_turn, row.analytics?.mean_route_efficiency, row.analytics?.prediction.hits, row.analytics?.prediction.misses, row.analytics?.prediction.false_positives, row.analytics?.prediction.brier_score, row.fleet?.pickups, row.fleet?.delivered, row.graph_version])].map(values => values.map(quote).join(',')).join('\r\n');
 }
 function saveFile(value: string, type: string, name: string) {
   const url = URL.createObjectURL(new Blob([value], { type }));
@@ -38,7 +38,12 @@ export function ComparisonLab({ input, valid, disabled, onBusyChange }: { input:
   const gate = useRef(false);
   const create = useMutation({ mutationFn: ({ row }: { row: ComparisonRow; index: number }) => api.createSimulation(row.input, row.key),
     onSuccess: (metadata, { index }) => {
-      queue.current[index] = { ...queue.current[index]!, metadata };
+      // An automatic seed is resolved by the first backend creation. Freeze it
+      // for its replay and all pending members of this comparison.
+      queue.current[index] = { ...queue.current[index]!, metadata, input: { ...queue.current[index]!.input, seed: metadata.seed } };
+      for (let next = index + 1; next < queue.current.length; next++) {
+        if (queue.current[next]!.input.seed === undefined) queue.current[next]!.input.seed = metadata.seed;
+      }
       setRows([...queue.current]); setCurrent(index);
     },
     onError: () => { gate.current = false; setBusy(false); },

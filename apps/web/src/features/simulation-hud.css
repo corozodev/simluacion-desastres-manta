@@ -23,6 +23,7 @@
 .workspace-advanced > summary { cursor:pointer; padding:8px 10px; min-height:36px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:12px; }
 .workspace-advanced > .config-popover { position:absolute; top:calc(100% + 6px); right:0; z-index:6; width:min(310px,calc(100vw - 50px)); padding:14px; background:var(--color-surface); border:1px solid var(--color-border); border-radius:var(--radius-sm); box-shadow:0 8px 20px #0004; display:grid; gap:10px; max-height:55svh; overflow:auto; }
 .config-popover fieldset { border:0; margin:0; padding:0; display:grid; gap:12px; }
+.generation-counts { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
 .config-popover p { font-size:11px; color:var(--color-textSecondary); }
 .workspace-notice { font-size:12px; padding:8px 12px; color:var(--color-textSecondary); }
 .workspace-results { padding:10px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:12px; }

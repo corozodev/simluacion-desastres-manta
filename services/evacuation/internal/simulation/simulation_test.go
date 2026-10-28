@@ -2,6 +2,7 @@ package simulation
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"reflect"
 	"sync/atomic"
@@ -216,6 +217,16 @@ func TestDeterminismIndependentOfWorkerScheduling(t *testing.T) {
 		if !reflect.DeepEqual(wa, wb) {
 			t.Fatalf("seeded worlds diverged on turn %d", turn+1)
 		}
+	}
+}
+
+func TestGenerationRejectsImpossibleHordeSpawn(t *testing.T) {
+	// B and both neighbours cover the entire non-shelter candidate set.
+	g := chain(3)
+	cfg := Config{Seed: 42, UseSpawnZones: true, Hordes: 1, InitialSurvivors: []world.Survivor{survivor("S-1", "B")}}
+	_, err := New(g, world.NewStore(), cfg, decisionFunc(stay))
+	if !errors.Is(err, ErrZombieSpawn) {
+		t.Fatalf("impossible spawn must be rejected explicitly: %v", err)
 	}
 }
 

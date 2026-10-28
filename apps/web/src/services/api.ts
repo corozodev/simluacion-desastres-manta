@@ -160,7 +160,7 @@ function isCatalog(value: unknown): value is SimulationCatalog {
       && isNatural(preset.nodes) && isNatural(preset.edges)
       && ['enabled', 'experimental', 'preview_available'].every(key => typeof preset[key] === 'boolean'))
     && Array.isArray(value.rounds) && value.rounds.every(round => isObject(round) && typeof round.id === 'string'
-      && typeof round.name === 'string' && isNatural(round.survivors) && isNatural(round.turns));
+      && typeof round.name === 'string' && isNatural(round.survivors) && isNatural(round.turns) && (round.zombie_counts === undefined || isZombieCounts(round.zombie_counts)));
 }
 function isSession(value: unknown): value is OperatorSession {
   return isObject(value) && typeof value.enabled === 'boolean' && typeof value.authenticated === 'boolean'
@@ -462,13 +462,16 @@ function isRainEvents(value: unknown): value is OfficialRainEvents {
       && isNumber(event.latitude) && Math.abs(event.latitude) <= 90 && isNumber(event.longitude) && Math.abs(event.longitude) <= 180);
 }
 
+function isZombieCounts(value: unknown): boolean {
+  return isObject(value) && ['walker', 'runner', 'horde', 'sleeper'].every(kind => Number.isSafeInteger(value[kind]) && Number(value[kind]) >= 0);
+}
 function isManagedMetadata(value: unknown): value is SimulationMetadata {
   return isObject(value) && typeof value.simulation_id === 'string' && value.simulation_id.length > 0
     && ['CREATED', 'RUNNING', 'PAUSED', 'COMPLETED', 'CANCELLED', 'FAILED'].includes(String(value.status))
     && ['zombie_outbreak', 'urban_flood'].includes(String(value.scenario)) && ['BASE', 'FULL_MANTA'].includes(String(value.graph_profile))
     && ['graph_version', 'created_at', 'started_at', 'updated_at', 'expires_at'].every(key => typeof value[key] === 'string')
     && ['tick', 'max_ticks', 'state_version', 'tick_interval_ms'].every(key => isNatural(value[key])) && Number.isSafeInteger(value.seed)
-    && isObject(value.config) && isAgentPolicies(value.config) && isNatural(value.config.survivors) && typeof value.config.round === 'string' && isStrings(value.config.refuge_ids)
+    && isObject(value.config) && (value.config.zombie_counts === undefined || isZombieCounts(value.config.zombie_counts)) && isAgentPolicies(value.config) && isNatural(value.config.survivors) && typeof value.config.round === 'string' && isStrings(value.config.refuge_ids)
     && (value.config.custom_shelters === undefined || Array.isArray(value.config.custom_shelters) && value.config.custom_shelters.length === 4 && value.config.custom_shelters.every(shelter => isObject(shelter) && typeof shelter.id === 'string' && typeof shelter.node_id === 'string' && isNatural(shelter.capacity) && shelter.capacity >= 1 && shelter.capacity <= 200))
     && (value.config.rainfall_intensity === undefined || isNumber(value.config.rainfall_intensity) && value.config.rainfall_intensity >= 0 && value.config.rainfall_intensity <= 1)
     && (value.access_token === undefined || typeof value.access_token === 'string' && value.access_token.length > 0);
@@ -509,7 +512,7 @@ function isCapabilities(value: unknown): value is SimulationCapabilities {
     && (limits.min_ticks === undefined || isNatural(limits.min_ticks) && limits.min_ticks > 0 && limits.min_ticks <= Number(limits.max_ticks))
     && (limits.official_max_ticks === undefined || limits.official_max_ticks === 150)
     && ['max_active', 'max_full_active', 'max_retained', 'max_memory_bytes', 'min_tick_interval_ms', 'max_tick_interval_ms', 'max_ticks', 'max_survivors'].every(key => isNatural(limits[key]))
-    && Array.isArray(value.rounds) && value.rounds.every(round => isObject(round) && typeof round.id === 'string' && typeof round.name === 'string' && isNatural(round.survivors) && isNatural(round.turns));
+    && Array.isArray(value.rounds) && value.rounds.every(round => isObject(round) && typeof round.id === 'string' && typeof round.name === 'string' && isNatural(round.survivors) && isNatural(round.turns) && (round.zombie_counts === undefined || isZombieCounts(round.zombie_counts)));
 }
 const simulationPath = (id: string) => `/v1/simulations/${encodeURIComponent(id)}`;
 const simulationAuth = (token: string) => ({ Authorization: `Bearer ${token}` });

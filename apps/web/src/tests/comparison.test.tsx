@@ -9,14 +9,14 @@ import { created, managedState, results } from './simulation-fixtures';
 
 const input: SimulationCreateRequest = { scenario: 'zombie_outbreak', graph_profile: 'BASE', seed: 77, max_ticks: 150, tick_interval_ms: 2000, config: { mode: 'official', zombie_policy: 'classic_random', evacuation_algorithm: 'legacy_current', survivors: 20, round: 'round1', refuge_ids: [], pro: { runner_prediction: true, shelter_assignment: true, rescue_fleet: false } } };
 const clients: QueryClient[] = [];
-function setup() {
+function setup(configuration = input) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 }, mutations: { retry: false } } });
   clients.push(client);
   const busy = vi.fn();
   const create = vi.spyOn(api, 'createSimulation').mockImplementation(async config => created(managedState(undefined, { simulation_id: `comparison-${config.config?.evacuation_algorithm}`, seed: config.seed })));
   vi.spyOn(api, 'simulationState').mockImplementation(async id => managedState(undefined, { simulation_id: id, status: 'COMPLETED' }));
   vi.spyOn(api, 'simulationResults').mockImplementation(async id => results(managedState(undefined, { simulation_id: id, status: 'COMPLETED' })));
-  render(<QueryClientProvider client={client}><ComparisonLab input={input} valid disabled={false} onBusyChange={busy} /></QueryClientProvider>);
+  render(<QueryClientProvider client={client}><ComparisonLab input={configuration} valid disabled={false} onBusyChange={busy} /></QueryClientProvider>);
   return { create, busy };
 }
 afterEach(() => { clients.splice(0).forEach(client => client.clear()); vi.restoreAllMocks(); });
@@ -45,6 +45,20 @@ describe('laboratorio comparativo explícito', () => {
     expect(sessionStorage.length).toBe(0);
   });
 
+  it('comparte la semilla automática devuelta por Go y la conserva para repetir', async () => {
+    const { seed: _seed, ...automatic } = input;
+    const { create } = setup(automatic);
+    create.mockImplementation(async config => created(managedState(undefined, { simulation_id: `comparison-${config.config?.evacuation_algorithm}`, seed: config.seed ?? 12345 })));
+    await userEvent.click(screen.getByText('Laboratorio comparativo'));
+    await userEvent.click(screen.getByRole('button', { name: 'Ejecutar comparación' }));
+    await screen.findByRole('button', { name: 'Repetir comparación y semillas' });
+    expect(create.mock.calls[0]![0]).not.toHaveProperty('seed');
+    expect(create.mock.calls[1]![0].seed).toBe(12345);
+    await userEvent.click(screen.getByRole('button', { name: 'Repetir comparación y semillas' }));
+    await waitFor(() => expect(create).toHaveBeenCalledTimes(4));
+    expect(create.mock.calls.slice(2).map(call => call[0].seed)).toEqual([12345, 12345]);
+  });
+
   it('reintenta con la misma clave una creación rechazada sin reemplazar la configuración', async () => {
     const { create } = setup();
     create.mockRejectedValueOnce(new ApiError('Sin cupo.', 'CAPACITY_EXHAUSTED', 503));
@@ -56,7 +70,7 @@ describe('laboratorio comparativo explícito', () => {
   });
 
   it('exporta configuración, semilla y resultados sin credenciales; CSV conserva columnas y comillas', () => {
-    const row = { input, state: managedState(undefined, { status: 'COMPLETED' }), metadata: created() };
+    const row = { input, state: managedState(undefined, { status: 'COMPLETED', seed: 77 }), metadata: created() };
     const exported = comparisonExport([row]);
     expect(exported[0]?.configuration.seed).toBe(77);
     expect(JSON.stringify(exported)).not.toContain('opaque-private-test-token');
@@ -65,5 +79,13 @@ describe('laboratorio comparativo explícito', () => {
     expect(csv).toContain('"http_p95_ms"');
     expect(csv).toContain('""seed"":77');
     expect(csv.split('\r\n')).toHaveLength(2);
+  });
+
+  it('registra composición y grafo efectivos al exportar una solicitud antigua sin semilla', () => {
+    const counts = { walker: 9, runner: 0, horde: 0, sleeper: 0 };
+    const state = managedState(undefined, { seed: 123 });
+    state.config.zombie_counts = counts;
+    const exported = comparisonExport([{ input: { scenario: 'zombie_outbreak', graph_profile: 'BASE', max_ticks: 150, tick_interval_ms: 2000 }, state }]);
+    expect(exported[0]).toMatchObject({ graph_version: state.graph_version, configuration: { seed: 123, max_ticks: 150, tick_interval_ms: 2000, config: { zombie_counts: counts } } });
   });
 });

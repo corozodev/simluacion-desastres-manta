@@ -17,6 +17,7 @@ import { MetricsOverlay, SimulationHUD } from './SimulationHUD';
 import { AgentPolicies, defaultAgentConfiguration, policyConfiguration, algorithmLabels, zombiePolicyLabels } from './AgentPolicies';
 import { ComparisonLab } from './ComparisonLab';
 import { DurationControl } from './DurationControl';
+import { CopySeed, GenerationParameters, countDraft, resolvedCounts, validCounts, zombieKinds, zombieLabels, type CountDraft } from './GenerationParameters';
 import './flood/flood.css';
 
 const statusLabels = { CREATED: 'Preparando', RUNNING: 'En ejecución', PAUSED: 'Pausada', COMPLETED: 'Finalizada', CANCELLED: 'Cancelada', FAILED: 'Error del motor' };
@@ -33,7 +34,8 @@ function SimulationWorkspace({ capabilities }: { capabilities: SimulationCapabil
   const session = useSimulationSession();
   const scenario = 'zombie_outbreak' as const;
   const [profile, setProfile] = useState<SimulationCreateRequest['graph_profile']>('BASE');
-  const [seed, setSeed] = useState(String(capabilities.defaults.seed));
+  const [seed, setSeed] = useState('');
+  const [countsByRound, setCountsByRound] = useState<Record<string, CountDraft>>({});
   const [survivors, setSurvivors] = useState(String(capabilities.defaults.survivors));
   const [round, setRound] = useState(capabilities.defaults.round);
   const [ticks, setTicks] = useState(String(capabilities.defaults.max_ticks));
@@ -41,6 +43,8 @@ function SimulationWorkspace({ capabilities }: { capabilities: SimulationCapabil
   const [policies, setPolicies] = useState(defaultAgentConfiguration);
   const [comparing, setComparing] = useState(false);
   const official = policies.mode === 'official';
+  const roundDefaults = capabilities.rounds.find(item => item.id === round)?.zombie_counts;
+  const counts = countsByRound[round] ?? (roundDefaults ? countDraft(roundDefaults) : undefined);
   const state = session.state.data;
   const selectedProfile = state?.graph_profile ?? profile;
   const flood = state?.scenario === 'urban_flood';
@@ -60,12 +64,13 @@ function SimulationWorkspace({ capabilities }: { capabilities: SimulationCapabil
   const graphCapability = capabilities.graph_profiles.find(item => item.id === profile);
   const integer = (value: string, min: number, max: number) => value.trim() !== '' && Number.isSafeInteger(Number(value)) && Number(value) >= min && Number(value) <= max;
   const valid = selectedCapability?.available && graphCapability?.available && graph.isSuccess
-    && integer(seed, -Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER)
+    && (seed.trim() === '' || integer(seed, -Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER))
+    && (!counts || validCounts(round, counts))
     && integer(survivors, 1, capabilities.limits.max_survivors) && integer(ticks, official ? 150 : capabilities.limits.min_ticks ?? 30, capabilities.limits.max_ticks)
     && 2000 >= capabilities.limits.min_tick_interval_ms && 2000 <= capabilities.limits.max_tick_interval_ms && shelterDraft.valid && !shelterDraft.picking
     && refuges.every(id => graph.data?.shelters.some(shelter => shelter.id === id));
   const connected = !session.state.isError && !session.state.isPending;
-  const request: SimulationCreateRequest = { scenario, graph_profile: profile, seed: Number(seed), max_ticks: Number(ticks), tick_interval_ms: 2000, config: { survivors: Number(survivors), round, refuge_ids: official ? [] : refuges, ...(!official && shelterDraft.custom ? { custom_shelters: shelterDraft.custom } : {}), ...policyConfiguration(policies) } };
+  const request: SimulationCreateRequest = { scenario, graph_profile: profile, ...(seed.trim() !== '' ? { seed: Number(seed) } : {}), max_ticks: Number(ticks), tick_interval_ms: 2000, config: { ...(counts ? { zombie_counts: resolvedCounts(counts) } : {}), survivors: Number(survivors), round, refuge_ids: official ? [] : refuges, ...(!official && shelterDraft.custom ? { custom_shelters: shelterDraft.custom } : {}), ...policyConfiguration(policies) } };
   const configuration = !session.id && <form className="workspace-config" aria-label="Configuración de simulación" onSubmit={event => {
     event.preventDefault(); if (!valid || locked) return;
     void session.start(request);
@@ -75,10 +80,10 @@ function SimulationWorkspace({ capabilities }: { capabilities: SimulationCapabil
       <label className="config-agents">Agentes<input type="number" required step="1" min="1" max={capabilities.limits.max_survivors} value={survivors} disabled={official} onChange={event => setSurvivors(event.target.value)} /></label>
       <label className="config-round">Ronda<select value={round} onChange={event => { const next = capabilities.rounds.find(item => item.id === event.target.value); if (next) { setRound(next.id); setSurvivors(String(Math.min(next.survivors, capabilities.limits.max_survivors))); } }}>{capabilities.rounds.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
     </fieldset>
-    <details className="workspace-advanced"><summary>Configuración avanzada</summary><div className="config-popover"><fieldset disabled={locked}><legend className="sr-only">Reproducción determinista</legend>
-      <label>Semilla<input type="number" required step="1" min={-Number.MAX_SAFE_INTEGER} max={Number.MAX_SAFE_INTEGER} value={seed} onChange={event => setSeed(event.target.value)} /></label>
+    <GenerationParameters round={round} counts={counts} seed={seed} disabled={locked} onSeed={setSeed} onCounts={value => setCountsByRound(previous => ({ ...previous, [round]: value }))} onReset={() => { if (roundDefaults) setCountsByRound(previous => ({ ...previous, [round]: countDraft(roundDefaults) })); setSeed(''); }} />
+    <details className="workspace-advanced"><summary>Configuración avanzada</summary><div className="config-popover"><fieldset disabled={locked}><legend className="sr-only">Duración de la ejecución</legend>
       <DurationControl label="Turnos máximos" value={ticks} min={capabilities.limits.min_ticks ?? 30} max={capabilities.limits.max_ticks} official={official} onChange={setTicks} />
-    </fieldset><AgentPolicies value={policies} onChange={changePolicies} disabled={locked} /><p>Un turno cada 2 segundos. La semilla conserva la reproducción determinista.</p>{capabilities.graph_profiles.filter(item => !item.available).map(item => <p key={item.id}>{item.name}: {item.disabled_reason || 'No disponible en esta instancia.'}</p>)}</div></details>
+    </fieldset><AgentPolicies value={policies} onChange={changePolicies} disabled={locked} /><p>Un turno cada 2 segundos.</p>{capabilities.graph_profiles.filter(item => !item.available).map(item => <p key={item.id}>{item.name}: {item.disabled_reason || 'No disponible en esta instancia.'}</p>)}</div></details>
     <Button type="submit" disabled={!valid || locked}><Play size={14} />{session.busy ? 'Iniciando…' : 'Iniciar simulación'}</Button><span className="config-status">{official ? 'Preset oficial · 150 turnos' : 'Sin ejecución activa'}</span>
   </form>;
   const hud = <>
@@ -101,7 +106,7 @@ function SimulationWorkspace({ capabilities }: { capabilities: SimulationCapabil
 
     {session.results.data && <details className="workspace-results" aria-label="Resultados de simulación" open><summary>Resultados de simulación · {statusLabels[session.results.data.status]}</summary><h2>Resultados de simulación</h2><dl><div><dt>Agentes iniciales</dt><dd>{session.results.data.results.initial_survivors}</dd></div><div><dt>Evacuados</dt><dd>{session.results.data.results.evacuated}</dd></div>{!flood && <><div><dt>Mordidos</dt><dd>{session.results.data.results.bitten}</dd></div><div><dt>Tasa de supervivencia</dt><dd>{(session.results.data.results.survival_rate * 100).toFixed(1)}%</dd></div></>}<div><dt>Refugios utilizados</dt><dd>{session.results.data.results.refuges_used}</dd></div></dl></details>}
     {!session.id && <ComparisonLab input={request} valid={Boolean(valid)} disabled={session.busy} onBusyChange={setComparing} />}
-    {state && <details className="workspace-results"><summary>Configuración e información técnica</summary><p>{state.config.survivors} agentes · semilla {state.seed} · {state.max_ticks} turnos · {state.tick_interval_ms} ms por turno · {state.config.round}</p><p>{state.config.mode === 'official' ? 'Modo oficial' : 'Modo experimental'} · {zombiePolicyLabels[state.config.zombie_policy ?? 'classic_random']} · {algorithmLabels[state.config.evacuation_algorithm ?? 'legacy_current']}</p><p>Grafo {state.graph_version} · ejecución {state.simulation_id} · versión {state.state_version}</p></details>}
+    {state && <details className="workspace-results"><summary>Configuración e información técnica</summary><p>{state.config.survivors} agentes · semilla {state.seed} · {state.max_ticks} turnos · {state.tick_interval_ms} ms por turno · {state.config.round}</p><CopySeed key={state.simulation_id} seed={state.seed} />{state.config.zombie_counts && <p>{zombieKinds.map(kind => `${zombieLabels[kind]}: ${state.config.zombie_counts![kind]}`).join(' · ')} · Total: {zombieKinds.reduce((n, kind) => n + state.config.zombie_counts![kind], 0)}</p>}<p>{state.config.mode === 'official' ? 'Modo oficial' : 'Modo experimental'} · {zombiePolicyLabels[state.config.zombie_policy ?? 'classic_random']} · {algorithmLabels[state.config.evacuation_algorithm ?? 'legacy_current']}</p><p>Grafo {state.graph_version} · ejecución {state.simulation_id} · versión {state.state_version}</p></details>}
     {session.results.isError && <ErrorState error={session.results.error} onRetry={() => void session.results.refetch()} />}
   </>;
 }

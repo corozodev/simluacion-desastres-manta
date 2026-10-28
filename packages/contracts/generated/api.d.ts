@@ -843,8 +843,16 @@ export interface components {
             node_id: string;
             capacity: number;
         };
+        /** @description Cantidades iniciales del proyecto, no oficiales. R1 exige walker y excluye los otros tipos; R2 exige walker/runner/horde y excluye sleeper; R3 exige los cuatro. Cada tipo requerido es al menos 1. Sólo zombie_outbreak. La reserva de memoria del proceso limita el total antes de construir el motor; no se recorta la población. */
+        SimulationZombieCounts: {
+            walker: number;
+            runner: number;
+            horde: number;
+            sleeper: number;
+        };
         /** @description Configuración acotada; refuge_ids vacío usa los predeterminados. custom_shelters reemplaza exactamente los cuatro originales, conservando sus IDs; no se combina con una selección parcial de refuge_ids. El snapshot publica sus ubicaciones efectivas sobre la topología estática del perfil. */
         SimulationConfigInput: {
+            zombie_counts?: components["schemas"]["SimulationZombieCounts"];
             /** @enum {string} */
             mode?: "official" | "experimental";
             /** @enum {string} */
@@ -861,6 +869,7 @@ export interface components {
             rainfall_intensity?: number;
         };
         SimulationConfig: {
+            zombie_counts?: components["schemas"]["SimulationZombieCounts"];
             /** @enum {string} */
             mode?: "official" | "experimental";
             /** @enum {string} */
@@ -883,8 +892,8 @@ export interface components {
              * @enum {string}
              */
             graph_profile: "BASE" | "FULL_MANTA";
-            /** @default 20261026 */
-            seed: number;
+            /** @description Opcional; si se omite se genera una semilla y se registra en los metadatos. Reiniciar conserva la semilla efectiva. */
+            seed?: number;
             /**
              * @description Duración personalizada; official exige exactamente 150.
              * @default 150
@@ -1046,6 +1055,7 @@ export interface components {
             scenario: "zombie_outbreak" | "urban_flood";
             /** @enum {string} */
             graph_profile: "BASE" | "FULL_MANTA";
+            /** @description Sugerencia para solicitudes con semilla explícita; omitir seed en creación genera una nueva. */
             seed: number;
             max_ticks: number;
             tick_interval_ms: number;
@@ -1338,6 +1348,7 @@ export interface components {
             disabled_reason: string;
         };
         SimulationRound: {
+            zombie_counts?: components["schemas"]["SimulationZombieCounts"];
             /** @enum {string} */
             id: "round1" | "round2" | "round3";
             name: string;
@@ -4100,6 +4111,7 @@ export type RescueFleetMetrics = components['schemas']['RescueFleetMetrics'];
 export type RunnerForecast = components['schemas']['RunnerForecast'];
 export type SimulationAnalytics = components['schemas']['SimulationAnalytics'];
 export type SimulationCustomShelter = components['schemas']['SimulationCustomShelter'];
+export type SimulationZombieCounts = components['schemas']['SimulationZombieCounts'];
 export type SimulationConfigInput = components['schemas']['SimulationConfigInput'];
 export type SimulationConfig = components['schemas']['SimulationConfig'];
 export type SimulationCreateRequest = components['schemas']['SimulationCreateRequest'];

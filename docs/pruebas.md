@@ -45,9 +45,70 @@ a aquellas versiones; no se presentan como pruebas repetidas durante la limpieza
 Los [presets urbanos](../services/evacuation/scenarios/urban) ya fijan R1=20,
 R2=80 y R3=200 sobrevivientes, 150 turnos y concurrencia de decisiones 16/16/32.
 R1 sólo tiene caminantes; R2 añade corredores/hordas y colapso; R3 añade dormidos
-y dos cierres. Cantidades de zombies y refugios son fixtures editables, no datos
-oficiales del organizador. `official` exige BASE, `classic_random`, 150 turnos/2.000 ms,
+y dos cierres. Las cantidades de zombies son configurables y los refugios son
+configuraciones del proyecto, no cantidades oficiales del organizador. `official` exige BASE, `classic_random`, 150 turnos/2.000 ms,
 población de ronda, refugios originales y ausencia de flota.
+
+En `/escape`, elegir ronda y abrir **Parámetros de generación**. Ajustar los
+conteos y, opcionalmente, la semilla; **Conservar valores** cierra el panel sin
+iniciar. El borrador se conserva por ronda mientras permanezca montada la página.
+**Restaurar configuración predeterminada** repone los conteos de la ronda y vacía
+la semilla. Sólo **Iniciar simulación** crea la ejecución. La sección
+**Configuración e información técnica** muestra los valores efectivos y permite
+**Copiar seed**, también después de recuperar una sesión.
+
+| Ronda | Sobrevivientes oficiales | Caminantes | Corredores | Hordas | Dormidos |
+| --- | --- | --- | --- | --- | --- |
+| Anochecer | 20 | 8 | 0 | 0 | 0 |
+| Medianoche | 80 | 12 | 4 | 2 | 0 |
+| Apocalipsis | 200 | 20 | 8 | 3 | 10 |
+
+Los conteos de esta tabla son defaults conservados del proyecto, pendientes de
+las cantidades del organizador. Cada tipo incluido requiere al menos uno; los
+excluidos exigen cero. Los controles incompatibles se deshabilitan y la API
+rechaza entradas incoherentes antes de iniciar. En `official`, los sobrevivientes
+siguen fijos en 20/80/200, con 150 turnos a 2 segundos, BASE y `classic_random`.
+Cambiar cantidades no cambia velocidades, persecución, activación, mordidas,
+refugios, algoritmos ni eventos de la ronda.
+
+La semilla vacía genera un entero con `crypto/rand`; Go registra el resultado y
+crea la PRNG local del motor con ese valor. Una semilla explícita, incluido cero,
+se conserva exactamente. Para repetir, usar **Reiniciar** después de cancelar o
+finalizar: crea otro ID con los mismos conteos y semilla. **Nueva configuración**
+permite otra creación; sin semilla explícita recibe una nueva. Pausar y continuar
+conservan el motor y su PRNG. Recargar sólo observa la sesión existente.
+
+Repetir la generación inicial exige la misma versión del motor y del grafo,
+configuración completa y semilla. Los candidatos, entidades y desempates se
+procesan en orden estable; se reutiliza la aparición urbana existente, con
+exclusión de refugios originales y de coincidencias con sobrevivientes, también
+para hordas vecinas. El muestreo permite varias unidades del mismo grupo por
+nodo; no existe una capacidad individual por nodo. Si no hay candidatos válidos,
+la creación devuelve error, sin recortar la población ni cambiar la semilla.
+Las posiciones de dormidos y el estado de PRNG siguen siendo privados.
+
+La secuencia lógica de turnos es reproducible con la misma política, algoritmo,
+orden y respuestas HTTP. Las latencias no son reproducibles; un timeout o fallo
+HTTP puede convertir una decisión en espera y cambiar el resultado. Las pruebas
+focalizadas comparan generación y pocos turnos, incluidas pausa/reanudación y
+reinicio; no acreditan todos los horizontes o poblaciones. El laboratorio
+comparativo comparte la semilla efectiva entre A/B y la conserva para repetir;
+JSON/CSV incluyen configuración efectiva y versión del grafo, sin credenciales.
+
+Las cantidades adicionales consumen la reserva de memoria existente: sobre los
+defaults de cada ronda se estiman conservadoramente 16 KiB por unidad adicional,
+también mientras su estado final queda retenido. La base sigue siendo 16 MiB en
+BASE y 64 MiB en FULL_MANTA. `SIM_MAX_MEMORY_MB` controla el presupuesto global;
+una población que no cabe por sí sola produce `400`, y los cupos compartidos
+agotados producen `503`. Es una estimación de admisión, no una medición de consumo
+ni una garantía de rendimiento. No se introduce un límite geográfico artificial
+al total. Las poblaciones elevadas requieren medición local autorizada antes de
+atribuirles capacidad o latencia.
+
+Para validar sólo esta configuración sin E2E, lint global, benchmarks ni rondas
+completas: `TestGeneration*` en `internal/sessions` y `internal/simulation`,
+regresiones de reglas/PRNG y `/paso`, y las pruebas React
+`simulations.test.tsx`, `simulations-api.test.ts` y `comparison.test.tsx`.
 
 Comprobación rápida: `make smoke`. Rondas completas aceleradas, **HTTP real
 autenticado**, sin esperar quince minutos:

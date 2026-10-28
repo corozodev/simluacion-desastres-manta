@@ -8,6 +8,7 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math"
 	"sort"
@@ -183,9 +184,19 @@ func (m *Manager) validate(req CreateRequest) error {
 }
 
 func (m *Manager) prepare(req CreateRequest) (*execution, error) {
-	seed := int64(20261026)
+	var seed int64
 	if req.Seed != nil {
 		seed = *req.Seed
+	} else {
+		var err error
+		seed, err = automaticSeed()
+		if err != nil {
+			return nil, err
+		}
+	}
+	counts, reserved, err := m.generation(req)
+	if err != nil {
+		return nil, err
 	}
 	round := req.Config.Round
 	if round == "" {
@@ -285,6 +296,8 @@ func (m *Manager) prepare(req CreateRequest) (*execution, error) {
 		rain := fc.RainfallIntensity
 		config.RainfallIntensity = &rain
 	} else {
+		cfg.Walkers, cfg.Runners, cfg.Hordes, cfg.Sleepers = counts.Walker, counts.Runner, counts.Horde, counts.Sleeper
+		config.ZombieCounts = &counts
 		// Short runs include only events inside their authorized horizon.
 		events := []simulation.ScheduledEvent{}
 		for _, event := range cfg.Events {
@@ -315,12 +328,15 @@ func (m *Manager) prepare(req CreateRequest) (*execution, error) {
 	engine := decision.NewWithOptions(engineOptions)
 	app, err := application.NewWithOptions(g, cfg, "127.0.0.1:0", key, nil, m.options.Logger, application.Options{Engine: engine, Planner: coordination.New(engine, coordination.Options{DisableAssignment: req.Scenario != "urban_flood" && !policies.Pro.ShelterAssignment}), AllowShelterSubset: true, ObservationID: id})
 	if err != nil {
+		if errors.Is(err, simulation.ErrZombieSpawn) {
+			return nil, &Error{400, "VALIDATION_ERROR", "No hay nodos iniciales válidos para la composición zombie y semilla solicitadas."}
+		}
 		return nil, err
 	}
 	now := m.options.Clock.Now()
 	ctx, cancel := context.WithCancel(m.ctx)
 	snap, _ := app.Store.LoadCompact()
-	run := &execution{app: app, ctx: ctx, cancel: cancel, wake: make(chan struct{}, 1), done: make(chan struct{}), snapshot: snap, lastAccess: now, reserved: reservation(req.GraphProfile)}
+	run := &execution{app: app, ctx: ctx, cancel: cancel, wake: make(chan struct{}, 1), done: make(chan struct{}), snapshot: snap, lastAccess: now, reserved: reserved}
 	if req.Scenario == "zombie_outbreak" {
 		config.Mode, config.ZombiePolicy, config.EvacuationAlgorithm, config.Pro = policies.Mode, policies.ZombiePolicy, policies.EvacuationAlgorithm, policies.Pro
 	}
@@ -345,6 +361,10 @@ func (m *Manager) CreateAndStart(ctx context.Context, req CreateRequest, key, ac
 		}
 	}
 	if err := m.validate(req); err != nil {
+		return Metadata{}, err
+	}
+	_, reserved, err := m.generation(req)
+	if err != nil {
 		return Metadata{}, err
 	}
 	raw, _ := json.Marshal(req)
@@ -372,7 +392,7 @@ func (m *Manager) CreateAndStart(ctx context.Context, req CreateRequest, key, ac
 		}
 		return info, err
 	}
-	if m.closed || m.active >= m.options.MaxActive || req.GraphProfile == "FULL_MANTA" && m.full >= m.options.MaxFullActive || len(m.sessions)+m.pending >= m.options.MaxRetained || m.metrics.EstimatedMemoryBytes+reservation(req.GraphProfile) > m.options.MaxMemoryBytes {
+	if m.closed || m.active >= m.options.MaxActive || req.GraphProfile == "FULL_MANTA" && m.full >= m.options.MaxFullActive || len(m.sessions)+m.pending >= m.options.MaxRetained || m.metrics.EstimatedMemoryBytes+reserved > m.options.MaxMemoryBytes {
 		m.metrics.Rejected++
 		m.mu.Unlock()
 		m.options.Logger.Warn("simulation_capacity_rejected", "scenario", req.Scenario, "graph", req.GraphProfile)
@@ -385,7 +405,7 @@ func (m *Manager) CreateAndStart(ctx context.Context, req CreateRequest, key, ac
 	if req.GraphProfile == "FULL_MANTA" {
 		m.full++
 	}
-	m.metrics.EstimatedMemoryBytes += reservation(req.GraphProfile)
+	m.metrics.EstimatedMemoryBytes += reserved
 	// Add before unlocking: Close must wait for in-flight initialization too.
 	m.wg.Add(1)
 	m.mu.Unlock()
@@ -401,7 +421,7 @@ func (m *Manager) CreateAndStart(ctx context.Context, req CreateRequest, key, ac
 		if req.GraphProfile == "FULL_MANTA" {
 			m.full--
 		}
-		m.metrics.EstimatedMemoryBytes -= reservation(req.GraphProfile)
+		m.metrics.EstimatedMemoryBytes -= reserved
 		if err == nil {
 			err = unavailable()
 		}
@@ -618,6 +638,7 @@ func (m *Manager) Restart(ctx context.Context, id, token, key, actor string) (Me
 	}
 	<-s.done // release the previous engine reservation before reserving restart
 	req := CreateRequest{Scenario: i.Scenario, GraphProfile: i.GraphProfile, Seed: &i.Seed, MaxTicks: &i.MaxTicks, TickIntervalMS: &i.TickIntervalMS, Config: InputConfig{Survivors: &i.Config.Survivors, Round: i.Config.Round, RefugeIDs: i.Config.RefugeIDs, CustomShelters: i.Config.CustomShelters, RainfallIntensity: i.Config.RainfallIntensity, Mode: i.Config.Mode, ZombiePolicy: i.Config.ZombiePolicy, EvacuationAlgorithm: i.Config.EvacuationAlgorithm, Pro: replayPro(i.Config.Pro)}}
+	req.Config.ZombieCounts = i.Config.ZombieCounts
 	if i.Config.Mode == "official" {
 		req.Config.RefugeIDs = nil
 	}

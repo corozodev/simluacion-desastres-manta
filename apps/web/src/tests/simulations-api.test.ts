@@ -5,6 +5,16 @@ import { capabilities, created, errorResponse, json, managedFlood, managedState,
 afterEach(() => vi.restoreAllMocks());
 
 describe('adaptador HTTP privado de simulaciones', () => {
+  it('envía conteos sin transformar y valida los metadatos efectivos', async () => {
+    const counts = { walker: 9, runner: 0, horde: 0, sleeper: 0 };
+    const state = managedState();
+    state.config.zombie_counts = counts;
+    const fetch = vi.spyOn(globalThis, 'fetch').mockResolvedValue(json(created(state)));
+    await api.createSimulation({ scenario: 'zombie_outbreak', graph_profile: 'BASE', max_ticks: 150, tick_interval_ms: 2000, config: { zombie_counts: counts } }, 'generation-key');
+    expect(JSON.parse(String(fetch.mock.calls[0]![1]?.body))).toEqual({ scenario: 'zombie_outbreak', graph_profile: 'BASE', max_ticks: 150, tick_interval_ms: 2000, config: { zombie_counts: counts } });
+    fetch.mockResolvedValue(json({ ...state, config: { ...state.config, zombie_counts: { ...counts, walker: 1.5 } } }));
+    await expect(api.simulationState('private-id', 'opaque-token')).rejects.toMatchObject({ code: 'INVALID_RESPONSE' });
+  });
   it('descubre capacidades sin enviar credenciales ni crear trabajo', async () => {
     const fetch = vi.spyOn(globalThis, 'fetch').mockResolvedValue(json(capabilities));
     await expect(api.simulationCapabilities()).resolves.toEqual(capabilities);

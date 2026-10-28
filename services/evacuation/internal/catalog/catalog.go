@@ -32,10 +32,11 @@ type Preset struct {
 }
 
 type Round struct {
-	ID        string `json:"id"`
-	Name      string `json:"name"`
-	Survivors int    `json:"survivors"`
-	Turns     int    `json:"turns"`
+	ID           string                  `json:"id"`
+	Name         string                  `json:"name"`
+	Survivors    int                     `json:"survivors"`
+	Turns        int                     `json:"turns"`
+	ZombieCounts simulation.ZombieCounts `json:"zombie_counts"`
 }
 
 type Options struct {
@@ -110,7 +111,7 @@ func New(dataDir, scenarioDir string, options Options) (*Catalog, error) {
 			return nil, fmt.Errorf("round %s must match the reviewed urban scenario", id)
 		}
 		c.configs[id] = cfg
-		c.rounds = append(c.rounds, Round{ID: id, Name: cfg.Name, Survivors: count, Turns: cfg.Turns})
+		c.rounds = append(c.rounds, Round{ID: id, Name: cfg.Name, Survivors: count, Turns: cfg.Turns, ZombieCounts: cfg.ZombieCounts()})
 	}
 	return c, nil
 }

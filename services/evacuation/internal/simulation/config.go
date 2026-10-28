@@ -22,6 +22,22 @@ type ScheduledEvent struct {
 	Type      string `json:"type"`
 }
 
+// ZombieCounts records initial composition, including hidden sleepers but no positions.
+type ZombieCounts struct {
+	Walker  int `json:"walker"`
+	Runner  int `json:"runner"`
+	Horde   int `json:"horde"`
+	Sleeper int `json:"sleeper"`
+}
+
+func (c Config) ZombieCounts() ZombieCounts {
+	return ZombieCounts{c.Walkers, c.Runners, c.Hordes, c.Sleepers}
+}
+
+func (c ZombieCounts) Total() int64 {
+	return int64(c.Walker) + int64(c.Runner) + int64(c.Horde) + int64(c.Sleeper)
+}
+
 type Config struct {
 	// ZombiePolicy is private run configuration. Empty preserves classic_random.
 	ZombiePolicy string `json:"zombie_policy,omitempty"`

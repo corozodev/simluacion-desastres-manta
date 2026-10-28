@@ -19,7 +19,18 @@ Los GET no crean ni avanzan ejecuciones. El manager Go es dueño del reloj. El n
 
 El servidor público conserva los DTO de `/estado` y `/paso` sobre su mundo legacy inactivo. `SIM_AUTOSTART=true` se rechaza y el inicio legacy de `/admin/runs` devuelve `409` tras autenticación/validación. Las ejecuciones públicas pasan por el manager para respetar los mismos límites globales; las CLI y el laboratorio conservan su ejecución explícita separada.
 
-La configuración usa `scenario: zombie_outbreak | urban_flood`, `graph_profile: BASE | FULL_MANTA`, `seed`, `max_ticks`, `tick_interval_ms` y `config`. Este último acepta los campos definidos en `SimulationConfigInput`, incluidos población, ronda, refugios, modo, políticas y opciones experimentales. Los límites personalizados son 30–3.000 turnos, 1.000–5.000 ms por turno, 1–200 agentes y semilla entera representable exactamente por JavaScript. `round` admite `round1`, `round2` y `round3`; proporciona los parámetros de amenaza originales. Los valores omitidos se resuelven con los defaults publicados. El modo `official` exige 150 turnos y 2.000 ms, además de sus condiciones oficiales; no admite alterar el horizonte.
+La configuración usa `scenario: zombie_outbreak | urban_flood`, `graph_profile: BASE | FULL_MANTA`, `seed`, `max_ticks`, `tick_interval_ms` y `config`. Este último acepta los campos definidos en `SimulationConfigInput`, incluidos población, ronda, refugios, modo, políticas y opciones experimentales. Los límites personalizados son 30–3.000 turnos, 1.000–5.000 ms por turno, 1–200 agentes y semilla entera representable exactamente por JavaScript. `round` admite `round1`, `round2` y `round3`; proporciona los parámetros de amenaza originales. Los valores omitidos se resuelven con los defaults publicados, salvo `seed`: omitirla genera una nueva; `defaults.seed` conserva una sugerencia explícita compatible para clientes anteriores. El modo `official` exige 150 turnos y 2.000 ms, además de sus condiciones oficiales; no admite alterar el horizonte.
+
+`config.zombie_counts` es opcional y sólo admite brotes zombie. Si se proporciona,
+requiere los cuatro campos enteros `walker`, `runner`, `horde`, `sleeper`; no se
+mezclan overrides parciales ni se sustituyen valores inválidos. Cada tipo incluido
+en la ronda exige al menos 1 y cada tipo excluido exige 0, tanto en `official`
+como en `experimental`. Omitir el objeto conserva los conteos urbanos actuales.
+Las capacidades publican esos defaults por ronda en `rounds[].zombie_counts`;
+los metadatos, estados y resultados conservan la composición inicial efectiva en
+`config.zombie_counts`, sin posiciones ocultas. El total se obtiene sumando los
+cuatro campos. Véase [configuración y reproducibilidad](pruebas.md#tres-rondas-reproducibles)
+para defaults, límites de memoria y alcance de repetición.
 
 `refuge_ids` vacío o ausente selecciona los refugios predeterminados del grafo. Una lista explícita contiene hasta cuatro IDs existentes y distintos. La respuesta conserva los IDs efectivos ordenados; los refugios de otras topologías o desconocidos producen `400`. Cambiar refugios conserva los nodos de aparición iniciales para comparar la misma población. `rainfall_intensity` sólo aplica a inundaciones: índice de escenario 0–1, sin valor meteorológico observado ni oficial. En el motor hidráulico equivale a 0–120 mm/h de escenario, sin calibración.
 

@@ -332,11 +332,47 @@
         }
       }
     },
+    "SimulationZombieCounts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "walker",
+        "runner",
+        "horde",
+        "sleeper"
+      ],
+      "description": "Cantidades iniciales del proyecto, no oficiales. R1 exige walker y excluye los otros tipos; R2 exige walker/runner/horde y excluye sleeper; R3 exige los cuatro. Cada tipo requerido es al menos 1. Sólo zombie_outbreak. La reserva de memoria del proceso limita el total antes de construir el motor; no se recorta la población.",
+      "properties": {
+        "walker": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "runner": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "horde": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "sleeper": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        }
+      }
+    },
     "SimulationConfigInput": {
       "type": "object",
       "additionalProperties": false,
       "description": "Configuración acotada; refuge_ids vacío usa los predeterminados. custom_shelters reemplaza exactamente los cuatro originales, conservando sus IDs; no se combina con una selección parcial de refuge_ids. El snapshot publica sus ubicaciones efectivas sobre la topología estática del perfil.",
       "properties": {
+        "zombie_counts": {
+          "$ref": "#/definitions/SimulationZombieCounts"
+        },
         "mode": {
           "type": "string",
           "enum": [
@@ -412,6 +448,9 @@
         "refuge_ids"
       ],
       "properties": {
+        "zombie_counts": {
+          "$ref": "#/definitions/SimulationZombieCounts"
+        },
         "mode": {
           "type": "string",
           "enum": [
@@ -502,7 +541,7 @@
           "type": "integer",
           "minimum": -9007199254740991,
           "maximum": 9007199254740991,
-          "default": 20261026
+          "description": "Opcional; si se omite se genera una semilla y se registra en los metadatos. Reiniciar conserva la semilla efectiva."
         },
         "max_ticks": {
           "type": "integer",
@@ -1135,7 +1174,8 @@
         "seed": {
           "type": "integer",
           "minimum": -9007199254740991,
-          "maximum": 9007199254740991
+          "maximum": 9007199254740991,
+          "description": "Sugerencia para solicitudes con semilla explícita; omitir seed en creación genera una nueva."
         },
         "max_ticks": {
           "type": "integer",
@@ -2424,6 +2464,9 @@
         "turns"
       ],
       "properties": {
+        "zombie_counts": {
+          "$ref": "#/definitions/SimulationZombieCounts"
+        },
         "id": {
           "type": "string",
           "enum": [

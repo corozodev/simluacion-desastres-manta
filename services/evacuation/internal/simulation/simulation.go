@@ -22,6 +22,8 @@ type zombieState struct {
 	memory     movementMemory
 }
 
+var ErrZombieSpawn = errors.New("no valid zombie spawn nodes")
+
 // Simulator is the single writer. Snapshot reads are served by the independent
 // immutable Store, so HTTP decisions never need the turn mutex.
 type Simulator struct {
@@ -175,14 +177,14 @@ func (s *Simulator) initialize(cfg Config) error {
 			kind string
 			n    int
 		}{{world.Walker, cfg.Walkers}, {world.Runner, cfg.Runners}, {world.Horde, cfg.Hordes}, {world.Sleeper, cfg.Sleepers}} {
-			for i := 0; i < count.n; i++ {
-				candidates := spawn
-				if cfg.UseSpawnZones && !cfg.AllowInitialOverlaps {
-					candidates = s.zombieCandidates(spawn, count.kind)
-					if len(candidates) == 0 {
-						return fmt.Errorf("no valid zombie spawn nodes")
-					}
+			candidates := spawn
+			if count.n > 0 && cfg.UseSpawnZones && !cfg.AllowInitialOverlaps {
+				candidates = s.zombieCandidates(spawn, count.kind)
+				if len(candidates) == 0 {
+					return ErrZombieSpawn
 				}
+			}
+			for i := 0; i < count.n; i++ {
 				initial = append(initial, world.Zombie{ID: fmt.Sprintf("Z-%04d", len(initial)+1), Type: count.kind, CurrentNode: candidates[s.rng.Intn(len(candidates))], Awake: count.kind != world.Sleeper})
 			}
 		}

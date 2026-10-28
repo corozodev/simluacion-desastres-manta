@@ -75,8 +75,9 @@ describe('ejecutor independiente bajo demanda', () => {
     const { create } = setup();
     await screen.findByRole('button', { name: 'Iniciar simulación' });
     await userEvent.click(screen.getByText('Configuración avanzada'));
+    await userEvent.click(screen.getByText('Parámetros de generación'));
     await userEvent.clear(screen.getByLabelText('Semilla'));
-    expect(screen.getByRole('button', { name: 'Iniciar simulación' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Iniciar simulación' })).toBeEnabled();
     await userEvent.type(screen.getByLabelText('Semilla'), '123');
     await userEvent.selectOptions(screen.getByLabelText('Ronda'), 'round2');
     fireEvent.change(screen.getByLabelText('Agentes'), { target: { value: '12' } });
@@ -85,7 +86,7 @@ describe('ejecutor independiente bajo demanda', () => {
     await userEvent.click(screen.getByText('Elegir refugios originales activos'));
     await userEvent.click(screen.getByRole('checkbox', { name: new RegExp(graph.shelters[0]!.id) }));
     await userEvent.click(screen.getByRole('button', { name: 'Iniciar simulación' }));
-    await waitFor(() => expect(create).toHaveBeenCalledWith({ scenario: 'zombie_outbreak', graph_profile: 'BASE', seed: 123, max_ticks: 150, tick_interval_ms: 2000, config: { mode: 'experimental', zombie_policy: 'classic_random', evacuation_algorithm: 'legacy_current', pro: { runner_prediction: true, shelter_assignment: true, rescue_fleet: false }, survivors: 12, round: 'round2', refuge_ids: [graph.shelters[0]!.id] } }, expect.any(String)));
+    await waitFor(() => expect(create).toHaveBeenCalledWith({ scenario: 'zombie_outbreak', graph_profile: 'BASE', seed: 123, max_ticks: 150, tick_interval_ms: 2000, config: { mode: 'experimental', zombie_policy: 'classic_random', evacuation_algorithm: 'legacy_current', pro: { runner_prediction: true, shelter_assignment: true, rescue_fleet: false }, zombie_counts: { walker: 12, runner: 4, horde: 2, sleeper: 0 }, survivors: 12, round: 'round2', refuge_ids: [graph.shelters[0]!.id] } }, expect.any(String)));
   });
 
   it('configura políticas y funciones PRO reales y bloquea extensiones al cambiar al modo oficial', async () => {
@@ -121,6 +122,55 @@ describe('ejecutor independiente bajo demanda', () => {
     await userEvent.click(screen.getByLabelText('Flota de rescate · experimental'));
     await userEvent.click(screen.getByRole('button', { name: 'Iniciar simulación' }));
     await waitFor(() => expect(create).toHaveBeenCalledWith(expect.objectContaining({ config: expect.objectContaining({ mode: 'experimental', zombie_policy: 'correlated_random_walk', evacuation_algorithm: 'dynamic_risk_astar', pro: { runner_prediction: false, shelter_assignment: false, rescue_fleet: true } }) }), expect.any(String)));
+  });
+
+  it('valida cantidades por ronda, conserva el borrador y envía una semilla opcional real', async () => {
+    const { create } = setup();
+    await screen.findByRole('button', { name: 'Iniciar simulación' });
+    await userEvent.click(screen.getByText('Parámetros de generación'));
+    expect(screen.getByLabelText('Caminantes')).toHaveValue(8);
+    expect(screen.getByLabelText('Corredores')).toBeDisabled();
+    expect(screen.getByLabelText('Hordas')).toBeDisabled();
+    expect(screen.getByLabelText('Dormidos')).toBeDisabled();
+    fireEvent.change(screen.getByLabelText('Caminantes'), { target: { value: '0' } });
+    expect(screen.getByRole('button', { name: 'Iniciar simulación' })).toBeDisabled();
+    fireEvent.change(screen.getByLabelText('Caminantes'), { target: { value: '15' } });
+    await userEvent.click(screen.getByRole('button', { name: 'Conservar valores' }));
+    expect(create).not.toHaveBeenCalled();
+    await userEvent.selectOptions(screen.getByLabelText('Ronda'), 'round2');
+    await userEvent.click(screen.getByText('Parámetros de generación'));
+    expect(screen.getByLabelText('Corredores')).toBeEnabled();
+    expect(screen.getByLabelText('Dormidos')).toBeDisabled();
+    fireEvent.change(screen.getByLabelText('Hordas'), { target: { value: '0' } });
+    expect(screen.getByRole('button', { name: 'Iniciar simulación' })).toBeDisabled();
+    await userEvent.selectOptions(screen.getByLabelText('Ronda'), 'round1');
+    expect(screen.getByLabelText('Caminantes')).toHaveValue(15);
+    await userEvent.selectOptions(screen.getByLabelText('Ronda'), 'round3');
+    expect(screen.getByLabelText('Dormidos')).toBeEnabled();
+    fireEvent.change(screen.getByLabelText('Dormidos'), { target: { value: '1.5' } });
+    expect(screen.getByRole('button', { name: 'Iniciar simulación' })).toBeDisabled();
+    fireEvent.change(screen.getByLabelText('Semilla'), { target: { value: '22' } });
+    await userEvent.click(screen.getByRole('button', { name: 'Restaurar configuración predeterminada' }));
+    expect(create).not.toHaveBeenCalled();
+    expect(screen.getByLabelText('Dormidos')).toHaveValue(10);
+    expect(screen.getByLabelText('Semilla')).toHaveValue(null);
+    expect(screen.getByText('Total de zombies: 41')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Iniciar simulación' }));
+    await waitFor(() => expect(create).toHaveBeenCalledTimes(1));
+    expect(create.mock.calls[0]![0]).not.toHaveProperty('seed');
+    expect(create.mock.calls[0]![0].config).toMatchObject({ round: 'round3', zombie_counts: { walker: 20, runner: 8, horde: 3, sleeper: 10 } });
+  });
+
+  it('copia la semilla efectiva de una ejecución recuperada sin reiniciarla', async () => {
+    restoreSession();
+    const { create } = setup();
+    const user = userEvent.setup();
+    const writeText = vi.spyOn(navigator.clipboard, 'writeText').mockResolvedValue();
+    await screen.findByLabelText('Tu simulación');
+    fireEvent.click(screen.getByText('Configuración e información técnica'));
+    await user.click(screen.getByRole('button', { name: 'Copiar seed' }));
+    await waitFor(() => expect(writeText).toHaveBeenCalledWith('20261026'));
+    expect(create).not.toHaveBeenCalled();
   });
 
   it('un doble clic crea una sola ejecución con clave idempotente y guarda sólo credenciales propias en sessionStorage', async () => {

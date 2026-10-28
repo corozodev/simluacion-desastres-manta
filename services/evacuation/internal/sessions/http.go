@@ -265,10 +265,23 @@ func decodeCreate(w http.ResponseWriter, r *http.Request) (CreateRequest, error)
 		if json.Unmarshal(config, &fields) != nil {
 			return req, invalid()
 		}
-		allowedConfig := map[string]bool{"survivors": true, "round": true, "refuge_ids": true, "rainfall_intensity": true, "custom_shelters": true, "mode": true, "zombie_policy": true, "evacuation_algorithm": true, "pro": true}
+		allowedConfig := map[string]bool{"zombie_counts": true, "survivors": true, "round": true, "refuge_ids": true, "rainfall_intensity": true, "custom_shelters": true, "mode": true, "zombie_policy": true, "evacuation_algorithm": true, "pro": true}
 		for k, v := range fields {
 			if !allowedConfig[k] || bytes.Equal(bytes.TrimSpace(v), []byte("null")) || (k == "mode" || k == "zombie_policy" || k == "evacuation_algorithm") && bytes.Equal(bytes.TrimSpace(v), []byte(`""`)) {
 				return req, invalid()
+			}
+		}
+		if counts, ok := fields["zombie_counts"]; ok {
+			var entries map[string]json.RawMessage
+			if json.Unmarshal(counts, &entries) != nil || len(entries) != 4 {
+				return req, &Error{400, "VALIDATION_ERROR", "zombie_counts requiere walker, runner, horde y sleeper enteros."}
+			}
+			for _, name := range []string{"walker", "runner", "horde", "sleeper"} {
+				var value int
+				v, exists := entries[name]
+				if !exists || bytes.Equal(bytes.TrimSpace(v), []byte("null")) || json.Unmarshal(v, &value) != nil {
+					return req, &Error{400, "VALIDATION_ERROR", "zombie_counts." + name + " debe ser un entero."}
+				}
 			}
 		}
 	}
