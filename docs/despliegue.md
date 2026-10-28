@@ -3,10 +3,12 @@
 [Índice](INDEX.md) · [Arquitectura](arquitectura.md) · [Costos](costos.md) · [Pruebas](pruebas.md)
 
 Esta guía describe la infraestructura existente y la preparación local de una
-release. La entrega base desplegó el commit `47f51fa` el 27 de octubre de 2026;
+release. La versión vigente de frontend, API y laboratorio es `e8459c7`, publicada
+el 28 de octubre de 2026 con autorización expresa: [registro de movilidad](../deploy/deployment-mobility-20261028.json).
+La entrega base desplegó el commit `47f51fa` el 27 de octubre de 2026;
 [registro y verificaciones](../deploy/deployment-delivery-20261027.json). El ajuste
 CloudWatch posterior actualizó los binarios API/laboratorio desde un árbol local
-basado en `a8fdc64`; sus fuentes se incorporan en esta entrega. [Evidencia y hashes](../deploy/observability/verification-20261027.json).
+basado en `a8fdc64`; sus fuentes ya forman parte de la imagen vigente. [Evidencia histórica y hashes](../deploy/observability/verification-20261027.json).
 Sustituir servicios interrumpe sesiones en RAM y requiere autorización
 expresa del propietario para la cuenta/región y el cambio concreto.
 
@@ -22,16 +24,20 @@ expresa del propietario para la cuenta/región y el cambio concreto.
 | Docker laboratorio | 768 MiB, 0,5 CPU; listener `127.0.0.1:8082`, comparte namespace de red con backend |
 | Persistencia | Reportes y referencia en `/var/lib/corodev/flood`, fuera de imágenes; sesiones sólo en RAM |
 | Gestión | CloudFormation, SSM sin SSH público, CloudWatch Logs con retención de siete días y alarma CPU |
-| Budget externo | 50 USD/mes, HEALTHY, confirmado por lectura el 27 de octubre; avisa, no limita cargos |
+| Budget externo | 50 USD/mes, HEALTHY, confirmado por lectura el 28 de octubre; avisa, no limita cargos |
 | Externos a AWS | DNS Cloudflare; certificado de la API Let's Encrypt gestionado por Caddy; datos OSM/GeoManta/SNGR |
 
 Fuentes: [resize y límites](../deploy/validation-phase5-deployment.json),
-[última publicación registrada](../deploy/deployment-delivery-20261027.json),
+[última publicación registrada](../deploy/deployment-mobility-20261028.json),
 [plantilla](../deploy/aws/stack.yaml) y [perfil operativo](../deploy/backend.phase5-ec2.env.example).
-La publicación base corresponde a `47f51fa`, el 27 de octubre; el frontend conserva
-esa versión. API y laboratorio incorporan después la instrumentación CloudWatch
-descrita abajo, mediante binarios verificados y montajes read-only; se conservan imagen
-base, credenciales, límites y montaje persistente. React sirve el build HTTPS nuevo. Los GET
+La publicación vigente usa una imagen Linux/amd64 identificada por el commit
+`e8459c7`; se retiraron exclusivamente los montajes read-only de los ejecutables
+anteriores para que no ocultaran los nuevos binarios. Se conservaron variables,
+límites, logs, datos y contenedores anteriores para reversión. React sirve el
+build HTTPS nuevo: las tres rutas y sus 16 assets se comprobaron por SHA-256,
+con invalidación CloudFront completada. Una sonda PRO de ocho agentes avanzó tres
+turnos, se pausó y quedó cancelada; `/paso` mantuvo 401/200 y su respuesta exacta.
+No se midió capacidad ni p95. Los GET
 públicos a `/escape` y `/healthz` devolvieron 200 durante la auditoría inicial,
 con DNS/TLS normales. El despliegue posterior añadió las comprobaciones HTTP
 funcionales acotadas descritas en el registro de entrega. La lectura AWS
@@ -46,11 +52,11 @@ actual de Docker ni capacidad bajo carga; revalidar antes de operar.
 cuatro sesiones duró tres turnos; no certifica carga sostenida. Las mediciones
 locales con `GOMAXPROCS=2` tampoco equivalen a esta EC2.
 
-La comprobación previa a publicar la limpieza recompiló ambos binarios Go y
+La comprobación histórica de limpieza del 27 de octubre recompiló ambos binarios Go y
 comparó sus SHA-256 con los ejecutables activos por SSM: coincidieron exactamente.
-El código del frontend no cambió y el HTML público coincide con la entrega base;
-API y web respondieron 200. Por ello **no se necesitó redespliegue ni reinicio**.
-La configuración del agente también coincide. Los labels conservan el commit base
+El código del frontend no había cambiado y el HTML público coincidía con la entrega base;
+API y web respondieron 200. En aquella limpieza **no se necesitó redespliegue ni reinicio**.
+La configuración del agente también coincidía. Aquellos labels conservaban el commit base
 con el que se compilaron originalmente; los hashes identifican los binarios reales.
 [Registro de comparación](../deploy/observability/verification-20261027.json).
 

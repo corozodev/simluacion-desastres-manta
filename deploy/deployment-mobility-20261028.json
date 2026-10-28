@@ -1,0 +1,170 @@
+{
+  "recorded_at": "2026-10-28T00:19:35.896304-05:00",
+  "release": "mobility-20261028-e8459c7",
+  "implementation_commit": "e8459c767b6ffaf7b3bd332f64bb08df3bf6c7f4",
+  "repository": "corozodev/simluacion-desastres-manta",
+  "branch": "main",
+  "region": "us-east-2",
+  "stack": "corodev-phase2",
+  "site": "https://sistemamanta.lexinnovate.com",
+  "api": "https://api.sistemamanta.lexinnovate.com",
+  "authorization": "User explicitly requested pushing all changes and deploying frontend and backend to AWS on 2026-10-28.",
+  "preflight": {
+    "identity_non_root": true,
+    "account_matches_existing_stack": true,
+    "instance": "i-05fd56f1bcb3b1aba",
+    "instance_type": "m7i-flex.large",
+    "ssm": "Online",
+    "active_sessions": 0,
+    "laboratory_state": "idle",
+    "budget_limit_usd": 50,
+    "budget_health": "HEALTHY",
+    "budget_verified_by": "Live AWS Budgets API"
+  },
+  "publication_method": {
+    "git": "Commit and fast-forward push over existing SSH authentication; HTTPS authentication was unavailable.",
+    "backend": "Existing paired-container rollout over SSM, new Linux/amd64 Docker image, --image-binaries removes only historical executable overrides.",
+    "frontend": "Existing publish-web.sh to private S3; assets before index, no deletion of old hashed assets; CloudFront invalidation completed."
+  },
+  "image": "sha256:89239687770154a6eb4cdb2ddb449f68fc5a89a6dd65fb93c59e15c068cda390",
+  "artifact_sha256": "1c9dab9469defbbe66a3c74b8c8fe1e7d20817ecdca83e6377d6290b2777ff80",
+  "hashes": {
+    "bin/server": "a558f271b2446a0afb6c9c5b1b6ea18750bef414721175bc2a680ccb24bd5655",
+    "bin/flood-lab": "6d90aed2bae5bdf2c501848b55b3a71432c4600dc6f222bbca325b2bd81f56ae",
+    "bin/healthcheck": "66954665b7ce59bee45f79337d01d703a8079b141e554a40a5abbdba1d29a719",
+    "web/index.html": "72cf685a4a6790aece664672c539358f4bb7e21127a87c308d7e991ae40a0f1b",
+    "deploy/rollout-image.py": "ba19b265682634f34d87f08c7a9096c4d235f1646cbaeba4f798f92f92b86651"
+  },
+  "host_verification": {
+    "containers": [
+      {
+        "name": "corodev-backend",
+        "running": true,
+        "health": "healthy",
+        "restarts": 0,
+        "binary_sha256": "a558f271b2446a0afb6c9c5b1b6ea18750bef414721175bc2a680ccb24bd5655",
+        "environment_preserved": true,
+        "resources_preserved": true
+      },
+      {
+        "name": "corodev-flood-lab",
+        "running": true,
+        "health": null,
+        "restarts": 0,
+        "binary_sha256": "6d90aed2bae5bdf2c501848b55b3a71432c4600dc6f222bbca325b2bd81f56ae",
+        "environment_preserved": true,
+        "resources_preserved": true
+      }
+    ],
+    "legacy_turn": 0,
+    "paso": {
+      "unauthorized": 401,
+      "authorized": 200,
+      "exact_response": true,
+      "neighbor_or_wait": true
+    },
+    "persistent_files_before": 3,
+    "persistent_files_identical": 2,
+    "persistent_files_changed": [
+      "reference.json"
+    ],
+    "rollback_containers_retained": true
+  },
+  "reference_verification": {
+    "persistent_data_preserved": true,
+    "byte_identical_files": 2,
+    "refresh_metadata_only": true,
+    "changed_fields": [
+      "bundle.rain_events.provenance.consulted_at",
+      "bundle.susceptibility.provenance.consulted_at",
+      "sha256"
+    ],
+    "comparison": "All other reference fields are identical to the private tar backup. The root digest incorporates consultation timestamps."
+  },
+  "public_http_verification": {
+    "/healthz": {
+      "http": 200
+    },
+    "/v1/simulations/capabilities": {
+      "http": 200
+    },
+    "/lab/catalog": {
+      "http": 200
+    },
+    "/lab/published": {
+      "http": 200,
+      "state": "idle"
+    },
+    "pro": {
+      "status": "passed",
+      "observed_tick": 3,
+      "survivors": 8,
+      "fleet": 5,
+      "mobility_diagnostics_present": true,
+      "vehicle_wait_reasons": [
+        "no_useful_pickup",
+        "no_safe_pickup_route"
+      ],
+      "hidden_sleepers_absent": true,
+      "pause": "PAUSED",
+      "published_schema": "valid"
+    },
+    "final_probe_state": "CANCELLED",
+    "legacy_turn": 0
+  },
+  "web_verification": {
+    "routes": [
+      {
+        "route": "/escape",
+        "http": 200,
+        "html_sha256": "72cf685a4a6790aece664672c539358f4bb7e21127a87c308d7e991ae40a0f1b"
+      },
+      {
+        "route": "/flood-lab",
+        "http": 200,
+        "html_sha256": "72cf685a4a6790aece664672c539358f4bb7e21127a87c308d7e991ae40a0f1b"
+      },
+      {
+        "route": "/mobile",
+        "http": 200,
+        "html_sha256": "72cf685a4a6790aece664672c539358f4bb7e21127a87c308d7e991ae40a0f1b"
+      }
+    ],
+    "assets_verified_by_sha256": 16,
+    "cloudfront_invalidation": "Completed"
+  },
+  "cloudfront_invalidation_id": "IDT7C1IAQBX8BGKCLDM968Q6K4",
+  "local_validation": {
+    "previous_focused_react_tests_passed": 39,
+    "previous_focused_go_tests": "fleet, immobility, sleeper privacy, exact /paso and temporal waiting",
+    "release_web_build": "PASS",
+    "release_docker_build": "PASS",
+    "generated_check": "PASS",
+    "rollout_configuration_check": "PASS; executable overrides only, original recovery input and data mounts preserved"
+  },
+  "recovery": {
+    "previous_containers_retained": true,
+    "suffix": "before-mobility-20261028-e8459c7",
+    "private_recovery_file": "/etc/corodev/recovery-mobility-20261028-e8459c7.json",
+    "private_persistent_backup": "/var/lib/corodev/backups/mobility-20261028-e8459c7.tar.gz",
+    "previous_web_saved_locally": true,
+    "final_active_sessions": 0,
+    "probe_final_state": "CANCELLED"
+  },
+  "ssm_commands": {
+    "verify-reference": "19c0a768-d5e5-4b22-9dc6-0dcd5c9f3b71",
+    "verify-host": "9f6ef2c3-f482-48ba-a8ba-f0dd10add28b",
+    "preflight": "d47efc0e-7440-496e-b299-98b7fbd12cf7",
+    "replace": "cef4fba7-7f88-4440-8198-ac1be4cc00bf"
+  },
+  "failures_resolved": [
+    "HTTPS git push had no credential helper; the existing SSH key successfully published the same commit.",
+    "Initial reference comparison omitted consulted_at and the dependent digest from its metadata classification; exact field comparison then confirmed data preservation."
+  ],
+  "limitations": [
+    "No global suites, E2E, load benchmarks, full round, physical device or Flutter tests were executed during deployment.",
+    "The eight-agent, three-turn smoke does not establish R3 performance, p95, fleet efficacy or sustained EC2 capacity.",
+    "Sessions remain in RAM; no active sessions existed immediately before replacement.",
+    "No new infrastructure, IAM, DNS, budgets, quotas or production secrets were changed."
+  ]
+}
