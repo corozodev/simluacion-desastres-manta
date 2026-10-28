@@ -89,7 +89,7 @@ unidades y cargos adicionales; no se confunden con gasto de esta cuenta.
 | --- | --- |
 | Gasto real del proyecto durante el evento | **PENDIENTE**: completar importe, período, servicios incluidos y tratamiento de créditos/impuestos desde Billing/Cost Explorer o export confiable |
 | Budget confirmado por lectura | **50 USD/mes**, COST/MONTHLY, HEALTHY; `describe-budgets` del 27 de octubre, aproximadamente 19:00 de Ecuador |
-| Captura auténtica | **PENDIENTE**: el propietario debe añadir `docs/budget.png` tras ocultar datos sensibles |
+| Captura incorporada | [AWS Budget](budget.png), revisada el 28 de octubre: límite 50 USD, consumo mostrado 0,09 USD (0,18 %), umbrales `OK` y `1/1 email verified`; sin claves ni direcciones de correo visibles |
 | Entrega de alertas | Confirmación del destinatario pendiente; tener configuración no prueba recepción |
 
 La lectura actual de Budgets informa **0,09 USD de gasto mensual de cuenta**,
@@ -98,8 +98,10 @@ con retraso y no corresponde a la hora de consulta. Se encontró un único Budge
 de 50 USD, sin filtros de proyecto/servicio, que excluye créditos y reembolsos;
 no devuelve pronóstico. **No es gasto atribuible al evento/proyecto** y no se
 traslada al campo pendiente. No se consultó Cost Explorer ni destinatarios de
-notificación y no se cambió configuración. La captura y recepción de alertas
-siguen pendientes del propietario.
+notificación y no se cambió configuración en aquella lectura. La captura
+aportada después coincide con esos importes y acredita un correo verificado,
+pero no muestra el porcentaje de disparo de cada alerta ni prueba su recepción.
+No permite cerrar el gasto final del evento.
 
 Un dato histórico de AWS Budgets mostró **0,00 USD el 26 de octubre** con una
 actualización anterior al despliegue. Era gasto mensual de cuenta, con retraso,
@@ -112,14 +114,10 @@ Detener EC2 conserva cargos de EBS/IPv4; buckets/versiones y recursos retenidos
 siguen consumiendo. Revisar la [retirada prevista](despliegue.md#infraestructura-nueva-y-retirada),
 conservar los datos necesarios y no extender la operación sin revisar el costo.
 
-La captura está ignorada en Git por precaución. Tras revisarla, añadirla
-explícitamente con `git add -f docs/budget.png` y activar esta línea en el README:
-
-```markdown
-![AWS Budget con alerta configurada](docs/budget.png)
-```
-
-No se creó una imagen ficticia ni se afirma que la captura esté publicada.
+La captura `docs/budget.png` está incorporada al árbol publicable y se muestra en
+el [README](../README.md#costos-budget-y-limitaciones). Se retiró su exclusión
+de `.gitignore` tras revisar la imagen aportada. La revisión local no implica
+una nueva publicación en GitHub.
 
 La configuración CloudWatch focalizada añade dos métricas de host cada 60 s,
 USD 0,60/mes modelado, elevando las partidas previas de 77,6843 a 78,2843 USD.

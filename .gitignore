@@ -49,4 +49,3 @@ venv/
 
 # Authentication/owner evidence stays local unless explicitly redacted.
 deploy/evidence-private/
-docs/budget.png

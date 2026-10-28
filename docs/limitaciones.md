@@ -2,7 +2,7 @@
 
 [Índice](INDEX.md) · [Pruebas](pruebas.md) · [Nivel PRO](nivel-pro.md) · [Costos](costos.md)
 
-Estado al **27 de octubre de 2026, Ecuador**. La [matriz de pruebas](pruebas.md)
+Estado documental revisado el **28 de octubre de 2026, Ecuador**. La [matriz de pruebas](pruebas.md)
 delimita las capacidades verificadas.
 La publicación base y el ajuste de observabilidad tienen registros separados en
 [despliegue](despliegue.md). Las fuentes incluyen la limpieza y la instrumentación registrada; sus binarios
@@ -61,7 +61,7 @@ coinciden con los activos. Un cambio documental no requiere sustituir servicios.
 | Historial real | CONFIRMADO: historial existente preservado, sin reescritura | Mantener el historial y revisar cada publicación |
 | README completo | DOCUMENTADO | Completar los campos pendientes del propietario |
 | Arquitectura enlazada | PUBLICADO: documento, fuente editable y SVG | Publicado junto con README |
-| Captura AWS Budget | PENDIENTE: no existe `docs/budget.png` | Incorporar captura auténtica sanitizada y verificar alerta |
+| Captura AWS Budget | INCORPORADA al árbol publicable: [captura](budget.png), 50 USD, umbrales OK y correo verificado | Incluir en la próxima publicación; recepción de una alerta disparada no acreditada; [alcance](costos.md#gasto-real-del-evento-y-budget) |
 | Costos mensuales | MODELO DOCUMENTADO: USD 78,28/mes bajo los supuestos de [costos](costos.md) | Validar recursos, horas, tarifas y rubros variables; no equivale a factura |
 | Gasto real del evento | PENDIENTE: Budget consultado a nivel de cuenta, sin atribución al proyecto | Completar cifra, período, fecha y fuente de consola |
 | URL pública | CONFIRMADO en la verificación del 27 de octubre; hashes y alcance en [despliegue](despliegue.md) | Revisar desde otra red; futuras actualizaciones requieren autorización |

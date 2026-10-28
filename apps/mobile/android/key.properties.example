@@ -1,0 +1,6 @@
+# Copiar a key.properties (ignorado por Git) y completar localmente.
+# storeFile se resuelve desde apps/mobile/android.
+storeFile=../../../private/android-signing/mantasim-release.jks
+storePassword=REEMPLAZAR_LOCALMENTE
+keyAlias=mantasim
+keyPassword=REEMPLAZAR_LOCALMENTE

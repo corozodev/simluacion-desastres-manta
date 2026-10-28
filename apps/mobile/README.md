@@ -15,6 +15,30 @@ La URL HTTPS de producción sigue siendo el valor predeterminado. `FLOOD_API_BAS
 
 ## Publicación y transporte
 
+Para distribuir por descarga directa, compilar un APK universal release firmado
+con una clave propia. La configuración local `android/key.properties` se basa en
+`android/key.properties.example`; la clave y las contraseñas se conservan fuera de
+Git y nunca se incluyen en la carpeta compartida. Respaldar ambos archivos de forma
+privada: las actualizaciones requieren la misma firma y un `build-number` mayor.
+La compilación release falla si falta la configuración de firma; debug conserva
+su firma de desarrollo.
+
+```sh
+flutter build apk --release \
+  --dart-define=WORLD_API_BASE_URL=https://api.sistemamanta.lexinnovate.com \
+  --dart-define=FLOOD_API_BASE_URL=https://api.sistemamanta.lexinnovate.com \
+  --dart-define=INCIDENTS_API_BASE_URL=https://api.sistemamanta.lexinnovate.com
+```
+
+El resultado está en `build/app/outputs/flutter-apk/app-release.apk`. Subir sólo
+el APK a Drive, habilitar lectura para cualquier persona con el enlace y generar
+el QR de ese enlace real. Los participantes descargan el archivo y autorizan
+la instalación desde el navegador o gestor de archivos cuando Android lo solicite.
+Si ya instalaron un APK debug, deben desinstalarlo antes por la diferencia de firma.
+No es compatible con iPhone; allí se usa el visor React `/mobile`. Verificar una
+descarga e instalación real antes de difundir el QR. La simulación debe iniciarse
+desde la consola web para que los espectadores vean una ejecución publicada.
+
 `HttpSpectatorRepository` consulta exclusivamente GET:
 
 - `/v1/simulations/published/zombie_outbreak`: referencia pública al snapshot actual de una sesión existente.
