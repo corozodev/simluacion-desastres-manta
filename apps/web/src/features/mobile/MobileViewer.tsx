@@ -8,6 +8,7 @@ import { config } from '../../lib/config';
 import { useNetworkOnline, usePageVisible, usePublishedFlood, usePublishedZombie } from '../../services/published';
 import { Button } from '../../components/ui';
 import { WorldMap } from '../WorldMap';
+import { immobilityLabels } from '../maps/mobilityLabels';
 import { FloodMap } from '../flood/FloodMap';
 import { incidentDate, incidentIsActive, incidentOfficialSource, incidentStateLabel, incidentTypeLabels } from '../flood/incidentPresentation';
 import '../flood/flood.css';
@@ -54,7 +55,7 @@ function ZombieViewer({ active, online }: { active: boolean; online: boolean }) 
     {simulation && !world && graph.data && <p role="status" className="mobile-notice">Actualizando geografía de la ejecución…</p>}
     {graph.data ? <WorldMap graph={graph.data} world={world} selected={selected} shelters={shelters} onSelect={selectAgent} selectedShelterId={selectedShelter} onSelectShelter={selectShelter} lifecycle={{ id: run, running: active && simulation?.status === 'RUNNING', connected: online && !published.isError, interval: simulation?.tick_interval_ms ?? 2000 }} /> : <p className="mobile-notice" role="status">Cargando mapa de Manta…</p>}
     {world && <p className="mobile-metrics">♟ {survivors.filter(agent => agent.status === 'active').length} en camino · ☣ {world.zombies.length} zombis visibles · ✓ {survivors.filter(agent => agent.status === 'evacuated').length} evacuados</p>}
-    <Entities agents={survivors.map((agent, index) => ({ id: agent.id, name: friendly(agent.id, index), state: agent.status, shelter: agent.target_shelter_id, route: agent.planned_route.length > 1 }))} shelters={shelters} selectedAgent={selectedAgent} selectedShelter={selectedShelter} onAgent={selectAgent} onShelter={selectShelter} onClose={() => setSelection({ run, agent: '', shelter: '' })} />
+    <Entities agents={survivors.map((agent, index) => ({ id: agent.id, name: friendly(agent.id, index), state: agent.status, shelter: agent.target_shelter_id, route: agent.planned_route.length > 1, stationaryTurns: agent.stationary_turns, immobilityReason: agent.immobility_reason, vehicleId: agent.vehicle_id, rescueVehicleId: agent.status === 'active' ? world?.fleet?.find(vehicle => vehicle.state === 'pickup' && vehicle.target_survivor_id === agent.id)?.id : undefined }))} shelters={shelters} selectedAgent={selectedAgent} selectedShelter={selectedShelter} onAgent={selectAgent} onShelter={selectShelter} onClose={() => setSelection({ run, agent: '', shelter: '' })} />
     <p className="mobile-legal">Simulación experimental. Refugios ficticios; no son sitios oficiales de evacuación.</p>
   </>;
 }
@@ -105,14 +106,14 @@ function FloodViewer({ active, online }: { active: boolean; online: boolean }) {
 const severity = { unknown: 'Desconocida', low: 'Baja', moderate: 'Moderada', high: 'Alta' };
 const passability = { unknown: 'Desconocida', passable: 'Transitable', restricted: 'Restringida', blocked: 'Bloqueada' };
 function ConnectionNotice({ onRetry }: { onRetry: () => void }) { return <p className="mobile-notice mobile-offline" role="status">Sin conexión; el último estado puede estar desactualizado. <button onClick={onRetry}>Reintentar</button></p>; }
-type Agent = { id: string; name: string; state: string; shelter: string; route: boolean };
+type Agent = { id: string; name: string; state: string; shelter: string; route: boolean; stationaryTurns?: number; immobilityReason?: string; vehicleId?: string; rescueVehicleId?: string };
 function Entities({ agents, shelters, selectedAgent, selectedShelter, onAgent, onShelter, onClose }: { agents: Agent[]; shelters: Shelter[]; selectedAgent: string; selectedShelter: string; onAgent: (id: string) => void; onShelter: (id: string) => void; onClose: () => void }) {
   const selected = agents.find(agent => agent.id === selectedAgent);
   const shelter = shelters.find(shelter => shelter.id === selectedShelter);
   const shelterName = (id: string) => id ? `Refugio ${shelters.findIndex(shelter => shelter.id === id) + 1 || 'asignado'}` : 'Por asignar';
   return <>
     <details className="mobile-entities"><summary>Personas ({agents.length}) y refugios ({shelters.length})</summary><ul>{agents.map(agent => <li key={agent.id}><span>{agent.name} · {agentStatus[agent.state] ?? agent.state}<small>{shelterName(agent.shelter)}</small></span><button onClick={() => onAgent(agent.id)}>{agent.route ? 'Ver ruta' : 'Ver persona'}</button></li>)}</ul><ul>{shelters.map((shelter, index) => <li key={shelter.id}><button onClick={() => onShelter(shelter.id)}>Refugio {index + 1} · {shelter.occupancy}/{shelter.capacity}</button></li>)}</ul></details>
-    {(selected || shelter) && <section className="mobile-sheet" aria-label={selected ? 'Persona seleccionada' : 'Refugio seleccionado'}><Button variant="ghost" onClick={onClose}>Cerrar detalle</Button>{selected && <><h2>{selected.name}</h2><p>{agentStatus[selected.state] ?? selected.state} · {shelterName(selected.shelter)}</p><p>{selected.route ? 'Ruta publicada resaltada sobre el mapa.' : 'Sin ruta publicada disponible.'}</p></>}{shelter && <><h2>Refugio {shelters.indexOf(shelter) + 1}</h2><p>Capacidad: {shelter.capacity} · Ocupación: {shelter.occupancy}</p><p>Plazas disponibles: {shelter.available ?? Math.max(0, shelter.capacity - shelter.occupancy - (shelter.reserved ?? 0))}</p><small>Ubicación experimental; sin habilitación oficial.</small></>}</section>}
+    {(selected || shelter) && <section className="mobile-sheet" aria-label={selected ? 'Persona seleccionada' : 'Refugio seleccionado'}><Button variant="ghost" onClick={onClose}>Cerrar detalle</Button>{selected && <><h2>{selected.name}</h2><p>{agentStatus[selected.state] ?? selected.state} · {shelterName(selected.shelter)}</p><p>{selected.route ? 'Ruta publicada resaltada sobre el mapa.' : 'Sin ruta publicada disponible.'}</p>{selected.stationaryTurns !== undefined && <p>Turnos sin desplazamiento: {selected.stationaryTurns}</p>}{selected.immobilityReason && <p>{immobilityLabels[selected.immobilityReason] ?? selected.immobilityReason}</p>}{selected.vehicleId ? <p>A bordo: {selected.vehicleId}</p> : selected.rescueVehicleId && <p>Recogida asignada: {selected.rescueVehicleId} · conserva su decisión peatonal</p>}</>}{shelter && <><h2>Refugio {shelters.indexOf(shelter) + 1}</h2><p>Capacidad: {shelter.capacity} · Ocupación: {shelter.occupancy}</p><p>Plazas disponibles: {shelter.available ?? Math.max(0, shelter.capacity - shelter.occupancy - (shelter.reserved ?? 0))}</p><small>Ubicación experimental; sin habilitación oficial.</small></>}</section>}
   </>;
 }
 

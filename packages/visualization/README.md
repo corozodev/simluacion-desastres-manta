@@ -33,9 +33,39 @@ animaciones adicionales del autor). Sora conserva cuatro frames y sus cuatro
 direcciones originales; se excluyen ataques. Las ondas conservan sus cuatro
 frames transparentes. Total: **25.198 bytes**, sin GIF ni dependencias de juegos.
 
-React comparte símbolos SVG por recurso/dirección, cambia únicamente sus frames
-a 4 FPS y conserva un símbolo vectorial estático si falla una imagen. Los hashes,
-transparencia y dimensiones se comprueban en `visualization.test.tsx`.
+React comparte símbolos SVG por recurso/dirección. El superviviente y las ondas
+usan sus atlas a 4 FPS; el superviviente conserva un fallback vectorial si falla
+la imagen. Los hashes, transparencia y dimensiones de los atlas conservados se
+comprueban en `visualization.test.tsx`.
+
+## Variantes de zombis
+
+`catalog.json.zombie_variants` describe las cuatro variantes SVG locales de
+[`ZombieGlyph`](../../apps/web/src/features/visualization/ZombieGlyph.tsx).
+Los colores proceden de `packages/design-tokens/tokens.json`, regenerados para
+CSS y Dart; TypeScript importa esa misma fuente. El atlas zombie histórico se
+conserva intacto, aunque el mapa ya no lo descarga para representar amenazas.
+
+| Variante | Forma y señal | Color | Cadencia visual al desplazarse |
+| --- | --- | --- | --- |
+| Caminante | Erguida/encorvada, brazos asimétricos | Oliva | 500 ms por cambio de pose |
+| Corredor | Cuerpo inclinado, piernas abiertas, trazos de velocidad | Naranja rojizo | 250 ms |
+| Horda | Grupo de tres siluetas y H; no estima integrantes | Violeta | 750 ms |
+| Dormido | Cuerpo recostado y Zz | Azul grisáceo | Estática; se explica en leyenda |
+
+Los dormidos ocultos se filtran antes del renderizado. Un sleeper activado usa
+la variante caminante, conservando tipo y reglas originales en el motor.
+La leyenda comparte los mismos glifos en **Capas**. Los aros violetas representan
+únicamente nodos bloqueados por una horda visible y sus vecinos físicos del grafo;
+no dibujan un radio geográfico ni incluyen amenazas privadas.
+
+`AnimatedEntities` integra estas variantes con sus símbolos, interpolación y
+reloj actuales: no hay temporizadores por entidad ni dependencias nuevas. Las
+poses sólo cambian sobre recorridos observados e interpolados; quietos, pausa y
+movimiento reducido quedan estáticos. Agrupar conserva cada tipo por separado,
+con contornos propios y cantidades de entidades observadas. Los SVG usan tamaño
+de pantalla estable en distintos zooms. Los tests verifican estructura/semántica
+DOM y ciclo de vida; no acreditan pintura, FPS ni una prueba en dispositivo.
 
 ## Posiciones y límites
 

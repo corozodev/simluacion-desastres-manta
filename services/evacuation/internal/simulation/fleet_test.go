@@ -163,6 +163,61 @@ func TestFleetAvoidsUnnecessaryDepotRoundTrip(t *testing.T) {
 	}
 }
 
+func TestFleetReleasesUnreachableClaimBeforeAssigningOtherVehicles(t *testing.T) {
+	g := chain(10)
+	g.Shelters = append(g.Shelters, world.Shelter{ID: "H2", NodeID: "C", Capacity: 4})
+	s := create(t, g, Config{RescueFleet: true, InitialSurvivors: []world.Survivor{survivor("S", "A")}, Events: []ScheduledEvent{{Turn: 1, EdgeID: "E3", Blocked: true}}}, decisionFunc(stay))
+	s.fleet[0].CurrentNode = "A"
+	// V-02 owns a pickup that becomes unreachable. V-01 can still rescue S
+	// to H2, and must not lose this turn to the later vehicle's stale claim.
+	s.fleet[1].CurrentNode = "J"
+	s.fleet[1].TargetSurvivorID = "S"
+	s.fleet[1].TargetShelterID = "H2"
+	s.fleet[1].State = "pickup"
+	w := step(t, s)
+	checkFleetConservation(t, s, w)
+	if w.FleetMetrics.Delivered != 1 || w.Survivors[0].Status != world.Evacuated || !reflect.DeepEqual(w.Fleet[0].Path, []string{"A", "B", "C"}) {
+		t.Fatalf("stale claim delayed reachable rescue: %+v", w.Fleet)
+	}
+}
+
+func TestFleetDeliveryCanStartAnotherCycleWithinMovementBudget(t *testing.T) {
+	g := chain(8)
+	g.Shelters[0].NodeID = "C"
+	g.Nodes = append(g.Nodes, world.GraphNode{ID: "Z", Lat: .001, Lng: .007})
+	g.Edges = append(g.Edges, world.GraphEdge{ID: "HZ", From: "H", To: "Z", DistanceM: 100, SpeedMPS: 1.4, RoadType: "residential"})
+	s := create(t, g, Config{RescueFleet: true, InitialSurvivors: []world.Survivor{survivor("S1", "C"), survivor("S2", "H")}}, decisionFunc(stay))
+	v := &s.fleet[0]
+	v.PassengerIDs, v.TargetShelterID, v.State = []string{"S1"}, "H1", "transport"
+	s.survivors[0].VehicleID, s.survivors[0].TargetShelterID = v.ID, "H1"
+	// An observable threat increases pickup utility without blocking C->H.
+	s.zombies = []zombieState{{observable: world.Zombie{ID: "Z", Type: world.Walker, Awake: true, CurrentNode: "Z", Path: []string{"Z"}}}}
+	events := []world.Event{}
+	s.moveFleet(&events)
+	if s.fleetMetrics.Delivered != 1 || v.State != "pickup" || v.TargetSurvivorID != "S2" || !reflect.DeepEqual(v.Path, []string{"C", "D", "E"}) {
+		t.Fatalf("delivery did not restart pickup within two edges: %+v", v)
+	}
+}
+
+func TestIdleFleetReevaluatesPickupOnFollowingTurns(t *testing.T) {
+	g := chain(8)
+	g.Shelters[0].NodeID = "C"
+	g.Nodes = append(g.Nodes, world.GraphNode{ID: "Z", Lat: .001, Lng: .007})
+	g.Edges = append(g.Edges, world.GraphEdge{ID: "HZ", From: "H", To: "Z", DistanceM: 100, SpeedMPS: 1.4, RoadType: "residential"})
+	s := create(t, g, Config{RescueFleet: true, InitialSurvivors: []world.Survivor{survivor("S", "H")}}, decisionFunc(stay))
+	if v := step(t, s).Fleet[0]; v.State != "idle" || v.WaitReason != "no_useful_pickup" {
+		t.Fatalf("unnecessary round trip should wait: %+v", v)
+	}
+	// Introduce a visible observation in this controlled fixture. A real run
+	// obtains it from its zombie phase; no decision receives private forecasts.
+	s.zombies = []zombieState{{observable: world.Zombie{ID: "Z", Type: world.Walker, Awake: true, CurrentNode: "Z", Path: []string{"Z"}}}}
+	w := step(t, s)
+	checkFleetConservation(t, s, w)
+	if v := w.Fleet[0]; v.State != "pickup" || v.TargetSurvivorID != "S" || v.WaitReason != "" || !reflect.DeepEqual(v.Path, []string{"C", "D", "E"}) {
+		t.Fatalf("idle vehicle did not reevaluate a useful pickup: %+v", v)
+	}
+}
+
 func TestFleetPassengersRemainExposedToNodeAndOppositeCrossings(t *testing.T) {
 	for _, test := range []struct {
 		from, to  string

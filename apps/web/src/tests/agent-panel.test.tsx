@@ -122,21 +122,33 @@ describe('panel portátil de refugios y supervivientes', () => {
   });
 });
 
-it('distingue zombis y supervivientes por contorno y postura, conservando los sprites existentes', () => {
+it('distingue zombis vectoriales y supervivientes y conserva el fallback del atlas', () => {
   const observation: Observation = { id: 'shape-test', graphVersion: graph.version, scenario: 'zombie_outbreak', tick: 1, running: false, connected: true, interval: 2000, entities: [
     { key: 'survivor:S1', id: 'S1', kind: 'survivor', state: 'active', node: graph.nodes[0]!.id },
     { key: 'zombie:Z1', id: 'Z1', kind: 'zombie', state: 'moving', node: graph.nodes[1]!.id },
   ] };
   const { container } = render(<svg><AnimatedEntities graph={graph} observation={observation} project={point => ({ x: point.lng * 10000, y: point.lat * 10000 })} view={{ x: -100, y: -100, width: 400, height: 200 }} active={false} clustering={false} /></svg>);
-  expect(container.querySelector('[data-kind-shape="zombie"]')?.tagName).toBe('path');
+  expect(container.querySelector('[data-kind-shape="walker"]')?.tagName).toBe('path');
   expect(container.querySelector('[data-kind-shape="survivor"]')?.tagName).toBe('circle');
   expect(container.querySelectorAll('[data-sprite]')).toHaveLength(2);
-  fireEvent.error(container.querySelector('defs image[href="/visualization/zombie.png"]')!);
+  expect(container.querySelector('defs image[href="/visualization/zombie.png"]')).not.toBeInTheDocument();
   fireEvent.error(container.querySelector('defs image[href="/visualization/survivor.png"]')!);
-  const zombie = container.querySelector('[data-fallback="zombie"] path')!;
+  const zombie = container.querySelector('[data-zombie-glyph="walker"] path')!;
   const survivor = container.querySelector('[data-fallback="survivor"] path')!;
   expect(zombie.getAttribute('d')).not.toBe(survivor.getAttribute('d'));
   expect(container.querySelectorAll('[data-agent-id]')).toHaveLength(2);
+});
+
+it('muestra inmovilidad publicada y una recogida real sin inventar espera de rescate', () => {
+  const props = { shelters: graph.shelters, selectedAgentId: 'S1', onSelectAgent: vi.fn() };
+  const { rerender } = render(<AgentShelterPanel {...props} agents={[{ id: 'S1', state: 'active', stationaryTurns: 3, immobilityReason: 'timeout', rescueVehicleId: 'V-01' }]} />);
+  expect(screen.getByRole('status')).toHaveTextContent('Se agotó el plazo de decisión');
+  expect(screen.getByRole('status')).toHaveTextContent('V-01 · conserva su decisión peatonal');
+  expect(screen.getByText('Turnos sin desplazamiento').nextElementSibling).toHaveTextContent('3');
+  rerender(<AgentShelterPanel {...props} agents={[{ id: 'S1', state: 'active' }]} />);
+  expect(screen.queryByText('Turnos sin desplazamiento')).not.toBeInTheDocument();
+  expect(screen.queryByText('Recogida asignada')).not.toBeInTheDocument();
+  expect(screen.queryByText('Motivo')).not.toBeInTheDocument();
 });
 
 it('informa cuando el servidor no publica recorrido sin inventar una ruta resaltada', async () => {

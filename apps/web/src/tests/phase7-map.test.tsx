@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import type { RunnerForecast } from '@corodev/contracts';
@@ -8,6 +8,14 @@ import { graph, world } from './simulation-fixtures';
 
 const forecast: RunnerForecast = { turn: world.turn, horizon: 2, node_risks: [{ node_id: graph.nodes[0]!.id, one_turn_probability: .5, two_turn_probability: .3 }], edge_risks: [] };
 describe('capas PRO observables', () => {
+  it('señala el bloqueo de una horda sólo en su nodo y vecinos del grafo publicado', () => {
+    const snapshot = structuredClone(world);
+    const at = graph.nodes[1]!.id;
+    snapshot.zombies = [{ id: 'H', type: 'horde', awake: true, current_node: at, path: [at], movement_state: 'resting' }];
+    const expected = new Set([at, ...graph.edges.flatMap(edge => edge.from === at ? [edge.to] : edge.to === at ? [edge.from] : [])]);
+    const { container } = render(<WorldMap graph={graph} world={snapshot} />);
+    expect(new Set([...container.querySelectorAll('[data-horde-blocked-node]')].map(node => node.getAttribute('data-horde-blocked-node')))).toEqual(expected);
+  });
   it('muestra camionetas en su nodo real y a los pasajeros en su ocupación sin contarlos como evacuados', () => {
     const snapshot = structuredClone(world);
     const node = graph.nodes[0]!.id;
@@ -57,6 +65,32 @@ describe('capas PRO observables', () => {
     expect(document.querySelector('[data-shelter-capacity="unavailable"]')).toHaveTextContent('1/10 ocupadas · 9 reservadas · 0 disponibles');
     expect(document.querySelector('[data-shelter-capacity="limited"]')).toBeInTheDocument();
     expect(document.querySelector('[data-shelter-capacity="available"]')).toBeInTheDocument();
+  });
+
+  it('selecciona camionetas por teclado y muestra sólo motivos publicados', async () => {
+    const snapshot = structuredClone(world);
+    const node = graph.nodes[0]!.id;
+    snapshot.fleet = [{ id: 'V-01', current_node: node, path: [node], passenger_ids: [], target_survivor_id: '', target_shelter_id: '', state: 'idle', capacity: 4, wait_reason: 'no_useful_pickup' }];
+    const props = { graph, world: snapshot, lifecycle: { id: 'one', running: false, connected: true, interval: 2000 } };
+    const { rerender } = render(<WorldMap {...props} />);
+    const marker = screen.getByRole('button', { name: 'Seleccionar camioneta V-01' });
+    fireEvent.keyDown(marker, { key: 'Enter' });
+    const detail = screen.getByRole('region', { name: 'Camioneta seleccionada' });
+    expect(detail).toHaveTextContent('Disponible');
+    expect(detail).toHaveTextContent('0/4');
+    expect(detail).toHaveTextContent('Sin recogida con utilidad positiva');
+    fireEvent.keyDown(detail, { key: 'Escape' });
+    expect(marker).toHaveFocus();
+    expect(screen.queryByRole('region', { name: 'Camioneta seleccionada' })).not.toBeInTheDocument();
+    await userEvent.click(marker);
+    rerender(<WorldMap {...props} lifecycle={{ ...props.lifecycle, id: 'two' }} />);
+    expect(screen.queryByRole('region', { name: 'Camioneta seleccionada' })).not.toBeInTheDocument();
+    await userEvent.click(screen.getByText('Capas'));
+    const legend = screen.getByLabelText('Tipos de zombis');
+    expect(within(legend).getByText('Caminante')).toBeInTheDocument();
+    expect(within(legend).getByText('Corredor')).toBeInTheDocument();
+    expect(within(legend).getByText('Horda')).toBeInTheDocument();
+    expect(within(legend).getByText('Dormido (oculto)')).toBeInTheDocument();
   });
 
 });

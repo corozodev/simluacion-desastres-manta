@@ -8,6 +8,7 @@ import { compatible, direction, entitiesFromFlood, entitiesFromWorld, entityPath
 import type { Observation, VisualEntity } from '../features/visualization/model';
 import { useVisualization, VisualizationControls } from '../features/visualization/useVisualization';
 import { observeWorld, sessionLifecycle } from '../features/visualization/observation';
+import { ZombieGlyph } from '../features/visualization/ZombieGlyph';
 import { FloodMap } from '../features/flood/FloodMap';
 import { config } from '../lib/config';
 import { hydraulicFixture } from './hydraulic-fixture';
@@ -31,6 +32,25 @@ function clock() {
 afterEach(() => vi.restoreAllMocks());
 
 describe('catálogo y datos verificables', () => {
+  it('tiene cuatro siluetas distintas y nunca publica un dormido oculto como marcador', () => {
+    const data = structuredClone(world);
+    data.survivors = [];
+    data.zombies = (['walker', 'runner', 'horde', 'sleeper'] as const).map((type, i) => ({ id: `Z${i}`, type, current_node: entity.node, awake: type !== 'sleeper', movement_state: 'resting', path: [entity.node] }));
+    expect(entitiesFromWorld(data).map(entity => entity.zombieType)).toEqual(['walker', 'runner', 'horde']);
+    const { container, rerender } = render(layer(observation({ entities: entitiesFromWorld(data) }), false));
+    expect(container.querySelectorAll('[data-zombie-type]')).toHaveLength(3);
+    expect(container.querySelector('[data-agent-id="Z3"]')).not.toBeInTheDocument();
+    const silhouettes = [...container.querySelectorAll('[data-zombie-glyph]')].reduce((map, glyph) => map.set(glyph.getAttribute('data-zombie-glyph'), glyph.innerHTML), new Map<string | null, string>());
+    expect(silhouettes.size).toBe(4);
+    expect(new Set(silhouettes.values()).size).toBe(4);
+    expect(container.querySelectorAll('use[data-sprite]')).toHaveLength(3);
+    data.zombies[3]!.awake = true;
+    rerender(layer(observation({ tick: 2, entities: entitiesFromWorld(data) }), false));
+    expect(container.querySelector('[data-agent-id="Z3"]')).toHaveAttribute('data-zombie-type', 'walker');
+    expect(container.querySelector('[data-agent-id="Z3"] use')).toHaveAttribute('href', expect.stringContaining('-walker-'));
+    rerender(<svg><ZombieGlyph variant="sleeper" /></svg>);
+    expect(container.querySelector('[data-zombie-glyph="sleeper"]')).toHaveTextContent('Zz');
+  });
   it('verifica hashes, dimensiones PNG, frames, FPS, transparencia, licencia y fallback de cada atlas', () => {
     for (const asset of catalog.assets) {
       const png = readFileSync(`public/visualization/${asset.file}`);
@@ -188,6 +208,13 @@ describe('reloj, recursos y ciclo de vida', () => {
 });
 
 describe('LOD y separación de fuentes', () => {
+  it('conserva tipos de zombi separados incluso al agrupar en el mismo nodo', () => {
+    const threats: VisualEntity[] = (['walker', 'runner', 'horde'] as const).flatMap(zombieType => [1, 2].map(i => ({ ...entity, id: `${zombieType}${i}`, key: `${zombieType}${i}`, kind: 'zombie', zombieType })));
+    const grouped = levelOfDetail(threats, new Map([[entity.node, { x: 10, y: 10 }]]), { ...view, width: 900 }, true);
+    expect(grouped).toHaveLength(3);
+    expect(grouped.map(group => group.members.length)).toEqual([2, 2, 2]);
+    expect(grouped.every(group => new Set(group.members.map(entity => entity.zombieType)).size === 1)).toBe(true);
+  });
   it('agrupa cantidades exactas en nodos observados y filtra fuera del viewport', () => {
     const entities = Array.from({ length: 1000 }, (_, i) => ({ ...entity, id: String(i), key: `s:${i}` }));
     const nodes = new Map([[entity.node, { x: 10, y: 10 }]]);

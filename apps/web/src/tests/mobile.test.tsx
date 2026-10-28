@@ -30,6 +30,23 @@ function setup() {
 afterEach(() => { vi.restoreAllMocks(); vi.useRealTimers(); onlineManager.setOnline(true); });
 
 describe('visor ciudadano compartido', () => {
+  it('muestra el diagnóstico de inmovilidad publicado y la recogida asignada sin iniciar sesiones', async () => {
+
+    const { client, published, createSimulation, startFlood } = setup();
+    await screen.findByText(`Mapa en turno ${world.turn}`);
+    published.mockResolvedValue({ scenario: 'zombie_outbreak', availability: 'available', simulation: managedState({ ...world,
+      survivors: [{ ...world.survivors[0]!, stationary_turns: 4, immobility_reason: 'blocked_route' }],
+      fleet: [{ id: 'V-01', current_node: graph.nodes[1]!.id, path: [graph.nodes[1]!.id], passenger_ids: [], target_survivor_id: 'S-0001', target_shelter_id: graph.shelters[0]!.id, state: 'pickup', capacity: 4 }],
+    }) });
+    await client.invalidateQueries({ queryKey: ['published', 'zombie_outbreak'] });
+    fireEvent.click(screen.getByRole('button', { name: 'Tocar S-0001' }));
+    const detail = screen.getByRole('region', { name: 'Persona seleccionada' });
+    expect(detail).toHaveTextContent('Turnos sin desplazamiento: 4');
+    expect(detail).toHaveTextContent('Sin ruta por cierres');
+    expect(detail).toHaveTextContent('Recogida asignada: V-01 · conserva su decisión peatonal');
+    expect(createSimulation).not.toHaveBeenCalled();
+    expect(startFlood).not.toHaveBeenCalled();
+  });
   it('se incorpora al turno actual, selecciona ruta y no ofrece ni llama controles de creación', async () => {
     const { createSimulation, startFlood } = setup();
     expect(await screen.findByText(`Mapa en turno ${world.turn}`)).toBeInTheDocument();

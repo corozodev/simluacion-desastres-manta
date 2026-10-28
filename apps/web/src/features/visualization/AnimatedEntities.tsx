@@ -1,8 +1,10 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import type { GeoPoint, Graph } from '@corodev/contracts';
 import catalog from '../../../../../packages/visualization/catalog.json';
-import { compatible, direction, entityPath, geometryIndex, levelOfDetail, samplePath, visualLimits } from './model';
+import { compatible, direction, entityPath, geometryIndex, levelOfDetail, samplePath, visualLimits, zombieVariant } from './model';
 import type { Observation, Point, View } from './model';
+import { ZombieGlyph, zombieHalos, zombieVariants } from './ZombieGlyph';
+import type { ZombieVariant } from './model';
 
 export { catalog };
 // One RAF per map: positions update at at most 30 Hz; all atlas frames at 4 Hz.
@@ -60,14 +62,15 @@ export function AnimatedEntities({ graph, observation, project, view, active, cl
       const entity = item.members[0]!;
       const path = canMove && item.members.length === 1 && animated < maxAnimated ? entityPath(old.get(entity.key), entity, index) : [];
       const sprite = group.querySelector<SVGUseElement>('[data-sprite]');
-      const symbol = `${id}-${item.kind}-${direction(path)}`;
+      const symbol = `${id}-${item.kind === 'zombie' ? zombieVariant(entity) : item.kind}-${direction(path)}`;
       sprite?.setAttribute('href', `#${symbol}-idle`);
       if (path.length) { group.setAttribute('transform', `translate(${path[0]!.x},${path[0]!.y})`); animated++; tracks.push({ element: group, sprite, path, symbol }); }
     });
     const infections = canMove ? [...element.querySelectorAll<SVGCircleElement>('[data-infection-event]')].filter(circle => old.get(circle.getAttribute('data-infection-event') ?? '')?.state === 'active') : [];
     const atlasFrames = element.querySelectorAll<SVGImageElement>('[data-walk-frame]');
+    const zombieFrames = element.querySelectorAll<SVGGElement>('[data-zombie-walk-frame]');
     const ripples = element.querySelectorAll<SVGImageElement>('[data-water-frame]');
-    const resetFrames = () => { atlasFrames.forEach(image => image.setAttribute('x', '0')); ripples.forEach(image => image.setAttribute('x', '0')); };
+    const resetFrames = () => { atlasFrames.forEach(image => image.setAttribute('x', '0')); zombieFrames.forEach(group => group.removeAttribute('transform')); ripples.forEach(image => image.setAttribute('x', '0')); };
     resetFrames();
     if (!active || (!tracks.length && !hasWater && !infections.length)) return;
     const freshFor = Math.max(0, visualLimits.staleMs - (performance.now() - received.current.at));
@@ -78,6 +81,11 @@ export function AnimatedEntities({ graph, observation, project, view, active, cl
       const frame = Math.floor(elapsed / visualLimits.frameMs) % 4;
       if (frame !== lastFrame) {
         if (tracks.length) atlasFrames.forEach(image => image.setAttribute('x', String(-frame * 64)));
+        if (tracks.length) zombieFrames.forEach(group => {
+          const cadence = Number(group.dataset.cadence);
+          const stride = cadence > 0 && Math.floor(elapsed / cadence) % 2 ? 1 : -1;
+          group.setAttribute('transform', cadence ? `translate(0,${stride * .6})` : '');
+        });
         if (hasWater) ripples.forEach(image => image.setAttribute('x', String(-frame * 32)));
         lastFrame = frame;
       }
@@ -93,23 +101,25 @@ export function AnimatedEntities({ graph, observation, project, view, active, cl
   }, [observation, index, graph.version, display, active, hasWater, maxAnimated, id, failed]);
   const unit = view.width / mapWidth;
   return <g ref={root} data-layer="animated-entities" data-animation-active={active} data-rendered-entities={display.length}>
-    <defs>{catalog.assets.filter(asset => asset.entity !== 'water-decoration').flatMap(asset => asset.directions.flatMap((dir, row) => ['idle', 'walk'].map(state => <symbol key={`${asset.id}-${dir}-${state}`} id={`${id}-${asset.id}-${dir}-${state}`} viewBox="0 0 64 64" overflow="hidden"><image href={`/visualization/${asset.file}`} width={256} height={256} x={0} y={-row * 64} data-walk-frame={state === 'walk' ? true : undefined} onError={() => setFailed(previous => previous.includes(asset.id) ? previous : [...previous, asset.id])} /></symbol>)))}
+    <defs>{catalog.assets.filter(asset => asset.entity === 'survivor').flatMap(asset => asset.directions.flatMap((dir, row) => ['idle', 'walk'].map(state => <symbol key={`${asset.id}-${dir}-${state}`} id={`${id}-${asset.id}-${dir}-${state}`} viewBox="0 0 64 64" overflow="hidden"><image href={`/visualization/${asset.file}`} width={256} height={256} x={0} y={-row * 64} data-walk-frame={state === 'walk' ? true : undefined} onError={() => setFailed(previous => previous.includes(asset.id) ? previous : [...previous, asset.id])} /></symbol>)))}
+      {zombieVariants.flatMap(variant => ['north', 'south', 'east', 'west'].flatMap(dir => ['idle', 'walk'].map(state => <symbol key={`${variant.id}-${dir}-${state}`} id={`${id}-${variant.id}-${dir}-${state}`} viewBox="-18 -18 36 36"><g transform={dir === 'west' ? 'scale(-1,1)' : undefined}><g data-zombie-walk-frame={state === 'walk' ? true : undefined} data-cadence={variant.cadence_ms}><ZombieGlyph variant={variant.id as ZombieVariant} /></g></g></symbol>)))}
       <symbol id={`${id}-ripples`} viewBox="0 0 32 32" overflow="hidden"><image href="/visualization/ripples.png" width={128} height={32} data-water-frame onError={() => setFailed(previous => previous.includes('ripples') ? previous : [...previous, 'ripples'])} /></symbol>
     </defs>
     {display.map(item => {
       const entity = item.members[0]!, cluster = item.members.length > 1;
+      const variant = item.kind === 'zombie' ? zombieVariant(entity) : undefined;
+      const typeLabel = zombieVariants.find(item => item.id === variant)?.label;
       const status = ({ active: 'Activo', moving: 'En movimiento', chasing: 'Persiguiendo', resting: 'Quieto', waiting: 'Esperando', isolated: 'Aislado', evacuated: 'Refugio alcanzado', bitten: 'Mordido' } as Record<string, string>)[entity.state] ?? entity.state;
-      const label = cluster ? `${item.members.length} ${item.kind === 'zombie' ? 'amenazas visibles' : 'sobrevivientes'} · ${status}` : `${entity.id} · ${status}${entity.horde ? ' · 1 horda (integrantes no publicados)' : ''}`;
-      return <g key={item.key} data-display-key={item.key} data-agent-id={cluster ? undefined : entity.id} data-count={item.members.length} data-state={entity.state} className={`visual-entity escape-${item.kind} visual-${entity.state}`} transform={`translate(${item.point.x},${item.point.y})`} role={onSelect && !cluster ? 'button' : undefined} tabIndex={onSelect && !cluster ? 0 : undefined} aria-label={label} onPointerDown={event => event.stopPropagation()} onClick={event => { event.stopPropagation(); if (!cluster) onSelect?.(entity.id); }} onKeyDown={event => { if (['Enter', ' '].includes(event.key) && !cluster && onSelect) { event.preventDefault(); event.stopPropagation(); onSelect(entity.id); } }}>
+      const label = (cluster ? `${item.members.length} ${item.kind === 'zombie' ? 'amenazas visibles' : 'sobrevivientes'} · ${status}` : `${entity.id} · ${status}${entity.horde ? ' · 1 horda (integrantes no publicados)' : ''}`) + (typeLabel ? ` · ${typeLabel}` : '');
+      return <g key={item.key} data-display-key={item.key} data-agent-id={cluster ? undefined : entity.id} data-zombie-type={variant} data-count={item.members.length} data-state={entity.state} className={`visual-entity escape-${item.kind} visual-${entity.state}${variant ? ` zombie-${variant}` : ''}`} transform={`translate(${item.point.x},${item.point.y})`} role={onSelect && !cluster ? 'button' : undefined} tabIndex={onSelect && !cluster ? 0 : undefined} aria-label={label} onPointerDown={event => event.stopPropagation()} onClick={event => { event.stopPropagation(); if (!cluster) onSelect?.(entity.id); }} onKeyDown={event => { if (['Enter', ' '].includes(event.key) && !cluster && onSelect) { event.preventDefault(); event.stopPropagation(); onSelect(entity.id); } }}>
         <title>{label}</title><g transform={`scale(${unit})`}>
           {!cluster && entity.event === 'bitten' && <circle data-infection-event={entity.key} r={11} fill="none" stroke="var(--color-warning)" opacity={0} />}
-          {!cluster && item.kind === 'zombie' ? <path data-kind-shape="zombie" d="M-11,-5L-5,-12L7,-10L12,1L5,12L-9,8Z" className="visual-halo visual-halo-zombie" /> : <circle data-kind-shape={cluster ? 'cluster' : 'survivor'} r={cluster ? 13 : entity.id === selected ? 15 : 10} className={`visual-halo visual-halo-${item.kind}`} />}
+          {variant ? <path data-kind-shape={variant} d={zombieHalos[variant]} className="visual-halo visual-halo-zombie" /> : <circle data-kind-shape={cluster ? 'cluster' : 'survivor'} r={cluster ? 13 : entity.id === selected ? 15 : 10} className={`visual-halo visual-halo-${item.kind}`} />}
           {cluster ? <text className="visual-count" textAnchor="middle" dy=".35em">{item.members.length}</text> : <>
-            {failed.includes(item.kind) ? <g data-fallback={item.kind} className={`visual-fallback visual-fallback-${item.kind}`}>
-              {item.kind === 'zombie' ? <><circle cx={2} cy={-8} r={3.2} /><path d="M0,-4L-3,2L-2,6M-1,-3L-7,-1L-10,-3M1,-3L6,-1L10,-2M-3,2L-7,9M-2,6L3,11" /></> : <><circle cy={-9} r={3} /><path d="M0,-5V4M-6,1L0,-3L6,1M-6,1V7M6,1V7M0,4L-4,11M0,4L4,11" /></>}
-            </g> : <><use data-sprite href={`#${id}-${item.kind}-south-idle`} x={-14} y={item.kind === 'survivor' ? -28 : -14} width={28} height={28} />{item.kind === 'zombie' && <path className="visual-zombie-posture" d="M-5,-3L-11,-5L-14,-1M3,-4L9,-5L12,-2" />}</>}
+            {variant ? <use data-sprite href={`#${id}-${variant}-south-idle`} x={-18} y={-18} width={36} height={36} /> : failed.includes(item.kind) ? <g data-fallback={item.kind} className={`visual-fallback visual-fallback-${item.kind}`}>
+              <circle cy={-9} r={3} /><path d="M0,-5V4M-6,1L0,-3L6,1M-6,1V7M6,1V7M0,4L-4,11M0,4L4,11" />
+            </g> : <use data-sprite href={`#${id}-${item.kind}-south-idle`} x={-14} y={-28} width={28} height={28} />}
             {['bitten', 'evacuated', 'isolated', 'waiting'].includes(entity.state) && <text className="visual-state" x={10} y={-9}>{({ bitten: '×', evacuated: '✓', isolated: '!', waiting: 'Ⅱ' } as Record<string, string>)[entity.state]}</text>}
-            {entity.horde && <text className="visual-state" x={10} y={-9}>H</text>}
           </>}
         </g>
       </g>;

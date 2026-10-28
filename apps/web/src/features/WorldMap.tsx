@@ -10,6 +10,8 @@ import { useMapCamera } from './maps/useMapCamera';
 import { MapAttribution, MapTools, MapSource, MapWorkspaceOverlay } from './maps/MapTools';
 import type { MapWorkspaceSlots } from './maps/MapTools';
 import { mapPointer } from './visualization/pointer';
+import { ZombieLegend } from './visualization/ZombieGlyph';
+import { vehicleStates, vehicleWaitLabels } from './maps/mobilityLabels';
 
 export function routeGeometry(graph: Graph, survivor: Survivor): GeoPoint[] {
   const nodes = new Map(graph.nodes.map(node => [node.id, node]));
@@ -59,6 +61,13 @@ export function WorldMap({ graph, world, forecast, selected, lifecycle, onSelect
   const { view } = camera;
   const [layers, setLayers] = useState<Record<WorldLayer, boolean>>({ roads: true, survivors: true, zombies: true, shelters: true, routes: true, origins: true, fleet: true, forecast: false });
   const [tileUnavailable, setTileUnavailable] = useState(false);
+  const [selectedVehicleId, setSelectedVehicleId] = useState('');
+  const selectedVehicle = layers.fleet && !pickingPosition ? world?.fleet?.find(vehicle => vehicle.id === selectedVehicleId) : undefined;
+  useEffect(() => { setSelectedVehicleId(''); }, [lifecycle?.id, world?.simulation?.run_id, graph.version]);
+  const closeVehicle = () => {
+    [...(camera.svg.current?.querySelectorAll<SVGGElement>('[data-vehicle-id]') ?? [])].find(element => element.dataset.vehicleId === selectedVehicleId)?.focus();
+    setSelectedVehicleId('');
+  };
   const projection = useMemo(() => mapProjection(graph), [graph]);
   useEffect(() => {
     if (!selectedShelterId) return;
@@ -68,6 +77,16 @@ export function WorldMap({ graph, world, forecast, selected, lifecycle, onSelect
   }, [selectedShelterId, graph.version]);
   const tiles = useMemo(() => mapTiles(projection, view), [projection, view]);
   const vehicleGeometry = useMemo(() => geometryIndex(graph, projection.point), [graph, projection]);
+  const hordeNodes = useMemo(() => {
+    if (world?.graph_version !== graph.version) return [];
+    const hordes = new Set(world.zombies.filter(zombie => zombie.type === 'horde' && zombie.awake).map(zombie => zombie.current_node));
+    const blocked = new Set(hordes);
+    for (const edge of graph.edges) {
+      if (hordes.has(edge.from)) blocked.add(edge.to);
+      if (hordes.has(edge.to)) blocked.add(edge.from);
+    }
+    return [...blocked];
+  }, [graph, world]);
   const visibleObservation = useMemo(() => observation && ({ ...observation, entities: observation.entities.filter(entity => entity.kind === 'survivor' ? layers.survivors : layers.zombies) }), [observation, layers.survivors, layers.zombies]);
   const forecastNodes = useMemo(() => forecast && forecast.turn === world?.turn ? [...forecast.node_risks].filter(item => item.one_turn_probability > 0).sort((a, b) => b.one_turn_probability - a.one_turn_probability || a.node_id.localeCompare(b.node_id)).slice(0, 64) : [], [forecast, world?.turn]);
   const points = (coordinates: GeoPoint[]) => coordinates.map(coordinate => { const p = projection.point(coordinate); return `${p.x},${p.y}`; }).join(' ');
@@ -90,7 +109,7 @@ export function WorldMap({ graph, world, forecast, selected, lifecycle, onSelect
   };
   return <figure className="escape-map map-workspace">
     {hud && <div className="map-workspace-hud" data-map-ui>{hud}</div>}
-    <MapTools onReset={camera.reset} scale={900 / view.width}><details className="map-disclosure"><summary>Capas</summary><div className="map-layer-panel"><fieldset><legend>Mapa y evacuación</legend>{(Object.keys(layerLabels) as WorldLayer[]).map(layer => <label key={layer}><input type="checkbox" checked={layers[layer]} onChange={event => setLayers(previous => ({ ...previous, [layer]: event.target.checked }))} />{layerLabels[layer]}</label>)}</fieldset></div></details><details className="map-disclosure"><summary>Visualización</summary><div className="map-layer-panel"><VisualizationControls controls={controls} /></div></details></MapTools>
+    <MapTools onReset={camera.reset} scale={900 / view.width}><details className="map-disclosure"><summary>Capas</summary><div className="map-layer-panel"><fieldset><legend>Mapa y evacuación</legend>{(Object.keys(layerLabels) as WorldLayer[]).map(layer => <label key={layer}><input type="checkbox" checked={layers[layer]} onChange={event => setLayers(previous => ({ ...previous, [layer]: event.target.checked }))} />{layerLabels[layer]}</label>)}</fieldset><ZombieLegend /></div></details><details className="map-disclosure"><summary>Visualización</summary><div className="map-layer-panel"><VisualizationControls controls={controls} /></div></details></MapTools>
     {pickingPosition && <p className="map-pick-instruction" role="status">Selecciona una ubicación para el refugio. Elige con clic; Enter selecciona el centro de la vista. Escape cancela.</p>}
     <div className={`map-stage ${pickingPosition ? 'map-picking' : ''}`}><svg ref={camera.svg} viewBox={`${view.x} ${view.y} ${view.width} ${view.height}`} role="img" tabIndex={0} aria-labelledby="escape-map-title escape-map-description" {...camera.bindings} onKeyDown={event => {
       if (pickingPosition && event.key === 'Enter' && event.target === event.currentTarget) { event.preventDefault(); pickAt({ x: view.x + view.width / 2, y: view.y + view.height / 2 }); }
@@ -104,6 +123,10 @@ export function WorldMap({ graph, world, forecast, selected, lifecycle, onSelect
       {layers.origins && !!graph.coverage?.length && <polygon points={points(graph.coverage)} className="escape-coverage"><title>Envolvente de referencia urbana; no es el límite oficial ni representa todas las calles</title></polygon>}
       {layers.origins && (graph.spawn_zones ?? []).map(zone => <g key={zone.id}><polygon points={points(zone.geometry)} className="escape-spawn-zone"><title>{zone.name} · zona de aparición · {zone.source}</title></polygon>{zone.geometry[0] && <text x={projection.point(zone.geometry[0]).x} y={projection.point(zone.geometry[0]).y - 8} className="escape-zone-label">{zone.name}</text>}</g>)}
       {layers.roads && roads}
+      {layers.zombies && <g data-layer="horde-blocked-nodes" pointerEvents="none">{hordeNodes.map(node => {
+        const point = projection.nodes.get(node);
+        return point ? <circle key={node} data-horde-blocked-node={node} cx={point.x} cy={point.y} r={5 * view.width / 900} className="escape-horde-blocked"><title>Nodo bloqueado por horda visible; no representa un radio métrico</title></circle> : null;
+      })}</g>}
       {layers.forecast && forecastNodes.map(item => {
         const point = projection.nodes.get(item.node_id);
         return point ? <circle key={item.node_id} data-forecast-node={item.node_id} cx={point.x} cy={point.y} r={9} className="escape-runner-forecast" opacity={.2 + .6 * item.one_turn_probability}><title>{`Predicción del modelo, no calibrada · ${item.node_id} · próximo turno: ${(item.one_turn_probability * 100).toFixed(1)}% · dos turnos: ${(item.two_turn_probability * 100).toFixed(1)}%`}</title></circle> : null;
@@ -120,10 +143,10 @@ export function WorldMap({ graph, world, forecast, selected, lifecycle, onSelect
           }
         }
         const colocated = vehicles.slice(0, index).filter(other => other.current_node === vehicle.current_node).length;
-        const stateLabel = { idle: 'Disponible', pickup: 'En recogida', transport: 'En traslado', waiting: 'En espera' }[vehicle.state] ?? vehicle.state;
-        return point ? <g key={vehicle.id} data-vehicle-id={vehicle.id}>
+        const stateLabel = vehicleStates[vehicle.state] ?? vehicle.state;
+        return point ? <g key={vehicle.id} data-vehicle-id={vehicle.id} role={pickingPosition ? undefined : 'button'} tabIndex={pickingPosition ? undefined : 0} aria-label={`Seleccionar camioneta ${vehicle.id}`} aria-pressed={selectedVehicleId === vehicle.id} onPointerDown={event => { if (!pickingPosition) event.stopPropagation(); }} onClick={event => { if (!pickingPosition) { event.stopPropagation(); setSelectedVehicleId(vehicle.id); } }} onKeyDown={event => { if (!pickingPosition && ['Enter', ' '].includes(event.key)) { event.preventDefault(); event.stopPropagation(); setSelectedVehicleId(vehicle.id); } }}>
           {path.length > 1 && <polyline data-vehicle-path={vehicle.id} points={path.map(item => `${item.x},${item.y}`).join(' ')} className="escape-rescue-path"><title>Recorrido real de {vehicle.id} en el último turno; no es una ruta futura</title></polyline>}
-          <g transform={`translate(${point.x},${point.y})`}><title>{`Camioneta ${vehicle.id} · ${vehicle.passenger_ids.length}/${vehicle.capacity} pasajeros · ${stateLabel}${vehicle.target_shelter_id ? ` · destino ${vehicle.target_shelter_id}` : ''}`}</title><rect className="escape-rescue-vehicle" x={-9} y={-6} width={18} height={12} rx={3} /><text className="escape-rescue-label" y={3}>{vehicle.passenger_ids.length}/{vehicle.capacity}</text><text className="escape-rescue-id" y={-10 - colocated * 11}>{vehicle.id}</text></g>
+          <g transform={`translate(${point.x},${point.y})`}><title>{`Camioneta ${vehicle.id} · ${vehicle.passenger_ids.length}/${vehicle.capacity} pasajeros · ${stateLabel}${vehicle.target_survivor_id ? ` · objetivo ${vehicle.target_survivor_id}` : ''}${vehicle.target_shelter_id ? ` · destino ${vehicle.target_shelter_id}` : ''}${vehicle.wait_reason ? ` · ${vehicleWaitLabels[vehicle.wait_reason] ?? vehicle.wait_reason}` : ''}`}</title><rect className="escape-rescue-vehicle" x={-9} y={-6} width={18} height={12} rx={3} /><text className="escape-rescue-label" y={3}>{vehicle.passenger_ids.length}/{vehicle.capacity}</text><text className="escape-rescue-id" y={-10 - colocated * 11}>{vehicle.id}</text></g>
         </g> : null;
       })}
       {layers.routes && selected && <polyline points={points(routeGeometry(graph, selected))} className="escape-planned-route"><title>Ruta publicada de {selected.id}</title></polyline>}
@@ -136,8 +159,13 @@ export function WorldMap({ graph, world, forecast, selected, lifecycle, onSelect
         return point ? <g key={shelter.id} data-shelter-id={shelter.id} className={selectedShelterId === shelter.id ? 'map-shelter-selected' : undefined} role={onSelectShelter && !pickingPosition ? 'button' : undefined} tabIndex={onSelectShelter && !pickingPosition ? 0 : undefined} aria-label={onSelectShelter && !pickingPosition ? `Localizar refugio ${shelter.id}` : undefined} aria-pressed={onSelectShelter && !pickingPosition ? selectedShelterId === shelter.id : undefined} onPointerDown={event => { if (!pickingPosition) event.stopPropagation(); }} onClick={event => { if (!pickingPosition) { event.stopPropagation(); onSelectShelter?.(shelter.id); } }} onKeyDown={event => { if (!pickingPosition && ['Enter', ' '].includes(event.key)) { event.preventDefault(); event.stopPropagation(); onSelectShelter?.(shelter.id); } }}><rect x={point.x - 6} y={point.y - 6} width="12" height="12" rx="2" data-shelter-capacity={capacityState} className={`escape-shelter escape-shelter-${capacityState}`}><title>Refugio ficticio {shelter.id} · {capacityLabel} · {shelter.occupancy}/{shelter.capacity} ocupadas · {reserved} reservadas · {available} disponibles</title></rect><text x={point.x + 10} y={point.y + 4} className="escape-map-label">{shelter.id}</text></g> : null;
       })}
       {preview && <circle data-layer="shelter-preview" cx={preview.x} cy={preview.y} r={10} className="map-preview"><title>Ubicación provisional pendiente de confirmar</title></circle>}
-    </svg><MapAttribution /><MapWorkspaceOverlay panel={panel} metrics={metrics} /></div>
-    <figcaption>{layers.survivors && <span className="escape-legend-survivor">● Superviviente</span>}{layers.zombies && <span className="escape-legend-zombie">● Zombi visible</span>}{layers.shelters && <span className="escape-legend-shelter">■ Refugio ficticio · verde disponible / ámbar pocas plazas / rojo sin plazas</span>}{layers.origins && <span>▱ Zonas de aparición · ┄ Referencia urbana</span>}{layers.routes && <span>— Ruta seleccionada</span>}{layers.roads && <span>Rojo: vía bloqueada</span>}{layers.fleet && !!world?.fleet?.length && <span>▣ Camioneta · pasajeros/capacidad · ┄ recorrido del último turno</span>}{layers.forecast && <span>◌ Predicción del modelo, no calibrada · hasta 64 nodos</span>}</figcaption>
+    </svg><MapAttribution /><MapWorkspaceOverlay panel={panel} metrics={metrics} />
+      {selectedVehicle && <section className="map-popup" aria-label="Camioneta seleccionada" data-map-ui onKeyDown={event => { if (event.key === 'Escape') { event.stopPropagation(); closeVehicle(); } }}>
+        <button type="button" className="map-popup-close" aria-label="Cerrar detalle de camioneta" onClick={closeVehicle}>×</button><h3>Camioneta {selectedVehicle.id}</h3>
+        <dl><div><dt>Estado</dt><dd>{vehicleStates[selectedVehicle.state] ?? selectedVehicle.state}</dd></div><div><dt>Pasajeros</dt><dd>{selectedVehicle.passenger_ids.length}/{selectedVehicle.capacity}</dd></div><div><dt>Objetivo</dt><dd>{selectedVehicle.target_survivor_id || 'Sin asignar'}</dd></div><div><dt>Refugio</dt><dd>{selectedVehicle.target_shelter_id || 'Sin asignar'}</dd></div>{selectedVehicle.wait_reason && <div><dt>Motivo de espera</dt><dd>{vehicleWaitLabels[selectedVehicle.wait_reason] ?? selectedVehicle.wait_reason}</dd></div>}</dl>
+      </section>}
+    </div>
+    <figcaption>{layers.survivors && <span className="escape-legend-survivor">● Superviviente</span>}{layers.zombies && <span>Tipos de zombis: leyenda en Capas</span>}{layers.shelters && <span className="escape-legend-shelter">■ Refugio ficticio · verde disponible / ámbar pocas plazas / rojo sin plazas</span>}{layers.origins && <span>▱ Zonas de aparición · ┄ Referencia urbana</span>}{layers.routes && <span>— Ruta seleccionada</span>}{layers.roads && <span>Rojo: vía bloqueada</span>}{layers.fleet && !!world?.fleet?.length && <span>▣ Camioneta · pasajeros/capacidad · ┄ recorrido del último turno</span>}{layers.forecast && <span>◌ Predicción del modelo, no calibrada · hasta 64 nodos</span>}</figcaption>
     {tileUnavailable && <p role="status" className="map-source-note">Fondo no disponible; conservamos la red vectorial OpenStreetMap.</p>}<MapSource graph={graph} />
   </figure>;
 }

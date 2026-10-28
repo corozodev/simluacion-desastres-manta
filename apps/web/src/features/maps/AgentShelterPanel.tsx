@@ -1,6 +1,7 @@
 import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { MapPin, Route, Users, X } from 'lucide-react';
 import type { Shelter } from '@corodev/contracts';
+import { immobilityLabels } from './mobilityLabels';
 import './agent-panel.css';
 
 export interface PanelAgent {
@@ -8,6 +9,10 @@ export interface PanelAgent {
   state: string;
   shelterId?: string;
   routeAvailable?: boolean;
+  stationaryTurns?: number;
+  immobilityReason?: string;
+  vehicleId?: string;
+  rescueVehicleId?: string;
 }
 
 export interface AgentShelterPanelProps {
@@ -86,7 +91,13 @@ export function AgentShelterPanel({ shelters, agents = [], selectedAgentId = '',
         {editor && <div className="agent-panel-editor">{editor}</div>}
       </div> : <div role="tabpanel" id={`${id}-agents`} aria-labelledby={`${id}-agents-tab`} className="agent-panel-agents">
         <label className="agent-panel-search">Buscar por ID<input ref={searchInput} type="search" value={query} placeholder="S-0001" onChange={event => { setPage(0); if (onSearch) onSearch(event.target.value); else setDraftSearch(event.target.value); }} /></label>
-        {selected && <div className="agent-panel-selection" role="status"><span><Route size={13} aria-hidden="true" />{selected.id} · {selected.routeAvailable === false ? 'Sin ruta publicada; agente seleccionado en el mapa' : 'Ruta resaltada en el mapa'}</span><button type="button" onClick={() => { onSelectAgent(''); searchInput.current?.focus(); }}>Ocultar ruta</button></div>}
+        {selected && <div className="agent-panel-selection" role="status"><span><Route size={13} aria-hidden="true" />{selected.id} · {selected.routeAvailable === false ? 'Sin ruta publicada; agente seleccionado en el mapa' : 'Ruta resaltada en el mapa'}</span><button type="button" onClick={() => { onSelectAgent(''); searchInput.current?.focus(); }}>Ocultar ruta</button>
+          <dl className="agent-mobility-details"><dt>Estado</dt><dd>{agentStates[selected.state] ?? selected.state}</dd><dt>Destino</dt><dd>{selected.shelterId || 'Sin asignar'}</dd>
+            {selected.stationaryTurns !== undefined && <><dt>Turnos sin desplazamiento</dt><dd>{selected.stationaryTurns}</dd></>}
+            {selected.immobilityReason && <><dt>Motivo</dt><dd>{immobilityLabels[selected.immobilityReason] ?? selected.immobilityReason}</dd></>}
+            {selected.vehicleId ? <><dt>A bordo</dt><dd>{selected.vehicleId}</dd></> : selected.rescueVehicleId && <><dt>Recogida asignada</dt><dd>{selected.rescueVehicleId} · conserva su decisión peatonal</dd></>}
+          </dl>
+        </div>}
         <div className="agent-panel-scroll agent-panel-table-scroll"><table className="agent-panel-table"><thead><tr><th>Superviviente</th><th>Estado</th><th>Refugio</th><th>Acción</th></tr></thead><tbody>{rows.map(agent => <tr key={agent.id} aria-selected={agent.id === selectedAgentId} className={agent.id === selectedAgentId ? 'agent-row-selected' : undefined}><th scope="row">{agent.id}</th><td>{agentStates[agent.state] ?? agent.state}</td><td>{agent.shelterId || 'Sin asignar'}</td><td><button type="button" aria-label={`Ver ruta de ${agent.id}`} aria-pressed={agent.id === selectedAgentId} onClick={() => onSelectAgent(agent.id)}>Ver ruta</button></td></tr>)}</tbody></table>{!matching.length && <p className="agent-panel-empty">{agents.length ? 'No hay supervivientes para esta búsqueda.' : 'Todavía no hay supervivientes publicados.'}</p>}</div>
         {pages > 1 && <nav className="agent-panel-pagination" aria-label="Páginas de supervivientes"><button type="button" disabled={currentPage === 0} onClick={() => setPage(currentPage - 1)}>Anterior</button><span>{currentPage + 1}/{pages} · {matching.length} resultados</span><button type="button" disabled={currentPage + 1 >= pages} onClick={() => setPage(currentPage + 1)}>Siguiente</button></nav>}
       </div>}

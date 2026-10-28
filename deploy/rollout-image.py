@@ -61,10 +61,21 @@ class Docker:
     def remove(self, name):
         self.request('DELETE', f'/containers/{quote(name, safe="")}?v=false')
 
-    def create(self, name, source, image, backend_id=None):
+    def create(self, name, source, image, backend_id=None, image_binaries=False):
         config = copy.deepcopy(source['Config'])
         config['Image'] = image
         config['HostConfig'] = copy.deepcopy(source['HostConfig'])
+        if image_binaries:
+            # Historical observability releases mounted executables over the
+            # image. Remove only those two overrides; keep all data mounts.
+            binaries = {'/usr/local/bin/corodev-server', '/usr/local/bin/corodev-flood-lab'}
+            host = config['HostConfig']
+            if host.get('Binds') is not None:
+                host['Binds'] = [bind for bind in host['Binds'] if bind.split(':')[1] not in binaries]
+            if host.get('Mounts') is not None:
+                host['Mounts'] = [mount for mount in host['Mounts'] if not (mount.get('Type') == 'bind' and mount.get('Target') in binaries)]
+            image_labels = self.request('GET', '/images/' + quote(image, safe='') + '/json').get('Config', {}).get('Labels') or {}
+            config['Labels'] = {**(config.get('Labels') or {}), **image_labels}
         if backend_id:
             config['HostConfig']['NetworkMode'] = 'container:' + backend_id
             # Inspect resolves an inherited hostname; Docker create forbids
@@ -100,6 +111,7 @@ def main():
     parser.add_argument('--suffix', default='before-mantasim')
     parser.add_argument('--backend', default='corodev-backend')
     parser.add_argument('--laboratory', default='corodev-flood-lab')
+    parser.add_argument('--image-binaries', action='store_true', help='Use the new image executables, removing only historical executable bind mounts')
     args = parser.parse_args()
     docker = Docker()
     target_image = docker.request('GET', '/images/' + quote(args.image, safe='') + '/json')['Id']
@@ -141,9 +153,9 @@ def main():
         docker.rename(laboratory, previous_lab)
         docker.stop(backend)
         docker.rename(backend, previous_backend)
-        new_backend = docker.create(backend, old_backend, args.image)
+        new_backend = docker.create(backend, old_backend, args.image, image_binaries=args.image_binaries)
         docker.start(backend)
-        docker.create(laboratory, old_lab, args.image, new_backend)
+        docker.create(laboratory, old_lab, args.image, new_backend, image_binaries=args.image_binaries)
         docker.start(laboratory)
         for _ in range(60):
             try:

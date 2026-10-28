@@ -12,6 +12,7 @@ class RescueVehicle {
     required this.targetShelterId,
     required this.state,
     required this.capacity,
+    this.waitReason,
   });
 
   final String id;
@@ -22,6 +23,7 @@ class RescueVehicle {
   final String targetShelterId;
   final String state;
   final int capacity;
+  final String? waitReason;
 
   factory RescueVehicle.fromJson(Map<String, dynamic> json) => RescueVehicle(
     id: json['id'] as String,
@@ -32,6 +34,7 @@ class RescueVehicle {
     targetShelterId: json['target_shelter_id'] as String,
     state: json['state'] as String,
     capacity: json['capacity'] as int,
+    waitReason: json['wait_reason'] == null ? null : json['wait_reason'] as String,
   );
 
   Map<String, dynamic> toJson() => {
@@ -43,6 +46,7 @@ class RescueVehicle {
     'target_shelter_id': targetShelterId,
     'state': state,
     'capacity': capacity,
+    if (waitReason != null) 'wait_reason': waitReason!,
   };
 }
 
@@ -326,6 +330,8 @@ class Survivor {
     required this.targetShelterId,
     this.spawnZoneId,
     this.vehicleId,
+    this.stationaryTurns,
+    this.immobilityReason,
     required this.plannedRoute,
   });
 
@@ -335,6 +341,8 @@ class Survivor {
   final String targetShelterId;
   final String? spawnZoneId;
   final String? vehicleId;
+  final int? stationaryTurns;
+  final String? immobilityReason;
   final List<String> plannedRoute;
 
   factory Survivor.fromJson(Map<String, dynamic> json) => Survivor(
@@ -344,6 +352,8 @@ class Survivor {
     targetShelterId: json['target_shelter_id'] as String,
     spawnZoneId: json['spawn_zone_id'] == null ? null : json['spawn_zone_id'] as String,
     vehicleId: json['vehicle_id'] == null ? null : json['vehicle_id'] as String,
+    stationaryTurns: json['stationary_turns'] == null ? null : json['stationary_turns'] as int,
+    immobilityReason: json['immobility_reason'] == null ? null : json['immobility_reason'] as String,
     plannedRoute: (json['planned_route'] as List).map((value) => value as String).toList(),
   );
 
@@ -354,6 +364,8 @@ class Survivor {
     'target_shelter_id': targetShelterId,
     if (spawnZoneId != null) 'spawn_zone_id': spawnZoneId!,
     if (vehicleId != null) 'vehicle_id': vehicleId!,
+    if (stationaryTurns != null) 'stationary_turns': stationaryTurns!,
+    if (immobilityReason != null) 'immobility_reason': immobilityReason!,
     'planned_route': plannedRoute.map((value) => value).toList(),
   };
 }

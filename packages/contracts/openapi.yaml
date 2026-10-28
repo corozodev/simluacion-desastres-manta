@@ -1769,6 +1769,10 @@ components:
         target_shelter_id: { type: string }
         state: { type: string }
         capacity: { type: integer, minimum: 4, maximum: 4 }
+        wait_reason:
+          type: string
+          description: Motivo observable de espera; se omite durante una tarea activa. No garantiza que exista una alternativa segura.
+          enum: [ not_evaluated, no_active_targets, targets_claimed, no_safe_pickup_route, no_available_safe_shelter, no_useful_pickup, blocked_movement ]
     RescueFleetMetrics:
       type: object
       additionalProperties: false
@@ -2205,6 +2209,14 @@ components:
         target_shelter_id: { type: string }
         spawn_zone_id: { type: string }
         vehicle_id: { type: string }
+        stationary_turns:
+          type: integer
+          minimum: 0
+          description: Turnos consecutivos completados sin cambiar de nodo. Se congela al terminar la participación del agente.
+        immobility_reason:
+          type: string
+          description: Diagnóstico del último turno sin desplazamiento, basado sólo en observaciones; wait_with_route no prueba una causa interna del algoritmo. Una recogida asignada no obliga a esperar.
+          enum: [ no_geographic_route, blocked_route, visible_threat_route, shelter_full, wait_with_route, scenario_wait, aboard, timeout, decision_error, invalid_movement ]
         planned_route:
           type: array
           items: { type: string }

@@ -783,6 +783,11 @@ export interface components {
             target_shelter_id: string;
             state: string;
             capacity: number;
+            /**
+             * @description Motivo observable de espera; se omite durante una tarea activa. No garantiza que exista una alternativa segura.
+             * @enum {string}
+             */
+            wait_reason?: "not_evaluated" | "no_active_targets" | "targets_claimed" | "no_safe_pickup_route" | "no_available_safe_shelter" | "no_useful_pickup" | "blocked_movement";
         };
         RescueFleetMetrics: {
             pickups: number;
@@ -1132,6 +1137,13 @@ export interface components {
             target_shelter_id: string;
             spawn_zone_id?: string;
             vehicle_id?: string;
+            /** @description Turnos consecutivos completados sin cambiar de nodo. Se congela al terminar la participación del agente. */
+            stationary_turns?: number;
+            /**
+             * @description Diagnóstico del último turno sin desplazamiento, basado sólo en observaciones; wait_with_route no prueba una causa interna del algoritmo. Una recogida asignada no obliga a esperar.
+             * @enum {string}
+             */
+            immobility_reason?: "no_geographic_route" | "blocked_route" | "visible_threat_route" | "shelter_full" | "wait_with_route" | "scenario_wait" | "aboard" | "timeout" | "decision_error" | "invalid_movement";
             planned_route: string[];
         };
         WorldEvent: {

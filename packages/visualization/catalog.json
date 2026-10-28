@@ -125,5 +125,36 @@
       ],
       "fallback": "local SVG/CSS symbol; static on resource error"
     }
-  ]
+  ],
+  "zombie_variants": [
+    {
+      "id": "walker",
+      "label": "Caminante",
+      "color_token": "zombieWalker",
+      "cadence_ms": 500,
+      "shape": "erguida y encorvada"
+    },
+    {
+      "id": "runner",
+      "label": "Corredor",
+      "color_token": "zombieRunner",
+      "cadence_ms": 250,
+      "shape": "inclinada con trazos de velocidad"
+    },
+    {
+      "id": "horde",
+      "label": "Horda",
+      "color_token": "zombieHorde",
+      "cadence_ms": 750,
+      "shape": "tres siluetas y H; no representa el número de integrantes"
+    },
+    {
+      "id": "sleeper",
+      "label": "Dormido (oculto)",
+      "color_token": "zombieSleeper",
+      "cadence_ms": 0,
+      "shape": "recostada y Zz; sólo leyenda mientras está oculto"
+    }
+  ],
+  "zombie_renderer": "SVG local compartido en ZombieGlyph.tsx; AnimatedEntities conserva el reloj, LOD y trayectorias observadas. El atlas zombie histórico se conserva sin cambios."
 }

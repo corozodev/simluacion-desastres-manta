@@ -13,6 +13,7 @@ import (
 	"testing"
 	"time"
 
+	"corodev/evacuation/internal/decision"
 	"corodev/evacuation/internal/httpapi"
 	"corodev/evacuation/internal/world"
 )
@@ -49,6 +50,46 @@ func invoke(h http.Handler, body, key string) *httptest.ResponseRecorder {
 }
 
 const validBody = `{"sobrevivienteId":"S-0001","nodoActual":"A","turno":1}`
+
+func TestMobilityDiagnosticsKeepExactPasoOverHTTP(t *testing.T) {
+	store := world.NewStore()
+	_, w := fixture()
+	w.Survivors[0].StationaryTurns = 3
+	w.Survivors[0].ImmobilityReason = "wait_with_route"
+	w.Survivors[0].TargetShelterID = "R3"
+	w.Survivors[0].PlannedRoute = []string{"A", "B"}
+	server := httptest.NewServer(build(t, store, decision.New(), 0))
+	defer server.Close()
+	for _, passenger := range []bool{false, true} {
+		want := "B"
+		if passenger {
+			w.Survivors[0].VehicleID = "V-01"
+			w.Survivors[0].ImmobilityReason = "aboard"
+			want = "A"
+		}
+		store.Publish(w)
+		req, err := http.NewRequest("POST", server.URL+"/paso", bytes.NewBufferString(validBody))
+		if err != nil {
+			t.Fatal(err)
+		}
+		req.Header.Set("x-api-key", "test-only-key")
+		req.Header.Set("Content-Type", "application/json")
+		resp, err := server.Client().Do(req)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var body map[string]any
+		err = json.NewDecoder(resp.Body).Decode(&body)
+		resp.Body.Close()
+		if err != nil || resp.StatusCode != 200 || len(body) != 1 || body["siguienteNodo"] != want {
+			t.Fatalf("passenger=%v: status=%d body=%v error=%v", passenger, resp.StatusCode, body, err)
+		}
+		after, _ := store.Load()
+		if after.Survivors[0].StationaryTurns != 3 || after.Survivors[0].CurrentNode != "A" {
+			t.Fatal("HTTP decision changed the observable state")
+		}
+	}
+}
 
 func TestStepValidationAndExactResponse(t *testing.T) {
 	store := world.NewStore()

@@ -165,6 +165,7 @@ func (s *Simulator) initialize(cfg Config) error {
 		if v.VehicleID != "" {
 			return fmt.Errorf("initial survivors cannot already be passengers")
 		}
+		v.StationaryTurns, v.ImmobilityReason = 0, ""
 		v.PlannedRoute = append([]string{}, v.PlannedRoute...)
 	}
 	sort.Slice(s.survivors, func(i, j int) bool { return s.survivors[i].ID < s.survivors[j].ID })
@@ -260,6 +261,14 @@ func (s *Simulator) Step(ctx context.Context) error {
 	started := time.Now()
 	defer func() { s.diagnostic.turn = append(s.diagnostic.turn, time.Since(started)) }()
 	s.turn++
+	// One origin per active agent, including passengers. Counting once after
+	// the turn avoids treating boarding or each vehicle segment as another wait.
+	origins := make([]string, len(s.survivors))
+	for i, v := range s.survivors {
+		if v.Status == world.Active {
+			origins[i] = v.CurrentNode
+		}
+	}
 	events := []world.Event{}
 	for _, event := range s.events {
 		if event.Turn != s.turn {
@@ -302,6 +311,24 @@ func (s *Simulator) Step(ctx context.Context) error {
 			next = from
 		}
 		s.recordDecision(*v, from, next, routes, valid, result.timeout)
+		v.ImmobilityReason = ""
+		if from == next {
+			switch {
+			case result.timeout:
+				v.ImmobilityReason = "timeout"
+			case result.err != nil:
+				v.ImmobilityReason = "decision_error"
+			case !valid:
+				v.ImmobilityReason = "invalid_movement"
+			case s.scenario.waiting(v.ID):
+				v.ImmobilityReason = "scenario_wait"
+			default:
+				v.ImmobilityReason = reason(routes, from)
+				if v.ImmobilityReason == "" {
+					v.ImmobilityReason = "wait_with_route"
+				}
+			}
+		}
 		v.CurrentNode = next
 		if s.planner == nil {
 			v.PlannedRoute = []string{}
@@ -341,6 +368,24 @@ func (s *Simulator) Step(ctx context.Context) error {
 	}
 	if s.planner != nil || s.config.RescueFleet {
 		s.reconcileReservations()
+	}
+	for i := range s.survivors {
+		v := &s.survivors[i]
+		if origins[i] == "" {
+			continue
+		}
+		if origins[i] == v.CurrentNode {
+			v.StationaryTurns++
+			if v.VehicleID != "" {
+				v.ImmobilityReason = "aboard"
+			}
+		} else {
+			v.StationaryTurns = 0
+			v.ImmobilityReason = ""
+		}
+		if v.Status != world.Active {
+			v.ImmobilityReason = ""
+		}
 	}
 	// Final failure labels use post-admission occupancy. Decision diagnostics
 	// above deliberately retain the pre-movement routes each request observed.

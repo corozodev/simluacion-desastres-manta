@@ -26,6 +26,10 @@ abstract final class SpookyTokens {
   static const Color roadClosed = Color(0xFFE04C49);
   static const Color roadRestricted = Color(0xFFD79E35);
   static const Color shelterAvailable = Color(0xFF27A67C);
+  static const Color zombieWalker = Color(0xFFA3B85C);
+  static const Color zombieRunner = Color(0xFFFB754B);
+  static const Color zombieHorde = Color(0xFFB38AFF);
+  static const Color zombieSleeper = Color(0xFF94A3B8);
   static const double spacing1 = 4.0;
   static const double spacing2 = 8.0;
   static const double spacing3 = 12.0;

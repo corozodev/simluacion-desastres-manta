@@ -46,6 +46,9 @@
 .map-workspace .map-popup:focus-within { outline: 2px solid var(--color-focus); outline-offset: 2px; }
 .map-shelter-selected rect { stroke: var(--color-focus); stroke-width: 4px; vector-effect: non-scaling-stroke; }
 [data-shelter-id][role=button] { cursor: pointer; }
+[data-vehicle-id][role=button] { cursor: pointer; }
+[data-vehicle-id][role=button]:focus-visible { outline: none; }
+[data-vehicle-id][role=button]:focus-visible .escape-rescue-vehicle, [data-vehicle-id][aria-pressed=true] .escape-rescue-vehicle { stroke: var(--color-focus); stroke-width: 3px; }
 [data-shelter-id][role=button]:focus-visible { outline: none; }
 [data-shelter-id][role=button]:focus-visible rect { stroke: var(--color-focus); stroke-width: 4px; }
 .map-source-strip { display: flex; align-items: baseline; flex-wrap: wrap; gap: 6px 14px; padding: 7px 0 0; color: var(--color-textSecondary); font-size: 10px; line-height: 1.6; }

@@ -70,13 +70,15 @@ type Zombie struct {
 }
 
 type Survivor struct {
-	VehicleID       string   `json:"vehicle_id,omitempty"`
-	ID              string   `json:"id"`
-	CurrentNode     string   `json:"current_node"`
-	Status          string   `json:"status"`
-	TargetShelterID string   `json:"target_shelter_id"`
-	PlannedRoute    []string `json:"planned_route"`
-	SpawnZoneID     string   `json:"spawn_zone_id,omitempty"`
+	VehicleID        string   `json:"vehicle_id,omitempty"`
+	ID               string   `json:"id"`
+	CurrentNode      string   `json:"current_node"`
+	Status           string   `json:"status"`
+	TargetShelterID  string   `json:"target_shelter_id"`
+	PlannedRoute     []string `json:"planned_route"`
+	SpawnZoneID      string   `json:"spawn_zone_id,omitempty"`
+	StationaryTurns  int      `json:"stationary_turns"`
+	ImmobilityReason string   `json:"immobility_reason,omitempty"`
 }
 
 // RescueVehicle publishes actual traversal only. A passenger remains active and
@@ -90,6 +92,7 @@ type RescueVehicle struct {
 	TargetShelterID  string   `json:"target_shelter_id"`
 	State            string   `json:"state"`
 	Capacity         int      `json:"capacity"`
+	WaitReason       string   `json:"wait_reason,omitempty"`
 }
 
 type RescueFleetMetrics struct {

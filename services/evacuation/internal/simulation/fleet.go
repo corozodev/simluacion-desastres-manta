@@ -20,7 +20,7 @@ func (s *Simulator) initializeFleet() {
 	sort.Slice(depots, func(i, j int) bool { return depots[i].ID < depots[j].ID })
 	for i := 0; i < fleetSize; i++ {
 		node := depots[i%len(depots)].NodeID
-		s.fleet = append(s.fleet, world.RescueVehicle{ID: fmt.Sprintf("V-%02d", i+1), CurrentNode: node, Path: []string{node}, PassengerIDs: []string{}, State: "idle", Capacity: vehicleCapacity})
+		s.fleet = append(s.fleet, world.RescueVehicle{ID: fmt.Sprintf("V-%02d", i+1), CurrentNode: node, Path: []string{node}, PassengerIDs: []string{}, State: "idle", Capacity: vehicleCapacity, WaitReason: "not_evaluated"})
 	}
 }
 
@@ -118,15 +118,25 @@ func (s *Simulator) fleetDestination(node string, passengers []string, preferred
 func (s *Simulator) fleetPickup(v *world.RescueVehicle, claimed map[string]bool) {
 	bestScore := math.Inf(-1)
 	v.TargetSurvivorID, v.TargetShelterID = "", ""
+	active, unclaimed, reachable, deliverable := false, false, false, false
 	for _, candidate := range s.survivors {
-		if candidate.Status != world.Active || candidate.VehicleID != "" || claimed[candidate.ID] {
+		if candidate.Status != world.Active || candidate.VehicleID != "" {
 			continue
 		}
+		active = true
+		if claimed[candidate.ID] {
+			continue
+		}
+		unclaimed = true
 		pickup := s.fleetRoute(v.CurrentNode, candidate.CurrentNode)
 		if len(pickup) == 0 {
 			continue
 		}
+		reachable = true
 		sh, path := s.fleetDestination(candidate.CurrentNode, []string{candidate.ID}, candidate.TargetShelterID)
+		if len(path) > 0 {
+			deliverable = true
+		}
 		if len(path) < 2 {
 			continue
 		} // Already at a shelter: admission needs no truck.
@@ -162,8 +172,21 @@ func (s *Simulator) fleetPickup(v *world.RescueVehicle, claimed map[string]bool)
 	if v.TargetSurvivorID != "" {
 		claimed[v.TargetSurvivorID] = true
 		v.State = "pickup"
+		v.WaitReason = ""
 	} else {
 		v.State = "idle"
+		switch {
+		case !active:
+			v.WaitReason = "no_active_targets"
+		case !unclaimed:
+			v.WaitReason = "targets_claimed"
+		case !reachable:
+			v.WaitReason = "no_safe_pickup_route"
+		case !deliverable:
+			v.WaitReason = "no_available_safe_shelter"
+		default:
+			v.WaitReason = "no_useful_pickup"
+		}
 	}
 }
 
@@ -278,14 +301,29 @@ func (s *Simulator) moveFleet(events *[]world.Event) {
 		return
 	}
 	claimed := map[string]bool{}
-	for _, v := range s.fleet {
-		if person := s.survivorByID(v.TargetSurvivorID); person != nil && person.Status == world.Active && person.VehicleID == "" {
+	// Release impossible pickups before ANY vehicle selects a task. Otherwise a
+	// later vehicle's stale claim can idle an earlier, reachable rescuer all turn.
+	for i := range s.fleet {
+		v := &s.fleet[i]
+		person := s.survivorByID(v.TargetSurvivorID)
+		valid := len(v.PassengerIDs) == 0 && person != nil && person.Status == world.Active && person.VehicleID == "" && !claimed[person.ID]
+		if valid {
+			_, delivery := s.fleetDestination(person.CurrentNode, []string{person.ID}, v.TargetShelterID)
+			valid = len(delivery) > 1 && len(s.fleetRoute(v.CurrentNode, person.CurrentNode)) > 0
+		}
+		if !valid {
+			v.TargetSurvivorID = ""
+			if len(v.PassengerIDs) == 0 {
+				v.TargetShelterID = ""
+			}
+		} else {
 			claimed[person.ID] = true
 		}
 	}
 	for i := range s.fleet {
 		v := &s.fleet[i]
 		v.Path = []string{v.CurrentNode}
+		v.WaitReason = ""
 		for moves := 0; moves <= 2; moves++ {
 			s.fleetDeliver(v, events)
 			if len(v.PassengerIDs) == 0 {
@@ -310,6 +348,7 @@ func (s *Simulator) moveFleet(events *[]world.Event) {
 				v.State = "transport"
 				if len(path) == 0 {
 					v.State = "waiting"
+					v.WaitReason = "no_available_safe_shelter"
 				}
 			} else if target := s.survivorByID(v.TargetSurvivorID); target != nil && target.Status == world.Active && target.VehicleID == "" {
 				// Recheck destination viability every turn: a full refuge cancels
@@ -317,10 +356,12 @@ func (s *Simulator) moveFleet(events *[]world.Event) {
 				sh, delivery := s.fleetDestination(target.CurrentNode, []string{target.ID}, v.TargetShelterID)
 				if len(delivery) > 1 {
 					v.TargetShelterID = sh
+					v.State = "pickup"
 					path = s.fleetRoute(v.CurrentNode, target.CurrentNode)
 				} else {
 					delete(claimed, v.TargetSurvivorID)
 					v.TargetSurvivorID, v.TargetShelterID, v.State = "", "", "idle"
+					v.WaitReason = "no_available_safe_shelter"
 				}
 			}
 			if moves == 2 || len(path) < 2 {
@@ -331,6 +372,7 @@ func (s *Simulator) moveFleet(events *[]world.Event) {
 			from, to := v.CurrentNode, path[1]
 			if !s.index.CanMove(from, to, s.blocked) || s.hordeBlockedNodes()[to] {
 				v.State = "waiting"
+				v.WaitReason = "blocked_movement"
 				break
 			}
 			v.CurrentNode = to

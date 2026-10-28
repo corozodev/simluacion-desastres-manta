@@ -163,3 +163,128 @@ el temporal recogió 63 y entregó 55. No todos los recogidos llegaron vivos al
 refugio. El máximo p95 por ejecución fue 8,120 ms; no es un SLA AWS. Con semilla 42
 la flota **no mejoró la supervivencia general** respecto de sus pares sin flota.
 La [matriz y metodología](pruebas.md) registra resultados, alcance y evidencia.
+
+## Revisión de movilidad y visualización — 28/10/2026
+
+Auditoría del código vigente y fixtures unitarias breves. No se reprodujo la
+incidencia original de Ronda 3: no se aportó su snapshot ni su configuración
+completa. La flota corresponde a PRO experimental; `official` sigue sin flota.
+
+### Camionetas
+
+Se confirmó un fallo de orden: las recogidas reclamadas se registraban antes de
+validar su accesibilidad. Un vehículo posterior podía retener un objetivo
+inaccesible mientras uno anterior, capaz de rescatarlo a otro refugio, quedaba
+inactivo ese turno. La regresión controlada fallaba antes de corregirlo. Ahora
+`moveFleet` libera primero los objetivos inválidos de toda la flota y después
+asigna tareas. Se conservan puntuación de utilidad, seguridad y desempates.
+
+| Pregunta de auditoría | Resultado |
+| --- | --- |
+| 1. ¿Qué ocurre al llegar al refugio? | Se comprueban colisión y capacidad; los pasajeros activos pasan a evacuados, aumenta la ocupación y se vacía el vehículo. |
+| 2. ¿Descargar evalúa nuevas tareas? | Sí, en la misma iteración. Abordar/descargar no consume aristas; sólo puede utilizar las restantes de las dos permitidas. |
+| 3. ¿Puede atascarse en idle por falta de actualización? | No hay un latch de idle. Sí existía la demora de un turno por reserva inaccesible descrita arriba. |
+| 4. ¿Se vuelve a evaluar en turnos posteriores? | Sí. Una prueba parte de espera sin utilidad e inicia recogida al aparecer una amenaza observable que hace útil el rescate. |
+| 5. ¿Se consideran supervivientes alcanzables aún activos? | Sí: activos, a pie, sin otra reclamación, con recogida y refugio seguros y utilidad positiva. |
+| 6. ¿Otros vehículos reservan objetivos? | Sí, para evitar perseguir duplicados. La depuración previa elimina reclamaciones imposibles antes de asignar al primer vehículo. |
+| 7. ¿Se liberan al morir, evacuar o quedar inaccesibles? | Las recogidas se revalidan antes de asignar; las reservas de plazas se reconstruyen desde agentes activos y se reconcilian tras muerte/entrega/reasignación. Pasajeros sin refugio admisible liberan su destino reservado. |
+| 8. ¿Se respetan restricciones reales? | BFS usa aristas transitables y dirigidas, amenazas despiertas, nodo/vecinos de hordas y cruces opuestos observados. No consulta sleepers ocultos. |
+| 9. ¿Hay un error descarga → idle permanente? | No se confirmó. La prueba descarga y comienza otra recogida sin exceder dos aristas. Se corrigió la reserva obsoleta, no el ciclo de descarga. |
+| 10. ¿Cuándo es legítimo permanecer en el refugio? | Sin objetivos activos/libres, sin ruta segura, sin refugio con plaza o sin utilidad positiva. La ida/vuelta desde depósito puede no ahorrar turnos. |
+
+`wait_reason` identifica la categoría de espera sin buscar rutas adicionales
+para diagnosticarla: usa los resultados del recorrido de selección existente.
+La revalidación de objetivos antes de asignar sí usa las comprobaciones de ruta
+necesarias para liberar la reclamación inválida. Las regresiones mantienen cinco
+vehículos, cuatro plazas, entrega posterior al embarque, exposición a mordidas,
+conservación y hasta dos aristas reales por turno. No se afirma doble velocidad
+métrica ni que una flota deba permanecer siempre en movimiento.
+
+### Supervivientes
+
+El flujo sigue siendo snapshot coherente → HTTP autenticado `/paso` → routing →
+validación de vecino/cierre/horda → aplicación serial del turno. Timeout o fallo
+HTTP dejan al agente en su nodo; turno/nodo obsoleto produce conflicto HTTP.
+Los códigos observables existentes se reutilizan en `immobility_reason`:
+
+| Categoría | Motivos y alcance |
+| --- | --- |
+| Bloqueo | `no_geographic_route`, `blocked_route`, `visible_threat_route`, `shelter_full`; describen conectividad y ocupación observables. El grafo de inicio validado ya exige acceso geográfico a refugios. |
+| Espera válida posible | `wait_with_route`: hay conectividad, pero no se publica el motivo interno exacto. Incluye decisiones temporales de esperar y falta de asignación por reservas; no acredita por sí solo que esperar sea óptimo. `scenario_wait` corresponde a una espera explícita del escenario hidráulico. |
+| Pasajero / rescate | `aboard` si permanece en el mismo nodo dentro de una camioneta. La recogida asignada se muestra desde el objetivo real de flota; a pie continúa decidiendo y no se fabrica una espera de rescate. |
+| Fallo | `timeout`, `decision_error` e `invalid_movement`, diferenciados de las esperas válidas. |
+
+`stationary_turns` cuenta turnos consecutivos, se reinicia al cambiar de nodo y
+se congela en terminales. Los pasajeros se cuentan una vez, independientemente
+del número de segmentos. Se reutilizan los mapas de disponibilidad ya calculados
+por turno y lecturas O(1) por persona; no se añade routing por persona para
+explicar la inmovilidad. El informe privado de diagnóstico sigue separado.
+
+La histéresis existente limita cambios pequeños de costo/riesgo. Reversiones e
+invalidaciones siguen registradas offline; no se confirmó un bug de oscilación
+ni de caché obsoleta que justifique alterar algoritmos. El pronóstico temporal
+puede preferir esperar en un nodo seguro. No se forzó movimiento para animar el
+mapa ni se cambiaron políticas zombie, RNG o el evaluador FASE 1.
+
+### Visualización y archivos
+
+La selección de persona en `AgentShelterPanel` y `/mobile` muestra estado,
+destino y diagnósticos disponibles. La selección de camioneta reutiliza el popup
+compacto del mapa y muestra ID, estado, carga, objetivo, refugio y espera; soporta
+teclado y devuelve el foco al cerrar. Las variantes, colores, agrupación y límites
+se describen en el [catálogo visual](../packages/visualization/README.md#variantes-de-zombis).
+La leyenda está en **Capas** y conserva las claves existentes de supervivientes,
+refugios y camionetas. Dormidos ocultos no generan marcadores.
+
+Archivos funcionales: `internal/simulation/fleet.go`, `simulation.go` y
+`internal/world/models.go` en Go; `Escape.tsx`, `WorldMap.tsx`,
+`maps/AgentShelterPanel.tsx`, `maps/mobilityLabels.ts`, `mobile/MobileViewer.tsx`,
+`visualization/AnimatedEntities.tsx`, `model.ts`, `ZombieGlyph.tsx` y sus CSS en
+React. Las fuentes compartidas son `openapi.yaml`, `tokens.json` y `catalog.json`;
+los derivados TypeScript, JSON Schema y Dart se regeneraron. Pruebas en
+`simulation/fleet_test.go`, `mobility_test.go`, `httpapi/api_test.go` y los cuatro
+archivos React de mapa, panel, visualización y visor móvil.
+
+### Validación focalizada y límites
+
+Comandos ejecutados (desde raíz; filtros deliberados):
+
+```sh
+npm run contracts:validate
+npm run contracts:generate
+npm run tokens:generate
+npm run generated:check
+node tools/scripts/go.mjs fmt ./internal/world ./internal/simulation ./internal/httpapi
+node tools/scripts/go.mjs vet ./internal/simulation ./internal/world ./internal/httpapi
+node tools/scripts/go.mjs test ./internal/simulation -run 'TestFleet|TestIdleFleet|TestObservableImmobility|TestStationary|TestSleeperHiddenUntilWithinTwoNodesThenWalkerCadence' -count=1 -v
+node tools/scripts/go.mjs test ./internal/httpapi -run 'TestMobilityDiagnosticsKeepExactPasoOverHTTP|TestStepValidationAndExactResponse' -count=1
+node tools/scripts/go.mjs test ./internal/decision -run 'TestPhase7TemporalSearchUsesObservableForecastAndCanWait|TestOnboardSurvivorNeverReceivesWalkingDecision' -count=1
+npm run test --workspace @corodev/web -- src/tests/phase7-map.test.tsx src/tests/agent-panel.test.tsx src/tests/visualization.test.tsx
+npm run test --workspace @corodev/web -- src/tests/mobile.test.tsx -t 'diagnóstico de inmovilidad'
+npm run typecheck --workspace @corodev/web
+npx eslint apps/web/src/features/{Escape.tsx,WorldMap.tsx,maps/AgentShelterPanel.tsx,maps/mobilityLabels.ts,mobile/MobileViewer.tsx,visualization/AnimatedEntities.tsx,visualization/ZombieGlyph.tsx,visualization/model.ts} apps/web/src/tests/{phase7-map.test.tsx,agent-panel.test.tsx,visualization.test.tsx,mobile.test.tsx}
+git diff --check
+```
+
+Las pruebas Go específicas pasan: flota, motivos/cuenta de espera, activación de
+sleepers y `/paso` con HTTP real autenticado y motor de routing real para peatón
+y pasajero. La respuesta conserva exclusivamente `siguienteNodo`. Las pruebas
+React (38 casos aprobados) comprueban siluetas, agrupación por tipo, selección/leyenda, nodos de horda,
+privacidad de sleepers, movimiento reducido y ausencia de reloj por entidad.
+El caso móvil seleccionado pasa; sus otros ocho casos se omiten deliberadamente.
+ESLint sobre los archivos TypeScript modificados, `typecheck`, `go vet` de los
+tres paquetes afectados, derivados y `git diff --check` pasan. Una comprobación
+local de los tres documentos editados verificó sus 25 enlaces/anclas relativos;
+no se ejecutó el verificador global de documentación.
+
+Fallos durante preparación: la regresión de reserva confirmó el bug antes del
+arreglo; se corrigieron fixtures de depósito/distancia de amenaza. Una fixture
+geográficamente desconectada fue rechazada por el validador y retirada, porque
+no representa un mundo inicial admitido. No se relajó la validación del grafo.
+
+No se ejecutaron suites globales, E2E, benchmarks, rondas completas, pruebas de
+pintura en navegador ni Flutter. No se midió p95 nuevo, capacidad ni FPS: esas
+mediciones quedan pendientes fuera de este alcance. La revalidación de flota y
+el diagnóstico ocurren en el escritor del turno, sin nuevos cálculos en el
+handler `/paso`; esto no sustituye una medición de latencia. No hubo operaciones
+AWS, cambios productivos, commits ni despliegues.

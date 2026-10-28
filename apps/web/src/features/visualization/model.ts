@@ -1,14 +1,16 @@
-import type { GeoPoint, Graph, ScenarioSnapshot, WorldSnapshot } from '@corodev/contracts';
+import type { GeoPoint, Graph, ScenarioSnapshot, WorldSnapshot, Zombie } from '@corodev/contracts';
 
 export type Point = { x: number; y: number };
 export type View = Point & { width: number; height: number };
-export type VisualEntity = { key: string; id: string; kind: 'survivor' | 'zombie'; node: string; state: string; path?: string[]; horde?: boolean; event?: string };
+export type ZombieVariant = Zombie['type'];
+export type VisualEntity = { key: string; id: string; kind: 'survivor' | 'zombie'; node: string; state: string; path?: string[]; horde?: boolean; zombieType?: ZombieVariant; event?: string };
+export const zombieVariant = (entity: VisualEntity): ZombieVariant => entity.zombieType ?? (entity.horde ? 'horde' : 'walker');
 export type Observation = { id: string; graphVersion: string; scenario: string; tick: number; running: boolean; connected: boolean; interval: number; entities: VisualEntity[] };
 export const visualLimits = { maxAnimated: 120, maxIndividual: 240, frameMs: 250, maxInterpolationMs: 1200, staleMs: 5000 } as const;
 
 export function entitiesFromWorld(world?: WorldSnapshot): VisualEntity[] {
   return [...(world?.survivors ?? []).filter(s => !s.vehicle_id).map(s => ({ key: `survivor:${s.id}`, id: s.id, kind: 'survivor' as const, node: s.current_node, state: s.status, event: world?.events.some(event => event.entity_id === s.id && event.type === 'bitten' && event.turn === world.turn) ? 'bitten' : undefined })),
-    ...(world?.zombies ?? []).filter(z => z.type !== 'sleeper' || z.awake).map(z => ({ key: `zombie:${z.id}`, id: z.id, kind: 'zombie' as const, node: z.current_node, state: z.movement_state, path: z.path, horde: z.type === 'horde' }))];
+    ...(world?.zombies ?? []).filter(z => z.type !== 'sleeper' || z.awake).map(z => ({ key: `zombie:${z.id}`, id: z.id, kind: 'zombie' as const, node: z.current_node, state: z.movement_state, path: z.path, horde: z.type === 'horde', zombieType: z.type === 'sleeper' ? 'walker' as const : z.type }))];
 }
 export function entitiesFromFlood(scenario?: ScenarioSnapshot): VisualEntity[] {
   return (scenario?.agents ?? []).map(a => ({ key: `survivor:${a.id}`, id: a.id, kind: 'survivor', node: a.current_node, state: a.state }));
@@ -75,7 +77,8 @@ export function levelOfDetail(entities: VisualEntity[], nodes: Map<string, Point
   const buckets = new Map<string, DisplayEntity>();
   for (const { entity, point } of visible) {
     // Keep kinds and final states distinct; selected entities remain discoverable.
-    const key = entity.id === selected ? entity.key : aggregate ? `${entity.kind}:${entity.state}:${Math.floor(point.x / cell)}:${Math.floor(point.y / cell)}` : clustering ? `${entity.kind}:${entity.state}:${entity.node}` : entity.key;
+    const kind = entity.kind === 'zombie' ? zombieVariant(entity) : entity.kind;
+    const key = entity.id === selected ? entity.key : aggregate ? `${kind}:${entity.state}:${Math.floor(point.x / cell)}:${Math.floor(point.y / cell)}` : clustering ? `${kind}:${entity.state}:${entity.node}` : entity.key;
     const bucket = buckets.get(key);
     if (bucket) bucket.members.push(entity);
     else buckets.set(key, { key, point, members: [entity], kind: entity.kind, state: entity.state });

@@ -234,6 +234,12 @@ Esos montajes prevalecen sobre los binarios de una imagen nueva; la actualizaci�
 requiere una release que cambie también los montajes revisados, o su retirada
 explícita en el plan autorizado. No ejecutar este ejemplo a ciegas en esa versión.
 
+Tras confirmar que la imagen nueva contiene ambos ejecutables, añadir
+`--image-binaries` retira únicamente los bind mounts de
+`/usr/local/bin/corodev-server` y `/usr/local/bin/corodev-flood-lab`. Conserva los
+montajes de datos y la configuración privada; el recovery guarda los montajes
+originales para revertir. Las etiquetas de la imagen nueva identifican su commit.
+
 `start-backend.sh`, `rollout.sh` y `rollback.sh` forman el bundle inicial y
 gestionan sólo el backend. No actualizan por sí solos el par backend/laboratorio
 ni sus montajes actuales; para ese caso usar el procedimiento anterior.
