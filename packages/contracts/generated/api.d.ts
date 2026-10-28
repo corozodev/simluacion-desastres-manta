@@ -108,74 +108,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/health": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Comprueba la disponibilidad de la API. */
-        get: operations["getHealth"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/demo/items": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Lista elementos de demostración con búsqueda y paginación. */
-        get: operations["listDemoItems"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/demo/items/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Obtiene un elemento por su identificador. */
-        get: operations["getDemoItem"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/demo/submit": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Valida y acepta un formulario de demostración sin persistencia. */
-        post: operations["submitDemo"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/simulation/catalog": {
         parameters: {
             query?: never;
@@ -1347,35 +1279,6 @@ export interface components {
             service: string;
             version: string;
         };
-        DemoItem: {
-            id: string;
-            title: string;
-            description: string;
-            /** @enum {string} */
-            status: "active" | "pending" | "completed";
-            /** Format: date-time */
-            createdAt: string;
-        };
-        Pagination: {
-            page: number;
-            pageSize: number;
-            total: number;
-        };
-        ItemListResponse: {
-            data: components["schemas"]["DemoItem"][];
-            pagination: components["schemas"]["Pagination"];
-        };
-        SubmitRequest: {
-            /** @description Se recortan espacios exteriores; debe contener al menos un carácter no blanco. */
-            title: string;
-            description?: string;
-        };
-        SubmitResponse: {
-            submissionId: string;
-            /** @enum {string} */
-            status: "accepted";
-            message: string;
-        };
         ErrorDetail: {
             field: string;
             message: string;
@@ -2252,104 +2155,6 @@ export interface operations {
             409: components["responses"]["Conflict"];
             503: components["responses"]["Unavailable"];
             504: components["responses"]["Timeout"];
-        };
-    };
-    getHealth: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description API disponible. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HealthResponse"];
-                };
-            };
-            500: components["responses"]["InternalError"];
-        };
-    };
-    listDemoItems: {
-        parameters: {
-            query?: {
-                page?: number;
-                pageSize?: number;
-                q?: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Página de resultados; una búsqueda sin coincidencias devuelve data vacío. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ItemListResponse"];
-                };
-            };
-            400: components["responses"]["ValidationError"];
-            500: components["responses"]["InternalError"];
-        };
-    };
-    getDemoItem: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Elemento encontrado. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DemoItem"];
-                };
-            };
-            400: components["responses"]["ValidationError"];
-            404: components["responses"]["NotFound"];
-            500: components["responses"]["InternalError"];
-        };
-    };
-    submitDemo: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["SubmitRequest"];
-            };
-        };
-        responses: {
-            /** @description Formulario aceptado; la demo no persiste datos. */
-            202: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SubmitResponse"];
-                };
-            };
-            400: components["responses"]["ValidationError"];
-            500: components["responses"]["InternalError"];
         };
     };
     getSimulationCatalog: {
@@ -4319,11 +4124,6 @@ export type ScenarioSnapshot = components['schemas']['ScenarioSnapshot'];
 export type StepRequest = components['schemas']['StepRequest'];
 export type StepResponse = components['schemas']['StepResponse'];
 export type HealthResponse = components['schemas']['HealthResponse'];
-export type DemoItem = components['schemas']['DemoItem'];
-export type Pagination = components['schemas']['Pagination'];
-export type ItemListResponse = components['schemas']['ItemListResponse'];
-export type SubmitRequest = components['schemas']['SubmitRequest'];
-export type SubmitResponse = components['schemas']['SubmitResponse'];
 export type ErrorDetail = components['schemas']['ErrorDetail'];
 export type ErrorResponse = components['schemas']['ErrorResponse'];
 export type ErrorResponseError = components['schemas']['ErrorResponseError'];

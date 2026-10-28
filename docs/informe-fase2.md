@@ -1,5 +1,7 @@
 # Informe FASE 2 — Manta, rutas y preparación AWS
 
+> Informe histórico de la versión indicada. Los resultados se conservan; los flujos, despliegue y componentes vigentes están en [arquitectura](arquitectura.md) y [pruebas](pruebas.md).
+
 Entrega local del 26 de octubre de 2026, America/Guayaquil. Código funcional, datos OSM y mediciones; no se inició FASE 3. El informe, datos y motor de FASE 1 se conservan. No se inicializó Git ni se crearon commits. Este documento se genera de JSON reales con `python3 tools/qa/report_phase2.py`.
 
 ## A. Diagnóstico inicial
@@ -39,7 +41,7 @@ Las cachés inmutables separan búsqueda de ruta y cambios de objetivos del pron
 
 El coordinador prepara asignaciones/reservas antes de publicar. Usa escasez/regret e histéresis 15%, sin sobreasignar. La simulación mantiene autoridad sobre posiciones/capacidad/ocupación, libera reservas y convierte la reserva en ocupación. Un escape no reserva plaza. `/paso` solo lee el plan coherente. El motor FASE 1 permanece congelado exclusivamente en `internal/evaluation/phase1`.
 
-A geografía, B diagnóstico/simulación, C rutas/predictor, D coordinación y E infraestructura/clientes trabajaron con archivos exclusivos; el coordinador estabilizó contratos, evaluador, HTTP, integración, regresiones y medición. Ver [algoritmo](algoritmo-fase2.md), [reservas](refugios-fase2.md) y [reglas](reglas-simulacion.md).
+A geografía, B diagnóstico/simulación, C rutas/predictor, D coordinación y E infraestructura/clientes trabajaron con archivos exclusivos; el coordinador estabilizó contratos, evaluador, HTTP, integración, regresiones y medición. Ver [algoritmo](algoritmo-fase2.md), [reservas](nivel-pro.md#refugios-capacidad-reservas-y-concurrencia) y [reglas](reglas-simulacion.md).
 
 ## E. Evaluación comparativa
 
@@ -143,7 +145,7 @@ Docker detectó un defecto de integración real: un wildcard IPv 4 anunciaba `::
 
 Preparados Docker multi-stage con digests, health, reinicio, HTTPS Caddy, CloudFormation EC 2/S 3 privado/CloudFrontOAC/CloudWatch/Budget, IAM mínimo, release/rollback y documentación de red/secretos. La imagen final usa v2 y escenario urbano compatibles. **No se desplegó AWS:** faltan CLI/acceso autenticado, cuenta y región autorizadas. No existe URL pública comprobada, gasto real, Budget creado ni captura `budget.png`. No se inventaron esas evidencias.
 
-Estimación ilustrativa documentada: **24,03 USD/mes** para un ejemplo `us-east-1`,730 horas, con fuentes oficiales y supuestos; no es cargo observado ni cotización. La región debe confirmarse antes de usar la plantilla; el Budget precede a recursos con consumo. Ver [despliegue/rollback](despliegue-aws.md), [costos](costos.md) y [diagrama](arquitectura.svg).
+Estimación ilustrativa documentada: **24,03 USD/mes** para un ejemplo `us-east-1`,730 horas, con fuentes oficiales y supuestos; no es cargo observado ni cotización. La región debe confirmarse antes de usar la plantilla; el Budget precede a recursos con consumo. Ver [despliegue/rollback](despliegue.md), [costos](costos.md) y [diagrama](arquitectura.svg).
 
 ## H. Clientes
 

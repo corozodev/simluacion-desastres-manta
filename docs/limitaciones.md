@@ -4,8 +4,9 @@
 
 Estado al **27 de octubre de 2026, Ecuador**. La [matriz de pruebas](pruebas.md)
 delimita las capacidades verificadas.
-El repositorio público y su historial real fueron confirmados durante la
-auditoría; los cambios de esta consolidación siguen locales, sin commits ni push.
+La publicación base y el ajuste de observabilidad tienen registros separados en
+[despliegue](despliegue.md). Las fuentes incluyen la limpieza y la instrumentación registrada; sus binarios
+coinciden con los activos. Un cambio documental no requiere sustituir servicios.
 
 ## Modelo y alcance
 
@@ -57,21 +58,21 @@ auditoría; los cambios de esta consolidación siguen locales, sin commits ni pu
 | Requisito | Evidencia / estado | Acción antes de enviar |
 | --- | --- | --- |
 | Repositorio público | CONFIRMADO mediante lectura GitHub `get_repo` | Publicado `47f51fa`; completar los entregables pendientes |
-| Historial real | CONFIRMADO: 80 commits existentes, HEAD de partida `b26ff44`; preservados | Nuevos commits reales publicados con autorización |
-| README completo | PUBLICADO | Publicado; revisar campos pendientes del propietario |
+| Historial real | CONFIRMADO: historial existente preservado, sin reescritura | Mantener el historial y revisar cada publicación |
+| README completo | DOCUMENTADO | Completar los campos pendientes del propietario |
 | Arquitectura enlazada | PUBLICADO: documento, fuente editable y SVG | Publicado junto con README |
 | Captura AWS Budget | PENDIENTE: no existe `docs/budget.png` | Incorporar captura auténtica sanitizada y verificar alerta |
-| Costos mensuales | MODELO DOCUMENTADO: USD 77,68/mes bajo los supuestos de [costos](costos.md) | Validar recursos, horas, tarifas y rubros variables; no equivale a factura |
+| Costos mensuales | MODELO DOCUMENTADO: USD 78,28/mes bajo los supuestos de [costos](costos.md) | Validar recursos, horas, tarifas y rubros variables; no equivale a factura |
 | Gasto real del evento | PENDIENTE: Budget consultado a nivel de cuenta, sin atribución al proyecto | Completar cifra, período, fecha y fuente de consola |
-| URL pública | CONFIRMADO: nueva versión `47f51fa` publicada y verificada por HTTPS | Revisar desde otra red; futuras actualizaciones requieren autorización |
+| URL pública | CONFIRMADO en la verificación del 27 de octubre; hashes y alcance en [despliegue](despliegue.md) | Revisar desde otra red; futuras actualizaciones requieren autorización |
 | `POST /paso` documentado | PUBLICADO, autenticación preservada | Provisionar clave fuera del repositorio y acordar runtime de evaluación |
 | Simulador documentado | PUBLICADO, rondas completas aceleradas medidas | Ejecutar los quince minutos nominales si se requiere esa evidencia |
 | Método de medición | PUBLICADO en [pruebas](pruebas.md) | Confirmar definición del jurado para supervivencia/eficiencia y aceptación del modelo vehicular |
 | Presentación PDF/PPT/PPTX ≤20 MB | PENDIENTE: no hay archivo de presentación | Preparar y adjuntar; no se generaron diapositivas |
 
-La publicación Git y AWS autorizada quedó completada; su [registro](../deploy/deployment-delivery-20261027.json)
+La publicación Git y AWS de la entrega base quedó completada; su [registro](../deploy/deployment-delivery-20261027.json)
 identifica versión, artefactos y comprobaciones. Para la entrega, completar los
-campos pendientes del propietario. Nuevos cambios requieren su revisión y
+campos pendientes del propietario. La limpieza actual no modifica AWS. Nuevos cambios requieren revisión y
 autorización de publicación; no confundir health HTTP con rendimiento sostenido.
 
 Entrega indicada: **miércoles 28 de octubre de 2026, 10:00 (Ecuador)**.

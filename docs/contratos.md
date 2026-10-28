@@ -73,16 +73,12 @@ unset SIM_TOKEN SIM_REQUEST_KEY SIM_ID SIM_TMP
 
 El token no se coloca en URLs, capturas, logs o variables `VITE_*`. React lo guarda en `sessionStorage` por pestaña para recuperar una sesión; sigue estando expuesto al JavaScript de esa pestaña. Tras `404/410` elimina la credencial y permite iniciar otra ejecución explícitamente. Las sesiones son privadas y locales a un único proceso; perder el proceso pierde los resultados.
 
-Para cambiar contratos: editar YAML, ejecutar `npm run contracts:validate` y `npm run contracts:generate`; nunca editar los modelos generados a mano. La validación contra Go real se ejecuta con `npm run test:contracts:simulations`.
+La validación de sesiones contra Go real se reproduce con `npm run test:contracts:simulations`; la generación se describe al final.
 
 
-## Referencia histórica Track A
+## Paso, estado y geografía
 
-Se conserva a continuación la descripción FASE 1/2. Sus afirmaciones sobre ausencia de controles administrativos y composición de cuatro refugios corresponden a esa entrega; para las sesiones FASE 5 y sus subconjuntos de refugios rige la sección anterior.
-
-### Contratos Track A
-
-Fuente: `packages/contracts/openapi.yaml`. Generar con `npm run contracts:generate`; validar con `npm run contracts:validate` y `npm run generated:check`. Los tipos TypeScript, DTOs Dart y JSON Schema draft-07 son derivados. Se conservan las operaciones demo previas en el servicio mock del puerto 3001.
+El contrato obligatorio de `/paso` se conserva sin cambios. Los siguientes endpoints existen en el runtime preparado de compatibilidad y en la composición HTTP privada de cada motor.
 
 | Método y ruta Go | Autorización | Resultado |
 | --- | --- | --- |
@@ -115,16 +111,16 @@ Errores con sobre compartido y `x-request-id` generado por el servidor:
 
 Estados relevantes: 400 entrada inválida; 401 credencial incorrecta; 404 recurso ausente; 405 método; 409 turno/nodo/estado incoherente; 503 snapshot no disponible; 504 contexto agotado. El presupuesto de 450 ms del servidor incluye lectura del cuerpo, adquisición del snapshot y cálculo; la lectura de red tiene un deadline explícito. El cliente del simulador impone un máximo de 500 ms incluyendo transporte/decodificación. Un fallo o exceso de plazo deja al sobreviviente quieto, con métricas y evento observable. El simulador siempre revalida la respuesta antes de aplicarla.
 
-La composición HTTP exige cuatro refugios, conforme al esquema de la competición. Las bibliotecas internas de grafo admiten fixtures menores para pruebas unitarias.
+La composición de competición exige cuatro refugios. Las sesiones permiten el subconjunto o los cuatro refugios personalizados validados por su configuración; las bibliotecas internas también admiten fixtures menores para pruebas.
 
 Los sleepers dormidos y datos privados del simulador nunca se incluyen en `WorldSnapshot`. `graph` es un puntero interno omitido del JSON; el DTO transporta `graph_version` para relacionarlo con `/grafo`. Los clientes consultan únicamente observaciones y no reciben la API key.
 
 `npm run test:contracts:http` arranca un binario Go temporal, envía peticiones reales y valida las respuestas contra JSON Schema generado. Las pruebas unitarias e integración Go cubren además errores, concurrencia y coherencia de movimientos.
 
 
-## Campos compatibles FASE 2
+## Observaciones y compatibilidad
 
-El contrato de `/paso` no cambia. Los campos nuevos de observación son opcionales para conservar fixtures y clientes históricos:
+El contrato de `/paso` no cambia. Las observaciones mantienen estos campos compatibles:
 
 - `GraphEdge.geometry`: puntos `{lat,lng}` de la calle real; `bridge`: etiqueta de puente físico OSM.
 - `Graph.spawn_zones`: ID, nombre, fuente, polígono, IDs candidatos y peso de cada origen. Son zonas de aparición, no fronteras de rutas.
@@ -132,11 +128,11 @@ El contrato de `/paso` no cambia. Los campos nuevos de observación son opcional
 - `Survivor.spawn_zone_id`: zona inicial. `target_shelter_id` y `planned_route` existentes ahora contienen el plan coherente; la ruta incluye nodo actual y siguiente paso.
 - `Shelter.reserved` y `available`: reservas activas y disponibilidad derivada. Debe cumplirse `occupancy + reserved + available = capacity`.
 
-`GET /grafo` describe el grafo base y refugios iniciales; la ocupación/reserva de ese runtime histórico se toma de `/estado`; los clientes actuales usan `/v1/simulations/{id}/state` o publicados. Las respuestas no incluyen diagnósticos privados, PRNG, eventos futuros ni sleepers dormidos. Estos campos FASE 2 no añadieron un selector de IA; los controles y políticas posteriores están definidos en el OpenAPI vigente.
+`GET /grafo` describe el grafo base y refugios iniciales; la ocupación/reserva de ese runtime histórico se toma de `/estado`; los clientes actuales usan `/v1/simulations/{id}/state` o publicados. Las respuestas no incluyen diagnósticos privados, PRNG, eventos futuros ni sleepers dormidos. Las políticas y controles disponibles están definidos en el OpenAPI vigente.
 
 La simulación publica el plan después de actualizar zombies; cada solicitud del turno usa ese snapshot. Preparar otro turno no toma el mutex del simulador desde HTTP. El deadline de450ms cubre lectura/snapshot/decisión y el cliente mantiene500ms para HTTP completo.
 
-## FASE 8: laboratorio hidráulico
+## Laboratorio hidráulico
 
 `LabRunConfig` conserva perfiles y comportamientos e incorpora `hydraulic_model`
 y `hydrology`; `simulation_duration` cuenta turnos enteros 30–3.000. Sólo existen
@@ -160,13 +156,12 @@ Ver [ecuaciones, tiempos, limitaciones y validación](informe-fase8.md).
 
 Las políticas y flota se fijan al crear una ejecución. `official` exige BASE,
 classic, población/refugios originales y 150/2000 ms sin flota. La flota PRO es
-experimental. [Detalles PRO](nivel-pro.md) y [visores compartidos](informe-fase7-movil.md).
+experimental. [Detalles PRO](nivel-pro.md) y [visores compartidos](../apps/mobile/README.md).
 
 ## Probar /paso y entregar la clave al jurado
 
-El propietario provisiona la clave del endpoint de evaluación por un canal
-privado acordado con el jurado, fuera del repositorio, frontend, capturas y
-presentación. La clave de `/paso` no es una credencial de operador ni un token
+Proporciona la clave de evaluación al jurado por un canal privado acordado,
+fuera del repositorio, frontend, capturas y presentación. La clave de `/paso` no es una credencial de operador ni un token
 Bearer de sesión. La demo pública no la solicita. Para comprobar el entorno local
 sin copiarla, usar `make smoke` con `make dev` activo.
 
@@ -196,6 +191,22 @@ inactivo, no la sesión mostrada en React. La evaluación de rondas ejecuta HTTP
 real contra el runtime de la CLI (`npm run simulate`); las sesiones poseen su
 servidor loopback privado. No mezclar nodos/turnos entre esos ámbitos.
 
+## Administración de operador
+
+El inicio y control público de simulaciones no usa la credencial administrativa.
+La moderación de reportes y actualización de referencias conserva el operador
+independiente de `/paso`: `ADMIN_OPERATOR` y `ADMIN_ACCESS_HASH`, cookie HttpOnly,
+Origin aprobado y CSRF. Un token Bearer de simulación no concede esos permisos;
+la sesión automática local tampoco acredita un operador privilegiado.
+
+`POST /admin/session` inicia la sesión y `DELETE /admin/session` la revoca.
+La cookie de producción es Secure, SameSite Strict, host exclusivo y caduca a
+una hora. El código se borra del formulario al enviar; no se conserva en Web
+Storage. Configuración vacía deshabilita administración; una configuración parcial
+impide el arranque. El [procedimiento privado de configuración](despliegue.md#configuración-privada-y-acceso)
+no publica códigos ni verificadores. `POST /admin/runs` permanece bloqueado en
+`cmd/server`, para que el controlador histórico no eluda los cupos de sesiones.
+
 ## Generación y cambio del contrato
 
 ```sh
@@ -214,6 +225,5 @@ Dart admite objetos nombrados, referencias, escalares y listas; opcionales
 anulables y enums como String. No valida toda la semántica OpenAPI. Composición
 oneOf/anyOf/allOf y formas nuevas requieren ampliar/probar el generador; nunca
 omitir campos silenciosamente. Los ejemplos en `packages/contracts/examples`
-no sustituyen integración real. El mock starter conserva sus operaciones en
-`services/mock-api` y depende del YAML relativo al distribuir su build; ya no
-alimenta clientes públicos.
+no sustituyen integración real. Los servidores locales son los mismos componentes
+Go; no existe un servidor alternativo para las operaciones retiradas del starter.

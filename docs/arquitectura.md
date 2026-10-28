@@ -27,9 +27,7 @@ scripts, fuentes externas ni recursos remotos, apto para incrustarse en GitHub.
 | OpenAPI y tokens | [Contrato HTTP](../packages/contracts/openapi.yaml), [tokens](../packages/design-tokens/tokens.json) e [identidad](../packages/design-tokens/brand.json) generan TypeScript, Dart y CSS |
 
 Los puertos anteriores corresponden al perfil AWS. El arranque local permite
-otros puertos; véase [desarrollo local](development/local-setup.md). El mock
-Fastify se conserva para sus pruebas históricas y no es dependencia de los
-clientes actuales.
+otros puertos; véase [desarrollo local](despliegue.md#desarrollo-local). El desarrollo utiliza los mismos servicios Go; no hay un servidor alternativo de API.
 
 ## Un turno, del inicio al mapa
 
@@ -92,7 +90,7 @@ La evidencia registrada del 27 de octubre describe **EC2 `m7i-flex.large`,
 2 vCPU / 8 GiB, Ohio (`us-east-2`)**: Docker ejecuta API Go, laboratorio y Caddy.
 Sólo Caddy recibe tráfico público 80/443; los puertos Go permanecen internos.
 React se sirve desde S3 privado mediante CloudFront/OAC, con ACM en `us-east-1`.
-CloudWatch recibe logs y una alarma CPU; S3 almacena artefactos de releases.
+CloudWatch recibe logs, CPU/RAM cada 60 segundos y una alarma CPU; S3 almacena artefactos de releases.
 CloudFormation describe estos recursos, y SSM permite operar sin SSH público.
 
 **Cloudflare DNS y Let's Encrypt son externos a AWS.** OSM/GeoManta y SNGR

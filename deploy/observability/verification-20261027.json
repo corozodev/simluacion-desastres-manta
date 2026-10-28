@@ -1,0 +1,242 @@
+{
+  "observed_at": "2026-10-27T20:16:29-05:00",
+  "scope": "Configuración focalizada CloudWatch; comprobaciones puntuales, sin benchmark ni rondas.",
+  "instance": {
+    "id": "i-05fd56f1bcb3b1aba",
+    "region": "us-east-2",
+    "type": "m7i-flex.large",
+    "vcpus": 2,
+    "memory_gib": 8,
+    "ssm": "Online",
+    "ec2_monitoring": "basic_unchanged"
+  },
+  "agent": {
+    "installed": true,
+    "status": "running",
+    "configuration": "configured",
+    "version": "1.300074.0b1920",
+    "run_as_user": "cwagent",
+    "namespace": "CoroDev/MantaSim",
+    "dimensions": [
+      "InstanceId"
+    ],
+    "interval_seconds": 60,
+    "metrics": [
+      {
+        "metric": "cpu_usage_active",
+        "recent": [
+          {
+            "Timestamp": "2026-10-27T20:04:00-05:00",
+            "Average": 1.4110378224950078,
+            "Unit": "Percent"
+          },
+          {
+            "Timestamp": "2026-10-27T20:05:00-05:00",
+            "Average": 1.3548548967094136,
+            "Unit": "Percent"
+          }
+        ]
+      },
+      {
+        "metric": "mem_used_percent",
+        "recent": [
+          {
+            "Timestamp": "2026-10-27T20:04:00-05:00",
+            "Average": 5.471623119048002,
+            "Unit": "Percent"
+          },
+          {
+            "Timestamp": "2026-10-27T20:05:00-05:00",
+            "Average": 5.53801851643675,
+            "Unit": "Percent"
+          }
+        ]
+      }
+    ]
+  },
+  "application": {
+    "release": "cloudwatch-20261027-cancel",
+    "source_base_commit": "a8fdc6469966dcbdbbcf5e71906b10a1405145aa",
+    "working_tree_modified": true,
+    "source_sha256": "a65ef5db7cff551e18efb81174dce9d4dcfd56d173bd7647f60805d8b93f083d",
+    "binaries": {
+      "server": {
+        "sha256": "987050af9fc48fdcca6fa695d5708b125472e8245424fed26ebfebdcb522f07b",
+        "bytes": 11261848
+      },
+      "flood-lab": {
+        "sha256": "191e717e9338eedb681ce7090b84455e2134d6678ee618fe197355954a4b4e33",
+        "bytes": 11351210
+      }
+    },
+    "paso_http_log_enabled": true,
+    "new_git_commit_created": false
+  },
+  "logs": {
+    "group": "/corodev/corodev-phase2/backend",
+    "streams": [
+      "backend",
+      "flood-lab"
+    ],
+    "driver": "awslogs_unchanged",
+    "retention_days": 7,
+    "saved_queries": [
+      "CoroDev/MantaSim/paso-latency",
+      "CoroDev/MantaSim/paso-outcomes",
+      "CoroDev/MantaSim/paso-coverage",
+      "CoroDev/MantaSim/paso-server-errors"
+    ],
+    "final_http_check": {
+      "requests": 4,
+      "full_round": false,
+      "intentional_timeout_and_disconnect": true,
+      "outcomes": [
+        {
+          "status": "504",
+          "outcome": "timeout",
+          "bin(1m)": "2026-10-28 01:15:00.000",
+          "requests": "1"
+        },
+        {
+          "status": "504",
+          "outcome": "cancelled",
+          "bin(1m)": "2026-10-28 01:15:00.000",
+          "requests": "1"
+        },
+        {
+          "status": "401",
+          "outcome": "http_error",
+          "bin(1m)": "2026-10-28 01:15:00.000",
+          "requests": "1"
+        },
+        {
+          "status": "200",
+          "outcome": "ok",
+          "bin(1m)": "2026-10-28 01:15:00.000",
+          "requests": "1"
+        }
+      ],
+      "latency_query_status": "Complete",
+      "latency_query_records": 4,
+      "coverage": [
+        {
+          "@timestamp": "2026-10-28 01:15:34.430",
+          "@logStream": "flood-lab",
+          "process_started_at": "2026-10-28T01:13:34.404290678Z",
+          "attempted": "0",
+          "emitted": "0",
+          "dropped": "0",
+          "write_errors": "0",
+          "queued": "0"
+        },
+        {
+          "@timestamp": "2026-10-28 01:15:34.101",
+          "@logStream": "backend",
+          "process_started_at": "2026-10-28T01:13:34.090973484Z",
+          "attempted": "4",
+          "emitted": "4",
+          "dropped": "0",
+          "write_errors": "0",
+          "queued": "0"
+        }
+      ]
+    }
+  },
+  "iam": {
+    "existing_role": "deploy-cli-ec2-corodev-phase2",
+    "preserved": "AmazonSSMManagedInstanceCore + BackendLogsAndReleaseRead",
+    "added_inline_policy": "MantaSimHostMetrics",
+    "added_action": "cloudwatch:PutMetricData",
+    "namespace_condition": "CoroDev/MantaSim",
+    "administrative_credentials_on_instance": false
+  },
+  "rollback": {
+    "agent_original_state": "disabled/stopped",
+    "agent_configuration_backup": "/etc/corodev/cloudwatch-backup-20261027/agent-etc.tgz",
+    "original_backend": "corodev-backend-before-cloudwatch-20261027-2008",
+    "original_flood_lab": "corodev-flood-lab-before-cloudwatch-20261027-2008",
+    "new_inline_policy_removable": "MantaSimHostMetrics"
+  },
+  "verification": {
+    "affected_binaries_compiled": "linux/amd64, CGO_ENABLED=0",
+    "agent_errors_in_last_120_log_lines": 0,
+    "automated_tests_run": false,
+    "lint_run": false,
+    "e2e_run": false,
+    "load_tests_run": false,
+    "new_simulation_started": false,
+    "ec2_restarted": false,
+    "public_ports_changed": false
+  },
+  "incremental_cost": {
+    "custom_metrics_usd_per_month_before_allowances": 0.6,
+    "additional_usage": "Logs ingestion/storage, API usage and Insights bytes scanned. Existing retention and Budget preserved."
+  },
+  "limitations": [
+    "Four final HTTP probes only; no representative round p95 or official score.",
+    "Logging overhead under concurrency was not measured.",
+    "Bounded asynchronous queue can drop events; verify status counters and benchmark counts before interpreting round percentiles.",
+    "Server handler duration excludes WAN, pre-handler queueing and final net/http flush.",
+    "IAM inline policy and agent configuration are not yet managed by the CloudFormation template."
+  ],
+  "source_publication_check": {
+    "observed_at": "2026-10-27T22:22:38.252864-05:00",
+    "region": "us-east-2",
+    "instance_id": "i-05fd56f1bcb3b1aba",
+    "comparison": {
+      "binaries": {
+        "server": {
+          "sha256": "987050af9fc48fdcca6fa695d5708b125472e8245424fed26ebfebdcb522f07b",
+          "matches_deployed_manifest": true
+        },
+        "flood-lab": {
+          "sha256": "191e717e9338eedb681ce7090b84455e2134d6678ee618fe197355954a4b4e33",
+          "matches_deployed_manifest": true
+        }
+      },
+      "web": {
+        "http": 200,
+        "index_sha256": "e1d6fe4d015a40d48fd609d99f2392a6144a695e6c6c034f5dae9f1652c2fb86",
+        "matches_delivery_record": true
+      },
+      "public_api": {
+        "http": 200,
+        "health": "ok"
+      },
+      "web_runtime_source_changes": []
+    },
+    "active_containers": {
+      "corodev-backend": {
+        "running": true,
+        "health": "healthy",
+        "restarts": 0,
+        "binary_sha256": "987050af9fc48fdcca6fa695d5708b125472e8245424fed26ebfebdcb522f07b",
+        "binary_readonly": true,
+        "release": "cloudwatch-20261027-cancel",
+        "source_sha256": "a65ef5db7cff551e18efb81174dce9d4dcfd56d173bd7647f60805d8b93f083d",
+        "paso_http_log_enabled": true,
+        "log_driver": "awslogs"
+      },
+      "corodev-flood-lab": {
+        "running": true,
+        "health": null,
+        "restarts": 0,
+        "binary_sha256": "191e717e9338eedb681ce7090b84455e2134d6678ee618fe197355954a4b4e33",
+        "binary_readonly": true,
+        "release": "cloudwatch-20261027-cancel",
+        "source_sha256": "a65ef5db7cff551e18efb81174dce9d4dcfd56d173bd7647f60805d8b93f083d",
+        "paso_http_log_enabled": true,
+        "log_driver": "awslogs"
+      }
+    },
+    "cloudwatch_agent": {
+      "status": "running",
+      "configuration_matches_repository": true
+    },
+    "redeploy_required": false,
+    "redeploy_performed": false,
+    "services_restarted": false,
+    "reason": "Recompiled Go binaries match active executable hashes exactly; frontend runtime source is unchanged and public HTML matches the deployed delivery. Cleanup changes documentation, development tooling and retired starter operations.",
+    "verification_scope": "Read-only AWS/SSM and punctual HTTPS; no automated suites, E2E, load tests or new simulations."
+  }
+}

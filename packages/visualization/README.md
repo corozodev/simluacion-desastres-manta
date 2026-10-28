@@ -1,9 +1,9 @@
-# Catálogo visual compartido — FASE 6A
+# Catálogo visual y animación observadora
 
 `catalog.json` es la fuente portable para React y futuros consumidores Flutter.
 Los PNG están en `apps/web/public/visualization/`; las rutas del catálogo son
 relativas a ese directorio. Flutter conserva símbolos Canvas estáticos y no
-requiere descargar ni registrar estos atlas para observar el runtime legacy.
+requiere descargar ni registrar estos atlas para observar las ejecuciones publicadas.
 
 Cada entrada incluye dimensiones de celda, frames, FPS, anclaje normalizado,
 filas cardinales, estados gráficos (idle/moving, no estados nuevos del motor),
@@ -36,3 +36,30 @@ frames transparentes. Total: **25.198 bytes**, sin GIF ni dependencias de juegos
 React comparte símbolos SVG por recurso/dirección, cambia únicamente sus frames
 a 4 FPS y conserva un símbolo vectorial estático si falla una imagen. Los hashes,
 transparencia y dimensiones se comprueban en `visualization.test.tsx`.
+
+## Posiciones y límites
+
+La capa compartida `AnimatedEntities` observa snapshots y no solicita HTTP ni
+calcula decisiones. Interpola sólo IDs del mismo run/grafo/escenario, en ejecución
+y con exactamente un turno de diferencia. Cada segmento debe existir en las
+polilíneas publicadas. Una ruta prevista no demuestra movimiento realizado.
+Ante saltos de turno, geometría ambigua o datos incompletos muestra el último
+nodo observado, sin extrapolar ni inventar posiciones para separar personajes.
+
+Pausa, final, cancelación, pérdida de conexión, pestaña oculta o movimiento
+reducido detienen el reloj visual; reanudar el mismo turno no repite un trayecto.
+El desmontaje limpia RAF, listeners y ResizeObserver. La geografía permanece
+cacheada; los refugios y la ruta seleccionada se dibujan sobre las entidades.
+
+Los límites de `apps/web/src/features/visualization/model.ts` acotan 120 entidades
+interpoladas, agrupación a partir de 240 visibles, frames de 250 ms, interpolación
+máxima de 1.200 ms y horizonte de 5.000 ms sin turno nuevo. Agrupar conserva la
+cantidad observada y ancla cada grupo a un nodo real. Son presupuestos de dibujo,
+no límites de población del motor ni una promesa de FPS.
+
+La hidráulica actual se representa desde profundidades publicadas, no desde
+focos radiales. Los efectos decorativos no calculan agua o cierres. El mapa
+ciudadano mantiene separadas referencia histórica, reportes y agua sintética.
+La validación previa de recursos y render está en [pruebas](../../docs/pruebas.md)
+y [validation-phase6a.json](../../deploy/validation-phase6a.json), con el alcance
+histórico de esa versión; no acredita Safari ni rendimiento de EC2.

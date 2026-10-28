@@ -21,6 +21,7 @@ import (
 	"corodev/evacuation/internal/catalog"
 	"corodev/evacuation/internal/control"
 	"corodev/evacuation/internal/decision"
+	"corodev/evacuation/internal/httpapi"
 	"corodev/evacuation/internal/sessions"
 )
 
@@ -41,6 +42,7 @@ func boolean(name string, fallback bool) (bool, error) {
 	return fallback, nil
 }
 func run(logger *slog.Logger) error {
+	defer httpapi.CloseAccessLog()
 	key := os.Getenv("API_KEY")
 	if strings.TrimSpace(key) == "" {
 		return errors.New("API_KEY is required; keep it outside clients and repository")

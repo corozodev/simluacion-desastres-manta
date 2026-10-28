@@ -18,11 +18,13 @@ import (
 	"time"
 
 	"corodev/evacuation/internal/floodlab"
+	"corodev/evacuation/internal/httpapi"
 	"corodev/evacuation/internal/incidents"
 	"corodev/evacuation/internal/reference"
 )
 
 func run() error {
+	defer httpapi.CloseAccessLog()
 	listen := flag.String("listen", "127.0.0.1:8082", "literal loopback address for the local laboratory")
 	origin := flag.String("origin", "http://127.0.0.1:5173,http://localhost:5173", "explicit browser origins")
 	dataDir := flag.String("data-dir", "data", "reviewed graph directory")

@@ -1,60 +1,79 @@
-# CoroDev · Escape de Manta Zombie
+# MantaSim · CoroDev
 
-**MantaSim — AWS Hackathon, Track A.** Evacuación de múltiples sobrevivientes sobre una muestra vial real de Manta, con amenazas móviles, bloqueos y replanificación. React inicia y observa simulaciones; Flutter Android y React móvil comparten su estado como espectadores.
+**AWS Hackathon · Track A: Escape de Manta Zombie.**
 
-**[Abrir demo pública](https://sistemamanta.lexinnovate.com/escape)** · [Visor móvil](https://sistemamanta.lexinnovate.com/mobile) · [API health](https://api.sistemamanta.lexinnovate.com/healthz) · [Repositorio](https://github.com/corozodev/simluacion-desastres-manta)
+Construí MantaSim para explorar cómo evacuar personas sobre una red vial real cuando las amenazas y los caminos disponibles cambian. El sistema combina un motor Go, una consola React y un cliente Flutter Android que observa las ejecuciones. Extendí la evacuación a un laboratorio de inundaciones urbanas con parámetros sintéticos.
 
-Índice: [funciones](#funciones) · [demo](#demo-en-cinco-minutos) · [local](#inicio-local) · [arquitectura](#arquitectura) · [API](#api-paso) · [evaluación](#simulación-y-evaluación) · [PRO](#nivel-pro--capacidades-avanzadas) · [AWS](#aws-y-costos) · [límites](#limitaciones-y-entrega) · [documentación](#repositorio-y-documentación).
+## Demo pública
 
-## Funciones
+**[Abrir MantaSim](https://sistemamanta.lexinnovate.com/escape)** · [Inundaciones](https://sistemamanta.lexinnovate.com/flood-lab) · [Visor móvil](https://sistemamanta.lexinnovate.com/mobile) · [API](https://api.sistemamanta.lexinnovate.com/healthz)
 
-| Categoría | Implementación |
+Abre `/escape`, explora BASE y pulsa **Iniciar simulación**. Selecciona un sobreviviente para consultar su ruta, observa amenazas y refugios, y usa pausa o continuación. Abrir o recargar la página no crea otra ejecución. React `/mobile` y Android observan la última ejecución publicada; la consola de escritorio conserva el control.
+
+La demo no solicita una clave de operador para iniciar simulaciones. Su versión, fecha de verificación y hashes están en [despliegue](docs/despliegue.md). La disponibilidad depende de la [retirada programada](deploy/autokill/README.md).
+
+## Qué hace el sistema
+
+- Calcula rutas sobre calles transitables y las revisa ante amenazas, cierres y falta de plazas.
+- Ejecuta sesiones independientes con semilla, reloj, estado y credencial propios; ofrece pausa, continuación, cancelación y repetición.
+- Muestra agentes, rutas y refugios a partir de observaciones del backend, con geografía descargada por separado.
+- Permite comparar resultados reproducibles mediante HTTP real y consultar latencias, errores, CPU y memoria.
+
+## Nivel Base
+
+| Requisito | Implementación |
 | --- | --- |
-| Track A base | BASE: 300 intersecciones, 383 aristas, cuatro refugios ficticios, cuatro tipos de zombie, mordidas por nodo/cruce y cierres. Tres rondas de 20/80/200 sobrevivientes, 150 turnos de 2 s. |
-| Routing | Plan determinista por snapshot, asignación de refugios, reservas y replanificación sobre calles transitables. Alternativas comparables conservan sus regresiones medidas. |
-| Nivel PRO | Predicción observable de corredores, capacidad/reservas y flota experimental 5 × 4. [Estado y límites PRO](docs/nivel-pro.md). |
-| Clientes | Mapa vivo React, rutas seleccionables, configuración e inicio manual, pausa/reanudación; espectadores `/mobile` y Android sin control de motores. |
-| Extensiones | Inundación hidráulica 2D sobre relieve sintético; laboratorio, reportes ciudadanos persistentes y referencia SNGR separada. FULL_MANTA (9.179 nodos) es opcional y experimental. |
+| Grafo de Manta | BASE: 300 intersecciones y 383 aristas derivadas de OSM; cuatro zonas de origen y cuatro refugios ficticios |
+| Routing dinámico | Plan por snapshot, calles transitables, replanificación y espera cuando no existe una salida válida |
+| Zombies | Caminantes, corredores, hordas y dormidos; mordidas por nodo y cruce, sin revelar dormidos ocultos |
+| Obstáculos | Colapso de puente en R2 y dos cierres en R3; overlays sin modificar la geografía fuente |
+| API | `POST /paso` autenticado por `x-api-key`, con respuesta de espera o vecino transitable |
+| Visualización | Mapa React en vivo; Android y React móvil como espectadores |
 
-Las extensiones no acreditan puntos del núcleo zombie. La geografía vial proviene de OSM; los refugios y desastres simulados no representan instalaciones habilitadas ni alertas reales.
+La [matriz del reto](docs/pruebas.md#matriz-de-cumplimiento) distingue cumplimiento, alcance parcial y evidencia. BASE es una muestra urbana; FULL_MANTA, con 9.179 nodos, sigue siendo experimental.
 
-## Demo en cinco minutos
+## Nivel PRO
 
-Versión publicada en AWS el 27 de octubre de 2026: [`47f51fa`](https://github.com/corozodev/simluacion-desastres-manta/commit/47f51fa3ec3d00f19874de50703b4fabc013de37). Se verificaron por HTTPS el inicio, avance, pausa, cancelación repetida y reinicio de inundaciones. [Registro del despliegue](deploy/deployment-delivery-20261027.json).
+| Capacidad | Qué resuelve y evidencia |
+| --- | --- |
+| Predicción de corredores | Estima riesgo a partir de movimientos observados para anticipar desvíos; [predictor y límites](docs/nivel-pro.md#predicción-observaciones-y-horizonte) |
+| Capacidad de refugios | Coordina ocupación, reservas y reasignación para evitar sobreasignaciones; [planificación](docs/nivel-pro.md#refugios-capacidad-reservas-y-concurrencia) |
+| Cinco camionetas, cuatro plazas cada una | Recogen personas y las entregan en un refugio con capacidad; abordar todavía no cuenta como evacuación; [flota](docs/nivel-pro.md#rescate-selección-recorrido-y-supervivencia) |
+| Velocidad doble: parcial | Hasta dos aristas reales por turno frente a una peatonal; no acredita doble velocidad física en m/s |
+| Recogida y traslado | Prioriza necesidad y ahorro estimado, revalida calles/destinos y conserva pasajeros observables; [demo reproducible](docs/nivel-pro.md#demostración-reproducible) |
 
-1. **0:00–0:45:** abrir [Escape](https://sistemamanta.lexinnovate.com/escape). Explorar BASE antes de iniciar; abrir la página no crea una simulación.
-2. **0:45–2:00:** configurar una ronda y pulsar **Iniciar simulación**. Seleccionar un sobreviviente para ver su ruta; observar zombies, bloqueos y ocupación de refugios. Cada sesión posee su propio motor.
-3. **2:00–3:30:** mostrar el [procedimiento PRO](docs/nivel-pro.md): pronóstico observable, plazas y flota experimental. La flota no pertenece a `official`; el riesgo estimado no es una trayectoria segura.
-4. **3:30–4:30:** abrir `/mobile` o Android para observar la ejecución publicada. Mostrar `/flood-lab` como extensión; **Iniciar tormenta** es explícito y usa datos hidráulicos sintéticos.
-5. **4:30–5:00:** presentar [pruebas](docs/pruebas.md), arquitectura y costos. No esperar una ronda nominal completa durante el pitch.
+La flota es experimental y está excluida de `official`. Las mediciones incluyen regresiones: estas funciones no garantizan mayor supervivencia.
 
-La demo pública no requiere login de operador. El selector ofrece BASE y FULL_MANTA sólo cuando el servidor lo habilita. Los espectadores conservan el final durante su retención y no reinician motores.
+## Inundaciones y reportes ciudadanos
 
-## Inicio local
+El laboratorio usa `rainfall_runoff_2d` o `compound_flood_2d`, con agua en una malla separada del grafo vial. Lluvia, relieve, costa, cauce y refugios son escenarios sintéticos. La geografía vial procede de OSM; la susceptibilidad SNGR y los eventos históricos conservan fuente y fecha, como contexto independiente del cálculo hidráulico.
 
-Requisitos: Node ≥22.12, npm ≥10, Go ≥1.23, Python 3 y GNU Make. Flutter/Android y Docker son opcionales para la demo web. Desde la raíz:
+Los reportes ciudadanos se reciben mediante una API real y se guardan en disco privado. Nacen pendientes y no cambian automáticamente una tormenta. Esta extensión **no es un sistema oficial de alerta ni una recomendación de evacuación**. [Laboratorio](docs/laboratorio-inundaciones.md) · [fuentes](docs/datos-oficiales-y-demo.md) · [reportes](docs/incidentes-ciudadanos.md).
+
+## Inicio rápido
+
+Requisitos: Node ≥22.12, npm ≥10, Go ≥1.23, Python 3 y GNU Make. Flutter y Docker son opcionales para ejecutar la web local.
 
 ```sh
-make help
 make setup
 make dev
 ```
 
-Abrir `http://127.0.0.1:5173/escape`; laboratorio `/flood-lab`; visor `/mobile`. API Go en `127.0.0.1:8080`, laboratorio en `127.0.0.1:8082`. El motor comienza sólo al pulsar el control correspondiente.
+Abre **http://127.0.0.1:5173/escape** y pulsa **Iniciar simulación**. El laboratorio está en `/flood-lab` y el espectador en `/mobile`. El arranque local utiliza Go en los puertos 8080/8082, sin AWS.
 
-`setup` conserva configuraciones existentes y genera una clave local privada. `dev` reutiliza el lanzador existente, sin AWS ni mock. **Ctrl+C** o `make stop` detienen sus tres procesos sin borrar reportes. En otra terminal: `make smoke`, `make test` o `make verify`. [Configuración, recuperación y Flutter](docs/development/local-setup.md).
+`setup` instala dependencias, genera contratos/tokens y crea configuración privada sólo cuando falta. **Ctrl+C** o `make stop` detienen los procesos sin borrar reportes. Consulta `make help` y la [guía local](docs/despliegue.md#desarrollo-local) para puertos, configuración y recuperación. [Android opcional](apps/mobile/README.md).
 
-## Arquitectura
+## Arquitectura y AWS
 
 ![Arquitectura de MantaSim: clientes, AWS y motores internos](docs/arquitectura.svg)
 
-Go es un monolito modular: el simulador es el único escritor y publica snapshots inmutables; el planificador sólo observa. Cada sesión aísla RNG, cachés, overlays y HTTP autenticado de decisión. Los clientes consultan estado compacto por polling y obtienen la geografía por separado. El laboratorio conserva un proceso independiente y persiste reportes en archivos privados; las sesiones viven en RAM.
+Organicé el backend como un monolito modular Go: sólo el simulador modifica el mundo y las decisiones leen snapshots inmutables. Cada sesión aísla RNG, cachés y HTTP autenticado; los clientes usan polling. El laboratorio y su almacenamiento ciudadano permanecen independientes.
 
-[Arquitectura y flujo](docs/arquitectura.md) · [fuente editable del diagrama](docs/arquitectura.mmd) · [decisión del monorepo](docs/decisions/ADR-001-monorepo.md).
+El despliegue documentado usa **EC2 `m7i-flex.large`, 2 vCPU/8 GiB, Ohio (`us-east-2`)**, con Docker y Caddy para HTTPS. React se sirve desde S3 privado mediante CloudFront/OAC y ACM. SSM permite operar sin SSH público; CloudWatch recibe logs y métricas. Cloudflare DNS y Let's Encrypt son externos a AWS. [Arquitectura y decisiones](docs/arquitectura.md) · [fuente del diagrama](docs/arquitectura.mmd) · [despliegue y recuperación](docs/despliegue.md).
 
-## API /paso
+## API y prueba de fuego
 
-`POST /paso`, `Content-Type: application/json`, cabecera privada `x-api-key`:
+`POST /paso` requiere `Content-Type: application/json` y cabecera privada `x-api-key`:
 
 ```json
 {"sobrevivienteId":"S-0089","nodoActual":"N-0117","turno":142}
@@ -64,67 +83,50 @@ Go es un monolito modular: el simulador es el único escritor y publica snapshot
 {"siguienteNodo":"N-0118"}
 ```
 
-Estos IDs ilustran el contrato: usar IDs, nodo y turno reales del **mismo runtime**. La respuesta permite esperar o avanzar a un vecino transitable. `/paso` no mueve el mundo ni reserva plazas. Go valida autenticación, entrada y coherencia; un fallo de la llamada deja al agente esperando.
+Los IDs son ilustrativos: usa el nodo y turno reales del mismo runtime. `/paso` sólo consulta el siguiente movimiento. `/estado` y `/paso` públicos conservan un runtime preparado e inactivo; cada sesión de React consulta su propio HTTP loopback. No hay WebSocket implementado. [Ejemplo curl, autenticación y ámbitos](docs/contratos.md).
 
-Con `make dev` activo, `make smoke` comprueba `401` sin clave y `200` autenticado sin mostrarla. `npm run test:contracts:http` crea un servidor temporal y valida respuestas y errores contra el esquema generado. Ejemplo copiable de `curl` y provisión privada de la clave al jurado: [contratos](docs/contratos.md).
-
-**Ámbitos:** `/estado` y `/paso` públicos conservan un runtime de compatibilidad preparado e inactivo. El mapa observa `/v1/simulations/...`; sus motores consultan su propio `/paso` autenticado por loopback. No mezclar el turno de una sesión con `/estado`. No hay WebSocket implementado.
-
-## Simulación y evaluación
+Después de preparar el entorno, reproduce las tres rondas nominales, secuencialmente, desde la raíz:
 
 ```sh
-# Ronda completa acelerada, HTTP real y concurrencia del preset
-npm run simulate -- -scenario scenarios/urban/round3.json -seed 42
-# La misma ronda al ritmo nominal de cinco minutos
-npm run simulate -- -scenario scenarios/urban/round3.json -seed 42 -interval 2s
-# Latencia HTTP local concurrente
-npm run bench:backend
+npm run simulate -- -scenario scenarios/urban/round1.json -interval 2s -output reports/realtime/r1.json
+npm run simulate -- -scenario scenarios/urban/round2.json -interval 2s -output reports/realtime/r2.json
+npm run simulate -- -scenario scenarios/urban/round3.json -interval 2s -output reports/realtime/r3.json
 ```
 
-La [metodología](docs/pruebas.md) reúne las tres rondas secuenciales de 15 minutos, comparación, supervivencia ponderada, eficiencia, percentiles HTTP, errores y rúbrica. Las rondas aceleradas conservan 150 turnos; su tiempo medido no equivale al reloj nominal. Semilla/configuración/grafo iguales deben reproducir resultados lógicos, excluyendo tiempos HTTP.
+R1/R2/R3 usan **20/80/200 sobrevivientes**, **150 turnos de dos segundos**, cinco minutos nominales por ronda. La CLI utiliza HTTP real autenticado en un proceso local aislado. [Pruebas](docs/pruebas.md) define supervivencia, eficiencia, p95, disponibilidad, rúbrica y benchmarks; el evaluador FASE 1 permanece congelado. No se promedian p95 para obtener un percentil conjunto.
 
-`npm run compare:agents` usa HTTP real y conserva resultados adversos. El evaluador FASE 1 permanece congelado; los [informes históricos](docs/INDEX.md) distinguen cambios geográficos y algorítmicos. Los benchmarks locales no acreditan capacidad EC2.
+## Resultados verificables
 
-## Nivel PRO — Capacidades avanzadas
+La consolidación del 27 de octubre registró **16 rondas aceleradas completas, 2.400 turnos y 93.962 solicitudes válidas**, sin inválidas/timeouts y con hashes lógicos repetidos. Son mediciones locales anteriores a la instrumentación CloudWatch y a esta limpieza; no certifican capacidad EC2 ni sustituyen los quince minutos nominales.
 
-| Capacidad | Estado verificable y observación |
+En R3 con semilla 42, `legacy_current` sin flota registró 169 evacuados, un mordido y 30 activos; la variante temporal tuvo más mordidos. La flota también redujo evacuados frente a sus pares sin flota. Conservo esos resultados junto con las condiciones de medición en [pruebas](docs/pruebas.md#mediciones-locales-de-esta-consolidación). Allí se separan las suites ejecutadas, benchmarks y comprobaciones de despliegue.
+
+## Costos, Budget y limitaciones
+
+La proyección documentada es **78,28 USD/mes**, con 730 horas y supuestos de uso pequeño, antes de descuentos. El Budget verificado es de **50 USD/mes** y no detiene cargos. [Cálculo, tarifas y exclusiones](docs/costos.md).
+
+**Pendientes:** gasto real atribuible al evento, captura auténtica de AWS Budget y presentación PDF/PPT/PPTX ≤20 MB. La captura revisada debe incorporarse como `docs/budget.png`; no incluyo una imagen ficticia. [Lista de entrega](docs/limitaciones.md).
+
+<!-- Al incorporar una captura auténtica y sanitizada, activar:
+![AWS Budget](docs/budget.png)
+-->
+
+Las sesiones se pierden al reiniciar Go; los reportes tienen persistencia independiente. Predicción sin calibrar, cinemática por aristas, FULL experimental, hidráulica sintética y validación pendiente en dispositivos físicos limitan el alcance. [Limitaciones completas](docs/limitaciones.md).
+
+## Documentación y estructura
+
+| Tema | Entrada |
 | --- | --- |
-| Predicción | Implementada sobre observaciones de corredores; capa de riesgo estimado a dos turnos y estrategias que lo usan. Sin sleepers ocultos ni probabilidades calibradas. |
-| Refugios | Capacidad, ocupación, reservas y disponibilidad coherentes; asignación global antes de `/paso`, revalidación por el escritor y pruebas concurrentes. React muestra capacidad y plazas libres. |
-| Rescate | Cinco camionetas experimentales, cuatro plazas cada una, rutas transitables y evacuación sólo tras entrega. Dos aristas por turno frente a una peatonal; falta acreditar doble velocidad física por distancia/tipo de vía. |
+| Componentes, flujo y decisiones | [Arquitectura](docs/arquitectura.md) |
+| Desarrollo local, Docker, AWS y CloudWatch | [Despliegue](docs/despliegue.md) |
+| Requisitos Base/PRO, reproducción y resultados | [Pruebas](docs/pruebas.md) · [Nivel PRO](docs/nivel-pro.md) |
+| Contratos HTTP y generación TS/Dart/JSON Schema | [Contratos](docs/contratos.md) · [OpenAPI](packages/contracts/openapi.yaml) |
+| Costos y entregables pendientes | [Costos](docs/costos.md) · [Limitaciones](docs/limitaciones.md) |
+| Geografía, hidráulica e informes conservados | [Referencias técnicas](docs/INDEX.md) |
+| Modificar el repositorio | [AGENTS.md](AGENTS.md) |
 
-Preparación PRO requiere código, prueba y demostración observable. [Implementación y demo reproducible](docs/nivel-pro.md) · [matriz BASE/PRO y regresiones](docs/pruebas.md).
+El código vive en `services/evacuation` (Go), `apps/web` (React) y `apps/mobile` (Flutter). `packages` conserva contratos, diseño y recursos visuales compartidos; `tools` y `deploy` reúnen desarrollo, medición y artefactos AWS.
 
-## AWS y costos
+## Autoría
 
-Inventario confirmado por lectura AWS el 27 de octubre: **us-east-2 (Ohio), EC2 `m7i-flex.large`, 2 vCPU / 8 GiB y EBS cifrado de 20 GiB**. Caddy termina HTTPS y da entrada a Go/laboratorio. Web en **S3 privado + CloudFront**, con ACM; DNS externo en Cloudflare. SSM y CloudWatch apoyan operación y logs. La plantilla inicial conserva tamaños anteriores: no es inventario del host actual.
-
-[Despliegue, secretos, health, logs y rollback](docs/despliegue.md) · [costos y fuentes](docs/costos.md). La web, API y build publicados se verificaron por HTTPS. La actualización conservó infraestructura, credenciales y datos; el registro detalla su alcance.
-
-La proyección modelada es **77,68 USD/mes**, antes de descuentos y con supuestos de uso pequeño: [desglose y exclusiones](docs/costos.md). La EC2 sola a 730 h supera el Budget verificado de 50 USD. **Gasto real del evento: pendiente de Billing. Captura AWS Budget: pendiente del propietario en `docs/budget.png`.** Revisar datos sensibles antes de incorporarla.
-
-<!-- Al añadir la captura auténtica y revisada, sustituir el texto pendiente por:
-![AWS Budget con alerta configurada](docs/budget.png)
-No crear una imagen ficticia ni un PNG vacío. -->
-
-## Limitaciones y entrega
-
-BASE es una muestra urbana, no cobertura completa. FULL_MANTA es experimental. Reiniciar Go pierde las sesiones en RAM. Predicción/flota pueden empeorar resultados; inundación usa relieve/lluvia sintéticos. Android compilado y Chromium móvil no acreditan Safari real ni capacidad EC2. [Limitaciones y pendientes verificables](docs/limitaciones.md).
-
-Entrega **miércoles 28 de octubre de 2026, 10:00 Ecuador**; pitch **viernes 30 de octubre, ULEAM**. Antes de publicar: revisar diff e historial real, ejecutar verificaciones, incorporar Budget auténtico y gasto real, confirmar URL y adjuntar presentación PDF/PPT/PPTX ≤20 MB. La publicación Git y AWS de esta versión fue autorizada y ejecutada; las diapositivas y evidencias pendientes corresponden al propietario. [Lista de entrega](docs/limitaciones.md).
-
-## Repositorio y documentación
-
-| Ruta | Responsabilidad |
-| --- | --- |
-| `services/evacuation` | Go: API, zombies, routing, sesiones y laboratorio hidráulico |
-| `apps/web` | React/TypeScript: consola y visor móvil |
-| `apps/mobile` | Flutter Android: espectador y reportes ciudadanos |
-| `packages/contracts/openapi.yaml` | Fuente HTTP; genera TypeScript, Dart y JSON Schema |
-| `packages/design-tokens` | Identidad y tokens compartidos generados |
-| `tools`, `deploy` | Desarrollo, QA, importación offline y artefactos AWS |
-| `services/mock-api` | Compatibilidad/pruebas starter, fuera de los clientes actuales |
-
-**[Índice documental](docs/INDEX.md)** · [pruebas](docs/pruebas.md) · [contratos](docs/contratos.md) · [instrucciones para agentes](AGENTS.md).
-
-Equipo **CoroDev**, un integrante: [corozodev](https://github.com/corozodev). Agradecimientos a OpenStreetMap y sus colaboradores, GeoManta, SNGR/CONAGE y las comunidades Go, React, Flutter y AWS. [Procedencia geográfica](docs/grafo-fase2.md) · [fuentes y atribución](docs/datos-oficiales-y-demo.md).
+Soy [corozodev](https://github.com/corozodev), único integrante de **CoroDev**. Desarrollé MantaSim con apoyo de asistentes de IA para implementación, revisión y documentación. El [repositorio público](https://github.com/corozodev/simluacion-desastres-manta) conserva la evolución del proyecto. Agradezco las fuentes de OpenStreetMap, GeoManta y SNGR/CONAGE; su [procedencia y atribución](docs/datos-oficiales-y-demo.md) permanecen explícitas.

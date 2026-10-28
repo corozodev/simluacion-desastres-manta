@@ -75,3 +75,14 @@ paquete, versiones de distribución y permisos nativos no se derivan de la marca
 Al añadir componentes, usa los tokens existentes, conserva foco visible y
 etiquetas accesibles, y representa carga, vacío, error y éxito explícitamente.
 Evita introducir hexadecimales en los estilos o widgets de la interfaz.
+
+## Convenciones de interfaz
+
+Usa etiqueta visible, error asociado y foco por teclado en formularios; el
+placeholder y el color solos no explican un estado. Conserva carga, vacío,
+error, reintento y confirmación con la referencia real devuelta por la API.
+Deshabilita acciones durante el envío y respeta movimiento reducido y áreas
+táctiles de Material 3. React concentra primitivas en `components/ui.tsx`;
+Flutter en `lib/shared/widgets.dart`. Revisa pantallas pequeñas y grandes al
+cambiar tokens. La coherencia visual no acredita una auditoría de accesibilidad;
+las comprobaciones ejecutadas están en [pruebas](../../docs/pruebas.md).

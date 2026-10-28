@@ -1,13 +1,29 @@
-# ADR-004 — persistencia del MVP de novedades
+# ADR-004: persistencia de reportes ciudadanos
 
-Estado: decisión previa a la implementación de FASE 4C.
+Estado: implementada. La decisión original precedió a FASE 4C; esta página
+explica su aplicación actual, separada de las sesiones de simulación en RAM.
 
-No existe una base de datos ni persistencia de dominio en el backend actual. Las simulaciones son procesos con RAM autoritativa. El despliegue conservado define un volumen raíz EBS gp3 cifrado de 20 GiB (`deploy/aws/stack.yaml`); el contenedor actual tiene raíz de sólo lectura y no monta un directorio de datos persistente para incidentes.
+## Decisión
 
-El MVP utilizará un único escritor Go con un snapshot JSON versionado en un directorio privado explícito, permisos 0700/0600, exclusión entre procesos y reemplazo atómico con sincronización a disco. El éxito HTTP se devolverá sólo después de persistir. Las claves de idempotencia se guardarán como hashes privados y no se publicarán identificadores de reporteros. No se almacenarán fotografías.
+Uso un único escritor Go con snapshot JSON versionado, directorio privado,
+permisos 0700/0600, exclusión `flock`, reemplazo atómico y sincronización a disco.
+El éxito HTTP se devuelve después de persistir. Las claves idempotentes se guardan
+como hashes privados; no se publican identidades de reporteros ni se guardan fotos.
 
-En desarrollo, el directorio será `services/evacuation/private/incidents`, fuera de Git y fuera del directorio temporal de binarios del launcher. Sobrevive al reinicio del servicio. En una futura ejecución EC2 se necesita un bind mount escribible y persistente sobre el EBS existente; no se modifica ni despliega ahora el servicio publicado.
+El directorio es `services/evacuation/private/incidents` en desarrollo y un bind
+mount escribible bajo `/var/lib/corodev/flood` en EC2. Queda fuera de imágenes,
+binarios temporales y Git. La [guía de incidentes](../incidentes-ciudadanos.md)
+documenta cuotas, caducidad y revisiones.
 
-Impacto: no se crea una base administrada, bucket, rol, servicio o ampliación de disco en esta fase. Los archivos consumen espacio e I/O del volumen ya aprovisionado; no se atribuye costo cero al alojamiento AWS. Ampliaciones, snapshots, copias externas o más tráfico podrían añadir cargos y requieren una decisión posterior. Esta elección evita contratar nueva infraestructura para el prototipo y se limita mediante cuotas y retención documentadas.
+## Consecuencias
 
-No proporciona alta disponibilidad, acceso concurrente desde varios procesos, respaldo automático ni supervivencia a pérdida/eliminación del volumen. `DeleteOnTermination:true` en la plantilla importa: persistir tras reinicio no equivale a resistir destrucción de la instancia. Un archivo corrupto debe impedir el arranque del servicio de incidentes; no se sustituye silenciosamente por un almacén vacío. Una futura base de datos requerirá mantener los contratos e idempotencia, y una migración explícita del archivo validado.
+No se necesita una base administrada para este prototipo de un solo proceso.
+Los archivos consumen espacio e I/O del EBS gp3 cifrado existente; no se atribuye
+costo cero al alojamiento. No ofrece alta disponibilidad, varios escritores ni
+respaldo automático. `DeleteOnTermination:true` significa que persistir tras un
+reinicio no protege frente a pérdida del volumen o retirada de la instancia.
+
+La corrupción impide iniciar el almacén; no se sustituye silenciosamente por uno
+vacío. Cambiar a almacenamiento multiinstancia requiere migración explícita,
+conservar idempotencia/contratos y preservar las revisiones nuevas al retroceder.
+[Operación, copias y recuperación](../despliegue.md).

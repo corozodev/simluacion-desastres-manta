@@ -1,5 +1,7 @@
 # Informe técnico — FASE 1
 
+> Informe histórico de la versión indicada. Los resultados se conservan; los flujos, despliegue y componentes vigentes están en [arquitectura](arquitectura.md) y [pruebas](pruebas.md).
+
 Entrega local del 26 de octubre de 2026, CoroDev. Alcance: Track A, Escape de Manta Zombie. No se inició FASE 2, no se desplegó AWS y no se inicializó Git ni se crearon commits.
 
 ## 1. Implementado
@@ -57,7 +59,7 @@ Rondas aceleradas completas, 150 turnos cada una:
 | 2:80 sobrevivientes | 23 | 22 | 35 | 6.376 | 4,015 |
 | 3:200 sobrevivientes | 38 | 150 | 12 | 10.500 | 5,539 |
 
-Todas con 0 inválidas/0 timeouts y disponibilidad observada 100%. Los reportes originales están en [`services/evacuation/reports`](../services/evacuation/reports/); `evidence.json` registra hashes de entradas/código. Las rondas, a diferencia del benchmark estable, incluyen movimiento, capacidad, invalidación y cierres dinámicos.
+Todas con 0 inválidas/0 timeouts y disponibilidad observada 100%. Los reportes originales están en `services/evacuation/reports/` (evidencia privada, fuera de Git); `evidence.json` registra hashes de entradas/código. Las rondas, a diferencia del benchmark estable, incluyen movimiento, capacidad, invalidación y cierres dinámicos.
 
 ## 7. Pendientes y riesgos
 
@@ -103,4 +105,4 @@ El README contiene Flutter, variables, generación offline del grafo y el resto 
 
 ## 9. FASE 2 recomendada
 
-Priorizar supervivencia frente a runners mediante predicción observable y evaluación multisemilla; coordinar capacidad de refugios; comparar grafos menos reducidos; completar WebSocket y UX; después preparar contenedor persistente EC2, HTTPS/secretos, costos/Budget y pitch. No se inició ninguna de estas tareas. Ver [roadmap](roadmap.md).
+Priorizar supervivencia frente a runners mediante predicción observable y evaluación multisemilla; coordinar capacidad de refugios; comparar grafos menos reducidos; completar WebSocket y UX; después preparar contenedor persistente EC2, HTTPS/secretos, costos/Budget y pitch. No se inició ninguna de estas tareas. Ver [roadmap](limitaciones.md).

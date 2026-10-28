@@ -1,140 +1,85 @@
-> **Referencia técnica histórica FASE 4B.** Para ejecutar el producto actual usar [desarrollo local](development/local-setup.md), [contratos](contratos.md) y [arquitectura](arquitectura.md). Hidrología, controles públicos y visores posteriores sustituyen las reglas/pantallas previas descritas aquí; los motores y reportes históricos se preservan.
+# Laboratorio de inundaciones
 
-# Laboratorio React de inundaciones — FASE 4B
+[Desarrollo local](despliegue.md#desarrollo-local) · [Contrato HTTP](contratos.md) · [Modelo hidráulico](informe-fase8.md)
 
-> Evolución vigente: [FASE 8](informe-fase8.md), con malla hidráulica, profundidades,
-> duración 30–3.000 turnos y sin motor radial. Las comparaciones de focos descritas
-> aquí se conservan como documentación histórica.
+El laboratorio extiende la evacuación sobre OSM a escenarios de lluvia y agua
+superficial. Es un experimento con relieve, costa, cauce y meteorología sintéticos;
+no es un sistema oficial de alerta ni una recomendación de navegación.
 
-Los escenarios de inundación emplean parámetros sintéticos y no constituyen pronósticos hidrológicos ni recomendaciones oficiales de evacuación.
+## Uso desde React
 
-## Abrir y usar
+1. Ejecuta `make setup` y `make dev`; abre `http://127.0.0.1:5173/flood-lab`.
+2. Explora BASE o el maestro experimental y configura lluvia, agentes, duración,
+   comportamiento y semilla. La vista previa no inicia un motor.
+3. Pulsa **Iniciar tormenta**. El mapa recibe estado, profundidades, vías, agentes,
+   rutas y plazas calculados por Go. La ruta seleccionada sigue aristas publicadas.
+4. Usa pausa y continuación. Cancelar exige confirmación y conserva un final;
+   la cancelación repetida no vuelve a cerrar el motor. Reiniciar prepara el paso
+   cero; repetir vuelve a ejecutar la configuración activa. Las ediciones del
+   formulario se aplican al iniciar otra tormenta, con confirmación de reemplazo.
+5. Abre `/mobile` o Android para observar la misma tormenta publicada. El visor
+   no crea motores ni controla el reloj.
 
-Desde la raíz, con las dependencias instaladas:
+El laboratorio tiene un motor compartido independiente de las sesiones zombie.
+Una sesión `urban_flood` de `/v1/simulations` es otro runtime: no se confunde con
+la tormenta de `/lab/published`. Los controles públicos conservan Origin/Host,
+cuotas, exclusión mutua y `expected_run_id`; una respuesta atrasada no autoriza
+modificar una ejecución nueva. La moderación mantiene autorización independiente.
 
-```sh
-npm install
-npm run dev:lab
-```
+## Parámetros y relojes
 
-Abrir **http://127.0.0.1:5173/escape**. Este comando compila y arranca dos procesos Go independientes y Vite: zombie en `127.0.0.1:8080`, laboratorio en `127.0.0.1:8082` y React en `127.0.0.1:5173`. Configura ambas URLs y CORS automáticamente, genera credenciales privadas de movimiento sin imprimirlas y cierra sus procesos con Ctrl+C. No utiliza AWS ni cambia servicios existentes. Si un puerto está ocupado, el comando falla y limpia sólo sus procesos. Para otros puertos:
+`rainfall_runoff_2d` es el modelo predeterminado; `compound_flood_2d` añade mar y
+cauce. No existe un runtime radial alternativo. La malla conserva masa y se
+preprocesa aparte del grafo; el snapshot publica profundidades y balance.
 
-```sh
-LAB_WEB_PORT=5190 LAB_WORLD_PORT=18080 LAB_FLOOD_PORT=18082 npm run dev:lab
-```
+Los perfiles son `storm`, `constant` y `pulse`; los comportamientos de evacuación,
+`preventive`, `late` y `adaptive`. La intensidad 0–1 representa 0–120 mm/h de
+escenario, sin calibración meteorológica. Los límites públicos de duración son
+**30–3.000 turnos**, predeterminado 150, sin terminar antes por agentes terminales.
 
-1. Cambiar **Escenarios → Inundaciones urbanas**. La identificación **SIMULACIÓN — DATOS SINTÉTICOS** permanece visible incluso durante carga o error.
-2. Elegir cobertura y parámetros de lluvia, duración, semilla, comportamiento y agentes. Los tres presets son configuraciones artificiales, no niveles oficiales de alerta.
-3. Pulsar **Iniciar tormenta**. El motor activo, el reloj, las condiciones viales y los agentes proceden de Go. Elegir un agente en la tabla dibuja su ruta publicada.
-4. Usar **Pausar** y **Continuar** para detener/reanudar el reloj del backend. El ACK de pausa espera que termine el paso en curso; la consulta siguiente conserva ese mismo paso. La velocidad cambia el intervalo del scheduler, no la matemática de la amenaza. El tiempo de cálculo se añade a ese intervalo.
-5. **Reiniciar** reconstruye la configuración activa y deja `idle` en paso cero; **Repetir misma seed** reconstruye esa misma configuración y la pone en ejecución. Para aplicar ediciones del formulario, usar **Iniciar tormenta**. Se puede reemplazar una ejecución pausada con los cambios preparados.
-
-Cambiar de escenario cambia la vista; las dos ejecuciones son independientes. Para detener la inundación antes de volver al panel zombie, usar **Pausar**. Al regresar se recuperan el estado y los candidatos de la ejecución activa. La experiencia zombie y sus controles administrativos conservan su implementación.
-
-El selector ofrece **Modo base** (300 nodos/383 aristas) y **Manta completa — maestro urbano** (9.179/13.452), con cantidades recibidas del catálogo. El maestro representa la geografía urbana conservada, no todas las calles de la ciudad. El preset intermedio de 1.000 nodos no se ofrece como mapa completo. Cambiar cobertura primero previsualiza la geografía y retira los agentes de la otra red; **Iniciar tormenta** envía el modo al motor real. La UI muestra por separado cobertura preparada y motor activo.
+Distingue tres tiempos: turnos de evacuación, segundos hidrológicos por turno
+(predeterminado 60) e intervalo de reproducción. Cambiar la reproducción no
+multiplica la lluvia ni el tiempo físico. El reloj real activo incluye cálculo y
+esperas y excluye pausas. [Ecuaciones, umbrales, resolución y límites](informe-fase8.md).
 
 ## Cuatro refugios candidatos
 
-Se pueden conservar los cuatro originales o editar cuatro alternativas. Cada ficha permite nombre, coordenadas, capacidad experimental, selección mediante clic, eliminación, reemplazo y restauración. Se pueden introducir coordenadas conocidas de una universidad, instalación deportiva, aeropuerto o terminal; no hay un directorio de instalaciones verificadas ni se inventan sus coordenadas. El nombre aportado por el usuario no certifica el uso del edificio.
+El editor propone ubicaciones sobre la red y solicita validación real al backend:
+cuatro IDs y nodos distintos, coordenadas finitas, capacidad de 1–200, calle base
+transitable, ajuste máximo de 500 m y accesibilidad dirigida desde la red validada.
+Un punto alejado, duplicado o inaccesible se rechaza; una edición invalida la
+validación previa. Las propuestas requieren confirmación y sólo se aplican al
+crear otra ejecución, sin trasladar ocupantes de una ronda activa.
 
-**Validar cuatro candidatos** solicita a Go:
+Una conexión vial válida no certifica elevación, seguridad o uso oficial del lugar.
+Los refugios originales y personalizados son supuestos del escenario.
 
-- Coordenadas finitas y dentro del rango geográfico; identificador y nombre presentes.
-- Capacidad entre 1 y 200 por candidato, coherente con los límites del laboratorio.
-- Exactamente cuatro identificadores y nodos ajustados diferentes.
-- Nodo incidente a una calle base transitable, con ajuste de hasta **500 m**.
-- Alcance dirigido: cada candidato debe ser accesible desde todos los nodos de la red base validada.
+## Comparación conservada en la API
 
-La distancia máxima es una regla experimental de ajuste, no una recomendación peatonal. Se publican nodo, coordenadas ajustadas, distancia y explicación. Si el lugar está demasiado lejos, duplicado o inaccesible, la UI muestra el motivo y bloquea el inicio personalizado/A/B. Los parámetros malformados reciben error 400; los candidatos con campos válidos pero problemas de acceso reciben `valid:false`. Editar un candidato o la cobertura invalida su validación anterior. Una respuesta atrasada tampoco valida ediciones posteriores.
+`POST /lab/comparisons` conserva la comparación asíncrona de refugios originales
+frente a candidatos validados. La interfaz actual retiró el panel A/B; la capacidad
+sigue disponible por HTTP, sin añadir un simulador en React. La comparación usa
+población/orígenes congelados, semilla y configuración común y conserva hashes.
+Para aislar ubicación, mantén iguales grafo y capacidades; cambiar cobertura o
+capacidad cambia también las condiciones del experimento.
 
-Los cambios se aplican al iniciar otra ejecución. No se trasladan ocupantes ni reservas entre refugios a mitad de una ronda. Las capacidades y reservas de la ejecución activa siguen siendo autoritativas; proponer otra ficha no modifica esas plazas.
+Los tiempos de `Step` completo no son latencias de `/paso`. Una mayor evacuación
+en una configuración no prueba superioridad general ni habilita los refugios.
+Los resultados y métricas históricas permanecen en los JSON de `deploy/`.
 
-## Comparación A/B
+## Capas, datos y verificación
 
-Tras validar cuatro alternativas, pulsar **Comparar A/B**. El backend pausa la ejecución activa y ejecuta asincrónicamente dos simulaciones completas:
+El mapa separa profundidad sintética, condiciones viales, ruta seleccionada,
+agentes, refugios, reportes ciudadanos y referencia histórica SNGR. La referencia
+no añade agua ni cambia elevaciones. Los reportes pendientes tampoco alteran
+motores automáticamente. [Fuentes](datos-oficiales-y-demo.md) · [Incidentes](incidentes-ciudadanos.md).
 
-- A: cuatro refugios originales del grafo seleccionado.
-- B: cuatro candidatos personalizados, incluidas sus capacidades.
+La geografía se cachea por versión y se obtiene aparte del polling; el historial
+acota métricas, sin guardar un mapa completo por turno. Los fallos del raster
+opcional conservan vectores OSM y atribución. Las lecturas no descargan fuentes
+externas por turno.
 
-Ambas reciben exactamente los mismos agentes, identidad, semilla, duración, lluvia, comportamiento y focos de exposición. La comparación se ejecuta acelerada en Go; no reproduce otro motor en React. Las latencias mostradas son el costo medio de `Step` completo, excluyendo las esperas visuales.
-
-La semilla sola no bastaba: el generador existente excluye nodos con refugios al aparecer agentes. Por eso el laboratorio genera y congela la población sobre el grafo de competición y sus refugios originales **antes** de sustituir candidatos. Entrega esos agentes como `InitialSurvivors`. El manifiesto `origins` conserva ID y coordenadas geográficas fuente; al pasar al maestro se reutilizan sus nodos compartidos. Si faltara un ID, se aplicaría ajuste determinista limitado a 500 m o se rechazaría la ejecución. En los datos revisados, el cambio base→maestro registra ajuste de origen de cero metros.
-
-También congela tres focos sobre la geografía base: uno artificial en `OSM-363647979`, elegido para estresar rutas, y dos determinados por semilla. Sus radios son 150–800 m y usan factor sintético 1. La posición del foco de estrés no es evidencia de inundación real. Este diseño conserva el campo de amenaza entre grafos y estrategias sin modificar el motor 4A.
-
-Cada resultado lleva `origins_hash`, `config_hash`, denominador, semilla y modo. `config_hash` excluye los refugios e incluye los focos efectivos. React sólo acepta una comparación terminada si coinciden estos controles; el porcentaje usa `evacuados / total_agents` en ambos casos. Se muestran evacuación, aislamiento, tiempo medio entre quienes evacuaron, saturación, replanificaciones, bloqueos finales y latencia. Cambiar capacidades también cambia la estrategia; para aislar el efecto de ubicación hay que conservarlas.
-
-El resultado vale para esa configuración artificial y ese horizonte. Una mayor evacuación en B no certifica instalaciones seguras ni demuestra superioridad general. Los agentes todavía en movimiento al finalizar tampoco se convierten en muertos o aislados automáticamente.
-
-## Mapa e interacción
-
-El proyecto no usaba una biblioteca externa: `WorldMap` era un renderer SVG propio. El mapa de inundación reutiliza esa tecnología sin añadir Leaflet, MapLibre ni otra dependencia. Conserva pan, zoom y navegación mediante flechas, `+`, `−` y `0`. Las geometrías OSM se proyectan a Mercator y se indexan una vez por grafo; un grid espacial permite inspeccionar aristas mediante clic. El campo **Inspeccionar arista** ofrece una alternativa por teclado con sugerencias acotadas.
-
-Las calles se agregan en **tres paths SVG**, evitando miles de objetos React por calle. Las condiciones del snapshot actual reclasifican esos paths; los agentes se limitan a 200 y los refugios a cuatro. Sólo se dibuja la ruta seleccionada. El maestro conserva su geografía real y no cambia de dataset para mejorar artificialmente el rendimiento.
-
-Las ocho capas son independientes: exposición azul, calles transitables, precaución amarilla, bloqueos rojos, rutas, agentes, refugios e incidentes. Los refugios disponibles se representan en verde. Los iconos, trazos, leyenda, estados textuales, tablas y descripciones aportan información adicional al color. La capa de incidentes queda vacía y preparada para FASE 4C; no se fabrican eventos.
-
-El mapa base combina geometría OSM conservada con teselas raster opcionales. La atribución permanece visible. El proveedor predeterminado es `https://tile.openstreetmap.org/{z}/{x}/{y}.png`; se solicitan sólo teselas del viewport, con límite 32, sin precarga ni descarga offline, y se respetan la caché y el Referer del navegador. Esta integración sigue la [política oficial de teselas](https://operations.osmfoundation.org/policies/tiles/). Si falla el proveedor, permanecen la cartografía vectorial, datos y controles.
-
-La línea temporal inspecciona métricas registradas sin fingir que retrocede el mapa o el motor. El mapa siempre corresponde al estado actual publicado. El backend conserva hasta 512 entradas mediante muestreo; el progreso sigue mostrando el reloj real.
-
-## URLs, CORS y configuración
-
-`src/services/api.ts` continúa siendo el único adaptador HTTP. Valida respuestas, tiempos, denominadores y versiones; conserva el request ID y traduce errores de red/API. TanStack Query hace polling de inundación cada 500 ms; AppShell observa su caché sin otro temporizador. Zombie conserva sus consultas de dos segundos.
-
-```sh
-# Arranque manual, alternativa al comando integrado:
-npm run dev:flood:lab -- -listen 127.0.0.1:8082 -origin http://127.0.0.1:5173
-VITE_WORLD_API_BASE_URL=http://127.0.0.1:8080 VITE_FLOOD_API_BASE_URL=http://127.0.0.1:8082 npm run dev --workspace @corodev/web -- --host 127.0.0.1
-```
-
-Usar el mismo hostname en React y laboratorio: `127.0.0.1` en ambos o `localhost` en ambos. Mezclar esos nombres puede impedir la cookie SameSite. El origen incluye esquema y puerto; para Vite en otro puerto hay que pasar ese origen al laboratorio. `npm run dev:lab` evita esta mezcla automáticamente.
-
-Variables públicas:
-
-| Variable | Uso |
-| --- | --- |
-| `VITE_WORLD_API_BASE_URL` | Instancia zombie; producción sigue siendo su valor predeterminado |
-| `VITE_FLOOD_API_BASE_URL` | Laboratorio controlable; puerto local 8082 |
-| `VITE_API_TIMEOUT_MS` | Límite del adaptador HTTP |
-| `VITE_OSM_TILES_ENABLED=false` | Deshabilitar raster opcional conservando vectores OSM |
-| `VITE_OSM_TILE_URL_TEMPLATE` | Proveedor HTTPS alternativo con `{z}/{x}/{y}` |
-
-Las URLs rechazan credenciales, consultas y fragmentos; los mensajes no imprimen valores sensibles. Nunca colocar API keys en variables `VITE_`. El servidor de lectura 4A (`npm run dev:flood`, puerto 8081) se conserva, pero no ofrece los controles nuevos: para React 4B se usa **`dev:flood:lab`**.
-
-El laboratorio exige binding literal de loopback, rechaza Host ajenos a loopback y verifica Origin. La fase móvil posterior permite iniciar/controlar tormentas, validar candidatos y comparar sin sesión de operador: `/lab/runs`, `/lab/actions`, `/lab/candidates/validate` y `/lab/comparisons`. Conserva `expected_run_id`, validaciones y exclusión mutua, con límites de 120 controles y 10 inicios/comparaciones por IP/minuto. Las mutaciones de moderación de incidentes y actualización de referencia conservan cookie HttpOnly y CSRF. La credencial interna de `/paso` nunca se envía al navegador. El controlador zombie no se modifica.
-
-## Contratos nuevos
-
-OpenAPI conserva todos los endpoints y schemas anteriores y añade:
-
-| Operación | Función |
-| --- | --- |
-| `GET /lab/catalog` | Modos revisados, presets, defaults, originales y límites |
-| `GET /lab/session` | Sesión local y CSRF en memoria |
-| `GET /lab/state` | Estado coherente del controlador, escenario 4A, plazas, orígenes, timeline y A/B |
-| `GET /lab/published` | Snapshot actual para espectadores, caché ETag, timeline vacío, sin comparación ni geografía |
-| `GET /lab/graph?mode=…` | Previsualización del dataset solicitado |
-| `GET /lab/graph?run_id=…` | Grafo efectivo de esa ejecución, incluidos candidatos |
-| `POST /lab/runs` | Iniciar configuración real con `expected_run_id` |
-| `POST /lab/actions` | `pause`, `resume`, `restart`, `repeat`, `speed` |
-| `POST /lab/candidates/validate` | Validar cuatro ubicaciones contra el grafo |
-| `POST /lab/comparisons` | A/B asíncrono con entradas congeladas |
-
-`LabState.scenario` reutiliza `ScenarioSnapshot` de 4A. El grafo efectivo tiene una versión derivada de sus candidatos; las lecturas se asocian por `run_id` y `graph_version`. Cambiar ejecución limpia selección/rutas y la UI nunca mezcla un escenario activo con una previsualización diferente. No se descarga de nuevo el maestro por cada pausa o cambio de velocidad.
-
-## Verificación y límites
-
-```sh
-npm run check
-npm test
-npm run build:web
-npm run test:e2e
-npm run test:lab:flood
-npm run test:backend
-npm run test:race
-```
-
-El checker 4B arranca Go y Chromium reales, valida JSON Schema, controles, pausa efectiva, candidatos, A/B, maestro, CORS y ausencia de credenciales en peticiones. Guarda informe y capturas en `deploy/evidence-private/phase4b-20261026/`. Las pruebas automatizadas deshabilitan las teselas públicas; sus capturas muestran los vectores OSM reales del repositorio. La política OSM no permite usar bots que desplacen/acerquen el mapa para descargar teselas. No se atribuye a esas capturas una verificación de disponibilidad del proveedor raster.
-
-Los [resultados y archivos modificados](informe-fase4b.md) incluyen métricas reales de payload, DOM y memoria. El límite sigue siendo el laboratorio local, sin persistencia tras reiniciar proceso, sin directorio verificado de instalaciones y con el costo de clonar grafos del núcleo 4A. No se implementó 4C ni un despliegue, proxy o administración remota de este servicio. La nueva UI no activa automáticamente esta fase en la web publicada.
+`npm run test:contracts:flood`, `npm run test:lab:flood` y
+`npm run bench:hydrology` reproducen verificaciones distintas: transporte,
+interfaz/controles y escenarios hidráulicos completos. Sus ejecuciones previas y
+límites están en [pruebas](pruebas.md); esta limpieza no volvió a ejecutarlas.

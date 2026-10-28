@@ -49,7 +49,7 @@ async function request(url, options = {}, expected = 200) {
 async function main() {
   switch (process.argv[2] || 'help') {
     case 'help':
-      console.log('make setup  Herramientas, npm y configuración local sin sobrescribir\nmake dev    React :5173, sesiones Go :8080 y laboratorio :8082; inicio manual\nmake stop   Detener ese entorno sin eliminar reportes ni volúmenes\nmake test   Pruebas JavaScript y Go\nmake smoke  Health, catálogo, publicados y /paso autenticado del entorno activo\nmake verify Contratos, lint, pruebas/race, HTTP real y builds web/Go\n\nFlutter es opcional: npm run mobile:check, mobile:test y mobile:build.\nGuía: docs/development/local-setup.md.');
+      console.log('make setup  Herramientas, npm y configuración local sin sobrescribir\nmake dev    React :5173, sesiones Go :8080 y laboratorio :8082; inicio manual\nmake stop   Detener ese entorno sin eliminar reportes ni volúmenes\nmake test   Pruebas JavaScript y Go\nmake smoke  Health, catálogo, publicados y /paso autenticado del entorno activo\nmake verify Contratos, lint, pruebas/race, HTTP real y builds web/Go\n\nFlutter es opcional: npm run mobile:check, mobile:test y mobile:build.\nGuía: docs/despliegue.md#desarrollo-local.');
       break;
     case 'setup': {
       if (Number(process.versions.node.split('.')[0]) < 22 || (Number(process.versions.node.split('.')[0]) === 22 && Number(process.versions.node.split('.')[1]) < 12)) throw new Error('Se requiere Node >=22.12.');

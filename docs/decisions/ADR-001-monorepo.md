@@ -1,19 +1,22 @@
 # ADR-001: monorepo con npm workspaces y Flutter independiente
 
-Estado: aceptada. Fecha de la decisión: 2026-10-23.
+Estado: aceptada. Fecha de la decisión original: 2026-10-23.
 
 ## Contexto
 
-Web y móvil deben consumir el mismo contrato y la misma identidad durante un hackathon de 48 horas. Mantenerlos en repositorios separados obligaría a coordinar versiones y distribución de paquetes antes de conocer el assignment.
+React y Flutter comparten contrato e identidad. Mantener las fuentes juntas
+permite revisar cambios de API y ambos clientes en el mismo árbol.
 
 ## Decisión
 
-Conservar `apps/web`, `apps/mobile`, `services/mock-api`, `packages/contracts`, `packages/design-tokens` y herramientas en un único árbol. npm workspaces administra los paquetes JavaScript; Flutter mantiene sus propias dependencias y lockfile. Scripts Node en la raíz ejecutan Flutter desde su directorio mediante `PATH` o `FLUTTER_BIN`.
-
-No añadir una herramienta adicional de orquestación, publicación de paquetes ni infraestructura cloud. No inicializar Git automáticamente.
+Conservar `apps/web`, `apps/mobile`, `services/evacuation`, `packages` y herramientas
+en un monorepo. npm workspaces administra web, contratos y tokens; Flutter y Go
+mantienen sus dependencias y lockfiles propios. Make reutiliza scripts Node de raíz.
+El servidor starter fue sustituido por Go y ya no forma parte del workspace.
 
 ## Consecuencias
 
-Un cambio de contrato puede actualizar API y ambos clientes de forma atómica en el árbol local. La generación y los checks parten de la raíz. La instalación JavaScript no instala Flutter ni el SDK Android; esas herramientas se comprueban por separado. La API compilada conserva una dependencia de ruta hacia el YAML del monorepo, que debe incluirse al empaquetarla.
-
-Si en el futuro los ciclos de release se separan, evaluar publicación y versionado de contratos con requisitos reales; no resolver esa distribución por adelantado.
+Los cambios de contrato se generan y comprueban desde la raíz. Instalar JavaScript
+no instala Flutter/Android ni Go. La API Go se compila independientemente y no
+necesita cargar el YAML en producción; las verificaciones HTTP sí usan sus esquemas.
+No se añade otra herramienta de orquestación o distribución de paquetes.

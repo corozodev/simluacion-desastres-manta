@@ -10,7 +10,7 @@ Duplicar modelos manualmente en TypeScript y Dart puede producir diferencias de 
 
 Usar `packages/contracts/openapi.yaml`, OpenAPI 3.0.3, como origen de operaciones y esquemas. Validarlo con Swagger Parser y generar tipos TS con `openapi-typescript` 7. Generar modelos Dart con un script acotado a las formas actuales, que rechaza formas no soportadas. Mantener fetch y Dio como adaptadores manuales tipados, en lugar de introducir un SDK completo y su toolchain.
 
-Fastify carga el mismo contrato para validar solicitudes y respuestas. Los archivos generados llevan advertencia y se comprueban mediante `npm run generated:check`.
+Los harnesses HTTP validan respuestas de Go real contra JSON Schema derivado del mismo contrato. Go valida entradas en su implementación; no carga el YAML en producción. Los archivos generados llevan advertencia y se comprueban mediante `npm run generated:check`.
 
 ## Consecuencias
 

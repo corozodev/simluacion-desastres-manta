@@ -2,10 +2,11 @@
 
 [Índice](INDEX.md) · [Arquitectura](arquitectura.md) · [Nivel PRO](nivel-pro.md) · [Limitaciones](limitaciones.md)
 
-Auditoría local del **27 de octubre de 2026, Ecuador**. La evidencia histórica
+Resultados de la auditoría local del **27 de octubre de 2026, Ecuador**,
+anteriores a esta limpieza y a la instrumentación CloudWatch. La evidencia histórica
 permanece en los informes [FASE 1](informe-fase1.md), [FASE 2](informe-fase2.md),
 [FASE 7](informe-fase7.md) y [FASE 8](informe-fase8.md). Sus resultados corresponden
-a aquellas versiones; las mediciones de esta página son una ejecución nueva.
+a aquellas versiones; no se presentan como pruebas repetidas durante la limpieza.
 
 ## Matriz de cumplimiento
 
@@ -192,7 +193,7 @@ no acredita Safari real ni ejecución física Android.
 | --- | --- |
 | `npm install` | PASS; auditoría reportó cero vulnerabilidades |
 | `contracts:validate`, `contracts:generate`, `tokens:generate`, `npm run check` | PASS; contrato, generados, tipos y lint sincronizados |
-| `npm test` | PASS final: 166 web + 40 mock histórico |
+| `npm test` | PASS histórico: 166 pruebas web; el servicio starter probado entonces fue retirado después |
 | `npm run build:web` | PASS |
 | `npm run graph:test` | PASS: 10 pruebas offline |
 | `npm run test:backend -- -timeout 5m` | PASS; incluye aplicación, sesiones, flota, capacidad, hidrología y laboratorio |
@@ -227,13 +228,13 @@ sesión local; no se relajó la seguridad para aprobar una prueba. Los fallos
 iniciales de web/Flutter por expectativas obsoletas también se corrigieron antes
 de ejecutar sus suites finales completas.
 
-`make verify` final terminó **PASS** (salida 0): documentos, contrato/derivados, lint/tipos, Go/race, geografía, HTTP real y builds; después 166 pruebas web y 40 mock. Navegador, Flutter, benchmarks y Docker se ejecutaron además, según la tabla.
+`make verify` final terminó **PASS** (salida 0): documentos, contrato/derivados, lint/tipos, Go/race, geografía, HTTP real y builds; después 166 pruebas web y las del servicio starter de aquella versión. Navegador, Flutter, benchmarks y Docker se ejecutaron además, según la tabla.
 
 
 ## Publicación AWS autorizada
 
 El commit `47f51fa` se publicó y desplegó el 27 de octubre de 2026, preservando
-credenciales, límites y datos ciudadanos. [Evidencia y hashes activos](../deploy/deployment-delivery-20261027.json).
+credenciales, límites y datos ciudadanos. [Evidencia y hashes de aquella entrega](../deploy/deployment-delivery-20261027.json).
 Por HTTPS se verificaron health, capacidades y publicados; una tormenta BASE de
 ocho agentes avanzó, pausó, reanudó, aceptó doble cancelación, reinició y volvió
 a avanzar. Se dejó cancelada. `/paso` conservó 401/200 y vecino/espera válido;

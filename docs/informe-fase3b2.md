@@ -1,6 +1,8 @@
 # Informe FASE 3B.2 — simulación multigrafo
 
-Entrega validada y desplegada en AWS el 26 de octubre de 2026, Ecuador, tras autorización expresa. Competición conserva el comportamiento anterior; React incorpora previsualización y control de rondas autenticado. El backend arrancó en un contenedor nuevo a las 21:24:28 y el propietario ordenó después retirar el contenedor/imagen anteriores, ya eliminados de EC2. [Operación](operacion-multigrafo.md), [evidencia resumida](../deploy/validation-phase3b2.json) y [revisión concreta del rollout](revision-rollout-fase3b2.md).
+> Informe histórico de la versión indicada. Los resultados se conservan; los flujos, despliegue y componentes vigentes están en [arquitectura](arquitectura.md) y [pruebas](pruebas.md).
+
+Entrega validada y desplegada en AWS el 26 de octubre de 2026, Ecuador, tras autorización expresa. Competición conserva el comportamiento anterior; React incorpora previsualización y control de rondas autenticado. El backend arrancó en un contenedor nuevo a las 21:24:28 y el propietario ordenó después retirar el contenedor/imagen anteriores, ya eliminados de EC2. [Operación](contratos.md#administración-de-operador), [evidencia resumida](../deploy/validation-phase3b2.json) y [revisión concreta del rollout](despliegue.md#actualización-de-la-instalación-existente).
 
 ## Alcance y criterio
 

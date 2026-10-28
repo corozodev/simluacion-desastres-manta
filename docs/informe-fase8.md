@@ -24,8 +24,8 @@ su contrato español, autenticación, vecino transitable o espera.
 La capa oficial aplicaba anteriormente factores categóricos experimentales a
 los focos; no era un DEM ni una medición de agua. Ahora sólo fija procedencia y
 contexto visual: no inyecta volumen ni altera elevaciones o riesgo calculado.
-Los documentos FASE 4A–4D describen resultados históricos y se conservan como
-evidencia, no como descripción del nuevo runtime.
+Los resultados históricos FASE 4A–4D se conservan en los JSON de `deploy/`;
+las guías del runtime radial se retiraron al quedar sustituidas.
 
 ## Dominio y datos
 

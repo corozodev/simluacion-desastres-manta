@@ -1,5 +1,7 @@
 # FASE 7 — políticas, planificación y funciones PRO
 
+> Informe histórico de la versión indicada. Los resultados se conservan; los flujos, despliegue y componentes vigentes están en [arquitectura](arquitectura.md) y [pruebas](pruebas.md).
+
 Implementación local del **27 de octubre de 2026, Ecuador (UTC−05:00)**.
 La evidencia resumida está en [validation-phase7.json](../deploy/validation-phase7.json).
 Esta fase conserva el motor FASE 1 congelado, los grafos y reportes históricos,

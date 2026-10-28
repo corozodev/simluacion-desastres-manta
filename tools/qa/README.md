@@ -31,13 +31,24 @@ node tools/qa/check_http_contracts.mjs --urban
 FLUTTER_BIN=/ruta/flutter/bin/flutter node tools/qa/check_http_contracts.mjs --urban --browser --flutter
 ```
 
-El modo urbano comprueba cuatro zonas de origen, geometrías y coherencia de ocupación/reservas/disponibilidad. El navegador verifica zoom, desplazamiento/reset, selección de ruta, búsqueda, ausencia de solicitudes al health demo y de credenciales, además del viewport móvil. Las cifras de nodos/aristas se leen del grafo recibido; no se fija 325 para la variante urbana.
+El modo urbano comprueba cuatro zonas de origen, geometrías y coherencia de ocupación/reservas/disponibilidad. El navegador verifica zoom, desplazamiento/reset, selección de ruta, búsqueda, ausencia de llamadas a servicios ajenos al backend configurado y de credenciales, además del viewport móvil. Las cifras de nodos/aristas se leen del grafo recibido; no se fija 325 para la variante urbana.
 
-## FASE 3B.2
+## Comparación geográfica histórica
 
-`check_multigraph.mjs` prueba Go y Chromium reales con credenciales efímeras sólo en memoria, origen/listener loopback, simulación acelerada explícita y ningún acceso AWS. Comprueba previsualización de 13.452 aristas, autorización, bloqueo de otra ronda, logout, retención de finales y ancho móvil. `MULTIGRAPH_EVIDENCE_DIR` guarda capturas y métricas locales privadas.
+`benchmark_multigraph.py` usa `cmd/multigraph-bench` en Docker sin red externa,
+con dos CPU, `GOMAXPROCS=2` y 1 GB. Conserva errores/OOM, CPU/RSS y percentiles;
+ese entorno no equivale a la EC2 actual. El harness de navegador del antiguo
+panel administrativo se retiró al no representar el cliente vigente. Para el
+flujo actual usa `test:simulations:browser` y `test:spectators:browser`.
 
-`benchmark_multigraph.py` ejecuta el binario `cmd/multigraph-bench` en Docker sin red externa, con dos CPU, GOMAXPROCS=2 y 1 GB. Declara aceleraciones y conserva errores/OOM además de percentiles y CPU/RSS. Ver comandos, límites y seguridad en [operación multigrafo](../../docs/operacion-multigrafo.md). `/paso` conserva su contrato exacto; los controles administrativos no pertenecen al cliente móvil.
+```sh
+node tools/scripts/go.mjs build -o ../../.local/multigraph-bench ./cmd/multigraph-bench
+python3 tools/qa/benchmark_multigraph.py --binary .local/multigraph-bench \
+  --output deploy/evidence-private/benchmark-nuevo --modes competition full
+```
+
+[Resultados, regresiones y condiciones originales](../../docs/informe-fase3b2.md).
+El maestro sigue siendo experimental y sus costos se informan aparte de los objetivos de BASE.
 
 ## Espectadores y mapa ciudadano móvil
 
@@ -50,3 +61,17 @@ Flutter prueba los mismos snapshots con `published_http_integration_test.dart`, 
 `FLUTTER_BIN=/ruta/flutter/bin/flutter npm run test:spectators:http -- --flutter` añade las dos integraciones Dart contra esos mismos Go: lectura de IDs publicados y creación/replay/consulta de un reporte ciudadano real. El harness proporciona coordenadas y una calle del maestro verificado; comprueba que el reporte no cambia el escenario pausado.
 
 `FLUTTER_BIN=/ruta/flutter/bin/flutter npm run test:spectators:browser -- --flutter` comprueba las tres partes juntas: React escritorio crea las ejecuciones reales, el visor móvil las observa y Dart recibe exactamente esos mismos IDs y el paso de inundación pausada. Guarda la comparación sin credenciales en `flutter-shared-with-react.json` dentro de la evidencia de navegador.
+
+## Alcance de los harnesses conservados
+
+Se retiraron los checkers de los antiguos paneles administrativos, de aplicación
+visual de reportes y de fuentes/eventos desplegables: exigían controles eliminados
+del producto. Las verificaciones actuales de espectadores HTTP/navegador y Flutter
+conservan recepción/replay de reportes y aislamiento; Go mantiene las regresiones
+de persistencia/reinicio, asociación, aplicación protegida y referencia offline.
+No se ejecutaron E2E durante esta limpieza ni se atribuye cobertura nueva.
+
+Ajv y `ajv-formats` son dependencias directas de QA en raíz. El runtime Go no
+depende de ellas. `tsx` ya no es una dependencia directa del proyecto; npm puede
+conservarlo como peer opcional de Vite. No elimines dependencias transitivas por
+su nombre sin comprobar el lockfile.

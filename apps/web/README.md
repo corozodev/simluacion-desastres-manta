@@ -1,6 +1,6 @@
 # Cliente React — MantaSim
 
-Experiencia web principal del proyecto. [Inicio local](../../docs/development/local-setup.md),
+Experiencia web principal del proyecto. [Inicio local](../../docs/despliegue.md#desarrollo-local),
 [arquitectura](../../docs/arquitectura.md) y [verificación](../../docs/pruebas.md).
 Desde la raíz, `make setup` prepara las dependencias y `make dev` inicia ambos
 servicios Go y Vite sin ejecutar simulaciones.

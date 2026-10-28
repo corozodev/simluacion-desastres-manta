@@ -2,14 +2,14 @@
 
 ## Alcance y fuentes
 
-MantaSim / Escape de Manta Zombie: Track A BASE + PRO experimental y laboratorio hidráulico FASE 8. La consolidación final autoriza documentación, automatización local y correcciones acotadas; no rediseñar el motor ni iniciar nuevas fases. Conservar informes históricos, grafos originales y `internal/evaluation/phase1` congelado. Nunca inicializar Git, falsificar historial, crear commits, hacer push o desplegar sin autorización expresa. No destruir datos/volúmenes ni interrumpir la instancia publicada.
+MantaSim / Escape de Manta Zombie: Track A BASE + PRO experimental y laboratorio hidráulico FASE 8. La consolidación final autoriza documentación, automatización local y correcciones acotadas; no rediseñar el motor ni iniciar nuevas fases. Conservar los informes comparativos FASE 1/2/3B.2/7/8, grafos originales y `internal/evaluation/phase1` congelado; las guías sustituidas viven en Git. Nunca inicializar Git, falsificar historial, crear commits, hacer push o desplegar sin autorización expresa. No destruir datos/volúmenes ni interrumpir la instancia publicada.
 
 Leer el AGENTS del ámbito antes de editar. Fuentes actuales: [índice](docs/INDEX.md), [arquitectura](docs/arquitectura.md), [contratos](docs/contratos.md), [pruebas](docs/pruebas.md), [PRO](docs/nivel-pro.md), [AWS](docs/despliegue.md). Los informes FASE 1–8 registran historia y no sustituyen el comportamiento vigente.
 
 - `packages/contracts/openapi.yaml` posee HTTP. Cambiar primero y regenerar TypeScript, Dart y JSON Schema; nunca editar derivados.
 - `packages/design-tokens/tokens.json` y `brand.json` poseen diseño/identidad. Regenerar CSS, TS y Dart.
 - React: `apps/web/src/app`, `features`, adaptador `services/api.ts`; TanStack Query. Flutter Android: `apps/mobile`, Material 3/Riverpod/Dio; repositorios traducen HTTP. Fixtures sólo en pruebas.
-- Go: `services/evacuation/cmd/server`, `cmd/flood-lab`; monolito modular estándar, sin servicios externos de decisión. Mock Fastify aislado para compatibilidad; no restaurar pantallas/adaptadores demo.
+- Go: `services/evacuation/cmd/server`, `cmd/flood-lab`; monolito modular estándar, sin servicios externos de decisión. La API local es Go real; no restaurar el servidor starter ni sus pantallas/adaptadores. Ajv en raíz pertenece a QA HTTP, no a un runtime alternativo.
 - OSM se importa offline de fuentes versionadas; no inventar geografía. BASE 300/383 tiene prioridad; FULL_MANTA 9.179/13.452 requiere habilitación explícita, sin exigirle rendimiento de BASE.
 
 ## Motor y API
@@ -42,4 +42,4 @@ Medir rondas completas, `bench:backend` y `bench:hydrology` antes de atribuir la
 
 TypeScript estricto, español conciso, navegación accesible y estados carga/vacío/error. Mantener dependencias/lockfiles. Validar entradas externas y sobre común/requestId. Nunca secretos en frontend, ejemplos, logs o artefactos públicos; `.env`, `.local`, `private`, `reports` y evidencia privada ignorados. Revisar captura Budget auténtica antes de publicación manual.
 
-Inspeccionar `git status`, conservar trabajo ajeno. Delegar sólo con autorización y propiedad exclusiva; raíz integra tooling. Una fuente documental por tema, enlaces relativos comprobados, conservar ADR/informes. Reportar comandos ejecutados, fallos y omisiones; ausencia de evidencia no significa cumplimiento. AWS necesita cuenta/región/acceso autorizados; sin ellos terminar artefactos locales y declarar límite. No cargar producción para medir sin permiso.
+Inspeccionar `git status`, conservar trabajo ajeno. Delegar sólo con autorización y propiedad exclusiva; raíz integra tooling. Una fuente documental por tema, enlaces relativos comprobados, conservar ADR y evidencia comparativa; eliminar guías sustituidas sólo tras rastrear sus referencias. Reportar comandos ejecutados, fallos y omisiones; ausencia de evidencia no significa cumplimiento. AWS necesita cuenta/región/acceso autorizados; sin ellos terminar artefactos locales y declarar límite. No cargar producción para medir sin permiso.

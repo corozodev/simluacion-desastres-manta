@@ -138,7 +138,7 @@ func (m *Manager) prepare(mode, round string, seed *int64, operator string) (*ex
 	}
 	run := &execution{operator: operator, info: world.SimulationInfo{RunID: id, Mode: mode, Round: round, State: "idle", Seed: cfg.Seed, GraphVersion: g.Version, TurnLimit: cfg.Turns, IntervalMS: m.options.Interval.Milliseconds()}}
 	engine := decision.NewWithOptions(m.options.Engine)
-	app, err := application.NewWithOptions(g, cfg, "127.0.0.1:0", m.options.APIKey, m.options.Origins, m.options.Logger, application.Options{Engine: engine, Planner: coordination.New(engine, coordination.Options{}), Metadata: run.metadata})
+	app, err := application.NewWithOptions(g, cfg, "127.0.0.1:0", m.options.APIKey, m.options.Origins, m.options.Logger, application.Options{Engine: engine, Planner: coordination.New(engine, coordination.Options{}), Metadata: run.metadata, ObservationID: id})
 	if err != nil {
 		return nil, err
 	}

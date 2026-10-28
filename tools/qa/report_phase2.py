@@ -128,7 +128,7 @@ Las cachés inmutables separan búsqueda de ruta y cambios de objetivos del pron
 
 El coordinador prepara asignaciones/reservas antes de publicar. Usa escasez/regret e histéresis15%, sin sobreasignar. La simulación mantiene autoridad sobre posiciones/capacidad/ocupación, libera reservas y convierte la reserva en ocupación. Un escape no reserva plaza. `/paso` solo lee el plan coherente. El motor FASE1 permanece congelado exclusivamente en `internal/evaluation/phase1`.
 
-A geografía, B diagnóstico/simulación, C rutas/predictor, D coordinación y E infraestructura/clientes trabajaron con archivos exclusivos; el coordinador estabilizó contratos, evaluador, HTTP, integración, regresiones y medición. Ver [algoritmo](algoritmo-fase2.md), [reservas](refugios-fase2.md) y [reglas](reglas-simulacion.md).
+A geografía, B diagnóstico/simulación, C rutas/predictor, D coordinación y E infraestructura/clientes trabajaron con archivos exclusivos; el coordinador estabilizó contratos, evaluador, HTTP, integración, regresiones y medición. Ver [algoritmo](algoritmo-fase2.md), [reservas](nivel-pro.md#refugios-capacidad-reservas-y-concurrencia) y [reglas](reglas-simulacion.md).
 
 ## E. Evaluación comparativa
 
@@ -192,7 +192,7 @@ Docker detectó un defecto de integración real: un wildcard IPv4 anunciaba `::1
 
 Preparados Docker multi-stage con digests, health, reinicio, HTTPS Caddy, CloudFormation EC2/S3privado/CloudFrontOAC/CloudWatch/Budget, IAM mínimo, release/rollback y documentación de red/secretos. La imagen final usa v2 y escenario urbano compatibles. **No se desplegó AWS:** faltan CLI/acceso autenticado, cuenta y región autorizadas. No existe URL pública comprobada, gasto real, Budget creado ni captura `budget.png`. No se inventaron esas evidencias.
 
-Estimación ilustrativa documentada: **24,03USD/mes** para un ejemplo `us-east-1`,730horas, con fuentes oficiales y supuestos; no es cargo observado ni cotización. La región debe confirmarse antes de usar la plantilla; el Budget precede a recursos con consumo. Ver [despliegue/rollback](despliegue-aws.md), [costos](costos.md) y [diagrama](arquitectura.svg).
+Estimación ilustrativa documentada: **24,03USD/mes** para un ejemplo `us-east-1`,730horas, con fuentes oficiales y supuestos; no es cargo observado ni cotización. La región debe confirmarse antes de usar la plantilla; el Budget precede a recursos con consumo. Ver [despliegue/rollback](despliegue.md), [costos](costos.md) y [diagrama](arquitectura.svg).
 
 ## H. Clientes
 

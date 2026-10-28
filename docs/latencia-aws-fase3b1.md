@@ -1,5 +1,7 @@
 # Latencia — FASE 3B.1
 
+> Informe histórico de la versión indicada. Los resultados se conservan; los flujos, despliegue y componentes vigentes están en [arquitectura](arquitectura.md) y [pruebas](pruebas.md).
+
 Diagnóstico del 26 de octubre de 2026, hora de Ecuador. Se conserva el motor, los cuatro endpoints y el contrato español de `/paso`. No se añadió OpenTelemetry ni un agente: los hooks de medición existentes, `httptrace` de Go y los tiempos nativos de Caddy permiten separar primero los componentes sin dependencias de producción.
 
 Las mediciones sitúan el mayor costo en el trayecto Ecuador–Ohio y el establecimiento de conexiones: POST externo p50 **361,494 ms** con TCP/TLS nuevos y **112,529 ms** reutilizándolos, frente a un handler Go aislado en esa EC2 con **p95 0,549 ms** sobre el mismo mundo final. La reducción del cliente de diagnóstico no se presenta como una mejora nueva del navegador, que ya reutiliza conexiones.

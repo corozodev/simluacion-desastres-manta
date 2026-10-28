@@ -29,7 +29,7 @@ await cp(path.join(root, 'services/evacuation/data'), path.join(build, 'data'), 
 await cp(path.join(root, 'services/evacuation/scenarios'), path.join(build, 'scenarios'), { recursive: true });
 await cp(path.join(root, 'packages/contracts/openapi.yaml'), path.join(build, 'openapi.yaml'));
 await cp(path.join(root, 'packages/contracts/generated/schemas.json'), path.join(build, 'schemas.json'));
-await cp(path.join(root, 'docs/informe-fase7-movil.md'), path.join(build, 'informe-fase7-movil.md'));
+await cp(path.join(root, 'apps/mobile/README.md'), path.join(build, 'README-android.md'));
 const validation = path.join(root, 'deploy/validation-phase7-mobile.json');
 if (existsSync(validation)) await cp(validation, path.join(build, 'validation-phase7-mobile.json'));
 await writeFile(path.join(build, 'LEEME.txt'), 'Artefactos locales; no desplegados. Android debug no es un release firmado para tiendas.\nIncluye grafos/escenarios versionados. Ejecutar bin/server y bin/flood-lab desde esta carpeta; conservar el directorio ciudadano privado existente por separado.\nNunca copiar credenciales de desarrollo. El backend requiere API_KEY fuera del paquete.\nEl laboratorio escucha loopback:8082; el servidor usa FLOOD_LAB_UPSTREAM=http://127.0.0.1:8082.\nPublicar /mobile y el APK requiere autorización y una URL real. No ejecutar reinicios remotos sin autorización.\n');

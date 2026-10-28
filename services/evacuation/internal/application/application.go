@@ -48,6 +48,7 @@ type Options struct {
 	Planner            world.TurnPlanner
 	Observe            func(httpapi.RequestTiming)
 	Metadata           func() *world.SimulationInfo
+	ObservationID      string
 }
 
 // NewWithOptions allows controlled offline evaluations without changing HTTP.
@@ -57,7 +58,7 @@ func NewWithOptions(g *world.Graph, cfg simulation.Config, address, key string, 
 	if engine == nil {
 		engine = decision.New()
 	}
-	handler, err := httpapi.New(store, engine, g, httpapi.Options{APIKey: key, AllowedOrigins: origins, Logger: logger, Observe: options.Observe, Metadata: options.Metadata, AllowShelterSubset: options.AllowShelterSubset})
+	handler, err := httpapi.New(store, engine, g, httpapi.Options{APIKey: key, AllowedOrigins: origins, Logger: logger, Observe: options.Observe, Metadata: options.Metadata, AllowShelterSubset: options.AllowShelterSubset, ObservationScope: cfg.Name, ObservationID: options.ObservationID})
 	if err != nil {
 		return nil, err
 	}

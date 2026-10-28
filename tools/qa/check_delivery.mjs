@@ -22,6 +22,11 @@ for (const name of files.filter(name => name.endsWith('.md'))) {
     catch { failures.push(`${name}: enlace codificado inválido`); continue; }
     const resolved = file ? path.resolve(path.dirname(path.join(root, name)), file.split('?')[0]) : path.join(root, name);
     try { await stat(resolved); } catch { failures.push(`${name}: falta ${target}`); continue; }
+    const repositoryPath = path.relative(root, resolved).split(path.sep).join('/');
+    if (!files.some(entry => entry === repositoryPath || entry.startsWith(`${repositoryPath}/`))) {
+      failures.push(`${name}: ${target} no forma parte del árbol publicable`);
+      continue;
+    }
     checked++;
     if (anchor && resolved.endsWith('.md')) {
       const text = await readFile(resolved, 'utf8');
@@ -35,7 +40,7 @@ for (const name of files.filter(name => name.endsWith('.md'))) {
     }
   }
 }
-for (const name of tracked) {
+for (const name of files) {
   if (/(^|\/)\.env(?:\.|$)/.test(name) && !name.endsWith('.example')) failures.push(`${name}: configuración privada versionada`);
   if (/\.(?:pem|key|p12|pfx|jks|keystore)$/.test(name)) failures.push(`${name}: material de credencial versionado`);
   let source;

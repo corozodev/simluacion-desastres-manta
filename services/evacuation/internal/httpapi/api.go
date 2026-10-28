@@ -29,6 +29,8 @@ type Options struct {
 	Logger             *slog.Logger
 	Observe            func(RequestTiming)
 	Metadata           func() *world.SimulationInfo
+	ObservationScope   string
+	ObservationID      string
 }
 
 // RequestTiming is server-side instrumentation; client HTTP latency is measured
@@ -47,6 +49,7 @@ type api struct {
 	graphVersion string
 	key          [32]byte
 	options      Options
+	access       *accessLog
 }
 
 type errorBody struct {
@@ -88,7 +91,11 @@ func New(store *world.Store, engine world.DecisionEngine, g *world.Graph, option
 	for i, origin := range options.AllowedOrigins {
 		options.AllowedOrigins[i] = strings.TrimSpace(origin)
 	}
-	a := &api{store: store, engine: engine, index: index, graphVersion: g.Version, key: sha256.Sum256([]byte(options.APIKey)), options: options}
+	access, err := processAccessLog()
+	if err != nil {
+		return nil, err
+	}
+	a := &api{store: store, engine: engine, index: index, graphVersion: g.Version, key: sha256.Sum256([]byte(options.APIKey)), options: options, access: access}
 	return http.HandlerFunc(a.serve), nil
 }
 
@@ -105,26 +112,41 @@ func fail(w http.ResponseWriter, status int, code, message, requestID string) {
 func (a *api) serve(w http.ResponseWriter, r *http.Request) {
 	started := time.Now()
 	timing := RequestTiming{Path: r.URL.Path}
-	var random [16]byte
-	if _, err := rand.Read(random[:]); err != nil {
-		fail(w, 500, "INTERNAL_ERROR", "No se pudo procesar la solicitud.", "unavailable")
-		return
+	// Preserve the peer context: the local decision deadline is cancelled on
+	// every normal return and must not turn successful requests into cancellations.
+	peerContext := r.Context()
+	var observed *observedResponse
+	if a.access != nil && r.Method == http.MethodPost && r.URL.Path == "/paso" {
+		observed = &observedResponse{ResponseWriter: w}
+		w = observed
 	}
-	requestID := hex.EncodeToString(random[:])
-	w.Header().Set("x-request-id", requestID)
-	w.Header().Set("Cache-Control", "no-store")
-	w.Header().Set("X-Content-Type-Options", "nosniff")
+	requestID := "unavailable"
 	defer func() {
+		panicked := false
 		if recovered := recover(); recovered != nil {
+			panicked = true
 			a.options.Logger.Error("request failed", "request_id", requestID)
 			fail(w, 500, "INTERNAL_ERROR", "No se pudo procesar la solicitud.", requestID)
 		}
 		a.options.Logger.Debug("http request", "method", r.Method, "path", r.URL.Path, "request_id", requestID, "duration_ms", float64(time.Since(started).Microseconds())/1000)
+		timing.TotalMS = float64(time.Since(started)) / float64(time.Millisecond)
+		if observed != nil {
+			completed := time.Now().UTC()
+			a.access.record(accessEvent{Timestamp: completed, TimestampMS: completed.UnixMilli(), Event: "paso_http", Method: "POST", Route: "/paso", Status: observed.status, DurationMS: timing.TotalMS, SnapshotMS: timing.SnapshotMS, DecisionMS: timing.DecisionMS, Outcome: accessOutcome(peerContext, observed, panicked, time.Since(started) >= a.options.DecisionTimeout), Scope: a.options.ObservationScope, RunID: a.options.ObservationID, GraphVersion: a.graphVersion})
+		}
 		if a.options.Observe != nil {
-			timing.TotalMS = float64(time.Since(started)) / float64(time.Millisecond)
 			a.options.Observe(timing)
 		}
 	}()
+	var random [16]byte
+	if _, err := rand.Read(random[:]); err != nil {
+		fail(w, 500, "INTERNAL_ERROR", "No se pudo procesar la solicitud.", requestID)
+		return
+	}
+	requestID = hex.EncodeToString(random[:])
+	w.Header().Set("x-request-id", requestID)
+	w.Header().Set("Cache-Control", "no-store")
+	w.Header().Set("X-Content-Type-Options", "nosniff")
 	if origin := r.Header.Get("Origin"); origin != "" {
 		w.Header().Add("Vary", "Origin")
 		for _, allowed := range a.options.AllowedOrigins {

@@ -313,7 +313,7 @@ func (m *Manager) prepare(req CreateRequest) (*execution, error) {
 		engineOptions = m.options.Engine
 	}
 	engine := decision.NewWithOptions(engineOptions)
-	app, err := application.NewWithOptions(g, cfg, "127.0.0.1:0", key, nil, m.options.Logger, application.Options{Engine: engine, Planner: coordination.New(engine, coordination.Options{DisableAssignment: req.Scenario != "urban_flood" && !policies.Pro.ShelterAssignment}), AllowShelterSubset: true})
+	app, err := application.NewWithOptions(g, cfg, "127.0.0.1:0", key, nil, m.options.Logger, application.Options{Engine: engine, Planner: coordination.New(engine, coordination.Options{DisableAssignment: req.Scenario != "urban_flood" && !policies.Pro.ShelterAssignment}), AllowShelterSubset: true, ObservationID: id})
 	if err != nil {
 		return nil, err
 	}

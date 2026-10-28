@@ -4,7 +4,7 @@ Metadata:
   AWSToolsMetrics:
     AWSAgentToolkit: aws-cloudformation@3
   com.aws.cloudformation.Context:
-    ref: [docs/despliegue-aws.md, docs/costos.md]
+    ref: [docs/despliegue.md, docs/costos.md]
     must:
       - Execute only the owner-approved change set after checking the existing budget.
       - Keep the API key outside CloudFormation, release bundles, and public clients.

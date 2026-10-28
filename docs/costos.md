@@ -2,7 +2,7 @@
 
 [Índice](INDEX.md) · [Despliegue](despliegue.md) · [Evidencia AWS](../deploy/validation-phase5-deployment.json)
 
-**Proyección modelada: 77,68 USD/mes** para la instancia registrada
+**Proyección modelada: 78,28 USD/mes** para la instancia registrada
 `m7i-flex.large` en Ohio, 730 horas y el uso pequeño descrito debajo.
 **Gasto real atribuible al evento: pendiente de completar con Billing.**
 Son cantidades distintas: una estimación no es factura ni prueba de consumo.
@@ -28,7 +28,8 @@ ALB, RDS ni ECR en el stack de aplicación.
 | CloudFront + función SPA | 10 GB × 0,085 + 100.000 HTTPS × 0,000001 + 100.000 funciones × 0,0000001 | 0,9600 |
 | Salida directa API | Reserva de planificación: 10 GB × 0,09; tarifa efectiva de cuenta pendiente | 0,9000 |
 | CloudWatch | 1 GB ingerido × 0,50 + 1 GB-mes almacenado × 0,03 + una alarma × 0,10 | 0,6300 |
-| **Total de partidas modeladas** | Suma sin redondear | **77,6843** |
+| CloudWatch host, CPU/RAM | 2 métricas × 0,30/mes; sin descontar franquicias | 0,6000 |
+| **Total de partidas modeladas** | Suma sin redondear | **78,2843** |
 
 CloudFront `PriceClass_100` se modela con entrega en EE. UU.; el origen de la
 petición, el plan y las franquicias reales pueden cambiar la factura. S3 de
@@ -49,15 +50,16 @@ s3 = D('.023') + D('500') * D('.000005') + D('10000') * D('.0000004') + D('.01')
 cdn = D('10') * D('.085') + D('100000') * D('.000001') + D('100000') * D('.0000001')
 api = D('10') * D('.09')
 logs = D('.50') + D('.03') + D('.10')
+host = D('2') * D('.30')
 print('Subtotal fijo USD:', fijo)
-print('Total modelado USD:', fijo + s3 + cdn + api + logs)
+print('Total modelado USD:', fijo + s3 + cdn + api + logs + host)
 print('EC2 durante 96 horas USD:', D('96') * D('.09576'))
 PY
 ```
 
 Sólo EC2 durante 96 horas cuesta **9,19296 USD** a esa tarifa, antes de créditos;
 el resto de recursos se agrega. La proyección de 730 h no describe el período
-real de vida de la demo, que tiene [retirada programada](despliegue-fase5-y-caducidad.md).
+real de vida de la demo, que tiene [retirada programada](../deploy/autokill/README.md).
 El [cálculo antiguo](../deploy/cost-estimate-phase3a2.json) de 22,96 USD/mes se
 conserva como histórico: era `t3.small`, no la instancia actual.
 
@@ -74,7 +76,7 @@ con los catálogos; las fechas siguientes son las de publicación del catálogo:
 | [VPC Ohio](https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonVPC/current/us-east-2/index.json) | 16 oct 2026 | IPv4 0,005/h |
 | [S3 Ohio](https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonS3/current/us-east-2/index.json) | 15 oct 2026 | Standard 0,023/GB-mes; PUT/LIST 0,000005; GET 0,0000004 |
 | [CloudFront](https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonCloudFront/current/index.json) | 19 oct 2026 | EE. UU. 0,085/GB; HTTPS 0,000001; función 0,0000001 |
-| [CloudWatch Ohio](https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonCloudWatch/current/us-east-2/index.json) | 7 oct 2026 | Ingesta 0,50/GB; almacenamiento 0,03/GB-mes; alarma 0,10/mes |
+| [CloudWatch Ohio](https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonCloudWatch/current/us-east-2/index.json) | 7 oct 2026 | Ingesta 0,50/GB; almacenamiento 0,03/GB-mes; alarma 0,10/mes; métrica personalizada 0,30/mes en el primer tramo |
 
 Los catálogos `current` pueden cambiar: revalidar antes de extender la demo o
 modificar capacidad. [Precios públicos IPv4](https://aws.amazon.com/vpc/pricing/)
@@ -118,3 +120,8 @@ explícitamente con `git add -f docs/budget.png` y activar esta línea en el REA
 ```
 
 No se creó una imagen ficticia ni se afirma que la captura esté publicada.
+
+La configuración CloudWatch focalizada añade dos métricas de host cada 60 s,
+USD 0,60/mes modelado, elevando las partidas previas de 77,6843 a 78,2843 USD.
+La reserva de logs continúa siendo un supuesto de 1 GB, no una medición; mayor
+volumen de `/paso` o consultas añade costo según uso. [Configuración y límites](despliegue.md#observabilidad-mínima-cloudwatch).
