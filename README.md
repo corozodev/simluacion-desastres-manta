@@ -99,7 +99,7 @@ Preparación PRO requiere código, prueba y demostración observable. [Implement
 
 Inventario confirmado por lectura AWS el 27 de octubre: **us-east-2 (Ohio), EC2 `m7i-flex.large`, 2 vCPU / 8 GiB y EBS cifrado de 20 GiB**. Caddy termina HTTPS y da entrada a Go/laboratorio. Web en **S3 privado + CloudFront**, con ACM; DNS externo en Cloudflare. SSM y CloudWatch apoyan operación y logs. La plantilla inicial conserva tamaños anteriores: no es inventario del host actual.
 
-[Despliegue, secretos, health, logs y rollback](docs/despliegue.md) · [costos y fuentes](docs/costos.md). El probe público GET de esta revisión obtuvo HTTP 200 en web y health; no se modificaron recursos AWS.
+[Despliegue, secretos, health, logs y rollback](docs/despliegue.md) · [costos y fuentes](docs/costos.md). La web, API y build publicados se verificaron por HTTPS. La actualización conservó infraestructura, credenciales y datos; el registro detalla su alcance.
 
 La proyección modelada es **77,68 USD/mes**, antes de descuentos y con supuestos de uso pequeño: [desglose y exclusiones](docs/costos.md). La EC2 sola a 730 h supera el Budget verificado de 50 USD. **Gasto real del evento: pendiente de Billing. Captura AWS Budget: pendiente del propietario en `docs/budget.png`.** Revisar datos sensibles antes de incorporarla.
 

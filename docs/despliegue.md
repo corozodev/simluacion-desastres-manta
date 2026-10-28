@@ -29,8 +29,9 @@ Fuentes: [resize y límites](../deploy/validation-phase5-deployment.json),
 La última publicación corresponde a `47f51fa`, el 27 de octubre. API y laboratorio
 ejecutan los binarios verificados mediante montajes read-only; se conservan imagen
 base, credenciales, límites y montaje persistente. React sirve el build HTTPS nuevo. Los GET
-públicos a `/escape` y `/healthz` devolvieron 200 durante esta auditoría, usando
-DNS y TLS normales; no se inició ninguna simulación pública. La lectura AWS
+públicos a `/escape` y `/healthz` devolvieron 200 durante la auditoría inicial,
+con DNS/TLS normales. El despliegue posterior añadió las comprobaciones HTTP
+funcionales acotadas descritas en el registro de entrega. La lectura AWS
 del 27 de octubre, aproximadamente 18:58 de Ecuador, confirmó identidad vigente
 no-root, la instancia exacta en ejecución en `us-east-2a`, `m7i-flex.large`,
 2 vCPU/8 GiB y único EBS gp3 cifrado de 20 GiB adjunto. Se usaron STS,
