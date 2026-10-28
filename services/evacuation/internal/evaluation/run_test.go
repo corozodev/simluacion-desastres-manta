@@ -2,6 +2,7 @@ package evaluation_test
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"corodev/evacuation/internal/decision"
@@ -9,7 +10,37 @@ import (
 	"corodev/evacuation/internal/evaluation/phase1"
 	"corodev/evacuation/internal/graph"
 	"corodev/evacuation/internal/simulation"
+	"corodev/evacuation/internal/world"
 )
+
+func TestExperimentPreservesPartialEvidenceAndScenarioHorizon(t *testing.T) {
+	g, err := graph.Load("../../data/manta-v2.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	cfg, err := simulation.LoadConfig("../../scenarios/urban/round2.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	stopped := errors.New("observer stopped experiment")
+	r, err := evaluation.RunWithOptions(context.Background(), g, cfg, "probe", "baseline_shortest_path",
+		decision.NewWithOptions(decision.Options{Algorithm: decision.BaselineShortestPath}), nil,
+		evaluation.RunOptions{StopAfter: 3, Turn: func(w world.WorldSnapshot) error {
+			if w.Turn == 2 {
+				return stopped
+			}
+			return nil
+		}})
+	if !errors.Is(err, stopped) || r.Metrics.Turns != 2 || r.Diagnostics.Turns != 2 || r.FinalState == nil || r.FinalState.Turn != 2 {
+		t.Fatalf("partial evidence lost: turns=%d err=%v", r.Metrics.Turns, err)
+	}
+	if r.Config.Turns != 150 || r.Config.Events[0].Turn != 40 {
+		t.Fatal("probe changed scenario horizon or events")
+	}
+	if len(r.Diagnostics.InitialSurvivors) != 80 || r.Metrics.RequestsInvalid != 0 || r.Metrics.RequestsTimeout != 0 {
+		t.Fatal("invalid partial HTTP evidence")
+	}
+}
 
 func TestHistoricalBaselineSurvivesInstrumentedReplay(t *testing.T) {
 	g, err := graph.Load("../../data/manta-v1.json")

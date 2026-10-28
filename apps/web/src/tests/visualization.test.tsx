@@ -232,6 +232,7 @@ describe('LOD y separación de fuentes', () => {
     expect(container.querySelector('[data-agent-id]')).toHaveAttribute('aria-label', expect.stringContaining('1 horda (integrantes no publicados)'));
   });
   it('representa riesgo y restricción desde el contrato y reportes puntuales independientes', () => {
+    vi.spyOn(Date, 'now').mockReturnValue(Date.parse('2026-10-27T12:00:00Z'));
     config.osmTilesEnabled = false;
     const state = managedFlood().scenario_state!;
     state.hydraulic = hydraulicFixture();

@@ -101,6 +101,9 @@ func writeCSV(path string, rows []result) error {
 	return w.Error()
 }
 func run() error {
+	trackA := flag.Bool("track-a", false, "frozen 36-run zombie experiment with per-run checkpoints; output is a directory")
+	trackANoFleet := flag.Bool("track-a-r3-no-fleet", false, "18 paired R3 controls cloned from the original experiment, changing only rescue fleet")
+	reference := flag.String("reference", "../../reports/track-a-evidence", "original frozen Track A evidence directory")
 	graphPath := flag.String("graph", "data/manta-v2.json", "checked-in graph")
 	rounds := flag.String("rounds", "1,2,3", "round numbers")
 	algorithms := flag.String("algorithms", "legacy_current,baseline_shortest_path,dynamic_risk_astar,predictive_temporal_astar", "at least two policies for explicit comparison")
@@ -114,6 +117,15 @@ func run() error {
 	realtime := flag.Bool("realtime", false, "pace each 150-turn scenario at two seconds; otherwise accelerated real HTTP")
 	output := flag.String("output", "reports/phase7/comparison", "JSON and CSV prefix")
 	flag.Parse()
+	if *trackA && *trackANoFleet {
+		return fmt.Errorf("select one experiment mode")
+	}
+	if *trackANoFleet {
+		return runTrackAR3NoFleet(*output, *reference)
+	}
+	if *trackA {
+		return runTrackA(*output)
+	}
 	algos := strings.Split(*algorithms, ",")
 	if len(algos) < 2 || *repeats < 1 || *repeats > 10 {
 		return fmt.Errorf("comparison requires >=2 algorithms and repeats in 1..10")

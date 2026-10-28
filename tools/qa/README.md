@@ -50,6 +50,74 @@ python3 tools/qa/benchmark_multigraph.py --binary .local/multigraph-bench \
 [Resultados, regresiones y condiciones originales](../../docs/informe-fase3b2.md).
 El maestro sigue siendo experimental y sus costos se informan aparte de los objetivos de BASE.
 
+## Experimento zombie Track A de 36 corridas
+
+El modo explícito `cmd/compare --track-a` reutiliza el simulador y HTTP reales.
+Compara BASE (300 nodos) y FULL_MANTA (9.179), R2/R3, tres intensidades y las
+tres estrategias alternativas. No incluye el perfil intermedio `expanded`.
+Audita primero los grafos, verifica tres turnos acelerados frente a ritmo nominal
+y ejecuta las 36 rondas de 150 turnos **secuencialmente**, sin pausas de pared.
+Al terminar realiza seis probes HTTP cortos con las colas nativas de 16/32
+trabajadores. No inicia servicios públicos, navegador ni operaciones AWS.
+
+```sh
+python3 tools/qa/track_a_report.py audit --directory reports/track-a-nuevo/track-a-evidence
+GOCACHE=/tmp/corodev-track-a-gocache node tools/scripts/go.mjs build \
+  -o /tmp/corodev-track-a-compare ./cmd/compare
+(cd services/evacuation && GOMAXPROCS=2 GOMEMLIMIT=7GiB \
+  prlimit --as=8589934592 -- taskset -c 0,1 \
+  /tmp/corodev-track-a-compare --track-a --output ../../reports/track-a-nuevo/track-a-evidence)
+python3 tools/qa/track_a_report.py export --directory reports/track-a-nuevo/track-a-evidence
+```
+
+Elegir CPUs permitidas en el host. `prlimit` limita espacio virtual a 8 GiB;
+`GOMEMLIMIT` es un objetivo blando de Go. No equivalen a asignar 8 GiB de RAM
+física ni acreditan rendimiento EC2. Los sockets son exclusivamente loopback.
+La exportación exige 36 resultados completos y seis probes válidos; separa
+supervivencia, evacuación, planificación y latencia HTTP. Los campos desconocidos
+del CSV quedan vacíos.
+
+Los checkpoints atómicos, configuraciones, seeds y hashes viven en
+el directorio elegido. El mismo comando reanuda las corridas pendientes
+sin repetir las completas; otra fuente/configuración requiere otro directorio.
+Para ello, pasar `--directory` al auditor/exportador y el mismo destino relativo
+a `--output` del runner. Los reportes y spawns privados, incluidos dormidos,
+permanecen ignorados por Git y no deben publicarse con la aplicación.
+
+La evidencia medida en `reports/track-a-evidence/` conserva el binario y las
+fuentes utilizados. `bash reports/track-a-evidence/replay-frozen.sh` los reutiliza
+para omitir las corridas completas sin mezclar otra versión del runner. Las
+comprobaciones posteriores de recuperación requieren un manifiesto nuevo.
+La interpretación en prosa está vinculada a la firma de resultados analizados;
+si cambian, se exportan CSV/JSON y se exige revisar esa interpretación.
+
+### Controles R3 sin flota
+
+El modo `--track-a-r3-no-fleet` copia las 18 R3 del manifiesto original y cambia
+sólo `RescueFleet`. Verifica la fuente nativa contra el archivo congelado,
+configuración, topología, apariciones privadas y recursos. Conserva los originales
+y permite comparar el efecto total de activar la flota en cada mundo simulado.
+
+```sh
+python3 tools/qa/track_a_fleet_report.py prepare
+GOCACHE=/tmp/corodev-track-a-gocache node tools/scripts/go.mjs build \
+  -o /tmp/corodev-track-a-no-fleet ./cmd/compare
+(cd services/evacuation && GOMAXPROCS=2 GOMEMLIMIT=7GiB \
+  prlimit --as=8589934592 -- taskset -c 0,1 \
+  /tmp/corodev-track-a-no-fleet --track-a-r3-no-fleet \
+  --reference ../../reports/track-a-evidence \
+  --output ../../reports/track-a-r3-no-fleet-evidence)
+python3 tools/qa/track_a_fleet_report.py
+```
+
+`prepare` congela hashes de los archivos originales. Los controles se ejecutan
+secuencialmente sin nuevas rondas con flota. El exportador produce 18 filas de
+control, 18 pares, 3.600 transiciones individuales y 2.700 puntos de curvas, además
+del informe comparativo. Las transiciones no identifican rescates directos por
+persona ni constituyen réplicas independientes. Una configuración distinta exige
+otro directorio de evidencia y de exportación; `--directory`/`--reference` eligen
+los destinos del helper. Los sockets y las mediciones siguen siendo locales.
+
 ## Espectadores y mapa ciudadano móvil
 
 `npm run test:spectators:http` construye e inicia ambos Go con directorios temporales. Valida contratos generados, incorporación tardía, pausa/reanudación/final, reemplazo, replay idempotente, reporte ciudadano real pendiente y moderación protegida. Mide 1, 10 y 50 espectadores por escenario en tres oleadas cada dos segundos: latencia HTTP local, payload sin topología, errores, CPU aproximada de proceso y RSS. No es una prueba de capacidad AWS. Guarda `deploy/evidence-private/shared-spectators/report.json`; admite `SPECTATOR_EVIDENCE_DIR`.

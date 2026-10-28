@@ -7,6 +7,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math"
 	"sort"
@@ -29,6 +30,7 @@ type ServerTimings struct {
 	Handler  diagnostics.Timing `json:"handler"`
 }
 type Result struct {
+	FinalState         *world.WorldSnapshot      `json:"final_state,omitempty"`
 	LogicalSHA256      string                    `json:"logical_sha256,omitempty"`
 	FleetMetrics       *world.RescueFleetMetrics `json:"fleet_metrics,omitempty"`
 	ProbabilityAudit   *ProbabilityAudit         `json:"probability_audit,omitempty"`
@@ -94,6 +96,22 @@ func Run(ctx context.Context, g *world.Graph, cfg simulation.Config, experiment,
 // RunWithInterval distinguishes accelerated actual HTTP from nominal two-second
 // pacing. Both modes execute the same single-writer turns and authenticated API.
 func RunWithInterval(ctx context.Context, g *world.Graph, cfg simulation.Config, experiment, strategy string, engine world.DecisionEngine, planner world.TurnPlanner, interval time.Duration) (Result, error) {
+	return RunWithOptions(ctx, g, cfg, experiment, strategy, engine, planner, RunOptions{Interval: interval})
+}
+
+// RunOptions adds private experiment observations without changing world rules.
+// StopAfter bounds short equivalence probes while retaining the scenario horizon.
+type RunOptions struct {
+	Interval  time.Duration
+	StopAfter int
+	Initial   func(diagnostics.Report, world.WorldSnapshot) error
+	Turn      func(world.WorldSnapshot) error
+}
+
+func RunWithOptions(ctx context.Context, g *world.Graph, cfg simulation.Config, experiment, strategy string, engine world.DecisionEngine, planner world.TurnPlanner, options RunOptions) (Result, error) {
+	if options.Interval < 0 || options.StopAfter < 0 || options.StopAfter > cfg.Turns {
+		return Result{}, fmt.Errorf("invalid experiment interval or stop horizon")
+	}
 	var mu sync.Mutex
 	var snapshotTimes, decisionTimes, handlerTimes []time.Duration
 	observe := func(t httpapi.RequestTiming) {
@@ -115,13 +133,22 @@ func RunWithInterval(ctx context.Context, g *world.Graph, cfg simulation.Config,
 		return Result{}, err
 	}
 	initial := app.Simulator.Diagnostics()
+	if options.Initial != nil {
+		if err := options.Initial(initial, app.Simulator.Snapshot()); err != nil {
+			return Result{}, errors.Join(err, app.Close())
+		}
+	}
 	started := time.Now()
 	predictor := decision.NewRunnerPredictor(1)
 	audit := PredictionAudit{}
 	probabilityAudit := ProbabilityAudit{}
 	var runErr error
 	logicalDigest := sha256.New()
-	for turn := 0; turn < cfg.Turns; turn++ {
+	turns := cfg.Turns
+	if options.StopAfter > 0 {
+		turns = options.StopAfter
+	}
+	for turn := 0; turn < turns; turn++ {
 		turnStarted := time.Now()
 		before := app.Simulator.Snapshot()
 		prediction := predictor.Predict(ctx, before)
@@ -135,6 +162,11 @@ func RunWithInterval(ctx context.Context, g *world.Graph, cfg simulation.Config,
 		// Encoder sees only observable DTO fields; Graph/Scenario are excluded by
 		// their JSON tags. Hash every tick, including fleet paths and public events.
 		_ = json.NewEncoder(logicalDigest).Encode(logical)
+		if options.Turn != nil {
+			if runErr = options.Turn(after); runErr != nil {
+				break
+			}
+		}
 		probabilityAudit.Observe(probabilities, after)
 		actual := map[string]bool{}
 		for _, z := range after.Zombies {
@@ -157,7 +189,7 @@ func RunWithInterval(ctx context.Context, g *world.Graph, cfg simulation.Config,
 				audit.FalsePositiveCandidates++
 			}
 		}
-		if remaining := interval - time.Since(turnStarted); remaining > 0 {
+		if remaining := options.Interval - time.Since(turnStarted); remaining > 0 {
 			timer := time.NewTimer(remaining)
 			select {
 			case <-ctx.Done():
@@ -174,12 +206,6 @@ func RunWithInterval(ctx context.Context, g *world.Graph, cfg simulation.Config,
 	final := app.Simulator.Snapshot()
 	report := app.Simulator.Diagnostics()
 	closeErr := app.Close()
-	if runErr != nil {
-		return Result{}, runErr
-	}
-	if closeErr != nil {
-		return Result{}, closeErr
-	}
 	mu.Lock()
 	timings := ServerTimings{Snapshot: diagnostics.Measure(snapshotTimes), Decision: diagnostics.Measure(decisionTimes), Handler: diagnostics.Measure(handlerTimes)}
 	mu.Unlock()
@@ -189,6 +215,7 @@ func RunWithInterval(ctx context.Context, g *world.Graph, cfg simulation.Config,
 	}
 	result := Result{Experiment: experiment, Strategy: strategy, Scenario: cfg.Name, Seed: cfg.Seed, GraphVersion: g.Version, Nodes: len(g.Nodes), Edges: len(g.Edges), GraphSHA256: hash(g), InitialStateSHA256: hash(struct{ Survivors, Zombies []diagnostics.Spawn }{initial.InitialSurvivors, initial.InitialZombies}), Config: cfg, Metrics: final.Metrics, EvacuatedRatio: float64(final.Metrics.Evacuated) / count, AliveRatio: float64(final.Metrics.Evacuated+final.Metrics.Active) / count, BittenRatio: float64(final.Metrics.Bitten) / count, ElapsedMS: float64(elapsed) / float64(time.Millisecond), Diagnostics: report, ServerTimings: timings, PredictionAudit: &audit}
 	result.LogicalSHA256 = hex.EncodeToString(logicalDigest.Sum(nil))
+	result.FinalState = &final
 	result.FleetMetrics = final.FleetMetrics
 	result.ProbabilityAudit = &probabilityAudit
 	if e, ok := engine.(*decision.DeterministicEngine); ok {
@@ -199,7 +226,7 @@ func RunWithInterval(ctx context.Context, g *world.Graph, cfg simulation.Config,
 		stats := p.Stats()
 		result.CoordinationStats = &stats
 	}
-	return result, nil
+	return result, errors.Join(runErr, closeErr)
 }
 
 type Remapping struct {

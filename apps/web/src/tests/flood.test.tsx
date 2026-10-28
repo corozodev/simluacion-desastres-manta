@@ -114,6 +114,8 @@ describe('capas y selección del mapa de inundación', () => {
     expect(master.nodes).toHaveLength(9179); expect(master.edges).toHaveLength(13452);
     expect(map.querySelectorAll('[data-road-state]')).toHaveLength(3);
     expect(map.querySelector('[data-road-state="passable"]')!.getAttribute('d')!.length).toBeGreaterThan(100000);
-    expect(map.querySelectorAll('*').length).toBeLessThan(100);
+    // Shared sprite definitions have a fixed cost independent of graph size.
+    const visibleElements = [...map.querySelectorAll('*')].filter(element => !element.closest('defs'));
+    expect(visibleElements.length).toBeLessThan(100);
   });
 });
