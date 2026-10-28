@@ -74,8 +74,3 @@ La publicación Git y AWS de la entrega base quedó completada; su [registro](..
 identifica versión, artefactos y comprobaciones. Para la entrega, completar los
 campos pendientes del propietario. La limpieza actual no modifica AWS. Nuevos cambios requieren revisión y
 autorización de publicación; no confundir health HTTP con rendimiento sostenido.
-
-Entrega indicada: **miércoles 28 de octubre de 2026, 10:00 (Ecuador)**.
-Pitch indicado: **viernes 30 de octubre, ULEAM**. Fechas proporcionadas por el
-propietario; no se afirma verificación externa del calendario del evento.
-Cualquier push o despliegue requiere autorización expresa.

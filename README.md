@@ -107,9 +107,7 @@ La proyección documentada es **78,28 USD/mes**, con 730 horas y supuestos de us
 
 **Pendientes:** gasto real atribuible al evento, captura auténtica de AWS Budget y presentación PDF/PPT/PPTX ≤20 MB. La captura revisada debe incorporarse como `docs/budget.png`; no incluyo una imagen ficticia. [Lista de entrega](docs/limitaciones.md).
 
-<!-- Al incorporar una captura auténtica y sanitizada, activar:
 ![AWS Budget](docs/budget.png)
--->
 
 Las sesiones se pierden al reiniciar Go; los reportes tienen persistencia independiente. Predicción sin calibrar, cinemática por aristas, FULL experimental, hidráulica sintética y validación pendiente en dispositivos físicos limitan el alcance. [Limitaciones completas](docs/limitaciones.md).
 
