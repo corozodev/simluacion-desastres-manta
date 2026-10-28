@@ -206,7 +206,7 @@ describe('cámara y mapa compartidos', () => {
     config.osmTilesEnabled = false;
     const select = vi.fn(), inspect = vi.fn();
     render(<FloodMap graph={graph} shelters={graph.shelters} candidates={[]} selectedAgentId="" onSelectAgent={() => undefined} onPickPosition={() => undefined} incidents={[incident]} onSelectIncident={select} onOpenIncident={inspect} />);
-    const marker = screen.getByRole('button', { name: /Seleccionar incidente en mapa report-map/ });
+    const marker = screen.getByRole('button', { name: /Seleccionar novedad: Árbol caído/ });
     fireEvent.keyDown(marker, { key: 'Enter' });
     const popup = screen.getByRole('region', { name: 'Reporte en mapa: Árbol caído' });
     expect(popup).toHaveTextContent('<script>texto no confiable</script>');
@@ -215,7 +215,7 @@ describe('cámara y mapa compartidos', () => {
     expect(popup).toHaveTextContent('Moderada');
     expect(popup).toHaveTextContent('Pendiente de verificación');
     expect(select).toHaveBeenCalledWith(incident.incident_id);
-    fireEvent.click(screen.getByRole('button', { name: 'Detalles y evaluación experimental' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Ver reporte' }));
     expect(inspect).toHaveBeenCalledWith(incident.incident_id);
     fireEvent.click(screen.getByRole('button', { name: 'Cerrar reporte del mapa' }));
     expect(screen.queryByRole('region', { name: /Reporte en mapa/ })).not.toBeInTheDocument();

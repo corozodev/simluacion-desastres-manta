@@ -1,3 +1,5 @@
+> **Referencia histórica FASE 1/2.** Arquitectura y estrategias actuales: [arquitectura](arquitectura.md), [nivel PRO](nivel-pro.md) y [pruebas](pruebas.md). Las restricciones de fases posteriores prevalecen.
+
 # Motor determinista de evacuación
 
 `services/evacuation/internal/decision` implementa `world.DecisionEngine` con

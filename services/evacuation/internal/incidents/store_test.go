@@ -183,7 +183,7 @@ func TestInputValidationRateAndExpiry(t *testing.T) {
 	if err != nil || list.Total != 1 {
 		t.Fatal(list, err)
 	}
-	if _, err = s.Review(i.IncidentID, StatusUpdate{"verified", i.UpdatedAt}); !errors.Is(err, ErrIneligible) {
+	if _, err = s.Review(i.IncidentID, StatusUpdate{VerificationStatus: "verified", ExpectedUpdatedAt: i.UpdatedAt}); !errors.Is(err, ErrIneligible) {
 		t.Fatal("expired report reactivated", err)
 	}
 	if _, _, err = s.Create(valid, strings.Repeat("k", 16)+"a", "citizen", "one-client"); err != nil {
@@ -226,14 +226,14 @@ func TestFiltersAndOptimisticReview(t *testing.T) {
 			t.Fatal("invalid query accepted", q)
 		}
 	}
-	updated, err := s.Review(i.IncidentID, StatusUpdate{"verified", i.UpdatedAt})
+	updated, err := s.Review(i.IncidentID, StatusUpdate{VerificationStatus: "verified", ExpectedUpdatedAt: i.UpdatedAt})
 	if err != nil || updated.SourceType != "citizen" || updated.VerificationStatus != "verified" {
 		t.Fatal(updated, err)
 	}
-	if _, err = s.Review(i.IncidentID, StatusUpdate{"rejected", i.UpdatedAt}); !errors.Is(err, ErrConflict) {
+	if _, err = s.Review(i.IncidentID, StatusUpdate{VerificationStatus: "rejected", ExpectedUpdatedAt: i.UpdatedAt}); !errors.Is(err, ErrConflict) {
 		t.Fatal("stale review overwrote another operator")
 	}
-	updated, err = s.Review(i.IncidentID, StatusUpdate{"rejected", updated.UpdatedAt})
+	updated, err = s.Review(i.IncidentID, StatusUpdate{VerificationStatus: "rejected", ExpectedUpdatedAt: updated.UpdatedAt})
 	if err != nil {
 		t.Fatal(err)
 	}

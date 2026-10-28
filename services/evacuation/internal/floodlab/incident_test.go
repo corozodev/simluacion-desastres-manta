@@ -305,16 +305,8 @@ func TestIncidentHTTPPublicReceptionAndPrivilegedAllowlist(t *testing.T) {
 		t.Fatal("invalid application response")
 	}
 	code, raw, _ = request("POST", "/lab/incidents/"+incident.IncidentID+"/status", testOrigin, session.CSRFToken, "", incidents.StatusUpdate{VerificationStatus: "verified", ExpectedUpdatedAt: incident.UpdatedAt})
-	if code != 200 {
-		t.Fatal("authorized review failed", code, string(raw))
-	}
-	var reviewed incidents.Incident
-	if json.Unmarshal(raw, &reviewed) != nil || reviewed.SourceType != "citizen" || reviewed.VerificationStatus != "verified" {
-		t.Fatal("review forged official source")
-	}
-	code, _, _ = request("POST", "/lab/incidents/"+incident.IncidentID+"/status", testOrigin, session.CSRFToken, "", incidents.StatusUpdate{VerificationStatus: "rejected", ExpectedUpdatedAt: incident.UpdatedAt})
-	if code != 409 {
-		t.Fatal("stale HTTP review overwrote source", code)
+	if code != 403 {
+		t.Fatal("local development session acquired operator moderation", code, string(raw))
 	}
 	code, raw, _ = request("POST", "/lab/incidents/synthetic", testOrigin, session.CSRFToken, "http_synthetic_key_12345", report)
 	if code != 201 {

@@ -81,17 +81,15 @@ describe('capas y selección del mapa de inundación', () => {
     expect(screen.queryByText(/mordido|zombified/i)).not.toBeInTheDocument();
   });
 
-  it('inspecciona una calle con clic y publica riesgo, origen y paso del overlay real', () => {
+  it('mantiene los cierres sintéticos como capa y no recupera el inspector de vías retirado', () => {
     setup();
     const map = screen.getByRole('img', { name: /^Red urbana de inundación simulada/ });
     const path = map.querySelector('[data-road-state="blocked"]')!.getAttribute('d')!;
     const segment = /^M([-\d.]+),([-\d.]+)L([-\d.]+),([-\d.]+)/.exec(path)!;
     fireEvent.click(map, { clientX: (Number(segment[1]) + Number(segment[3])) / 2, clientY: (Number(segment[2]) + Number(segment[4])) / 2 });
-    const details = screen.getByLabelText('Detalle de arista E1');
-    expect(details).toHaveTextContent('Bloqueada');
-    expect(details).toHaveTextContent('0.800');
-    expect(details).toHaveTextContent('synthetic_urban_flood');
-    expect(details).toHaveTextContent('Actualizada en paso8');
+    expect(map.querySelector('[data-road-state="blocked"]')).toHaveAttribute('d', path);
+    expect(screen.queryByLabelText('Detalle de arista E1')).not.toBeInTheDocument();
+    expect(screen.getByText('┄ Bloqueada')).toBeInTheDocument();
   });
 
   it('permite señalar un candidato en el mapa y navegar por teclado conservando geometría OSM', async () => {

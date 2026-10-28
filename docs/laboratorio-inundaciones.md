@@ -1,3 +1,5 @@
+> **Referencia técnica histórica FASE 4B.** Para ejecutar el producto actual usar [desarrollo local](development/local-setup.md), [contratos](contratos.md) y [arquitectura](arquitectura.md). Hidrología, controles públicos y visores posteriores sustituyen las reglas/pantallas previas descritas aquí; los motores y reportes históricos se preservan.
+
 # Laboratorio React de inundaciones — FASE 4B
 
 > Evolución vigente: [FASE 8](informe-fase8.md), con malla hidráulica, profundidades,

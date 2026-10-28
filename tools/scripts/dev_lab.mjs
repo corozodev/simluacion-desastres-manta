@@ -4,13 +4,21 @@ import { spawn } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
 import { once } from 'node:events';
 import { existsSync } from 'node:fs';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdtemp, rm, mkdir, readFile, writeFile } from 'node:fs/promises';
+import { createServer } from 'node:http';
+import { createServer as createListener } from 'node:net';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { parseEnv } from 'node:util';
 import { setTimeout as delay } from 'node:timers/promises';
 
 const root = fileURLToPath(new URL('../../', import.meta.url));
+if (existsSync(path.join(root, '.env'))) {
+  for (const [name, value] of Object.entries(parseEnv(await readFile(path.join(root, '.env'), 'utf8')))) {
+    if (process.env[name] === undefined) process.env[name] = value;
+  }
+}
 const backend = path.join(root, 'services/evacuation');
 const go = process.env.GO_BIN || (existsSync('/usr/local/go/bin/go') ? '/usr/local/go/bin/go' : 'go');
 const port = (name, fallback) => {
@@ -26,6 +34,17 @@ const children = [];
 let stopping = false;
 let stopResolve;
 const stopped = new Promise(resolve => { stopResolve = resolve; });
+const runtime = path.join(root, '.local/dev.json');
+const stopToken = randomBytes(32).toString('hex');
+const apiKey = process.env.API_KEY || randomBytes(32).toString('hex');
+let ownsRecord = false;
+const control = createServer((request, response) => {
+  if (request.method !== 'POST' || request.url !== '/stop' || request.headers.authorization !== `Bearer ${stopToken}`) {
+    response.writeHead(404).end(); return;
+  }
+  response.writeHead(202).end();
+  void stop();
+});
 
 const stop = async () => {
   if (stopping) return;
@@ -33,6 +52,7 @@ const stop = async () => {
   for (const child of children) if (child.exitCode === null) child.kill('SIGTERM');
   await Promise.race([Promise.all(children.map(child => child.exitCode === null ? once(child, 'exit') : Promise.resolve())), delay(5000)]);
   for (const child of children) if (child.exitCode === null) child.kill('SIGKILL');
+  control.close();
   stopResolve();
 };
 process.on('SIGINT', () => { void stop(); });
@@ -63,13 +83,29 @@ async function ready(url) {
 }
 
 try {
+  await mkdir(path.join(root, '.local'), { recursive: true, mode: 0o700 });
+  // Reserve the local runner before launching any child. A second invocation
+  // must never reuse or stop another process's services.
+  await writeFile(runtime, JSON.stringify({ pid: process.pid }), { flag: 'wx', mode: 0o600 });
+  ownsRecord = true;
+  control.listen(0, '127.0.0.1');
+  await once(control, 'listening');
+  const controlAddress = control.address();
+  await writeFile(runtime, JSON.stringify({ pid: process.pid, control: `http://127.0.0.1:${controlAddress.port}`, stopToken, apiKey, web: origin, world: `http://127.0.0.1:${ports.world}`, flood: `http://127.0.0.1:${ports.flood}` }), { mode: 0o600 });
+  for (const localPort of Object.values(ports)) {
+    const listener = createListener();
+    listener.listen(localPort, '127.0.0.1');
+    try { await once(listener, 'listening'); }
+    catch { throw new Error(`El puerto local ${localPort} está ocupado. Configura LAB_* o detén el proceso que lo usa.`); }
+    await new Promise((resolve, reject) => listener.close(error => error ? reject(error) : resolve()));
+  }
   await Promise.all([
     build('./cmd/server', path.join(temporary, 'world')),
     build('./cmd/flood-lab', path.join(temporary, 'flood-lab')),
   ]);
   if (stopping) throw new Error('Inicio interrumpido.');
   launch(path.join(temporary, 'world'), [], { cwd: backend, env: {
-    ...process.env, API_KEY: randomBytes(32).toString('hex'), LISTEN_ADDR: `127.0.0.1:${ports.world}`,
+    ...process.env, API_KEY: apiKey, LISTEN_ADDR: `127.0.0.1:${ports.world}`,
     CORS_ORIGINS: origin, GRAPH_PATH: 'data/manta-v2.json', SCENARIO_PATH: 'scenarios/urban/round1.json',
     INITIAL_ROUND: 'round1', SIM_AUTOSTART: 'false', SIM_INTERVAL: '2s', SIM_CONCURRENCY: '16',
     ENABLE_FULL_MODE: 'false', ENABLE_EXPANDED_MODE: 'false',
@@ -82,14 +118,16 @@ try {
       ...process.env, VITE_WORLD_API_BASE_URL: `http://127.0.0.1:${ports.world}`,
       VITE_FLOOD_API_BASE_URL: `http://127.0.0.1:${ports.flood}`,
       VITE_INCIDENTS_API_BASE_URL: `http://127.0.0.1:${ports.flood}`,
+      VITE_OSM_TILES_ENABLED: process.env.LAB_OSM_TILES_ENABLED || 'false',
     },
   });
   await ready(origin);
   console.log(`\nCoroDev: abre ${origin}/escape y pulsa «Iniciar simulación» para ejecutar una sesión propia.\nLaboratorio avanzado: ${origin}/flood-lab. Ctrl+C cierra los tres procesos.\n`);
   await stopped;
 } catch (error) {
-  if (!stopping) { console.error(error.message); process.exitCode = 1; }
+  if (!stopping) { console.error(error.code === 'EEXIST' ? 'Ya existe un entorno local registrado. Ejecuta make stop antes de iniciar otro.' : error.message); process.exitCode = 1; }
   await stop();
 } finally {
   await rm(temporary, { recursive: true, force: true });
+  if (ownsRecord) await rm(runtime, { force: true });
 }

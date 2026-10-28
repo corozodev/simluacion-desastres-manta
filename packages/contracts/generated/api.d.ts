@@ -517,6 +517,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/lab/incidents/permissions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Permisos de moderación derivados de la sesión de operador existente. */
+        get: operations["getIncidentModerationPermissions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/lab/incidents/{incident_id}/status": {
         parameters: {
             query?: never;
@@ -526,7 +543,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Actualiza revisión del prototipo; no convierte citizen en official. */
+        /**
+         * Modera un reporte con sesión de operador; conserva su procedencia original.
+         * @description Verificación, rechazo, retiro del mapa y acreditación documental independiente. Requiere cookie de operador real, Origin y CSRF. La versión expected_updated_at evita sobrescribir una revisión posterior. No altera motores ni ejecuciones históricas.
+         */
         post: operations["reviewIncident"];
         delete?: never;
         options?: never;
@@ -1637,6 +1657,10 @@ export interface components {
             evidence_metadata?: components["schemas"]["IncidentEvidenceMetadata"];
         };
         Incident: {
+            /** @description Retiro persistente del mapa, independiente de la verificación. No elimina el registro ni su auditoría. */
+            map_withdrawn?: boolean;
+            moderation_note?: string;
+            official_source?: components["schemas"]["IncidentOfficialSource"];
             /** @enum {integer} */
             schema_version: 1;
             incident_id: string;
@@ -1670,6 +1694,27 @@ export interface components {
             /** Format: date-time */
             updated_at: string;
         };
+        IncidentOfficialSourceInput: {
+            title: string;
+            /**
+             * Format: uri
+             * @description Enlace HTTPS a la publicación oficial revisada; nunca se descarga desde el backend.
+             */
+            url: string;
+        };
+        IncidentOfficialSource: {
+            title: string;
+            /** Format: uri */
+            url: string;
+            /** Format: date-time */
+            recorded_at: string;
+        };
+        IncidentModerationPermissions: {
+            can_review: boolean;
+            can_withdraw: boolean;
+            can_mark_official: boolean;
+            operator_login_available: boolean;
+        };
         IncidentList: {
             incidents: components["schemas"]["Incident"][];
             total: number;
@@ -1678,6 +1723,15 @@ export interface components {
             has_more: boolean;
         };
         IncidentStatusUpdate: {
+            note?: string;
+            /**
+             * @description Sólo se admite true; retirar no cambia la procedencia ni reactiva un registro.
+             * @enum {boolean}
+             */
+            map_withdrawn?: true;
+            official_source?: components["schemas"]["IncidentOfficialSourceInput"];
+            /** @description Confirmación expresa de que el operador revisó la fuente oficial vinculada. No constituye verificación automática del documento. */
+            official_ack?: boolean;
             /** @enum {string} */
             verification_status: "pending" | "corroborated" | "verified" | "rejected";
             /** Format: date-time */
@@ -2997,6 +3051,8 @@ export interface operations {
                 bbox?: string;
                 incident_type?: "flooded_road" | "road_closed" | "landslide" | "fallen_tree" | "bridge_damage" | "other";
                 verification_status?: "pending" | "corroborated" | "verified" | "rejected" | "expired";
+                /** @description Por defecto excluye retiros; withdrawn permite consultar registros conservados para auditoría. */
+                map_visibility?: "active" | "withdrawn";
                 /** @description Fecha declarada de evento mínima. */
                 since?: string;
                 until?: string;
@@ -3326,6 +3382,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getIncidentModerationPermissions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sin concesión de credenciales ni permisos a visitantes. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IncidentModerationPermissions"];
                 };
             };
         };
@@ -4281,6 +4357,9 @@ export type IncidentEdgeMatch = components['schemas']['IncidentEdgeMatch'];
 export type IncidentResolution = components['schemas']['IncidentResolution'];
 export type IncidentCreate = components['schemas']['IncidentCreate'];
 export type Incident = components['schemas']['Incident'];
+export type IncidentOfficialSourceInput = components['schemas']['IncidentOfficialSourceInput'];
+export type IncidentOfficialSource = components['schemas']['IncidentOfficialSource'];
+export type IncidentModerationPermissions = components['schemas']['IncidentModerationPermissions'];
 export type IncidentList = components['schemas']['IncidentList'];
 export type IncidentStatusUpdate = components['schemas']['IncidentStatusUpdate'];
 export type IncidentApply = components['schemas']['IncidentApply'];

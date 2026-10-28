@@ -14,6 +14,7 @@ import (
 
 	"corodev/evacuation/internal/catalog"
 	"corodev/evacuation/internal/control"
+	"corodev/evacuation/internal/incidents"
 )
 
 // Exercise the production identity bridge with both real HTTP handlers. The
@@ -44,6 +45,12 @@ func TestOperatorIdentityRemainsScopedToProtectedTools(t *testing.T) {
 	lab.operatorSessionURL = identity.URL + "/admin/session"
 	server := httptest.NewServer(lab)
 	defer server.Close()
+	store := managerStore(t, lab)
+	incident, _, err := store.Create(roadReport(t, lab), "operator_review_http_12345", "citizen", "operator-review-test")
+	if err != nil {
+		t.Fatal(err)
+	}
+	statusPath := "/lab/incidents/" + incident.IncidentID + "/status"
 	request := func(base, method, path string, body any, cookie *http.Cookie, csrf string) (*http.Response, []byte) {
 		t.Helper()
 		var encoded []byte
@@ -80,6 +87,10 @@ func TestOperatorIdentityRemainsScopedToProtectedTools(t *testing.T) {
 	if response.StatusCode != 200 || json.Unmarshal(raw, &session) != nil || !session.Enabled || session.Authenticated || session.CSRFToken != "" || len(response.Cookies()) != 0 {
 		t.Fatal("unauthenticated request acquired control")
 	}
+	response, _ = request(server.URL, "POST", statusPath, incidents.StatusUpdate{VerificationStatus: "verified", ExpectedUpdatedAt: incident.UpdatedAt}, nil, "")
+	if response.StatusCode != 401 {
+		t.Fatal("anonymous caller acquired moderation")
+	}
 	response, raw = request(identity.URL, "POST", "/admin/session", map[string]string{"operator": "operator", "access_code": code}, nil, "")
 	if response.StatusCode != 200 || len(response.Cookies()) != 1 || bytes.Contains(raw, []byte(code)) {
 		t.Fatal("operator login failed or exposed access code")
@@ -91,6 +102,15 @@ func TestOperatorIdentityRemainsScopedToProtectedTools(t *testing.T) {
 	response, raw = request(server.URL, "GET", "/lab/session", nil, cookie, "")
 	if response.StatusCode != 200 || json.Unmarshal(raw, &session) != nil || !session.Authenticated || session.CSRFToken == "" {
 		t.Fatal("laboratory did not recognize operator identity")
+	}
+	response, raw = request(server.URL, "POST", statusPath, incidents.StatusUpdate{VerificationStatus: "verified", ExpectedUpdatedAt: incident.UpdatedAt}, cookie, session.CSRFToken)
+	var reviewed incidents.Incident
+	if response.StatusCode != 200 || json.Unmarshal(raw, &reviewed) != nil || reviewed.VerificationStatus != "verified" || reviewed.SourceType != "citizen" || reviewed.OfficialSource != nil {
+		t.Fatal("authenticated moderation failed or forged official provenance", response.StatusCode, string(raw))
+	}
+	response, _ = request(server.URL, "POST", statusPath, incidents.StatusUpdate{VerificationStatus: "rejected", ExpectedUpdatedAt: incident.UpdatedAt}, cookie, session.CSRFToken)
+	if response.StatusCode != 409 {
+		t.Fatal("stale authenticated review overwrote newer moderation")
 	}
 	cfg := compactConfig(lab)
 	cfg.IntervalMS = 2000
@@ -118,5 +138,9 @@ func TestOperatorIdentityRemainsScopedToProtectedTools(t *testing.T) {
 	response, _ = request(server.URL, "POST", "/lab/incidents/synthetic", map[string]string{}, cookie, session.CSRFToken)
 	if response.StatusCode != 401 {
 		t.Fatal("revoked identity retained protected incident tools")
+	}
+	response, _ = request(server.URL, "POST", statusPath, incidents.StatusUpdate{VerificationStatus: "rejected", ExpectedUpdatedAt: reviewed.UpdatedAt}, cookie, session.CSRFToken)
+	if response.StatusCode != 401 {
+		t.Fatal("revoked identity retained moderation")
 	}
 }

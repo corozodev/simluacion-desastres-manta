@@ -486,7 +486,7 @@ void main() {
         findsOneWidget,
       );
       expect(find.text('Estado: Pendiente de verificación'), findsOneWidget);
-      expect(find.text('Procedencia: ciudadana'), findsOneWidget);
+      expect(find.text('Procedencia: Reporte ciudadano'), findsOneWidget);
       expect(tester.takeException(), isNull);
     },
   );

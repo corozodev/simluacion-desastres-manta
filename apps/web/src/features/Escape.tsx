@@ -112,6 +112,10 @@ function elapsed(state: SimulationState) {
 }
 function LiveMetrics({ state }: { state: SimulationState }) {
   const metrics = state.scenario_state?.evacuation_metrics;
+  const shelters = state.snapshot.shelters;
+  const fleet = state.snapshot.fleet ?? [];
+  const prediction = state.runner_forecast?.turn === state.snapshot.turn;
+  const onboard = fleet.reduce((total, vehicle) => total + vehicle.passenger_ids.length, 0);
   return <MetricsOverlay items={metrics ? [
     { label: 'Evacuados / aislados / esperando', value: `${metrics.evacuated_agents} / ${metrics.isolated_agents} / ${metrics.waiting_agents}` },
     { label: 'Vías bloqueadas / precaución', value: `${metrics.blocked_edges} / ${metrics.caution_edges}`, detail: `${metrics.reroute_count} rutas recalculadas` },
@@ -119,6 +123,9 @@ function LiveMetrics({ state }: { state: SimulationState }) {
   ] : [
     { label: 'Evacuados / mordidos / activos', value: `${state.snapshot.metrics.evacuated} / ${state.snapshot.metrics.bitten} / ${state.snapshot.metrics.active}` },
     { label: 'Latencia HTTP p95', value: state.snapshot.metrics.http_p95_ms > 0 ? `${state.snapshot.metrics.http_p95_ms.toFixed(1)} ms` : 'Sin medición' },
+    { label: 'Predicción PRO', value: prediction ? `Activa · ${state.runner_forecast!.horizon} turnos` : 'Sin pronóstico publicado', detail: 'Modelo no calibrado; activar su capa en Capas. El algoritmo elegido determina su uso en routing.' },
+    { label: 'Refugios ocupados / capacidad', value: `${shelters.reduce((total, shelter) => total + shelter.occupancy, 0)} / ${shelters.reduce((total, shelter) => total + shelter.capacity, 0)}`, detail: `${shelters.reduce((total, shelter) => total + (shelter.reserved ?? 0), 0)} plazas reservadas; detalle en Refugios y agentes.` },
+    { label: 'Rescate PRO', value: fleet.length ? `${fleet.length} vehículos · ${onboard} a bordo · ${state.snapshot.fleet_metrics?.delivered ?? 0} entregados` : 'Sin flota publicada' },
   ]} />;
 }
 

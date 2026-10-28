@@ -1,115 +1,119 @@
-import { useState } from 'react';
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { Graph, Incident, IncidentApplication, IncidentApplyResult, LabState } from '@corodev/contracts';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { Graph, Incident, IncidentList } from '@corodev/contracts';
 import { IncidentPanel, type IncidentPanelProps } from '../features/flood/IncidentPanel';
 import { FloodMap } from '../features/flood/FloodMap';
 import { api, ApiError } from '../services/api';
 import { config } from '../lib/config';
 
 const now = new Date().toISOString();
-const incident: Incident = {
+const baseIncident: Incident = {
   schema_version: 1, incident_id: 'incident-citizen-1', incident_type: 'road_closed', latitude: -1, longitude: -80,
   description: 'Calle cerrada observada. <img src=x onerror=alert(1)>', severity_reported: 'moderate', road_passability_reported: 'blocked',
   event_time: now, received_at: now, source_type: 'citizen', verification_status: 'pending',
   evidence_metadata: { attachment_count: 0, storage_status: 'not_supported' }, affected_edge_ids: ['E1'], graph_version: 'test-graph', snap_distance_m: 2,
   location_method: 'manual', location_precision_m: 20, expires_at: new Date(Date.now() + 86400000).toISOString(), updated_at: now,
 };
+let incident = baseIncident;
+let reportSequence = 0;
+beforeEach(() => { incident = { ...baseIncident, incident_id: `citizen-${++reportSequence}` }; });
 const graph: Graph = {
   version: 'test-graph', source: 'Synthetic test graph', nodes: [{ id: 'A', lat: -1, lng: -80 }, { id: 'B', lat: -.999, lng: -79.999 }],
   edges: [{ id: 'E1', from: 'A', to: 'B', distance_m: 150, speed_mps: 1.4, road_type: 'residential', blocked: false, directed: false }], shelters: [],
 };
-const metrics = { total_agents: 1, evacuated_agents: 0, isolated_agents: 0, waiting_agents: 0, average_evacuation_time: 0, blocked_edges: 0, caution_edges: 0, shelters_at_capacity: 0, reroute_count: 0, simulation_total_duration: 1 };
-const backend: LabState = {
-  run_id: 'test-run', state: 'paused', mode: 'competition', graph_version: graph.version,
-  config: { mode: 'competition', seed: 42, rainfall_profile: 'constant', hydraulic_model: 'rainfall_runoff_2d', rainfall_intensity: 0, simulation_duration: 80, evacuation_behavior: 'preventive', agents: 1, interval_ms: 500, shelters: [] },
-  scenario: { scenario_type: 'urban_flood', simulation_step: 1, world_version: 3, graph_version: graph.version, simulation_time: 1, simulation_duration: 80, time_step: 1, rainfall: 0, flood_zones: [], road_conditions: [], shelter_conditions: [], agents: [{ id: 'S1', current_node: 'A', state: 'moving', behavior: 'preventive', target_shelter_id: 'R1', planned_route: ['A', 'B'] }], evacuation_metrics: metrics, performance: { simulation_step_latency_ms: 1, simulation_total_duration_ms: 1 }, data_provenance: { graph_source: graph.source, model: 'test', elevation_source: 'unavailable', disclaimer: 'Synthetic test' } },
-  shelters: [], timeline: [], origins: [], incident_applications: [],
-};
-const application: IncidentApplication = {
-  application_id: 'application-1', incident_id: incident.incident_id, run_id: backend.run_id, affected_edge_ids: ['E1'], simulation_step: 1,
-  world_version: 4, source_type: 'citizen', verification_status_at_application: 'pending', effect: 'blocked', expires_at_simulation_step: 21, applied_at: now,
-};
-const result: IncidentApplyResult = { incident, application, already_applied: false, state: { ...backend, incident_applications: [application], scenario: { ...backend.scenario, world_version: 4 } } };
+const permissions = { can_review: true, can_withdraw: true, can_mark_official: true, operator_login_available: true };
 const initialTiles = config.osmTilesEnabled;
 afterEach(() => { vi.restoreAllMocks(); config.osmTilesEnabled = initialTiles; });
 function setup(overrides: Partial<IncidentPanelProps> = {}) {
-  const applied = vi.fn();
-  const filters = vi.fn();
-  const select = vi.fn();
+  const filters = vi.fn(), select = vi.fn(), locate = vi.fn();
   const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
-  function Harness() {
-    const [state, setState] = useState(backend);
-    return <IncidentPanel list={{ incidents: [incident], total: 1, limit: 200, offset: 0, has_more: false }} loading={false} error={null} onRetry={vi.fn()} filters={{ type: '', status: '', age: '24' }} onFilters={filters} selectedId={incident.incident_id} onSelect={select} selected={incident} backend={state} preview={false} csrf="memory-only-csrf" busy={false} onApplied={value => { setState(value.state); applied(value); }} {...overrides} />;
-  }
-  render(<QueryClientProvider client={client}><Harness /></QueryClientProvider>);
-  return { applied, filters, select, client };
+  const list: IncidentList = { incidents: [incident], total: 1, limit: 200, offset: 0, has_more: false };
+  client.setQueryData(['incidents', 'list', {}], list);
+  client.setQueryData(['mobile', 'incidents'], list);
+  render(<QueryClientProvider client={client}><IncidentPanel list={list} loading={false} error={null} onRetry={vi.fn()} filters={{ type: '', status: '', age: '24' }} onFilters={filters} selectedId={incident.incident_id} onSelect={select} onLocate={locate} selected={incident} csrf="memory-only-csrf" permissions={permissions} {...overrides} /></QueryClientProvider>);
+  return { filters, select, locate, client };
 }
 
-describe('reportes ciudadanos en el laboratorio React', () => {
-  it('muestra procedencia, fechas y cuantización sin interpretar un pendiente como oficial ni ejecutar HTML', () => {
+describe('consulta y moderación de reportes ciudadanos', () => {
+  it('conserva la fuente, estado pendiente, fecha y texto sin ejecutar HTML ni ofrecer aplicación al motor', () => {
     setup();
-    const detail = screen.getByRole('region', { name: `Detalle de incidente ${incident.incident_id}` });
-    expect(detail).toHaveTextContent('Reporte ciudadano pendiente de verificación');
-    expect(detail).toHaveTextContent('Momento declarado');
-    expect(detail).toHaveTextContent('Recibido por el servidor');
-    expect(detail).toHaveTextContent('cuantización de 20 m; no mide la exactitud del dispositivo');
+    const detail = screen.getByRole('region', { name: 'Detalle del reporte seleccionado' });
+    expect(detail).toHaveTextContent('Reporte ciudadano');
+    expect(detail).toHaveTextContent('Pendiente de verificación');
+    expect(detail.querySelector('time')).toHaveAttribute('datetime', now);
     expect(detail).toHaveTextContent('<img src=x onerror=alert(1)>');
     expect(detail.querySelector('img')).toBeNull();
     expect(detail).not.toHaveTextContent('Fuente oficial');
-    expect(screen.queryByRole('button', { name: 'Aplicar incidente a simulación' })).toBeNull();
+    expect(screen.queryByRole('button', { name: /Aplicar incidente|Revisar aplicación experimental/ })).not.toBeInTheDocument();
   });
 
-  it('exige revisar y aceptar el uso experimental, aplica al run actual y conserva pending con auditoría', async () => {
-    const request = vi.spyOn(api, 'applyFloodIncident').mockResolvedValue(result);
-    const { applied } = setup();
-    await userEvent.click(screen.getByRole('button', { name: 'Revisar aplicación experimental' }));
-    const confirm = screen.getByRole('button', { name: 'Aplicar incidente a simulación' });
-    expect(confirm).toBeDisabled();
-    await userEvent.click(screen.getByRole('checkbox', { name: /Entiendo que esta evaluación es experimental/ }));
-    await userEvent.click(confirm);
-    expect(request).toHaveBeenCalledExactlyOnceWith(incident.incident_id, backend.run_id, 'memory-only-csrf', 20, 'blocked');
-    expect(applied).toHaveBeenCalledWith(result);
-    await screen.findByText(/El reporte continúa pendiente de verificación/);
-    expect(screen.getByLabelText('Registro de aplicación experimental')).toHaveTextContent('1 / 4');
-    expect(screen.getByLabelText('Registro de aplicación experimental')).toHaveTextContent('Reporte ciudadano · Pendiente de verificación');
-    expect(screen.getByText('Reporte ciudadano pendiente de verificación')).toBeInTheDocument();
+  it('verifica con permiso y versión esperada, actualiza ambas cachés y conserva procedencia ciudadana', async () => {
+    const verified = { ...incident, verification_status: 'verified' as const };
+    const request = vi.spyOn(api, 'reviewIncident').mockResolvedValue(verified);
+    const { client } = setup();
+    await userEvent.click(screen.getByRole('button', { name: 'Verificar' }));
+    await screen.findByText('Revisión guardada. El mapa se actualizó con la respuesta del servidor.');
+    expect(request).toHaveBeenCalledExactlyOnceWith(incident.incident_id, { verification_status: 'verified', expected_updated_at: incident.updated_at }, 'memory-only-csrf');
+    expect(client.getQueryData(['incidents', 'detail', incident.incident_id])).toEqual(verified);
+    for (const key of [['incidents', 'list', {}], ['mobile', 'incidents']]) {
+      expect(client.getQueryData<IncidentList>(key)?.incidents[0]).toMatchObject({ verification_status: 'verified', source_type: 'citizen' });
+    }
   });
 
-  it('mantiene el error HTTP y request ID y permite reintentar la aplicación sin perder la selección', async () => {
-    const request = vi.spyOn(api, 'applyFloodIncident').mockRejectedValueOnce(new ApiError('La ejecución cambió.', 'CONFLICT', 409, 'request-incident-1')).mockResolvedValueOnce({ ...result, already_applied: true });
+  it('mantiene error HTTP y request ID y permite reintentar una revisión sin cambiar de reporte', async () => {
+    const request = vi.spyOn(api, 'reviewIncident').mockRejectedValueOnce(new ApiError('La revisión cambió.', 'CONFLICT', 409, 'request-incident-1')).mockResolvedValueOnce({ ...incident, verification_status: 'verified' });
     setup();
-    await userEvent.click(screen.getByRole('button', { name: 'Revisar aplicación experimental' }));
-    await userEvent.click(screen.getByRole('checkbox', { name: /Entiendo que esta evaluación es experimental/ }));
-    await userEvent.click(screen.getByRole('button', { name: 'Aplicar incidente a simulación' }));
-    await screen.findByText('La ejecución cambió.');
+    await userEvent.click(screen.getByRole('button', { name: 'Verificar' }));
+    await screen.findByText('La revisión cambió.');
     expect(screen.getByText('Request ID: request-incident-1')).toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: 'Aplicar incidente a simulación' }));
-    await screen.findByText(/El incidente ya estaba aplicado; no se duplicó el overlay/);
+    await userEvent.click(screen.getByRole('button', { name: 'Verificar' }));
+    await screen.findByText('Revisión guardada. El mapa se actualizó con la respuesta del servidor.');
     expect(request).toHaveBeenCalledTimes(2);
   });
 
   it.each([
-    ['sin sesión autorizada', { csrf: '' }], ['previsualización de otra cobertura', { preview: true }],
-    ['ronda finalizada', { backend: { ...backend, state: 'finished' as const } }],
-    ['reporte rechazado', { selected: { ...incident, verification_status: 'rejected' as const } }],
-    ['caducidad por fecha', { selected: { ...incident, expires_at: '2020-01-01T00:00:00Z' } }],
-    ['sin asociación', { selected: { ...incident, affected_edge_ids: [] } }],
-  ])('impide inyección cuando corresponde: %s', (_label, overrides) => {
+    ['sin credencial', { csrf: '' }], ['sin permiso', { permissions: { ...permissions, can_review: false } }],
+    ['caducado', { selected: { ...incident, expires_at: '2020-01-01T00:00:00Z' } }],
+    ['retirado', { selected: { ...incident, map_withdrawn: true } }],
+  ])('impide moderación cuando corresponde: %s', (_label, overrides) => {
+    const request = vi.spyOn(api, 'reviewIncident');
     setup(overrides);
-    expect(screen.getByRole('button', { name: 'Revisar aplicación experimental' })).toBeDisabled();
+    expect(screen.queryByRole('button', { name: 'Verificar' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Marcar como oficial' })).not.toBeInTheDocument();
+    expect(request).not.toHaveBeenCalled();
   });
 
-  it('permite evaluar otra novedad asociada con un efecto explícito del operador', async () => {
-    setup({ selected: { ...incident, incident_type: 'other' } });
-    await userEvent.click(screen.getByRole('button', { name: 'Revisar aplicación experimental' }));
-    expect(screen.getByRole('combobox', { name: 'Efecto experimental' })).toHaveValue('blocked');
-    expect(screen.getByRole('button', { name: 'Aplicar incidente a simulación' })).toBeDisabled();
+  it('exige un motivo antes de rechazar y retira el reporte de las consultas públicas', async () => {
+    const request = vi.spyOn(api, 'reviewIncident').mockResolvedValue({ ...incident, verification_status: 'rejected' });
+    const { client } = setup();
+    await userEvent.click(screen.getByRole('button', { name: 'Rechazar' }));
+    const confirm = screen.getByRole('button', { name: 'Confirmar revisión' });
+    await userEvent.click(confirm);
+    expect(request).not.toHaveBeenCalled();
+    await userEvent.type(screen.getByLabelText('Motivo del rechazo'), 'Reporte duplicado');
+    await userEvent.click(confirm);
+    await waitFor(() => expect(request).toHaveBeenCalledExactlyOnceWith(incident.incident_id, { verification_status: 'rejected', expected_updated_at: now, note: 'Reporte duplicado' }, 'memory-only-csrf'));
+    await screen.findByText(/Revisión guardada/);
+    expect(client.getQueryData<IncidentList>(['mobile', 'incidents'])?.incidents).toEqual([]);
   });
 
-  it('filtra tipo/estado/antigüedad y reserva los estados descartados para el panel autorizado', async () => {
+  it('requiere fuente HTTPS y aceptación para acreditar respaldo oficial sin cambiar el origen ciudadano', async () => {
+    const request = vi.spyOn(api, 'reviewIncident').mockResolvedValue({ ...incident, verification_status: 'verified' });
+    setup();
+    await userEvent.click(screen.getByRole('button', { name: 'Marcar como oficial' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Confirmar revisión' }));
+    expect(request).not.toHaveBeenCalled();
+    await userEvent.type(screen.getByLabelText('Publicación o entidad responsable'), 'Fuente revisada');
+    await userEvent.type(screen.getByLabelText('Enlace a la fuente oficial'), 'https://example.org/fuente');
+    await userEvent.click(screen.getByLabelText(/He revisado la publicación oficial/));
+    await userEvent.click(screen.getByRole('button', { name: 'Confirmar revisión' }));
+    await waitFor(() => expect(request).toHaveBeenCalledExactlyOnceWith(incident.incident_id, { verification_status: 'verified', expected_updated_at: now, official_source: { title: 'Fuente revisada', url: 'https://example.org/fuente' }, official_ack: true }, 'memory-only-csrf'));
+    expect(screen.getByRole('region', { name: 'Detalle del reporte seleccionado' })).toHaveTextContent('Reporte ciudadano');
+  });
+
+  it('oculta estados descartados en consulta pública y filtra sin alterar el reporte', async () => {
     const { filters } = setup({ csrf: '' });
     expect(screen.queryByRole('option', { name: 'Rechazado' })).toBeNull();
     expect(screen.queryByRole('option', { name: 'Caducado' })).toBeNull();
@@ -121,24 +125,16 @@ describe('reportes ciudadanos en el laboratorio React', () => {
     expect(filters).toHaveBeenLastCalledWith({ type: '', status: '', age: '1' });
   });
 
-  it('guarda una revisión explícita con control de concurrencia y conserva la fuente ciudadana', async () => {
-    const request = vi.spyOn(api, 'reviewIncident').mockResolvedValue({ ...incident, verification_status: 'corroborated' });
-    setup();
-    await userEvent.click(screen.getByText('Revisión autorizada del reporte'));
-    await userEvent.selectOptions(screen.getByLabelText('Nuevo estado de verificación'), 'corroborated');
-    await userEvent.click(screen.getByRole('button', { name: 'Guardar revisión autorizada' }));
-    expect(request).toHaveBeenCalledExactlyOnceWith(incident.incident_id, { verification_status: 'corroborated', expected_updated_at: incident.updated_at }, 'memory-only-csrf');
-    await screen.findByText('Revisión guardada. La procedencia del reporte se conserva.');
-    expect(screen.queryByText('Fuente oficial')).toBeNull();
-  });
-
-  it('maneja carga, lista vacía y error de detalle de forma accesible', () => {
-    setup({ list: { incidents: [], total: 0, limit: 200, offset: 0, has_more: false }, selected: undefined, detailError: new Error('No se pudo consultar el reporte.') });
-    expect(screen.getByRole('status')).toHaveTextContent('No hay novedades');
+  it('muestra lista vacía, carga y error de consulta de forma accesible', () => {
+    const { unmount } = render(<QueryClientProvider client={new QueryClient()}><IncidentPanel loading error={null} onRetry={vi.fn()} filters={{ type: '', status: '', age: '24' }} onFilters={vi.fn()} selectedId="" onSelect={vi.fn()} csrf="" /></QueryClientProvider>);
+    expect(screen.getByRole('status')).toHaveTextContent('Cargando reportes');
+    unmount();
+    setup({ list: { incidents: [], total: 0, limit: 200, offset: 0, has_more: false }, selected: undefined, error: new Error('No se pudo consultar el reporte.') });
+    expect(screen.getByText('No hay reportes con estos filtros.')).toBeInTheDocument();
     expect(screen.getByRole('alert')).toHaveTextContent('No se pudo consultar el reporte.');
   });
 
-  it('renderiza estado y fuente en capa independiente con selección de teclado sin confundir datos sintéticos', async () => {
+  it('renderiza fuente y estado en capa independiente con selección de teclado y conserva la red vial', async () => {
     config.osmTilesEnabled = false;
     const select = vi.fn();
     const incidents: Incident[] = [incident, { ...incident, incident_id: 'synthetic-2', source_type: 'synthetic', verification_status: 'verified', latitude: -.9995, longitude: -79.9995 }];
@@ -150,6 +146,7 @@ describe('reportes ciudadanos en el laboratorio React', () => {
     expect(within(synthetic as HTMLElement).getByText(/Dato sintético de prueba/)).toBeInTheDocument();
     fireEvent.keyDown(synthetic, { key: 'Enter' });
     expect(select).toHaveBeenCalledWith('synthetic-2');
+    await userEvent.click(screen.getByText('Capas', { selector: 'summary' }));
     await userEvent.click(screen.getByRole('checkbox', { name: 'Novedades georreferenciadas' }));
     expect(map.querySelector('[data-layer="incidents"]')).toBeNull();
     expect(map.querySelector('[data-road-state="passable"]')).toBeInTheDocument();

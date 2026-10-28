@@ -243,28 +243,10 @@ try {
     report.checks.pause_ack_stops_backend_clock = true;
     const initialOrigins = state.origins;
     const map = page.getByTestId('flood-map');
-    const roadPoint = await map.evaluate(svg => {
-      const markers = Array.from(svg.querySelectorAll('.flood-agent, .flood-candidate, .flood-shelter')).map(marker => ({
-        x: Number(marker.getAttribute('cx') ?? marker.getAttribute('x')) + (marker.tagName === 'rect' ? 6 : 0),
-        y: Number(marker.getAttribute('cy') ?? marker.getAttribute('y')) + (marker.tagName === 'rect' ? 6 : 0),
-      }));
-      const d = svg.querySelector('path[data-road-state="passable"]')?.getAttribute('d') ?? '';
-      const points = Array.from(d.matchAll(/([ML])([-\d.]+),([-\d.]+)/g), match => ({ command: match[1], x: Number(match[2]), y: Number(match[3]) }));
-      const segments = points.slice(1).flatMap((point, i) => {
-        if (point.command !== 'L') return [];
-        const before = points[i], center = { x: (point.x + before.x) / 2, y: (point.y + before.y) / 2 };
-        const length = Math.hypot(point.x - before.x, point.y - before.y);
-        return length > 8 && markers.every(marker => Math.hypot(center.x - marker.x, center.y - marker.y) > 20) ? [{ ...center, length }] : [];
-      });
-      return segments.sort((a, b) => b.length - a.length)[0];
-    });
-    if (!roadPoint) throw new Error('Street layer lacks an unobstructed OSM segment for inspection');
-    await map.scrollIntoViewIfNeeded();
-    const bounds = await map.boundingBox();
-    const view = (await map.getAttribute('viewBox')).split(' ').map(Number);
-    if (!bounds) throw new Error('Flood map has no visible bounds');
-    await map.click({ position: { x: (roadPoint.x - view[0]) / view[2] * bounds.width, y: (roadPoint.y - view[1]) / view[3] * bounds.height } });
-    await expect(page.locator('.flood-edge-details')).toBeVisible();
+    // The road inspector was intentionally removed from the product. Keep
+    // checking real street layers and published routes without restoring it.
+    await expect(map.locator('path[data-road-state="passable"]')).not.toHaveAttribute('d', '');
+    await expect(page.locator('.flood-edge-details')).toHaveCount(0);
     const routeAgent = state.scenario.agents.find(agent => agent.state === 'moving' && agent.planned_route.length > 1);
     if (!routeAgent) throw new Error('Paused fixture has no moving agent with a published route');
     await openAgents(page);
@@ -273,7 +255,7 @@ try {
     await expect(page.locator('.agent-panel-selection')).toContainText(`${routeAgent.id} · Ruta resaltada en el mapa`);
     await expect(map.locator('[data-layer="routes"]')).not.toHaveAttribute('d', '');
     report.browser.inspected_route_agent = routeAgent.id;
-    report.checks.edge_click_and_agent_route_inspection = true;
+    report.checks.real_street_layers_and_published_agent_route = true;
     await page.screenshot({ path: path.join(directory, 'flood-desktop-paused.png'), fullPage: true });
     await page.getByRole('button', { name: 'Continuar', exact: true }).click();
     await until(() => get('/lab/state', 'LabState'), next => next.scenario.simulation_step > pausedStep && next.scenario.evacuation_metrics.blocked_edges > 0, 'Resume advances backend and rain closes streets');
@@ -284,21 +266,22 @@ try {
     report.checks.rain_evolution_blocks_visible_streets = true;
     const runBeforeReset = state.run_id;
     await openDetails(page, 'Más acciones');
-    await page.getByRole('button', { name: 'Reiniciar', exact: true }).click();
+    await moreAction(page, 'Reiniciar');
     state = await until(() => get('/lab/state', 'LabState'), next => next.run_id !== runBeforeReset && next.state === 'idle', 'Restart resets authoritative clock');
     if (state.scenario.simulation_step !== 0 || JSON.stringify(state.origins) !== JSON.stringify(initialOrigins)) throw new Error('Restart did not reset the same experiment');
     const previousRun = state.run_id;
-    await page.getByRole('button', { name: 'Repetir', exact: true }).click();
+    await moreAction(page, 'Repetir');
     state = await until(() => get('/lab/state', 'LabState'), next => next.run_id !== previousRun, 'Same-seed replay');
     if (state.config.seed !== 42 || JSON.stringify(state.origins) !== JSON.stringify(initialOrigins)) throw new Error('Same-seed replay changed exact geographical origins');
     report.checks.resume_and_same_seed_replay = true;
-    await page.getByRole('button', { name: 'Reiniciar', exact: true }).click();
-    await until(() => get('/lab/state', 'LabState'), next => next.state === 'idle', 'Reset before comparison');
-    await openDetails(page, 'Comparar estrategias · A/B');
-    await page.getByRole('button', { name: 'Comparar A/B', exact: true }).click();
+    await moreAction(page, 'Reiniciar');
+    state = await until(() => get('/lab/state', 'LabState'), next => next.state === 'idle', 'Reset before comparison');
+    await expect(page.getByText('Comparar estrategias · A/B', { exact: true })).toHaveCount(0);
+    // Comparison remains an API capability, separate from the simplified UI.
+    await mutate('/lab/comparisons', { config: state.config, expected_run_id: state.run_id });
     state = await until(() => get('/lab/state', 'LabState'), next => next.comparison?.state === 'finished', 'A/B real backend completion', 120000);
     checkComparison(state.comparison, 20);
-    report.checks.ui_original_vs_four_alternative_shelters = true;
+    report.checks.api_original_vs_four_alternative_shelters = true;
     report.comparison = state.comparison;
     await page.screenshot({ path: path.join(directory, 'flood-comparison-desktop.png'), fullPage: true });
     await page.setViewportSize({ width: 390, height: 844 });
@@ -325,7 +308,7 @@ try {
     await page.locator('.flood-map-card').screenshot({ path: path.join(directory, 'flood-mobile-map.png') });
     await page.setViewportSize({ width: 1440, height: 1100 });
     await openDetails(page, 'Más acciones');
-    const reset = page.getByRole('button', { name: 'Reiniciar', exact: true });
+    const reset = page.getByRole('menuitem', { name: 'Reiniciar', exact: true });
     if (await reset.count()) await reset.click();
     await until(() => get('/lab/state', 'LabState'), next => next.state === 'idle', 'Reset before master run');
     await openShelters(page);
@@ -417,7 +400,17 @@ function checkComparison(comparison, total) {
   }
 }
 
+async function moreAction(page, name) {
+  await openDetails(page, 'Más acciones');
+  await page.getByRole('menuitem', { name, exact: true }).click();
+}
+
 async function openDetails(page, name) {
+  if (name === 'Más acciones') {
+    const trigger = page.getByRole('button', { name, exact: true });
+    if (await trigger.getAttribute('aria-expanded') !== 'true') await trigger.click();
+    return;
+  }
   const summary = page.getByText(name, { selector: 'summary', exact: typeof name === 'string' });
   if (await summary.locator('..').getAttribute('open') === null) await summary.click();
 }

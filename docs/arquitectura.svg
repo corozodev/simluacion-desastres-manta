@@ -1,23 +1,93 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1220" height="730" viewBox="0 0 1220 730" role="img" aria-labelledby="title desc">
-<title id="title">CoroDev: arquitectura local y despliegue AWS comprobado</title><desc id="desc">React y Flutter consultan snapshots públicos mediante HTTPS. Caddy dirige hacia un backend Go persistente en EC2. El simulador consulta paso por HTTP privado. S3 privado y CloudFront sirven React. CloudWatch recibe logs y el Budget existente está verificado. El stack AWS está CREATE_COMPLETE.</desc>
-<defs><marker id="a" markerWidth="9" markerHeight="9" refX="8" refY="4" orient="auto"><path d="M0 0L8 4L0 8Z" fill="#a78bfa"/></marker><style>text{font-family:system-ui,sans-serif;fill:#eee7ff} .title{font-size:25px;font-weight:700} .label{font-size:18px;font-weight:600} .small{font-size:14px;fill:#c8bed9}.box{fill:#211b30;stroke:#67517e;stroke-width:2}.flow{stroke:#a78bfa;stroke-width:2;fill:none;marker-end:url(#a)}.orange{fill:#ffad66}</style></defs>
-<rect width="1220" height="730" fill="#100d18"/>
-<text x="35" y="43" class="title">CoroDev · Escape de Manta Zombie</text><text x="35" y="71" class="small">AWS desplegado · CREATE_COMPLETE · us-east-2 · HTTPS verificado · 14 recursos aprobados</text>
-<rect x="35" y="112" width="220" height="105" rx="12" class="box"/><text x="55" y="146" class="label">React /escape</text><text x="55" y="176" class="small">CloudFront HTTPS</text><text x="55" y="199" class="small">S3 privado + OAC</text>
-<rect x="35" y="262" width="220" height="95" rx="12" class="box"/><text x="55" y="297" class="label">Flutter</text><text x="55" y="325" class="small">Repositorio HTTP público</text>
-<rect x="35" y="407" width="220" height="110" rx="12" class="box"/><text x="55" y="441" class="label">Importador OSM</text><text x="55" y="468" class="small">Maestro / operativo</text><text x="55" y="491" class="small">Datos reales versionados</text>
-<rect x="332" y="112" width="245" height="245" rx="12" class="box"/><text x="355" y="149" class="label">EC2 · proxy Caddy</text><text x="355" y="183" class="small">HTTPS 443 / HTTP 80</text><text x="355" y="212" class="small">DNS y certificado reales</text><text x="355" y="241" class="small">API administrativa apagada</text><text x="355" y="270" class="small">8080 solo loopback / Docker</text><text x="355" y="299" class="small">Sin claves en clientes</text><text x="355" y="329" class="small">SSM para operar el host</text>
-<rect x="645" y="112" width="530" height="405" rx="12" class="box"/><text x="668" y="148" class="label">Go persistente · un único proceso autoritativo</text><text x="668" y="181" class="small">Docker no-root · rootfs readonly · restart unless-stopped</text>
-<rect x="670" y="205" width="215" height="94" rx="9" class="box"/><text x="688" y="237" class="label">Snapshot observable</text><text x="688" y="267" class="small">GET /estado · /grafo</text>
-<rect x="926" y="205" width="225" height="94" rx="9" class="box"/><text x="945" y="237" class="label">Motor determinista</text><text x="945" y="267" class="small">POST /paso + x-api-key</text>
-<rect x="670" y="345" width="215" height="99" rx="9" class="box"/><text x="688" y="380" class="label">Simulador</text><text x="688" y="409" class="small">Turnos / zombies / refugios</text>
-<rect x="926" y="345" width="225" height="99" rx="9" class="box"/><text x="945" y="380" class="label">Grafo offline</text><text x="945" y="409" class="small">Variante y escenarios JSON</text>
-<text x="668" y="481" class="small">Sleepers dormidos y PRNG permanecen privados · polling cada turno</text>
-<path d="M255 160H332" class="flow"/><path d="M255 306H332" class="flow"/><path d="M577 238H645" class="flow"/><path d="M255 461H610V394H926" class="flow"/>
-<path d="M777 345V299" class="flow"/><path d="M885 394H904V252H926" class="flow"/><path d="M926 282H906V325H777V345" class="flow"/>
-<text x="900" y="324" class="small">HTTP privado</text>
-<rect x="35" y="563" width="540" height="112" rx="12" class="box"/><text x="55" y="599" class="label">CloudWatch</text><text x="55" y="630" class="small">Logs JSON / métricas EC2 / alarmas · retención 7 días</text><text x="55" y="653" class="small">Sin cuerpos HTTP ni credenciales en logs</text>
-<rect x="645" y="563" width="530" height="112" rx="12" class="box"/><text x="668" y="599" class="label">AWS Budget existente · verificado</text><text x="668" y="630" class="small">30 USD verificado · avisos 85% / 100% / previsto 100%</text><text x="668" y="653" class="small">Estimación 22,96 USD/mes · gasto informado con retraso</text>
-<path d="M920 517V541H305V563" class="flow"/>
-<text x="35" y="710" class="small">No se incluyen Redis, RDS, Kubernetes, Lambda ni decisiones externas de IA.</text>
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="1080" viewBox="0 0 1440 1080" role="img" aria-labelledby="title desc">
+<title id="title">CoroDev: arquitectura de simulación y publicación</title>
+<desc id="desc">React controla sesiones explícitas. Flutter y React móvil observan estados publicados. S3 y CloudFront sirven la web; Caddy dirige HTTP a un monolito Go y al laboratorio hidráulico independiente en EC2 de Ohio. Simulador, rutas, catálogo y snapshots son módulos internos, no microservicios.</desc>
+<defs><marker id="arrow" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0 0L9 4.5L0 9Z" fill="#475569"/></marker></defs>
+<style>text{font-family:Arial,Helvetica,sans-serif;fill:#17243c;font-size:18px}.heading{font-size:23px;font-weight:700}.small{font-size:15px}.title{font-size:28px;font-weight:700}.edge{fill:none;stroke:#475569;stroke-width:2;marker-end:url(#arrow)}.muted{fill:#475569}.group{fill:#f8fafc;stroke:#94a3b8;stroke-width:2}.node{fill:#fff;stroke:#94a3b8;stroke-width:1.6}.public{fill:#e9f4ff;stroke:#3181b6}.private{fill:#e9f8f0;stroke:#33815b}.internal{fill:#fff8e7;stroke:#b68b2f}</style>
+<rect width="1440" height="1080" fill="#fff"/>
+<text x="35" y="40" class="title">CoroDev / MantaSim — arquitectura actual</text>
+
+<rect x="35" y="75" width="190" height="70" rx="12" class="node"/>
+<text x="130.0" y="116.0" text-anchor="middle" class="heading">Usuarios</text>
+<rect x="270" y="75" width="435" height="70" rx="12" class="public"/>
+<text x="487.5" y="103.5" text-anchor="middle" class="heading">React escritorio</text>
+<text x="487.5" y="128.5" text-anchor="middle" class="">Control /escape y /flood-lab</text>
+<rect x="825" y="75" width="580" height="70" rx="12" class="public"/>
+<text x="1115.0" y="103.5" text-anchor="middle" class="heading">React /mobile + Flutter Android</text>
+<text x="1115.0" y="128.5" text-anchor="middle" class="">Espectadores; reportes ciudadanos</text>
+<polyline points="225,110 270,110" class="edge"/>
+<polyline points="225,125 245,125 245,175 1115,175 1115,145" class="edge"/>
+<rect x="20" y="220" width="1400" height="805" rx="18" class="group"/>
+<text x="40" y="253" class="heading" text-anchor="start">AWS · aplicación en Ohio (us-east-2)</text>
+<rect x="40" y="285" width="240" height="120" rx="12" class="public"/>
+<text x="160.0" y="326.0" text-anchor="middle" class="heading">CloudFront + OAC</text>
+<text x="160.0" y="351.0" text-anchor="middle" class="">S3 privado: React</text>
+<text x="160.0" y="376.0" text-anchor="middle" class="">ACM web: us-east-1</text>
+<polyline points="160,285 160,175 460,175 460,145" class="edge"/>
+<text x="175" y="198" class="small" text-anchor="start">Web estática</text>
+<rect x="310" y="278" width="1085" height="660" rx="16" fill="#f0f5fb" stroke="#64748b" stroke-width="2"/>
+<text x="330" y="312" class="heading" text-anchor="start">EC2 m7i-flex.large · 2 vCPU / 8 GiB · Docker</text>
+<rect x="350" y="335" width="1005" height="65" rx="12" class="public"/>
+<text x="852.5" y="373.5" text-anchor="middle" class="heading">Caddy · endpoint HTTPS público · 80/443</text>
+<polyline points="705,110 755,110 755,335" class="edge"/>
+<text x="770" y="208" class="small" text-anchor="start">Inicio explícito y control con token</text>
+<polyline points="1115,335 1115,200 1280,200 1280,145" class="edge"/>
+<text x="1130" y="195" class="small" text-anchor="start">6. Polling / ETag</text>
+<rect x="340" y="425" width="680" height="483" rx="14" fill="#fff" stroke="#64748b" stroke-width="1.6"/>
+<text x="360" y="454" class="heading" text-anchor="start">cmd/server · monolito modular Go · puerto 8080 interno</text>
+<rect x="365" y="480" width="630" height="65" rx="12" class="private"/>
+<text x="680.0" y="506.0" text-anchor="middle" class="">1. Sesiones bajo demanda</text>
+<text x="680.0" y="531.0" text-anchor="middle" class="">Cupos, idempotencia, credencial y reloj propios</text>
+<polyline points="680,400 680,480" class="edge"/>
+<rect x="365" y="600" width="270" height="80" rx="12" class="internal"/>
+<text x="500.0" y="633.5" text-anchor="middle" class="heading">2. Simulador</text>
+<text x="500.0" y="658.5" text-anchor="middle" class="">Único escritor · RNG privado</text>
+<rect x="725" y="600" width="270" height="80" rx="12" class="internal"/>
+<text x="860.0" y="633.5" text-anchor="middle" class="heading">3–4. Routing y reservas</text>
+<text x="860.0" y="658.5" text-anchor="middle" class="">Predicción observable</text>
+<polyline points="500,545 500,600" class="edge"/>
+<text x="510" y="573" class="small" text-anchor="start">Turno serializado</text>
+<polyline points="635,623 725,623" class="edge"/>
+<text x="640" y="598" class="small" text-anchor="start">HTTP /paso</text>
+<text x="640" y="618" class="small" text-anchor="start">x-api-key</text>
+<polyline points="725,663 635,663" class="edge"/>
+<text x="639" y="691" class="small" text-anchor="start">Paso / espera</text>
+<rect x="365" y="750" width="270" height="70" rx="12" class="internal"/>
+<text x="500.0" y="778.5" text-anchor="middle" class="">Catálogo e índices</text>
+<text x="500.0" y="803.5" text-anchor="middle" class="">OSM offline · BASE / FULL</text>
+<rect x="725" y="750" width="270" height="70" rx="12" class="internal"/>
+<text x="860.0" y="778.5" text-anchor="middle" class="">5. Estado en RAM</text>
+<text x="860.0" y="803.5" text-anchor="middle" class="">Snapshots inmutables</text>
+<polyline points="500,750 500,680" class="edge"/>
+<polyline points="600,680 600,720 860,720 860,750" class="edge"/>
+<rect x="365" y="845" width="630" height="43" rx="12" class="private"/>
+<text x="680.0" y="872.5" text-anchor="middle" class="">6. Estado privado / referencias públicas compactas</text>
+<polyline points="860,820 860,845" class="edge"/>
+<polyline points="365,866 325,866 325,367 350,367" class="edge"/>
+<rect x="1050" y="480" width="305" height="155" rx="12" class="private"/>
+<text x="1202.5" y="526.0" text-anchor="middle" class="heading">cmd/flood-lab</text>
+<text x="1202.5" y="551.0" text-anchor="middle" class="">Hidrología 2D independiente</text>
+<text x="1202.5" y="576.0" text-anchor="middle" class="">Loopback 127.0.0.1:8082</text>
+<text x="1202.5" y="601.0" text-anchor="middle" class="">Reportes y referencia</text>
+<polyline points="1200,400 1200,480" class="edge"/>
+<text x="1210" y="450" class="small" text-anchor="start">Proxy /lab y datos</text>
+<rect x="1050" y="750" width="305" height="100" rx="12" class="internal"/>
+<text x="1202.5" y="781.0" text-anchor="middle" class="heading">EBS cifrado</text>
+<text x="1202.5" y="806.0" text-anchor="middle" class="">Reportes / referencia en disco</text>
+<text x="1202.5" y="831.0" text-anchor="middle" class="">Sesiones no persistentes</text>
+<polyline points="1200,635 1200,750" class="edge"/>
+<text x="1060" y="710" class="small" text-anchor="start">Almacenamiento privado</text>
+<rect x="40" y="455" width="240" height="115" rx="12" class="node"/>
+<text x="160.0" y="493.5" text-anchor="middle" class="">CloudFormation / SSM</text>
+<text x="160.0" y="518.5" text-anchor="middle" class="">CloudWatch Logs</text>
+<text x="160.0" y="543.5" text-anchor="middle" class="">Alarma CPU</text>
+<rect x="40" y="600" width="240" height="80" rx="12" class="node"/>
+<text x="160.0" y="633.5" text-anchor="middle" class="">S3 privado</text>
+<text x="160.0" y="658.5" text-anchor="middle" class="">Artefactos de releases</text>
+<rect x="40" y="710" width="240" height="120" rx="12" class="node"/>
+<text x="160.0" y="751.0" text-anchor="middle" class="">Scheduler / Lambda / SQS</text>
+<text x="160.0" y="776.0" text-anchor="middle" class="">Retirada programada</text>
+<text x="160.0" y="801.0" text-anchor="middle" class="">No toma decisiones</text>
+<text x="350" y="965" class="heading" text-anchor="start">Externos: Cloudflare DNS · Let’s Encrypt · OSM / GeoManta / SNGR</text>
+<text x="350" y="995" class="small" text-anchor="start">Geografía versionada por separado; sin topología repetida ni sleepers dormidos en polling.</text>
+<text x="35" y="1058" class="small" text-anchor="start">Azul: acceso público   ·   Verde: control o servicio privado   ·   Ocre: módulos y datos internos   ·   Sin WebSocket</text>
 </svg>

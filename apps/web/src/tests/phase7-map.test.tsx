@@ -31,4 +31,32 @@ describe('capas PRO observables', () => {
     view.rerender(<WorldMap graph={graph} world={world} forecast={{ ...forecast, turn: world.turn + 1 }} />);
     expect(document.querySelector('[data-forecast-node]')).not.toBeInTheDocument();
   });
+  it('muestra sólo el recorrido vehicular realmente publicado y lo oculta ante geometrías ambiguas', async () => {
+    const snapshot = structuredClone(world);
+    const edge = graph.edges[0]!;
+    snapshot.fleet = [{ id: 'V-01', current_node: edge.to, path: [edge.from, edge.to], passenger_ids: [], target_survivor_id: '', target_shelter_id: '', state: 'pickup', capacity: 4 }];
+    const view = render(<WorldMap graph={graph} world={snapshot} />);
+    expect(document.querySelector('[data-vehicle-path="V-01"]')).toBeInTheDocument();
+    expect(screen.getByText('V-01', { selector: 'text' })).toBeInTheDocument();
+    expect(screen.getByText(/Recorrido real de V-01 en el último turno/)).toBeInTheDocument();
+    const ambiguous = { ...graph, edges: [...graph.edges, { ...edge, id: 'parallel', geometry: [{ lat: -1, lng: -80 }, { lat: -1.001, lng: -80.001 }] }] };
+    view.rerender(<WorldMap graph={ambiguous} world={snapshot} />);
+    expect(document.querySelector('[data-vehicle-path]')).not.toBeInTheDocument();
+    expect(document.querySelector('[data-vehicle-id="V-01"]')).toBeInTheDocument();
+    await userEvent.click(screen.getByText('Capas'));
+    await userEvent.click(screen.getByLabelText('Camionetas de rescate'));
+    expect(document.querySelector('[data-vehicle-id]')).not.toBeInTheDocument();
+  });
+  it('distingue ocupación real y reservas al señalar refugios sin plazas o próximos a saturación', () => {
+    const shelters = [
+      { ...graph.shelters[0]!, capacity: 10, occupancy: 1, reserved: 9, available: 0 },
+      { ...graph.shelters[1]!, capacity: 10, occupancy: 1, reserved: 7, available: 2 },
+      { ...graph.shelters[2]!, capacity: 10, occupancy: 1, reserved: 0, available: 9 },
+    ];
+    render(<WorldMap graph={graph} world={world} shelters={shelters} />);
+    expect(document.querySelector('[data-shelter-capacity="unavailable"]')).toHaveTextContent('1/10 ocupadas · 9 reservadas · 0 disponibles');
+    expect(document.querySelector('[data-shelter-capacity="limited"]')).toBeInTheDocument();
+    expect(document.querySelector('[data-shelter-capacity="available"]')).toBeInTheDocument();
+  });
+
 });

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import type { GeoPoint, Graph, RunnerForecast, Shelter, Survivor, WorldSnapshot } from '@corodev/contracts';
 import { mapProjection, mapTiles } from './visualization/projection';
 import { AnimatedEntities } from './visualization/AnimatedEntities';
+import { geometryIndex } from './visualization/model';
 import { useVisualization, VisualizationControls } from './visualization/useVisualization';
 import { observeWorld } from './visualization/observation';
 import type { VisualLifecycle } from './visualization/observation';
@@ -66,6 +67,7 @@ export function WorldMap({ graph, world, forecast, selected, lifecycle, onSelect
     if (point) camera.focus(point);
   }, [selectedShelterId, graph.version]);
   const tiles = useMemo(() => mapTiles(projection, view), [projection, view]);
+  const vehicleGeometry = useMemo(() => geometryIndex(graph, projection.point), [graph, projection]);
   const visibleObservation = useMemo(() => observation && ({ ...observation, entities: observation.entities.filter(entity => entity.kind === 'survivor' ? layers.survivors : layers.zombies) }), [observation, layers.survivors, layers.zombies]);
   const forecastNodes = useMemo(() => forecast && forecast.turn === world?.turn ? [...forecast.node_risks].filter(item => item.one_turn_probability > 0).sort((a, b) => b.one_turn_probability - a.one_turn_probability || a.node_id.localeCompare(b.node_id)).slice(0, 64) : [], [forecast, world?.turn]);
   const points = (coordinates: GeoPoint[]) => coordinates.map(coordinate => { const p = projection.point(coordinate); return `${p.x},${p.y}`; }).join(' ');
@@ -107,18 +109,35 @@ export function WorldMap({ graph, world, forecast, selected, lifecycle, onSelect
         return point ? <circle key={item.node_id} data-forecast-node={item.node_id} cx={point.x} cy={point.y} r={9} className="escape-runner-forecast" opacity={.2 + .6 * item.one_turn_probability}><title>{`Predicción del modelo, no calibrada · ${item.node_id} · próximo turno: ${(item.one_turn_probability * 100).toFixed(1)}% · dos turnos: ${(item.two_turn_probability * 100).toFixed(1)}%`}</title></circle> : null;
       })}
       <g pointerEvents={pickingPosition ? 'none' : undefined}><AnimatedEntities graph={graph} observation={visibleObservation} project={projection.point} view={view} active={controls.active} clustering={controls.clustering} selected={selected?.id} onSelect={pickingPosition ? undefined : onSelect} /></g>
-      {layers.fleet && world?.fleet?.map(vehicle => {
+      {layers.fleet && world?.fleet?.map((vehicle, index, vehicles) => {
         const point = projection.nodes.get(vehicle.current_node);
-        return point ? <g key={vehicle.id} data-vehicle-id={vehicle.id} transform={`translate(${point.x},${point.y})`}><title>{`Camioneta ${vehicle.id} · ${vehicle.passenger_ids.length}/${vehicle.capacity} pasajeros · ${vehicle.state}${vehicle.target_shelter_id ? ` · destino ${vehicle.target_shelter_id}` : ''}`}</title><rect className="escape-rescue-vehicle" x={-9} y={-6} width={18} height={12} rx={3} /><text className="escape-rescue-label" y={3}>{vehicle.passenger_ids.length}/{vehicle.capacity}</text></g> : null;
+        const path: { x: number; y: number }[] = [];
+        if (vehicle.path.length <= 3 && vehicle.path.at(-1) === vehicle.current_node) {
+          for (let i = 1; i < vehicle.path.length; i++) {
+            const segment = vehicleGeometry.edges.get(`${vehicle.path[i - 1]}\0${vehicle.path[i]}`);
+            if (!segment) { path.length = 0; break; }
+            path.push(...segment);
+          }
+        }
+        const colocated = vehicles.slice(0, index).filter(other => other.current_node === vehicle.current_node).length;
+        const stateLabel = { idle: 'Disponible', pickup: 'En recogida', transport: 'En traslado', waiting: 'En espera' }[vehicle.state] ?? vehicle.state;
+        return point ? <g key={vehicle.id} data-vehicle-id={vehicle.id}>
+          {path.length > 1 && <polyline data-vehicle-path={vehicle.id} points={path.map(item => `${item.x},${item.y}`).join(' ')} className="escape-rescue-path"><title>Recorrido real de {vehicle.id} en el último turno; no es una ruta futura</title></polyline>}
+          <g transform={`translate(${point.x},${point.y})`}><title>{`Camioneta ${vehicle.id} · ${vehicle.passenger_ids.length}/${vehicle.capacity} pasajeros · ${stateLabel}${vehicle.target_shelter_id ? ` · destino ${vehicle.target_shelter_id}` : ''}`}</title><rect className="escape-rescue-vehicle" x={-9} y={-6} width={18} height={12} rx={3} /><text className="escape-rescue-label" y={3}>{vehicle.passenger_ids.length}/{vehicle.capacity}</text><text className="escape-rescue-id" y={-10 - colocated * 11}>{vehicle.id}</text></g>
+        </g> : null;
       })}
       {layers.routes && selected && <polyline points={points(routeGeometry(graph, selected))} className="escape-planned-route"><title>Ruta publicada de {selected.id}</title></polyline>}
       {layers.shelters && (shelters ?? world?.shelters ?? graph.shelters).map(shelter => {
         const point = projection.nodes.get(shelter.node_id);
-        return point ? <g key={shelter.id} data-shelter-id={shelter.id} className={selectedShelterId === shelter.id ? 'map-shelter-selected' : undefined} role={onSelectShelter && !pickingPosition ? 'button' : undefined} tabIndex={onSelectShelter && !pickingPosition ? 0 : undefined} aria-label={onSelectShelter && !pickingPosition ? `Localizar refugio ${shelter.id}` : undefined} aria-pressed={onSelectShelter && !pickingPosition ? selectedShelterId === shelter.id : undefined} onPointerDown={event => { if (!pickingPosition) event.stopPropagation(); }} onClick={event => { if (!pickingPosition) { event.stopPropagation(); onSelectShelter?.(shelter.id); } }} onKeyDown={event => { if (!pickingPosition && ['Enter', ' '].includes(event.key)) { event.preventDefault(); event.stopPropagation(); onSelectShelter?.(shelter.id); } }}><rect x={point.x - 6} y={point.y - 6} width="12" height="12" rx="2" className="escape-shelter"><title>Refugio ficticio {shelter.id} · {shelter.occupancy}/{shelter.capacity} ocupadas · {shelter.reserved} reservadas · {shelter.available} disponibles</title></rect><text x={point.x + 10} y={point.y + 4} className="escape-map-label">{shelter.id}</text></g> : null;
+        const reserved = shelter.reserved ?? 0;
+        const available = shelter.available ?? Math.max(0, shelter.capacity - shelter.occupancy - reserved);
+        const capacityState = available === 0 ? 'unavailable' : (shelter.occupancy + reserved) / shelter.capacity >= .8 ? 'limited' : 'available';
+        const capacityLabel = { unavailable: 'Sin plazas libres', limited: 'Pocas plazas libres', available: 'Plazas disponibles' }[capacityState];
+        return point ? <g key={shelter.id} data-shelter-id={shelter.id} className={selectedShelterId === shelter.id ? 'map-shelter-selected' : undefined} role={onSelectShelter && !pickingPosition ? 'button' : undefined} tabIndex={onSelectShelter && !pickingPosition ? 0 : undefined} aria-label={onSelectShelter && !pickingPosition ? `Localizar refugio ${shelter.id}` : undefined} aria-pressed={onSelectShelter && !pickingPosition ? selectedShelterId === shelter.id : undefined} onPointerDown={event => { if (!pickingPosition) event.stopPropagation(); }} onClick={event => { if (!pickingPosition) { event.stopPropagation(); onSelectShelter?.(shelter.id); } }} onKeyDown={event => { if (!pickingPosition && ['Enter', ' '].includes(event.key)) { event.preventDefault(); event.stopPropagation(); onSelectShelter?.(shelter.id); } }}><rect x={point.x - 6} y={point.y - 6} width="12" height="12" rx="2" data-shelter-capacity={capacityState} className={`escape-shelter escape-shelter-${capacityState}`}><title>Refugio ficticio {shelter.id} · {capacityLabel} · {shelter.occupancy}/{shelter.capacity} ocupadas · {reserved} reservadas · {available} disponibles</title></rect><text x={point.x + 10} y={point.y + 4} className="escape-map-label">{shelter.id}</text></g> : null;
       })}
       {preview && <circle data-layer="shelter-preview" cx={preview.x} cy={preview.y} r={10} className="map-preview"><title>Ubicación provisional pendiente de confirmar</title></circle>}
     </svg><MapAttribution /><MapWorkspaceOverlay panel={panel} metrics={metrics} /></div>
-    <figcaption>{layers.survivors && <span className="escape-legend-survivor">● Superviviente</span>}{layers.zombies && <span className="escape-legend-zombie">● Zombi visible</span>}{layers.shelters && <span className="escape-legend-shelter">■ Refugio ficticio</span>}{layers.origins && <span>▱ Zonas de aparición · ┄ Referencia urbana</span>}{layers.routes && <span>— Ruta seleccionada</span>}{layers.roads && <span>Rojo: vía bloqueada</span>}{layers.fleet && !!world?.fleet?.length && <span>▣ Camioneta · pasajeros/capacidad</span>}{layers.forecast && <span>◌ Predicción del modelo, no calibrada · hasta 64 nodos</span>}</figcaption>
+    <figcaption>{layers.survivors && <span className="escape-legend-survivor">● Superviviente</span>}{layers.zombies && <span className="escape-legend-zombie">● Zombi visible</span>}{layers.shelters && <span className="escape-legend-shelter">■ Refugio ficticio · verde disponible / ámbar pocas plazas / rojo sin plazas</span>}{layers.origins && <span>▱ Zonas de aparición · ┄ Referencia urbana</span>}{layers.routes && <span>— Ruta seleccionada</span>}{layers.roads && <span>Rojo: vía bloqueada</span>}{layers.fleet && !!world?.fleet?.length && <span>▣ Camioneta · pasajeros/capacidad · ┄ recorrido del último turno</span>}{layers.forecast && <span>◌ Predicción del modelo, no calibrada · hasta 64 nodos</span>}</figcaption>
     {tileUnavailable && <p role="status" className="map-source-note">Fondo no disponible; conservamos la red vectorial OpenStreetMap.</p>}<MapSource graph={graph} />
   </figure>;
 }

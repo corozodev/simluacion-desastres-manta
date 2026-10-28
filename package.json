@@ -14,6 +14,7 @@
     "packages/design-tokens"
   ],
   "scripts": {
+    "docs:check": "node tools/qa/check_delivery.mjs",
     "dev:api": "npm run dev:backend",
     "dev:web": "npm run dev -w @corodev/web",
     "dev:lab": "node tools/scripts/dev_lab.mjs",

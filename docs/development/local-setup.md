@@ -1,71 +1,80 @@
 # Desarrollo local
 
-Ejecutar npm desde `corodev-spooky`. Se requieren Node ≥22.12, npm ≥10, Go compatible con `services/evacuation/go.mod` y Python 3 para las herramientas geográficas. Flutter y un SDK Android se necesitan sólo para móvil. `GO_BIN` y `FLUTTER_BIN` permiten indicar instalaciones fuera de PATH.
+La demo web funciona sin AWS, Docker ni Flutter. Se requieren Node ≥22.12, npm ≥10, Go ≥1.23 (`services/evacuation/go.mod`), Python 3 y GNU Make. `GO_BIN` y `FLUTTER_BIN` admiten ejecutables fuera de PATH.
+
+## Arranque y cierre
+
+Desde la raíz:
 
 ```sh
-npm install
-npm run contracts:validate
-npm run contracts:generate
-npm run tokens:generate
+make help
+make setup
+make dev
 ```
 
-## Go y React
+`setup` comprueba herramientas, ejecuta `npm install` con lockfile, genera contratos/tokens y crea `.env` y `apps/web/.env.local` sólo si faltan. La clave local se genera aleatoriamente y no se imprime. No sobreescribe valores existentes ni solicita credenciales AWS. Para una instalación CI estricta puede usarse `npm ci`.
 
-Terminal A:
+`dev` reutiliza `tools/scripts/dev_lab.mjs`: compila Go temporalmente e inicia la API de sesiones en `127.0.0.1:8080`, laboratorio en `127.0.0.1:8082` y Vite en `127.0.0.1:5173`. Comprueba puertos y readiness, y configura los tres adaptadores web hacia loopback; no apunta a producción por defecto. Abrir `/escape`, `/flood-lab` o `/mobile`. El inicio de cada simulación es explícito.
+
+Ctrl+C detiene los tres hijos; `make stop` desde otra terminal solicita el mismo cierre autenticado por loopback. El registro privado `.local/dev.json` sólo identifica este lanzador y se elimina al cerrar. Ningún comando borra reportes, volúmenes ni datos persistentes. Un segundo `make dev` falla sin afectar el primero.
 
 ```sh
-export API_KEY="$(python3 -c 'import secrets; print(secrets.token_urlsafe(32))')"
-export SIM_AUTOSTART=false
-npm run dev:backend
+# Con make dev activo, desde otra terminal
+make smoke
+make stop
 ```
 
-Terminal B:
+Smoke comprueba web, health, capacidades, publicados, laboratorio y `/paso` 401/200 con respuesta vecina válida; no crea sesiones ni avanza turnos. `/estado` permanece inactivo aunque haya sesiones públicas ejecutándose.
+
+## Configuración
+
+`make dev` carga `.env` de raíz; variables ya exportadas tienen prioridad. Go directo no carga dotenv. `apps/web/.env.local` contiene sólo configuración pública. Nunca guardar secretos en `VITE_*` ni `--dart-define`.
+
+| Variable | Uso local |
+| --- | --- |
+| `LAB_WEB_PORT`, `LAB_WORLD_PORT`, `LAB_FLOOD_PORT` | 5173, 8080, 8082; tres puertos distintos, 1024–65535 |
+| `LAB_INCIDENT_DIR` | `services/evacuation/private/incidents`, conserva novedades entre arranques |
+| `LAB_REFERENCE_CACHE` | `services/evacuation/private/reference.json` |
+| `LAB_REFERENCE_ONLINE` | `false`; copia SNGR versionada disponible sin Internet |
+| `LAB_OSM_TILES_ENABLED` | `false`; geometría OSM local sigue visible, `true` solicita teselas externas |
+| `API_KEY` | Sólo backend/smoke local; sin valor se crea una clave efímera privada |
+| `SIM_MAX_*`, `SIM_*_TTL` | Cupos/retención del ejecutor; consultar [contratos](../contratos.md) |
+
+El lanzador mantiene BASE y deshabilita FULL/expanded; no habilita administrador ni autostart. Para un servidor configurado expresamente, exportar `API_KEY`, `SIM_AUTOSTART=false` y ejecutar `npm run dev:backend`; FULL requiere `ENABLE_FULL_MODE=true`. `npm run dev:api` sigue siendo alias Go, no mock. Los scripts originales se conservan.
+
+## Verificación
+
+`make test` ejecuta JavaScript y Go. `make verify` ejecuta documentos, contratos/derivados/lint, Go/race, geografía, contratos HTTP/sesiones/flood, espectadores HTTP y builds. No requiere servicios previos, AWS ni Flutter. [Pruebas, navegador, benchmarks y evidencia actual](../pruebas.md).
+
+No hay Docker Compose en este repositorio: se conserva el Dockerfile de backend y el despliegue existente, sin añadir otra infraestructura local. [AWS se opera por separado](../despliegue.md).
+
+## Flutter Android complementario
+
+No controla motores. Observa las ejecuciones publicadas y permite reportar novedades. [Guía del cliente](../../apps/mobile/README.md).
 
 ```sh
-VITE_WORLD_API_BASE_URL=http://127.0.0.1:8080 npm run dev:web
-```
-
-Abrir `http://localhost:5173/escape`, configurar y pulsar **Iniciar simulación**. Go espera solicitudes al arrancar; `SIM_AUTOSTART=true` se rechaza. `npm run dev:api` es un alias del servidor Go. La API local escucha en `127.0.0.1:8080`. Los orígenes localhost y 127.0.0.1 del puerto 5173 están permitidos por defecto.
-
-Go lee variables exportadas y no carga `.env` por sí solo. `.env.example` y `deploy/backend.env.example` son referencias sin secretos. FULL_MANTA requiere `ENABLE_FULL_MODE=true`, continúa experimental y tiene un cupo propio.
-
-Vite acepta `apps/web/.env.local` con `VITE_WORLD_API_BASE_URL=http://127.0.0.1:8080`; reiniciarlo tras cambiar variables. Toda variable `VITE_*` es pública: nunca introducir claves de Go, credenciales administrativas ni tokens de sesión. La credencial de la simulación se entrega al crearla y vive únicamente en `sessionStorage` para recuperar la misma ejecución al recargar.
-
-Para arrancar también el laboratorio y sus servicios ciudadanos:
-
-```sh
-npm run dev:lab
-```
-
-El ejecutor está en `/escape` y el laboratorio avanzado en `/flood-lab`. Los reportes del laboratorio se conservan en `services/evacuation/private/incidents`, excluido de Git. Las sesiones del nuevo ejecutor viven en RAM y se pierden al reiniciar Go.
-
-## Flutter y Android
-
-```sh
-export FLUTTER_BIN="$HOME/Android/flutter/bin/flutter"
-cd apps/mobile
-flutter pub get
-flutter run --dart-define=WORLD_API_BASE_URL=http://10.0.2.2:8080
-```
-
-El ejemplo presupone Flutter en PATH para los comandos directos; los scripts npm aceptan `FLUTTER_BIN`. Para el emulador Android, iniciar Go con `LISTEN_ADDR=0.0.0.0:8080` en una red local de confianza. Un dispositivo físico necesita la IP LAN del host y acceso al puerto. `localhost` dentro de Android designa el propio dispositivo. Sin override, móvil y web utilizan la API HTTPS de AWS.
-
-Flutter conserva el flujo anterior de observación y reportes. No crea sesiones FASE 5 ni recibe credenciales de `/paso`. Android permite HTTP local en debug; producción usa HTTPS. Un APK compilado no acredita una prueba física y no se ha preparado iOS.
-
-## Verificación y artefactos
-
-```sh
-npm run check
-npm test
-npm run test:backend
-npm run test:race
-npm run test:contracts:http
-npm run test:contracts:simulations
-npm run build:web
-npm run build:backend
 npm run mobile:check
 npm run mobile:test
 npm run mobile:build
+# Harness efímero con Go real: publicados y reporte ciudadano idempotente
+npm run test:spectators:http -- --flutter
 ```
 
-Web: `apps/web/dist`. APK: `apps/mobile/build/app/outputs/flutter-apk/app-debug.apk`. Ambos están excluidos de Git. `npm run test:e2e` ejecuta Chromium con dobles HTTP; la integración de sesiones usa Go real. Consultar [informe FASE 5](../informe-fase5.md) para resultados, endpoints, límites y riesgos. No se publica ni despliega automáticamente.
+Añadir Flutter a PATH o definir `FLUTTER_BIN` antes. APK debug en `apps/mobile/build/app/outputs/flutter-apk/app-debug.apk`; web en `apps/web/dist`, ambos ignorados. No compilar Flutter Web. Un APK construido no prueba dispositivo físico.
+
+Para conectar Android vía ADB, conservar servicios loopback y usar `adb reverse` en los puertos del backend y laboratorio, configurando WORLD/FLOOD/INCIDENTS_API_BASE_URL mediante `--dart-define`. No debilitar validación Host del laboratorio para conectar un emulador. La consola React debe iniciar las ejecuciones antes de observarlas.
+
+## Recuperación
+
+| Síntoma | Acción |
+| --- | --- |
+| Puerto ocupado | Detener su propietario o cambiar los tres `LAB_*`; el lanzador no mata procesos ajenos. |
+| Registro local antiguo | `make stop` retira registro si el PID terminó. Si aún vive, usar Ctrl+C en su terminal; no se envían señales por PID desde make stop. |
+| SDK ausente | Configurar PATH/`GO_BIN`/`FLUTTER_BIN`; `flutter doctor -v` para Android/Java17/licencias. |
+| Contratos desincronizados | Editar YAML y `npm run contracts:generate`; tokens desde JSON y `npm run tokens:generate`. |
+| Configuración no cambia | Reiniciar Vite/Go. Usar el archivo y prefijo correctos; Go directo sólo lee exports. |
+| HTTP/CORS/Host | Usar `127.0.0.1` consistentemente y el origen/puerto configurado; conservar requestId y código, nunca tokens/cuerpos privados. |
+| Simulación final/expirada | Crear otra ejecución explícitamente; recargar sólo recupera la sesión existente. |
+| Chromium ausente | `npx playwright install chromium` o `PLAYWRIGHT_CHROMIUM_EXECUTABLE` con ejecutable real. |
+
+No ejecutar `docker system prune`, `down -v` ni limpiezas de `private` como solución de arranque.

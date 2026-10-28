@@ -1,6 +1,6 @@
-# Sesiones de simulación — FASE 5
+# Contratos HTTP y sesiones de simulación
 
-La fuente de verdad es [`openapi.yaml`](../packages/contracts/openapi.yaml), OpenAPI 3.0.3. TypeScript y JSON Schema se generan; Flutter conserva sus modelos y flujos anteriores. El contrato histórico de `/paso` no cambia.
+La fuente de verdad es [`openapi.yaml`](../packages/contracts/openapi.yaml), OpenAPI 3.0.3. TypeScript, JSON Schema y los DTO Dart se generan; los adaptadores HTTP de clientes son manuales y tipados. El contrato histórico de `/paso` no cambia.
 
 | Operación | Autorización y entrada | Respuesta |
 | --- | --- | --- |
@@ -91,7 +91,7 @@ Fuente: `packages/contracts/openapi.yaml`. Generar con `npm run contracts:genera
 | `GET /grafo` | Pública local | Grafo base versionado, cuatro refugios iniciales |
 | `GET /healthz` | Pública | `{status, service, version}` |
 
-`/ws/estado` no está implementado. Los clientes usan polling. Los bloqueos dinámicos y la ocupación actual se leen de `/estado`, no del grafo base. CORS permite únicamente los orígenes configurados. No hay operaciones administrativas HTTP.
+`/ws/estado` no está implementado. Los clientes usan polling. Los bloqueos dinámicos y la ocupación actual se leen de `/estado`, no del grafo base. CORS permite únicamente los orígenes configurados. El control administrativo histórico existe separado; `cmd/server` impide iniciar su runtime para no eludir los cupos públicos.
 
 Solicitud obligatoria:
 
@@ -132,7 +132,7 @@ El contrato de `/paso` no cambia. Los campos nuevos de observación son opcional
 - `Survivor.spawn_zone_id`: zona inicial. `target_shelter_id` y `planned_route` existentes ahora contienen el plan coherente; la ruta incluye nodo actual y siguiente paso.
 - `Shelter.reserved` y `available`: reservas activas y disponibilidad derivada. Debe cumplirse `occupancy + reserved + available = capacity`.
 
-`GET /grafo` describe el grafo base y refugios iniciales; la ocupación/reserva viva se toma de `/estado`. Las respuestas no incluyen diagnósticos privados, PRNG, eventos futuros ni sleepers dormidos. No se añadió un endpoint administrativo ni un selector de IA.
+`GET /grafo` describe el grafo base y refugios iniciales; la ocupación/reserva de ese runtime histórico se toma de `/estado`; los clientes actuales usan `/v1/simulations/{id}/state` o publicados. Las respuestas no incluyen diagnósticos privados, PRNG, eventos futuros ni sleepers dormidos. Estos campos FASE 2 no añadieron un selector de IA; los controles y políticas posteriores están definidos en el OpenAPI vigente.
 
 La simulación publica el plan después de actualizar zombies; cada solicitud del turno usa ese snapshot. Preparar otro turno no toma el mutex del simulador desde HTTP. El deadline de450ms cubre lectura/snapshot/decisión y el cliente mantiene500ms para HTTP completo.
 
@@ -145,3 +145,75 @@ y `hydrology`; `simulation_duration` cuenta turnos enteros 30–3.000. Sólo exi
 compacto de malla y balance de masa, separados de la geografía vial. `depth_m`
 expone el máximo vial muestreado. `cancel` conserva un final `cancelled`.
 Ver [ecuaciones, tiempos, limitaciones y validación](informe-fase8.md).
+
+
+## Publicados y laboratorio actual
+
+| Operación | Uso y autorización |
+| --- | --- |
+| `GET /v1/simulations/published/{scenario}` | Espectador anónimo, snapshot compacto/ETag; no renueva lease ni devuelve token |
+| `GET /lab/published` | Última tormenta, sin timeline histórico ni control de motor |
+| `GET /lab/graph?mode=…&run_id=…` | Geografía separada coherente con la tormenta |
+| `POST /lab/runs`, `/lab/actions`, `/lab/candidates/validate`, `/lab/comparisons` | Públicas, Origin/Host, cuotas, validación estricta y `expected_run_id` |
+| `/v1/incidents` | Creación pública idempotente; nuevos reportes pendientes, persistencia privada |
+| Moderación de incidentes/actualización de referencias | Autorización independiente; no introducir claves en el frontend |
+
+Las políticas y flota se fijan al crear una ejecución. `official` exige BASE,
+classic, población/refugios originales y 150/2000 ms sin flota. La flota PRO es
+experimental. [Detalles PRO](nivel-pro.md) y [visores compartidos](informe-fase7-movil.md).
+
+## Probar /paso y entregar la clave al jurado
+
+El propietario provisiona la clave del endpoint de evaluación por un canal
+privado acordado con el jurado, fuera del repositorio, frontend, capturas y
+presentación. La clave de `/paso` no es una credencial de operador ni un token
+Bearer de sesión. La demo pública no la solicita. Para comprobar el entorno local
+sin copiarla, usar `make smoke` con `make dev` activo.
+
+Ejemplo Bash con la clave obtenida privadamente. La entrada se toma del estado
+del mismo runtime; los IDs OSM reales no se sustituyen por los IDs ilustrativos:
+
+```sh
+export EVAL_API_BASE=http://127.0.0.1:8080
+# Introducir la clave local/evaluación sin eco y pulsar Enter:
+read -r -s EVAL_API_KEY
+EVAL_STEP=$(python3 - <<'PY_REQUEST'
+import json, os, urllib.request
+with urllib.request.urlopen(os.environ['EVAL_API_BASE'] + '/estado', timeout=5) as response:
+    state = json.load(response)
+survivor = next(s for s in state['survivors'] if s['status'] == 'active')
+print(json.dumps({'sobrevivienteId': survivor['id'], 'nodoActual': survivor['current_node'], 'turno': state['turn']}))
+PY_REQUEST
+)
+curl --fail-with-body --silent --show-error "$EVAL_API_BASE/paso" \
+  -H 'Content-Type: application/json' -H "x-api-key: $EVAL_API_KEY" \
+  --data "$EVAL_STEP"
+unset EVAL_API_KEY EVAL_STEP EVAL_API_BASE
+```
+
+El endpoint público `/paso` de `cmd/server` consulta el runtime `/estado`
+inactivo, no la sesión mostrada en React. La evaluación de rondas ejecuta HTTP
+real contra el runtime de la CLI (`npm run simulate`); las sesiones poseen su
+servidor loopback privado. No mezclar nodos/turnos entre esos ámbitos.
+
+## Generación y cambio del contrato
+
+```sh
+npm run contracts:validate
+npm run contracts:generate
+npm run generated:check
+```
+
+Editar primero `packages/contracts/openapi.yaml`, después adaptadores, interfaz
+y pruebas. El generador produce `packages/contracts/generated/api.d.ts`,
+`schemas.json` y `apps/mobile/lib/core/api/generated/models.dart`; no editar esos
+archivos a mano. `generated:check` compara sin escribir. No genera endpoints ni
+un SDK de transporte: fetch/Dio, timeouts y traducción de errores son manuales.
+
+Dart admite objetos nombrados, referencias, escalares y listas; opcionales
+anulables y enums como String. No valida toda la semántica OpenAPI. Composición
+oneOf/anyOf/allOf y formas nuevas requieren ampliar/probar el generador; nunca
+omitir campos silenciosamente. Los ejemplos en `packages/contracts/examples`
+no sustituyen integración real. El mock starter conserva sus operaciones en
+`services/mock-api` y depende del YAML relativo al distribuir su build; ya no
+alimenta clientes públicos.

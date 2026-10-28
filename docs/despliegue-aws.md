@@ -1,5 +1,7 @@
 # Despliegue AWS — FASE 3A.2
 
+**Documento histórico.** La guía de operación vigente es [Despliegue y operación AWS](despliegue.md).
+
 Este documento conserva el despliegue histórico del 26 de octubre. El estado posterior está en [FASE 5 en AWS y retirada programada](despliegue-fase5-y-caducidad.md): `m7i-flex.large`, plan FREE, Budget 50 USD y autokill a partir del 31 de octubre de 2026, 01:46 de Ecuador.
 
 **Actualización FASE 3B.1:** React y Flutter consumen únicamente Go; se retiraron las pantallas y adaptadores del servicio anterior. El frontend actualizado está publicado y el APK debug construido. La infraestructura y el backend productivo permanecen iguales; el diagnóstico Caddy temporal terminó con su configuración original restaurada. [Estado y pruebas actuales](informe-fase3b1.md). El resto conserva la entrega y evidencias de FASE 3A.2.

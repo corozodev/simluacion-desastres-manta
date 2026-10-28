@@ -1,3 +1,5 @@
+> **Referencia histórica FASE 1/2.** Arquitectura y estrategias actuales: [arquitectura](arquitectura.md), [nivel PRO](nivel-pro.md) y [pruebas](pruebas.md). Las restricciones de fases posteriores prevalecen.
+
 # Decisiones FASE 1
 
 1. Se conserva el monorepo y sus frameworks, navegación, formularios, tokens y API demo Fastify. El reto ya conocido incorpora un servicio Go en `services/evacuation`; no se inicializa Git porque la copia recibida no contiene metadatos.

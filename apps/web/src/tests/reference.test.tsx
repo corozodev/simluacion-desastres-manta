@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Graph, ReferenceCollection, OfficialRainEvents, ReferenceStatus } from '@corodev/contracts';
 import { ReferencePanel } from '../features/flood/ReferencePanel';
@@ -15,14 +15,13 @@ function panel(value = status) { return render(<QueryClientProvider client={new 
 afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 
 describe('referencia territorial oficial', () => {
-  it('muestra atribución, CRS, años y copia offline sin convertir susceptibilidad en inundación actual', () => {
+  it('enlaza la procedencia real y distingue red vial, relieve sintético y susceptibilidad oficial', () => {
     panel();
-    expect(screen.getByText(/CONAGE 2024 — resoluciones/)).toBeInTheDocument();
-    expect(screen.getByText(/EPSG:32717 → EPSG:4326/)).toBeInTheDocument();
-    expect(screen.getByText('2025')).toBeInTheDocument();
-    expect(screen.getByText(/Esta ejecución utiliza terreno y parámetros sintéticos/)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Actualizar copia oficial' })).toBeDisabled();
-    expect(screen.getByText(/Un polígono ALTA no significa que esté inundado ahora/)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Consultar la fuente oficial' })).toHaveAttribute('href', bundle.susceptibility.provenance.url);
+    expect(screen.getByLabelText('Procedencia y límites de los datos')).toHaveTextContent('red vial OpenStreetMap');
+    expect(screen.getByLabelText('Procedencia y límites de los datos')).toHaveTextContent('relieve sintético');
+    expect(screen.getByLabelText('Procedencia y límites de los datos')).toHaveTextContent('no representa agua presente ni confirma una incidencia ciudadana');
+    expect(screen.queryByRole('button', { name: 'Actualizar copia oficial' })).not.toBeInTheDocument();
   });
   it('conserva un control independiente y renderiza polígonos memoizados con agujeros evenodd', () => {
     function View() { const [show, setShow] = useState(false); return <FloodMap graph={graph} shelters={graph.shelters} candidates={[]} selectedAgentId="" onSelectAgent={() => {}} onPickPosition={() => {}} reference={bundle.susceptibility} showReference={show} onShowReference={setShow} />; }
@@ -37,15 +36,16 @@ describe('referencia territorial oficial', () => {
     fireEvent.click(toggle);
     expect(container.querySelector('[data-layer="official-susceptibility"]')).toBeNull();
   });
-  it('consulta eventos con sus fechas originales y sin operación de aplicación al motor', async () => {
-    const history = vi.spyOn(api, 'rainEvents').mockResolvedValue(bundle.rain_events);
-    panel();
-    const details = screen.getByText('Eventos históricos por lluvias · official_observation').closest('details')!;
-    details.open = true; fireEvent(details, new Event('toggle'));
-    await waitFor(() => expect(history).toHaveBeenCalledOnce());
-    expect(await screen.findByText(/2025-04-14 · MANTA · Deslizamiento/)).toBeInTheDocument();
-    expect(screen.getByText(/actualización declarada: 2025-04-15/)).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Aplicar incidente a simulación' })).not.toBeInTheDocument();
+  it('conserva fechas y procedencia de los eventos históricos en HTTP sin iniciar ni aplicar una simulación', async () => {
+    const create = vi.spyOn(api, 'startFlood');
+    const apply = vi.spyOn(api, 'applyFloodIncident');
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify(bundle.rain_events), { status: 200 })));
+    const history = await api.rainEvents();
+    expect(history).toEqual(bundle.rain_events);
+    expect(history.events).toHaveLength(16);
+    expect(history.events).toContainEqual(expect.objectContaining({ event_date: '2025-04-14', canton: 'MANTA', event: 'Deslizamiento', declared_update_date: '2025-04-15' }));
+    expect(create).not.toHaveBeenCalled();
+    expect(apply).not.toHaveBeenCalled();
   });
   it('el adaptador rechaza coordenadas proyectadas y versiones cambiadas', async () => {
     const invalid = structuredClone(bundle.susceptibility);

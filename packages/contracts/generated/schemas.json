@@ -3567,6 +3567,17 @@
         "updated_at"
       ],
       "properties": {
+        "map_withdrawn": {
+          "type": "boolean",
+          "description": "Retiro persistente del mapa, independiente de la verificación. No elimina el registro ni su auditoría."
+        },
+        "moderation_note": {
+          "type": "string",
+          "maxLength": 280
+        },
+        "official_source": {
+          "$ref": "#/definitions/IncidentOfficialSource"
+        },
         "schema_version": {
           "type": "integer",
           "enum": [
@@ -3685,6 +3696,76 @@
         }
       }
     },
+    "IncidentOfficialSourceInput": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "title",
+        "url"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 160
+        },
+        "url": {
+          "type": "string",
+          "format": "uri",
+          "maxLength": 2048,
+          "description": "Enlace HTTPS a la publicación oficial revisada; nunca se descarga desde el backend."
+        }
+      }
+    },
+    "IncidentOfficialSource": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "title",
+        "url",
+        "recorded_at"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 160
+        },
+        "url": {
+          "type": "string",
+          "format": "uri",
+          "maxLength": 2048
+        },
+        "recorded_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "IncidentModerationPermissions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "can_review",
+        "can_withdraw",
+        "can_mark_official",
+        "operator_login_available"
+      ],
+      "properties": {
+        "can_review": {
+          "type": "boolean"
+        },
+        "can_withdraw": {
+          "type": "boolean"
+        },
+        "can_mark_official": {
+          "type": "boolean"
+        },
+        "operator_login_available": {
+          "type": "boolean"
+        }
+      }
+    },
     "IncidentList": {
       "type": "object",
       "additionalProperties": false,
@@ -3729,6 +3810,24 @@
         "expected_updated_at"
       ],
       "properties": {
+        "note": {
+          "type": "string",
+          "maxLength": 280
+        },
+        "map_withdrawn": {
+          "type": "boolean",
+          "enum": [
+            true
+          ],
+          "description": "Sólo se admite true; retirar no cambia la procedencia ni reactiva un registro."
+        },
+        "official_source": {
+          "$ref": "#/definitions/IncidentOfficialSourceInput"
+        },
+        "official_ack": {
+          "type": "boolean",
+          "description": "Confirmación expresa de que el operador revisó la fuente oficial vinculada. No constituye verificación automática del documento."
+        },
         "verification_status": {
           "type": "string",
           "enum": [

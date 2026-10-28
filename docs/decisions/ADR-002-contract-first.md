@@ -16,4 +16,4 @@ Fastify carga el mismo contrato para validar solicitudes y respuestas. Los archi
 
 Los cambios comienzan por el YAML y exigen regenerar ambos lenguajes. Agregar una operación sigue requiriendo implementación de servidor y adaptadores. Los tipos TypeScript desaparecen al ejecutar; el parsing Dart tampoco cubre todas las reglas del esquema. La validación del servidor y las pruebas de transporte siguen siendo necesarias.
 
-Composición, nulabilidad explícita y otras formas nuevas requieren ampliar y probar el generador o adoptar una herramienta compatible. La limitación está documentada; no se anuncia un SDK generado completo ni soporte general de OpenAPI. La secuencia de trabajo y los derivados están en [contratos](../api/contracts.md).
+Composición, nulabilidad explícita y otras formas nuevas requieren ampliar y probar el generador o adoptar una herramienta compatible. La limitación está documentada; no se anuncia un SDK generado completo ni soporte general de OpenAPI. La secuencia de trabajo y los derivados están en [contratos](../contratos.md#generación-y-cambio-del-contrato).

@@ -64,3 +64,8 @@
 .escape-rescue-vehicle { fill:var(--color-surface); stroke:var(--color-textPrimary); stroke-width:1.5; }
 .escape-rescue-label { fill:var(--color-textPrimary); font-size:9px; font-weight:700; text-anchor:middle; }
 .escape-runner-forecast { fill:none; stroke:var(--color-error); stroke-width:2; stroke-dasharray:3 3; }
+
+.escape-rescue-path { fill:none; stroke:var(--color-textSecondary); stroke-width:2; stroke-dasharray:5 4; opacity:.65; vector-effect:non-scaling-stroke; pointer-events:none; }
+.escape-rescue-id { fill:var(--color-textPrimary); font-size:9px; font-weight:700; text-anchor:middle; paint-order:stroke; stroke:var(--color-background); stroke-width:3px; }
+.escape-shelter-limited { fill:var(--color-warning); }
+.escape-shelter-unavailable { fill:var(--color-error); }

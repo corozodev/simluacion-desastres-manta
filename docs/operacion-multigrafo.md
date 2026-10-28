@@ -1,3 +1,5 @@
+> **Referencia técnica histórica FASE 3B.2.** Para ejecutar el producto actual usar [desarrollo local](development/local-setup.md), [contratos](contratos.md) y [arquitectura](arquitectura.md). Hidrología, controles públicos y visores posteriores sustituyen las reglas/pantallas previas descritas aquí; los motores y reportes históricos se preservan.
+
 # Operación multigrafo — FASE 3B.2
 
 Competición es la modalidad predeterminada y la referencia del Track A. El catálogo acepta exclusivamente los tres archivos revisados, con checksum, geometría, cuatro zonas y cuatro refugios válidos:

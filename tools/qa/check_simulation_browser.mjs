@@ -4,7 +4,7 @@ import { spawn } from 'node:child_process';
 import { randomBytes, randomUUID } from 'node:crypto';
 import { once } from 'node:events';
 import { existsSync } from 'node:fs';
-import { mkdir, mkdtemp, readFile, rm } from 'node:fs/promises';
+import { mkdir, mkdtemp, rm } from 'node:fs/promises';
 import { createServer } from 'node:net';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -106,7 +106,7 @@ try {
   if (evidence) await pageA.screenshot({ path: path.join(evidence, 'exploration-desktop.png'), fullPage: true });
   assert.equal((await (await fetch(`${api}/estado`)).json()).turn, 0, 'Legacy startup advanced');
   await pageA.getByText('Configuración avanzada', { exact: true }).click();
-  await pageA.getByLabel('Turnos máximos').fill('8');
+  await pageA.getByLabel('Turnos máximos').fill('30');
   await pageA.getByText('Configuración avanzada', { exact: true }).click();
   const createdA = pageA.waitForResponse(response => response.url() === `${api}/v1/simulations` && response.request().method() === 'POST');
   await pageA.getByRole('button', { name: 'Iniciar simulación', exact: true }).dblclick();
@@ -121,7 +121,7 @@ try {
   assert.equal(paused.tick_interval_ms, 2000);
   await pageB.getByLabel('Agentes', { exact: true }).fill('5');
   await pageB.getByText('Configuración avanzada', { exact: true }).click();
-  await pageB.getByLabel('Turnos máximos').fill('2');
+  await pageB.getByLabel('Turnos máximos').fill('30');
   await pageB.getByText('Configuración avanzada', { exact: true }).click();
   const createdB = pageB.waitForResponse(response => response.url() === `${api}/v1/simulations` && response.request().method() === 'POST');
   await pageB.getByRole('button', { name: 'Iniciar simulación', exact: true }).click();
@@ -134,7 +134,7 @@ try {
   assert.equal(third.status, 503, 'Paused session did not retain capacity');
   await pageA.reload();
   await expect(pageA.getByLabel('Tu simulación')).toContainText('Pausada');
-  await expect(pageB.getByLabel('Resultados de simulación')).toContainText('Finalizada', { timeout: 12_000 });
+  await expect(pageB.getByLabel('Resultados de simulación')).toContainText('Finalizada', { timeout: 80_000 });
   if (evidence) await pageB.screenshot({ path: path.join(evidence, 'results-mobile.png'), fullPage: true });
   assert.equal((await stateA()).tick, paused.tick, 'Paused session advanced while another ran');
   assert.equal((await stateA()).snapshot.survivors.length, 20);
@@ -146,7 +146,7 @@ try {
   await pageA.getByRole('button', { name: 'Continuar', exact: true }).click();
   await expect(pageA.getByLabel('Tu simulación')).toContainText('En ejecución');
   await a.close();
-  await waitFor(async () => (await stateA()).status === 'COMPLETED', 'Backend execution without browser', 20_000);
+  await waitFor(async () => (await stateA()).status === 'COMPLETED', 'Backend execution without browser', 80_000);
   assert.deepEqual(counts, { a: 1, b: 1 }, 'Refresh or double click duplicated creation');
   assert.equal((await (await fetch(`${api}/estado`)).json()).turn, 0, 'Session changed legacy world');
   for (const credential of [credentialsA.access_token, credentialsB.access_token]) assert.equal(logs.includes(credential), false, 'Credential leaked to server logs');
@@ -161,7 +161,7 @@ try {
   await proPage.getByRole('combobox', { name: /^Ronda/ }).selectOption('round3');
   await proPage.getByLabel('Agentes', { exact: true }).fill('8');
   await proPage.getByText('Configuración avanzada', { exact: true }).click();
-  await proPage.getByLabel('Turnos máximos').fill('2');
+  await proPage.getByLabel('Turnos máximos').fill('30');
   await proPage.getByLabel('Política de zombis').selectOption('adaptive_exploration');
   await proPage.getByLabel('Algoritmo de evacuación').selectOption('predictive_temporal_astar');
   await proPage.getByLabel('Flota de rescate · experimental').check();
@@ -178,48 +178,21 @@ try {
   await expect(proPage.getByLabel('Política de zombis')).toHaveCount(0);
   if (evidence) await proPage.screenshot({ path: path.join(evidence, 'phase7-fleet-mobile.png'), fullPage: true });
   await proPage.getByRole('button', { name: 'Continuar', exact: true }).click();
-  await expect(proPage.getByLabel('Resultados de simulación')).toContainText('Finalizada', { timeout: 12_000 });
+  await expect(proPage.getByLabel('Resultados de simulación')).toContainText('Finalizada', { timeout: 80_000 });
   assert.equal(await proPage.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, 'PRO mobile viewport overflow');
-  const compareContext = await browser.newContext({ viewport: { width: 1440, height: 1100 }, acceptDownloads: true });
-  const comparePage = await compareContext.newPage();
-  comparePage.on('pageerror', error => errors.push(error.message));
-  const comparisonInputs = [];
-  comparePage.on('request', request => {
-    if (request.method() === 'POST' && request.url() === `${api}/v1/simulations`) comparisonInputs.push(request.postDataJSON());
-    if (request.url().startsWith(api)) assert.equal(Boolean(request.headers()['x-api-key']), false);
-  });
-  await comparePage.goto(`${origin}/escape`);
-  await expect(comparePage.getByRole('button', { name: 'Iniciar simulación', exact: true })).toBeEnabled();
-  await comparePage.getByLabel('Agentes', { exact: true }).fill('5');
-  await comparePage.getByText('Configuración avanzada', { exact: true }).click();
-  await comparePage.getByLabel('Turnos máximos').fill('2');
-  await comparePage.getByText('Configuración avanzada', { exact: true }).click();
-  await comparePage.getByText('Laboratorio comparativo', { exact: true }).click();
-  assert.equal(comparisonInputs.length, 0, 'Opening comparison started sessions');
-  await comparePage.getByRole('button', { name: 'Ejecutar comparación', exact: true }).click();
-  await expect(comparePage.getByRole('button', { name: 'Repetir comparación y semillas', exact: true })).toBeVisible({ timeout: 25_000 });
-  assert.equal(comparisonInputs.length, 2, 'Comparison must create two explicit independent sessions');
-  const [inputA, inputB] = comparisonInputs.map(input => structuredClone(input));
-  delete inputA.config.evacuation_algorithm; delete inputB.config.evacuation_algorithm;
-  assert.deepEqual(inputA, inputB, 'Comparison changed initial conditions');
-  await expect(comparePage.getByRole('table', { name: /Resultados observados/ })).toContainText('COMPLETED / 2');
-  const downloaded = comparePage.waitForEvent('download');
-  await comparePage.getByRole('button', { name: 'Exportar JSON', exact: true }).click();
-  const exported = JSON.parse(await readFile(await (await downloaded).path(), 'utf8'));
-  assert.equal(exported.results.length, 2);
-  assert(exported.results.every(row => row.analytics?.agents.length === 5));
-  assert.equal(JSON.stringify(exported).includes('access_token'), false, 'Export leaked comparison secrets');
-  if (evidence) await comparePage.screenshot({ path: path.join(evidence, 'phase7-comparison-desktop.png'), fullPage: true });
+  // The removed zombie comparison panel must stay absent. Algorithm comparison
+  // remains a CLI capability; this harness exercises the current public UI.
+  await expect(proPage.getByText('Laboratorio comparativo', { exact: true })).toHaveCount(0);
   assert.deepEqual(errors, []);
   assert.equal(logs.includes(proCredentials.access_token), false);
-  await proContext.close(); await compareContext.close();
+  await proContext.close();
   await stop(server.child);
   await startServer(new URL(api).host);
   await pageB.reload();
   await expect(pageB.getByText(/Tu simulación ya no está disponible/)).toBeVisible();
   await expect(pageB.getByRole('button', { name: 'Iniciar simulación', exact: true })).toBeEnabled();
   assert.equal(counts.b, 1, 'Process restart caused automatic creation');
-  console.log('React → Go real: exploración sin arranque, doble clic único, dos navegadores aislados, Bearer privado, pausa/recarga/reanudación, capacidad, resultados, ejecución sin navegador y recuperación tras reinicio; móvil sin desborde; FASE7 políticas reales/flota, bloqueo activo y comparación explícita con exportación sin credenciales.');
+  console.log('React → Go real: exploración sin arranque, doble clic único, dos navegadores aislados, Bearer privado, pausa/recarga/reanudación, capacidad, resultados, ejecución sin navegador y recuperación tras reinicio; móvil sin desborde; FASE7 políticas reales/flota y bloqueo de configuración activa; sin restaurar comparador retirado.');
 } finally {
   if (browser) await browser.close();
   for (const child of processes.reverse()) await stop(child);

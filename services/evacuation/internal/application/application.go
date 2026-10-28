@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"net"
 	"net/http"
+	"sync"
 	"time"
 
 	"corodev/evacuation/internal/coordination"
@@ -24,6 +25,8 @@ type App struct {
 	server    *http.Server
 	client    *simulation.HTTPDecisionClient
 	done      chan error
+	closeOnce sync.Once
+	closeErr  error
 }
 
 func EphemeralKey() (string, error) {
@@ -111,13 +114,17 @@ func (a *App) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *App) Close() error {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	err := a.server.Shutdown(ctx)
-	a.client.CloseIdleConnections()
-	if err != nil {
-		_ = a.server.Close()
-	}
-	<-a.done
-	return err
+	// Cancellation, replacement and owner shutdown may release the same run.
+	// Drain Serve exactly once; concurrent callers wait for that same cleanup.
+	a.closeOnce.Do(func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		a.closeErr = a.server.Shutdown(ctx)
+		a.client.CloseIdleConnections()
+		if a.closeErr != nil {
+			_ = a.server.Close()
+		}
+		<-a.done
+	})
+	return a.closeErr
 }

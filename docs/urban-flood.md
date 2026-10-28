@@ -1,3 +1,5 @@
+> **Referencia técnica histórica FASE 4A.** Para ejecutar el producto actual usar [desarrollo local](development/local-setup.md), [contratos](contratos.md) y [arquitectura](arquitectura.md). Hidrología, controles públicos y visores posteriores sustituyen las reglas/pantallas previas descritas aquí; los motores y reportes históricos se preservan.
+
 # Inundaciones urbanas experimentales — FASE 4A
 
 > Documento histórico. [FASE 8](informe-fase8.md) sustituyó el motor radial por

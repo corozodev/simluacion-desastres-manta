@@ -1,44 +1,106 @@
-# Ejecutor FASE 5
+# Arquitectura actual
 
-`cmd/server` compone dos runtimes aislados: la compatibilidad legacy permanece inactiva y `internal/sessions` administra ejecuciones privadas bajo demanda. Los GET de capacidades y grafo son consultas sin efectos. Cada POST de creación valida configuración, reserva cupos y entrega un identificador y un token opaco independiente. El manager controla los turnos; cada instancia del motor conserva RNG, agentes, refugios, overlays y métricas propios.
+[Índice](INDEX.md) · [Despliegue](despliegue.md) · [Nivel PRO](nivel-pro.md) · [Contratos](contratos.md)
 
-React `/escape` usa `capabilities → configuración → creación explícita → polling privado`. Pausar, reanudar y cancelar pasan por la máquina de estados; reiniciar crea otro ID y conserva temporalmente el resultado anterior. `sessionStorage` permite recuperar una ejecución al recargar sin crear otra. Los snapshots no transportan el grafo estático ni datos privados del motor.
+CoroDev / MantaSim utiliza un **monolito modular Go**, con un proceso adicional
+para el laboratorio de inundaciones. React controla las simulaciones; React
+`/mobile` y Flutter Android observan ejecuciones publicadas. No hay servicios
+generativos en el routing, colas distribuidas ni base de datos de simulaciones.
 
-Se integran los motores existentes de zombies e inundación sintética. Los reportes ciudadanos y referencias del laboratorio mantienen sus APIs, procedencia y almacenamiento independientes; no se incorporan de forma implícita a las sesiones. La API sigue siendo un monolito Go con RAM local y HTTP, sin colas distribuidas ni nueva infraestructura. Ver [contratos, límites, verificación y restricciones](informe-fase5.md).
+![Arquitectura de CoroDev: clientes, AWS y motores](arquitectura.svg)
 
-# Ampliación FASE 2
+[Fuente Mermaid editable](arquitectura.mmd). El SVG es vectorial autónomo, sin
+scripts, fuentes externas ni recursos remotos, apto para incrustarse en GitHub.
 
-Se conserva el monolito modular. La fuente urbana OSM se separa en maestro (`manta-master`), operativo representativo (`manta-v2`,300/383) y experimental (`manta-expanded`,1000/1599). Los cuatro polígonos municipales de aparición no son fronteras de navegación; el área visual es una envolvente de referencia. Ver [geografía](grafo-fase2.md) y [diagnóstico](diagnostico-geografico.md).
+## Componentes y límites
 
-`internal/coordination` prepara asignaciones globales antes de publicar el snapshot de decisión. Las reservas se derivan del conjunto activo completo y el simulador acepta solo destino/ruta, conservando posiciones, estados, capacidades y ocupación como autoridad. Admisiones convierten reservas en ocupación; muerte, cambio de destino o ruta inviable las libera. `/paso` solo lee el plan coherente, incluida espera o salida sin reserva.
+| Componente | Responsabilidad y fuente |
+| --- | --- |
+| React, TypeScript, Vite | Consola `/escape`, laboratorio `/flood-lab`, visor `/mobile`; [rutas](../apps/web/src/app), [transporte y caché](../apps/web/src/services) |
+| Flutter, Material 3 | Visor Android y reportes ciudadanos; [repositorios](../apps/mobile/lib/core/api), [guía](../apps/mobile/README.md) |
+| API Go `cmd/server`, puerto 8080 | [Composición](../services/evacuation/cmd/server/main.go), sesiones, compatibilidad `/estado` y proxy opcional `/lab/*`, incidentes y referencias |
+| `internal/sessions` | [Ejecuciones independientes](../services/evacuation/internal/sessions): creación explícita, idempotencia, Bearer por sesión, cupos, pausa, caducidad, resultados y publicación |
+| `internal/simulation` | [Único escritor del mundo](../services/evacuation/internal/simulation): zombies, movimientos, eventos, mordidas, flota, refugios y RNG propio |
+| `internal/decision`, `coordination` | [Routing observable](../services/evacuation/internal/decision) y [reservas globales](../services/evacuation/internal/coordination); `/paso` consulta un plan coherente sin mutar el mundo |
+| `internal/catalog`, `graph`, `world` | [Catálogo](../services/evacuation/internal/catalog), [índices](../services/evacuation/internal/graph) y [snapshots](../services/evacuation/internal/world); topología separada de las actualizaciones |
+| `cmd/flood-lab`, puerto 8082 loopback | [Laboratorio independiente](../services/evacuation/internal/floodlab), [hidrología 2D](../services/evacuation/internal/flood/hydrology.go), reportes y referencias; conserva almacenamiento propio |
+| OpenAPI y tokens | [Contrato HTTP](../packages/contracts/openapi.yaml), [tokens](../packages/design-tokens/tokens.json) e [identidad](../packages/design-tokens/brand.json) generan TypeScript, Dart y CSS |
 
-`internal/decision` incorpora predicción observable de runners a uno/dos turnos, riesgos estimados finitos y búsquedas inversas por refugio. Sus cachés se publican de forma inmutable y distinguen cambios de amenazas de cambios de objetivos del pronóstico. Las predicciones son estimaciones, no prohibiciones ni garantías.
+Los puertos anteriores corresponden al perfil AWS. El arranque local permite
+otros puertos; véase [desarrollo local](development/local-setup.md). El mock
+Fastify se conserva para sus pruebas históricas y no es dependencia de los
+clientes actuales.
 
-`internal/diagnostics` conserva mediciones privadas separadas de `WorldSnapshot`; sus archivos pueden incluir sleepers iniciales y no se publican. `internal/evaluation` ejecuta comparaciones por HTTP real con el motor histórico congelado, hashes de condiciones iniciales y remapeos geográficos.
+## Un turno, del inicio al mapa
 
-FASE 3B.1 dejó React y Flutter exclusivamente sobre la API Go y retiró sus adaptadores/pantallas del servidor anterior; véase [informe](informe-fase3b1.md). No cambió el motor ni añadió OTel o infraestructura.
+1. React consulta capacidades y geografía. Abrir, explorar o recargar la web no
+   crea motores. **Iniciar simulación** envía `POST /v1/simulations` con
+   `Idempotency-Key`; Go valida y reserva recursos antes de crear la instancia.
+2. Cada sesión conserva su simulador, RNG, planificador, overlays y credencial.
+   El manager controla el reloj y serializa turnos; el navegador no los impulsa.
+3. El simulador aplica eventos y mueve zombies antes de los peatones; prepara observaciones y
+   asignaciones. Su cliente consulta **`POST /paso` mediante HTTP loopback real,
+   con `x-api-key`**. El motor de decisión devuelve un vecino transitable o espera.
+   El simulador revalida y aplica cada movimiento; un error o timeout deja espera.
+4. Routing y coordinación consideran amenazas observables, bloqueos, capacidad
+   y, según configuración, riesgo anticipado. Las consultas concurrentes leen el
+   mismo plan: no compiten para reservar plazas. Los detalles y límites de
+   predicción, refugios y flota están en [Nivel PRO](nivel-pro.md).
+5. Se publica un snapshot inmutable y compacto con posiciones, rutas, refugios,
+   bloqueos y métricas. No contiene PRNG, sleepers aún dormidos ni topología
+   repetida. La geografía se descarga por separado y se cachea por versión.
+6. React consulta el estado con Bearer aproximadamente cada dos segundos.
+   Los espectadores usan `GET /v1/simulations/published/{scenario}` o
+   `GET /lab/published`, con ETag y sin credenciales de control. Observar no
+   renueva leases, altera RNG ni crea ejecuciones. No hay WebSocket implementado.
 
-El despliegue AWS de FASE 3A.2 está en [despliegue](despliegue-aws.md) y [diagrama SVG](arquitectura.svg): stack CREATE_COMPLETE, Go/Docker/Caddy en EC2 y React en S3 privado/CloudFront. La imagen validada con 200 sobrevivientes se reutilizó sin cambiar el motor. La API HTTPS externa está comprobada; polling permanece cada dos segundos. La simulación termina tras 150 turnos y conserva el snapshot final. WebSocket se pospone. La descripción modular original sigue debajo.
+La recuperación desde `sessionStorage` sólo observa la sesión existente. Es la
+única credencial permitida en el navegador; nunca se guardan claves de `/paso` ni
+de administración. La pausa/reanudación conserva el resultado lógico para igual
+grafo, configuración y semilla; los tiempos HTTP quedan fuera del determinismo.
 
-# Arquitectura de evacuación
+## Geografía, hidráulica y persistencia
 
-Monolito modular Go en `services/evacuation`, separado de la API demo TypeScript existente. Runtime sin base de datos ni consultas externas de decisión. OpenAPI continúa como fuente de verdad de los contratos compartidos; TypeScript, Dart y JSON Schema se generan con `npm run contracts:generate`.
+**BASE** es la muestra vial operativa de 300 nodos y 383 aristas reales;
+**FULL_MANTA**, de 9.179 nodos y 13.452 aristas, es experimental y requiere
+habilitación explícita. El importador trabaja offline con OSM versionado,
+geometrías y procedencia. Las cuatro zonas de aparición no son fronteras de
+navegación; los refugios son puntos simulados, no instalaciones oficiales.
+Véase [geografía y procedencia](grafo-fase2.md).
 
-`internal/world` contiene el vocabulario común, la interfaz `DecisionEngine` y el almacén de snapshots. `internal/graph` carga y valida el archivo geográfico versionado. Los módulos de simulación, rutas y HTTP dependen del modelo común; el motor de rutas recibe exclusivamente un snapshot observable y un sobreviviente. El bootstrap y la composición pertenecen a `cmd`.
+La inundación usa `rainfall_runoff_2d` o `compound_flood_2d` sobre una malla
+conservativa separada del grafo vial. Relieve, costa y lluvia son escenarios
+sintéticos; la susceptibilidad SNGR aporta contexto y no modifica el agua
+calculada. No existe un runtime radial alternativo. Los turnos hidrológicos,
+el reloj de evacuación y la reproducción son distintos; [modelo y evidencia](informe-fase8.md).
 
-El simulador mantiene en privado PRNG, programación de eventos y zombies dormidos. Publica observaciones después de actualizar zombies y antes de consultar movimientos HTTP; publica el resultado al terminar el turno. `world.Store` copia los datos al publicar y al leer, incluidos grafo y rutas, para impedir mutaciones accidentales entre consultas concurrentes. Como defensa adicional, elimina sleepers dormidos de lo publicado. Esta copia deliberadamente simple debe medirse antes de optimizarla.
+Sesiones, estados, planes y cachés viven en **RAM de una instancia** y se pierden
+al reiniciar el proceso. Los resultados terminales se retienen según TTL/cupos;
+no se guardan mapas completos por turno. El laboratorio conserva reportes
+ciudadanos y su referencia local en disco privado (`/var/lib/corodev/flood` en
+EC2; `private/` en desarrollo). Estos datos requieren backup y se mantienen fuera
+de las imágenes y de Git. Los reportes nuevos quedan pendientes, y no alteran
+automáticamente motores. Véase [persistencia de incidentes](incidentes-ciudadanos.md).
 
-Un `WorldSnapshot` transporta turno, versión del mundo, versión del grafo, zombies visibles con recorrido, sobrevivientes, refugios, bloqueos, eventos y métricas. El puntero local al grafo tiene `json:"-"`; `GET /grafo` entrega el grafo separado y `GET /estado` entrega el estado observable. El estado publicable y el usado por decisiones comparten únicamente información observable; ningún DTO contiene PRNG o posiciones secretas.
+`/estado` y el control legacy zombie permanecen aislados e inactivos en
+`cmd/server`; `SIM_AUTOSTART=true` se rechaza. No representan las sesiones que
+observan los clientes actuales. El evaluador FASE 1 permanece congelado.
 
-`POST /paso` es una consulta autenticada y no modifica sobrevivientes, refugios ni turno. El simulador conserva la autoridad para validar/aplicar una única arista o espera. Las credenciales del simulador se mantienen en el proceso Go; los clientes consultan exclusivamente endpoints públicos de observación. No se añaden operaciones administrativas HTTP en esta fase.
+## AWS y servicios externos
 
-Los clientes conservan sus rutas y componentes. React utiliza su adaptador HTTP y TanStack Query; Flutter utiliza Dio y repositorios/proveedores. El polling es la alternativa de estado de esta iteración; WebSocket queda pendiente.
+La evidencia registrada del 27 de octubre describe **EC2 `m7i-flex.large`,
+2 vCPU / 8 GiB, Ohio (`us-east-2`)**: Docker ejecuta API Go, laboratorio y Caddy.
+Sólo Caddy recibe tráfico público 80/443; los puertos Go permanecen internos.
+React se sirve desde S3 privado mediante CloudFront/OAC, con ACM en `us-east-1`.
+CloudWatch recibe logs y una alarma CPU; S3 almacena artefactos de releases.
+CloudFormation describe estos recursos, y SSM permite operar sin SSH público.
 
-La importación OSM se ejecuta fuera del runtime y produce un archivo local. No hay llamadas a OSM por turno. Los datos sintéticos, si se necesitan, deben identificarse como fixtures de prueba y nunca como mapa real de Manta.
+**Cloudflare DNS y Let's Encrypt son externos a AWS.** OSM/GeoManta y SNGR
+aportan fuentes versionadas; no se consultan por turno. La actualización online
+de referencias es opcional. El auxiliar de caducidad usa Scheduler/Lambda/SQS;
+no participa en simulación ni routing. El estado documentado, límites, retirada
+programada y comprobaciones están en [despliegue](despliegue.md). Un GET de salud
+no certifica rendimiento, ejecución activa ni equivalencia con el código local.
 
-# Contratos de módulos
-
-- `DecisionEngine.NextStep(context.Context, WorldSnapshot, Survivor) DecisionResult`; resultado interno con `NextNode`, `TargetShelterID` y `Route`. Solo `siguienteNodo` se publica en la respuesta obligatoria.
-- `Store.Publish(WorldSnapshot)` y `Store.Load() (WorldSnapshot, bool)`; el booleano distingue un almacén aún no inicializado.
-- Grafo: `version`, `source`, `nodes`, `edges`, `shelters`. Aristas con extremos, distancia en metros, tipo de calle, velocidad en m/s, bloqueo estático y direccionalidad.
-- Bloqueos dinámicos del turno residen en `blocked_edges`; no se altera el grafo base compartido.
+Las decisiones fundacionales se conservan en [ADR](decisions), y sus resultados
+históricos están separados de las [pruebas actuales](pruebas.md).

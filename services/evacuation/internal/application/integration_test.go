@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"reflect"
 	"testing"
+	"time"
 
 	"corodev/evacuation/internal/application"
 	"corodev/evacuation/internal/graph"
@@ -113,5 +114,59 @@ func TestIPv4WildcardAdvertisesWorkingSelfHTTP(t *testing.T) {
 	m := app.Simulator.Snapshot().Metrics
 	if m.RequestsSuccess != 20 || m.RequestsInvalid != 0 || m.RequestsTimeout != 0 {
 		t.Fatalf("self HTTP failed: %+v", m)
+	}
+}
+
+func TestCloseIsConcurrentAndIdempotent(t *testing.T) {
+	g, err := graph.Load("../../data/manta-v2.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	cfg, err := simulation.LoadConfig("../../scenarios/urban/round1.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	key, err := application.EphemeralKey()
+	if err != nil {
+		t.Fatal(err)
+	}
+	app, err := application.New(g, cfg, "127.0.0.1:0", key, nil, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := app.Simulator.Step(context.Background()); err != nil {
+		_ = app.Close()
+		t.Fatal(err)
+	}
+	const callers = 32
+	start := make(chan struct{})
+	results := make(chan error, callers)
+	for i := 0; i < callers; i++ {
+		go func() {
+			<-start
+			results <- app.Close()
+		}()
+	}
+	close(start)
+	deadline := time.NewTimer(7 * time.Second)
+	defer deadline.Stop()
+	for i := 0; i < callers; i++ {
+		select {
+		case err := <-results:
+			if err != nil {
+				t.Fatal(err)
+			}
+		case <-deadline.C:
+			t.Fatal("repeated cleanup blocked after the HTTP server had stopped")
+		}
+	}
+	client := &http.Client{Timeout: time.Second}
+	response, err := client.Get(app.BaseURL + "/healthz")
+	if err == nil {
+		_ = response.Body.Close()
+		t.Fatal("closed application left its HTTP listener available")
+	}
+	if app.Simulator.Snapshot().Turn != 1 {
+		t.Fatal("cleanup discarded the observable final world")
 	}
 }

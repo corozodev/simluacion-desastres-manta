@@ -1,6 +1,6 @@
 # Backend Track A
 
-Lee el AGENTS raíz. FASE 2 está autorizada: geografía urbana, diagnóstico, predicción, coordinación y preparación AWS. Biblioteca estándar Go; no añadir almacenamiento ni servicios externos de decisión. Despliegue solo con acceso, cuenta y región autorizados; no iniciar FASE 3.
+Lee el AGENTS raíz. Estado vigente: sesiones FASE 5, políticas/PRO FASE 7 y malla hidráulica FASE 8. Las secciones por fase conservan restricciones históricas; el alcance posterior explícito prevalece. Biblioteca estándar Go, sin servicios externos de decisión. Despliegue sólo con autorización expresa, cuenta, región y acceso verificados.
 
 `internal/world` define modelos y snapshots observables. OpenAPI sigue siendo la fuente de verdad del JSON; cualquier cambio de transporte comienza allí y regenera TypeScript, Dart y JSON Schema. `graph` valida/carga datos; `simulation` es el único escritor; `decision` solo observa; `httpapi` autentica y valida consultas; `application` y `cmd` componen el proceso y HTTP real.
 

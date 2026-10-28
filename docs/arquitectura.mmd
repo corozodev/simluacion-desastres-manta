@@ -1,0 +1,41 @@
+flowchart TB
+  U[Usuarios] --> R[React: control /escape y /flood-lab]
+  U --> V[React /mobile y Flutter Android: espectadores]
+  DNS[Cloudflare DNS: externo] -. resuelve .-> TLS
+  subgraph AWS[AWS: aplicación en us-east-2; CloudFront global; ACM web en us-east-1]
+    WEB[S3 privado + CloudFront OAC: React] --> R
+    ART[S3 privado: artefactos]
+    OPS[CloudFormation / SSM / CloudWatch]
+    EXP[Scheduler + Lambda + SQS: caducidad; sin decisiones]
+    subgraph EC2[EC2 m7i-flex.large: 2 vCPU / 8 GiB; Docker]
+      TLS[Caddy: endpoint HTTPS público]
+      subgraph API[cmd/server: monolito modular Go]
+        S[1. Sesiones: inicio explícito, cupos, token]
+        E[2. Simulador: único escritor, RNG privado]
+        D[3–4. Routing + coordinación: predicción y reservas]
+        G[Catálogo e índices: OSM offline]
+        ST[5. Snapshots inmutables en RAM]
+        P[6. Estado privado y publicados: polling / ETag]
+        S --> E
+        E -->|POST /paso HTTP loopback + x-api-key| D
+        D -->|vecino válido o espera| E
+        G --> D
+        E --> ST
+        ST --> P
+      end
+      LAB[cmd/flood-lab loopback: hidrología 2D independiente]
+      DISK[EBS cifrado: reportes / referencia; copias privadas]
+      TLS --> S
+      TLS --> P
+      TLS -->|proxy /lab, incidents, reference| LAB
+      LAB --> DISK
+      LAB -->|estado publicado| TLS
+    end
+    ART -. releases autorizadas .-> EC2
+    OPS -. operación .-> EC2
+    EXP -. retirada programada .-> EC2
+  end
+  R -->|HTTPS: inicio y control de sesión| TLS
+  TLS -->|polling: estado compacto + geografía separada| R
+  TLS -->|GET publicados; sin control ni renovación| V
+  SOURCE[OSM / GeoManta / SNGR: fuentes externas versionadas] -. importación offline / actualización opcional .-> G

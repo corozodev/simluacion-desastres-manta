@@ -1556,6 +1556,9 @@ class IncidentCreate {
 
 class Incident {
   const Incident({
+    this.mapWithdrawn,
+    this.moderationNote,
+    this.officialSource,
     required this.schemaVersion,
     required this.incidentId,
     required this.incidentType,
@@ -1578,6 +1581,9 @@ class Incident {
     required this.updatedAt,
   });
 
+  final bool? mapWithdrawn;
+  final String? moderationNote;
+  final IncidentOfficialSource? officialSource;
   final int schemaVersion;
   final String incidentId;
   final String incidentType;
@@ -1600,6 +1606,9 @@ class Incident {
   final String updatedAt;
 
   factory Incident.fromJson(Map<String, dynamic> json) => Incident(
+    mapWithdrawn: json['map_withdrawn'] == null ? null : json['map_withdrawn'] as bool,
+    moderationNote: json['moderation_note'] == null ? null : json['moderation_note'] as String,
+    officialSource: json['official_source'] == null ? null : IncidentOfficialSource.fromJson(Map<String, dynamic>.from(json['official_source'] as Map)),
     schemaVersion: json['schema_version'] as int,
     incidentId: json['incident_id'] as String,
     incidentType: json['incident_type'] as String,
@@ -1623,6 +1632,9 @@ class Incident {
   );
 
   Map<String, dynamic> toJson() => {
+    if (mapWithdrawn != null) 'map_withdrawn': mapWithdrawn!,
+    if (moderationNote != null) 'moderation_note': moderationNote!,
+    if (officialSource != null) 'official_source': officialSource!.toJson(),
     'schema_version': schemaVersion,
     'incident_id': incidentId,
     'incident_type': incidentType,
@@ -1643,6 +1655,30 @@ class Incident {
     'location_precision_m': locationPrecisionM,
     'expires_at': expiresAt,
     'updated_at': updatedAt,
+  };
+}
+
+class IncidentOfficialSource {
+  const IncidentOfficialSource({
+    required this.title,
+    required this.url,
+    required this.recordedAt,
+  });
+
+  final String title;
+  final String url;
+  final String recordedAt;
+
+  factory IncidentOfficialSource.fromJson(Map<String, dynamic> json) => IncidentOfficialSource(
+    title: json['title'] as String,
+    url: json['url'] as String,
+    recordedAt: json['recorded_at'] as String,
+  );
+
+  Map<String, dynamic> toJson() => {
+    'title': title,
+    'url': url,
+    'recorded_at': recordedAt,
   };
 }
 

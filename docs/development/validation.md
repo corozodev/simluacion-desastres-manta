@@ -1,3 +1,5 @@
+> **Archivo histórico del starter, 23 de octubre de 2026.** Las pantallas demo, el build Flutter Web y las cifras de esta página no describen la entrega actual. Consultar [pruebas vigentes](../pruebas.md) y [arquitectura](../arquitectura.md).
+
 # Evidencia de validación
 
 Ejecuciones realizadas el **23 de octubre de 2026**, zona America/Guayaquil. El 27 de octubre de 2026 es únicamente la referencia de planificación del brief. Los resultados siguientes corresponden a comandos ejecutados, sin atribuir cobertura a verificaciones pendientes.

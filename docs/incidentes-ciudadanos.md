@@ -1,3 +1,5 @@
+> **Referencia técnica histórica FASE 4C.** Para ejecutar el producto actual usar [desarrollo local](development/local-setup.md), [contratos](contratos.md) y [arquitectura](arquitectura.md). Hidrología, controles públicos y visores posteriores sustituyen las reglas/pantallas previas descritas aquí; los motores y reportes históricos se preservan.
+
 # Novedades ciudadanas — guía FASE 4C
 
 Este MVP académico conecta Flutter, almacenamiento Go, React y el motor `urban_flood`. Una declaración recibida **no es un hecho confirmado ni una recomendación de navegación**. Aplicarla en el laboratorio conserva su procedencia y estado de verificación.

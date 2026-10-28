@@ -1,7 +1,7 @@
 import type { Incident, IncidentList, IncidentStatusUpdate } from '@corodev/contracts';
 
-// Additive transport fields declared in OpenAPI. Generated files are deliberately
-// untouched: the user prohibited running codegen for this source-only change.
+// Presentation helpers for moderation fields declared in OpenAPI.
+// Transport declarations are regenerated from packages/contracts/openapi.yaml.
 export interface IncidentOfficialSourceInput { title: string; url: string }
 export interface IncidentOfficialSource extends IncidentOfficialSourceInput { recorded_at: string }
 export type ModeratedIncident = Incident & {

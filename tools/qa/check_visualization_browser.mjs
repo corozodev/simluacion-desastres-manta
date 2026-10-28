@@ -163,10 +163,13 @@ try {
     await page.getByRole('checkbox', { name: 'Animaciones', exact: true }).check();
     await page.getByRole('button', { name: 'Pausar', exact: true }).click();
     await expect(page.getByLabel('Tu simulación')).toContainText('Pausada');
+    // Control acknowledgement can precede the paused observable snapshot.
+    // Freeze comparison only after the map has consumed that snapshot.
+    await expect(page.locator('[data-layer="animated-entities"]')).toHaveAttribute('data-animation-active', 'false');
     const paused = await current();
-    const transforms = await page.locator('[data-display-key]').evaluateAll(elements => elements.map(e => e.getAttribute('transform')));
+    const transforms = await page.locator('[data-display-key]').evaluateAll(elements => elements.map(e => [e.getAttribute('data-display-key'), e.getAttribute('transform')]).sort((a, b) => a[0].localeCompare(b[0])));
     await delay(600);
-    assert.deepEqual(await page.locator('[data-display-key]').evaluateAll(elements => elements.map(e => e.getAttribute('transform'))), transforms);
+    assert.deepEqual(await page.locator('[data-display-key]').evaluateAll(elements => elements.map(e => [e.getAttribute('data-display-key'), e.getAttribute('transform')]).sort((a, b) => a[0].localeCompare(b[0]))), transforms);
     assert.equal((await current()).tick, paused.tick);
     await map.screenshot({ path: path.join(evidence, `${name}-close-paused.png`) });
     await page.screenshot({ path: path.join(evidence, `${name}-page.png`), fullPage: true });

@@ -1,3 +1,5 @@
+> **Referencia técnica histórica FASE 4D.** Para ejecutar el producto actual usar [desarrollo local](development/local-setup.md), [contratos](contratos.md) y [arquitectura](arquitectura.md). Hidrología, controles públicos y visores posteriores sustituyen las reglas/pantallas previas descritas aquí; los motores y reportes históricos se preservan.
+
 # Datos oficiales y demostración A–E — FASE 4D
 
 El laboratorio combina geografía revisada, parámetros sintéticos y declaraciones con procedencia explícita. No es un predictor hidrológico ni ofrece navegación real de emergencia. Los eventos históricos y los reportes recibidos nunca cierran una carretera real automáticamente.

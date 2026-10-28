@@ -1,65 +1,120 @@
-# Costos AWS — FASE 3A.2
+# Costos AWS y presupuesto
 
-**Actualización del 27 de octubre — FASE 5:** el propietario elevó el Budget a **50 USD** y eligió mantener el plan FREE. La instancia ahora es **`m7i-flex.large` (2 vCPU / 8 GiB)**, con retirada programada a partir del **31 de octubre, 01:46 de Ecuador**. Su tarifa Linux On-Demand en Ohio, consultada en el [catálogo oficial EC2](https://b0.p.awsstatic.com/pricing/2.0/meteredUnitMaps/ec2/USD/current/ec2-ondemand-without-sec-sel/US%20East%20(Ohio)/Linux/index.json), es **0,09576 USD/h**: **9,19 USD por 96 horas**, antes de créditos. EBS de 20 GB e IPv4 añaden aproximadamente **0,21 y 0,48 USD** por ese período bajo los supuestos históricos; tráfico, solicitudes, logs y el auxiliar de caducidad dependen del uso. Esto no incluye consumo anterior de la cuenta ni constituye una factura. Mantener sólo esa EC2 durante 730 horas costaría **69,90 USD**, por encima del Budget mensual de 50 USD; no extender el período sin revisar el costo. El Budget avisa y no impone un tope. Ver [operación, borrado y verificación](despliegue-fase5-y-caducidad.md). El cálculo siguiente conserva el escenario histórico `t3.small`.
+[Índice](INDEX.md) · [Despliegue](despliegue.md) · [Evidencia AWS](../deploy/validation-phase5-deployment.json)
 
-Consulta del **26 de octubre de 2026**, America/Guayaquil. Región: **us-east-2 (Ohio)**. Estimación mensual base: **22,96 USD**; reservar **24 USD** para el consumo pequeño descrito. No es gasto observado, cotización ni límite de facturación.
+**Proyección modelada: 77,68 USD/mes** para la instancia registrada
+`m7i-flex.large` en Ohio, 730 horas y el uso pequeño descrito debajo.
+**Gasto real atribuible al evento: pendiente de completar con Billing.**
+Son cantidades distintas: una estimación no es factura ni prueba de consumo.
+Fecha de referencia y consulta de precios públicos: **27 de octubre de 2026**.
+Moneda USD, antes de créditos, descuentos, franquicias, impuestos y soporte.
 
-El reintento con permisos nuevos comprobó el **Budget mensual real de 30 USD**, HEALTHY y sin filtros de cuenta. Tiene avisos ACTUAL al 85%/100% y FORECASTED al 100%, con un destinatario EMAIL por aviso. No se cambiaron ni duplicaron. Direcciones y respuestas completas se conservan privadas.
+## Proyección mensual reproducible
 
-**Gasto acumulado observado por AWS Budgets: 0,00 USD**, consultado el 26 de octubre de 2026. Es un dato de cuenta con posible retraso, excluye créditos/reembolsos y no demuestra una factura final ni atribución exclusiva al proyecto. El stack aprobado ya creó los 14 recursos el 26 de octubre a las 18:04 de Ecuador. La última actualización del Budget devuelta por AWS es de las 14:41:50 de Ecuador, anterior al despliegue; ese cero todavía no refleja su consumo. La estimación usa catálogos públicos oficiales descargados; no se consultó Cost Explorer.
+La evidencia de despliegue registra 2 vCPU / 8 GiB, 20 GiB gp3 cifrados y una
+IPv4 pública. La lectura EC2 del 27 de octubre, 18:58 de Ecuador, confirmó
+tipo, CPU, memoria y disco; no modifica los supuestos de consumo. Los precios Linux On-Demand de Ohio y las tarifas del modelo se
+reconsultaron en los catálogos oficiales enlazados. Las cantidades de tráfico,
+logs y solicitudes son **supuestos**, no observaciones. No hay NAT Gateway,
+ALB, RDS ni ECR en el stack de aplicación.
 
-## Supuestos y cálculo reproducible
-
-730 horas de Linux `t3.small` x86_64, disco de 20 GB gp3 con rendimiento base incluido, una IPv4 estable, 1 GB de web, 500 PUT/LIST y 10.000 GET S3, 100.000 solicitudes HTTPS y 10 GB CloudFront, 10 GB de salida directa de API, 1 GB de logs ingerido y una reserva de 1 GB-mes almacenado. Una alarma CPU; ninguna métrica personalizada. Retención de logs: siete días.
-
-| Componente | Cálculo sin descuentos | USD/mes |
+| Componente | Supuesto y cálculo | USD/mes |
 | --- | --- | ---: |
-| EC2 `t3.small`, Ohio | 730 × 0,0208/h | 15,1840 |
-| EBS gp3, Ohio | 20 × 0,08/GB-mes | 1,6000 |
-| IPv4 pública, Ohio | 730 × 0,005/h | 3,6500 |
-| S3 Standard web, Ohio | 1 × 0,023 + 500 × 0,000005 + 10.000 × 0,0000004 | 0,0295 |
-| S3 artefactos | Reserva para bundle temporal y solicitudes; expiración siete días | 0,0100 |
-| CloudFront `PriceClass_100` | 10 × 0,085/GB + 100.000 × 0,000001/solicitud HTTPS | 0,9500 |
-| CloudFront Function SPA | 100.000 × 0,0000001/invocación | 0,0100 |
-| Transferencia directa API | Reserva conservadora: 10 × 0,09/GB | 0,9000 |
-| CloudWatch Logs, Ohio | 1 × 0,50/GB ingerido + 1 × 0,03/GB-mes almacenado | 0,5300 |
-| CloudWatch alarma CPU, Ohio | 1 × 0,10/mes | 0,1000 |
-| Budget existente y ACM integrado sin exportación | Monitoreo sin acciones de pago y certificado CloudFront | 0,0000 |
-| **Total calculado** | Decimal, antes de redondear | **22,9635** |
+| EC2 `m7i-flex.large` | 730 h × 0,09576/h | 69,9048 |
+| EBS gp3, rendimiento base | 20 GB-mes × 0,08 | 1,6000 |
+| IPv4 pública | 730 h × 0,005 | 3,6500 |
+| **Subtotal fijo modelado** | EC2 + disco + IPv4 | **75,1548** |
+| S3 web y artefactos | 1 GB × 0,023 + 500 PUT/LIST × 0,000005 + 10.000 GET × 0,0000004 + reserva artefactos 0,01 | 0,0395 |
+| CloudFront + función SPA | 10 GB × 0,085 + 100.000 HTTPS × 0,000001 + 100.000 funciones × 0,0000001 | 0,9600 |
+| Salida directa API | Reserva de planificación: 10 GB × 0,09; tarifa efectiva de cuenta pendiente | 0,9000 |
+| CloudWatch | 1 GB ingerido × 0,50 + 1 GB-mes almacenado × 0,03 + una alarma × 0,10 | 0,6300 |
+| **Total de partidas modeladas** | Suma sin redondear | **77,6843** |
 
-El [JSON de cálculo](../deploy/cost-estimate-phase3a2.json) conserva cantidades, tarifas, procedencia y sumas. La salida API de 0,09/GB es una reserva de planificación, no una tarifa contractual verificada en la cuenta. El catálogo EC2 también publica `t3.medium` a 0,0416/h: con estos mismos supuestos subiría a **38,15 USD/mes**, superando el Budget informado. No cambiar de tamaño sin revisión y aprobación.
+CloudFront `PriceClass_100` se modela con entrega en EE. UU.; el origen de la
+petición, el plan y las franquicias reales pueden cambiar la factura. S3 de
+artefactos y salida API son reservas explícitas. Logs tienen retención de siete
+días, y la reserva mensual almacenada es conservadora. El auxiliar de caducidad
+usa Scheduler/Lambda/SQS y logs: su costo depende de invocaciones, duración,
+solicitudes y retención, **no cuantificados en ese total**. También quedan fuera
+el dominio externo, almacenamiento retenido extra, versiones antiguas, tráfico
+excedente e impuestos. No se aplica ningún descuento Free Tier supuesto.
 
-No se descuentan créditos, Free Tier ni franquicias compartidas. El plan FREE/ACTIVE y los créditos se verificaron en evidencia privada; no se cambió el plan. La elegibilidad no sustituye el seguimiento del gasto. CloudFront cobra por ubicación de entrega; `PriceClass_100` permite servir Ecuador desde sus ubicaciones admitidas. La fila usa el precio de entrega en Estados Unidos; revisar tráfico real y planes disponibles antes de aprobar. La plantilla no contrata un plan de tarifa plana.
+Cálculo exacto con la biblioteca estándar, desde cualquier terminal con Python 3:
 
-## Fuentes consultadas
+```sh
+python3 - <<'PY'
+from decimal import Decimal as D
+fijo = D('730') * D('.09576') + D('20') * D('.08') + D('730') * D('.005')
+s3 = D('.023') + D('500') * D('.000005') + D('10000') * D('.0000004') + D('.01')
+cdn = D('10') * D('.085') + D('100000') * D('.000001') + D('100000') * D('.0000001')
+api = D('10') * D('.09')
+logs = D('.50') + D('.03') + D('.10')
+print('Subtotal fijo USD:', fijo)
+print('Total modelado USD:', fijo + s3 + cdn + api + logs)
+print('EC2 durante 96 horas USD:', D('96') * D('.09576'))
+PY
+```
 
-Se descargaron catálogos públicos, sin consultas pagadas a Cost Explorer:
+Sólo EC2 durante 96 horas cuesta **9,19296 USD** a esa tarifa, antes de créditos;
+el resto de recursos se agrega. La proyección de 730 h no describe el período
+real de vida de la demo, que tiene [retirada programada](despliegue-fase5-y-caducidad.md).
+El [cálculo antiguo](../deploy/cost-estimate-phase3a2.json) de 22,96 USD/mes se
+conserva como histórico: era `t3.small`, no la instancia actual.
 
-- [EC2 Linux Ohio](https://b0.p.awsstatic.com/pricing/2.0/meteredUnitMaps/ec2/USD/current/ec2-ondemand-without-sec-sel/US%20East%20(Ohio)/Linux/index.json) y [EBS](https://b0.p.awsstatic.com/pricing/2.0/meteredUnitMaps/ec2/USD/current/ebs.json), publicación 23 de octubre de 2026.
-- [S3 Ohio](https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonS3/current/us-east-2/index.json), publicación 15 de octubre.
-- [IPv4/VPC Ohio](https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonVPC/current/us-east-2/index.json), publicación 16 de octubre.
-- [CloudWatch Ohio](https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonCloudWatch/current/us-east-2/index.json), publicación 7 de octubre.
-- [CloudFront global](https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonCloudFront/current/index.json), publicación 19 de octubre; [tarifas y funciones](https://aws.amazon.com/cloudfront/pricing/pay-as-you-go/).
-- [Budgets](https://aws.amazon.com/aws-cost-management/aws-budgets/pricing/), [ACM](https://aws.amazon.com/certificate-manager/pricing/) y [transferencia EC2](https://aws.amazon.com/ec2/pricing/on-demand/).
+## Fuentes de precios
 
-Los endpoints regionales de precios no crean infraestructura. Catálogos completos y errores de cuenta permanecen en `deploy/evidence-private/phase3a2/`, excluido de Git.
+Consultadas por HTTPS público el 27 de octubre, sin Cost Explorer ni llamadas
+privadas de cuenta. Los precios seleccionados y sus unidades se contrastaron
+con los catálogos; las fechas siguientes son las de publicación del catálogo:
 
-## Budget y riesgos de consumo
+| Fuente oficial | Publicación | Tarifas usadas |
+| --- | --- | --- |
+| [EC2 Linux Ohio](https://b0.p.awsstatic.com/pricing/2.0/meteredUnitMaps/ec2/USD/current/ec2-ondemand-without-sec-sel/US%20East%20(Ohio)/Linux/index.json) | 27 oct 2026 | `m7i-flex.large` 0,09576/h, 2 vCPU, 8 GiB; rateCode `NF94DUQA29AU4W9G.JRTCKXETXF.6YS6EN2CT7` |
+| [EBS](https://b0.p.awsstatic.com/pricing/2.0/meteredUnitMaps/ec2/USD/current/ebs.json) | 27 oct 2026 | Ohio gp3 0,08/GB-mes |
+| [VPC Ohio](https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonVPC/current/us-east-2/index.json) | 16 oct 2026 | IPv4 0,005/h |
+| [S3 Ohio](https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonS3/current/us-east-2/index.json) | 15 oct 2026 | Standard 0,023/GB-mes; PUT/LIST 0,000005; GET 0,0000004 |
+| [CloudFront](https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonCloudFront/current/index.json) | 19 oct 2026 | EE. UU. 0,085/GB; HTTPS 0,000001; función 0,0000001 |
+| [CloudWatch Ohio](https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonCloudWatch/current/us-east-2/index.json) | 7 oct 2026 | Ingesta 0,50/GB; almacenamiento 0,03/GB-mes; alarma 0,10/mes |
 
-La plantilla usa `CreateProjectBudget=false` y exige `ExistingBudgetName`. El parámetro **no demuestra que exista el Budget**: antes del change set verificar importe mensual en USD, cobertura/filtros, vigencia, salud, avisos y suscriptores. No crear otro presupuesto para resolver un permiso denegado.
+Los catálogos `current` pueden cambiar: revalidar antes de extender la demo o
+modificar capacidad. [Precios públicos IPv4](https://aws.amazon.com/vpc/pricing/)
+y [EC2 On-Demand](https://aws.amazon.com/ec2/pricing/on-demand/) explican
+unidades y cargos adicionales; no se confunden con gasto de esta cuenta.
 
-El Budget monitoriza y avisa; **no detiene automáticamente los cargos**. Confirmar entrega de alertas con el propietario. Los avisos comprobados equivalen a 25,50 USD de gasto real (85%), 30 USD de gasto real y 30 USD previsto. Cada aviso tiene un email configurado; entrega aún sin confirmar. La captura de consola debe ser auténtica y privada en `docs/budget.png` o `deploy/evidence-private/`; aún no existe una captura de esta fase.
+## Gasto real del evento y Budget
 
-La estimación deja aproximadamente **7,04 USD** respecto al Budget informado para este proyecto aislado. El Budget puede cubrir otras aplicaciones de la cuenta. Tráfico API/CloudFront, logs, versiones S3 antiguas, pruebas sostenidas, snapshots, impuestos o soporte pueden consumir el margen. No hay NAT Gateway, ALB, RDS, ECR ni escalado automático.
+| Dato de entrega | Estado y fuente |
+| --- | --- |
+| Gasto real del proyecto durante el evento | **PENDIENTE**: completar importe, período, servicios incluidos y tratamiento de créditos/impuestos desde Billing/Cost Explorer o export confiable |
+| Budget confirmado por lectura | **50 USD/mes**, COST/MONTHLY, HEALTHY; `describe-budgets` del 27 de octubre, aproximadamente 19:00 de Ecuador |
+| Captura auténtica | **PENDIENTE**: el propietario debe añadir `docs/budget.png` tras ocultar datos sensibles |
+| Entrega de alertas | Confirmación del destinatario pendiente; tener configuración no prueba recepción |
 
-Los créditos T3 se mantienen en `standard`: evitan cargos Unlimited pero pueden limitar CPU sostenida. El rendimiento local no demuestra que `t3.small` satisfaga objetivos externos.
+La lectura actual de Budgets informa **0,09 USD de gasto mensual de cuenta**,
+con última actualización **27 de octubre, 05:36:07 de Ecuador**: el dato llega
+con retraso y no corresponde a la hora de consulta. Se encontró un único Budget
+de 50 USD, sin filtros de proyecto/servicio, que excluye créditos y reembolsos;
+no devuelve pronóstico. **No es gasto atribuible al evento/proyecto** y no se
+traslada al campo pendiente. No se consultó Cost Explorer ni destinatarios de
+notificación y no se cambió configuración. La captura y recepción de alertas
+siguen pendientes del propietario.
 
-Detener EC2 no elimina cargos de EBS ni de una EIP retenida. Borrar el stack tampoco borra buckets `Retain` ni el Budget externo. Revisar almacenamiento, versiones y recursos retenidos antes de declarar consumo terminado. Véase [despliegue y rollback](despliegue-aws.md).
+Un dato histórico de AWS Budgets mostró **0,00 USD el 26 de octubre** con una
+actualización anterior al despliegue. Era gasto mensual de cuenta, con retraso,
+sin atribución exclusiva al proyecto; **no se usa como gasto real final del
+hackathon**. Su fuente y alcance permanecen en el
+[registro histórico](../deploy/cost-estimate-phase3a2.json).
 
-## Gasto observado
+El Budget de 50 USD **no detiene cargos** y el mes modelado supera ese importe.
+Detener EC2 conserva cargos de EBS/IPv4; buckets/versiones y recursos retenidos
+siguen consumiendo. Revisar la [retirada prevista](despliegue.md#infraestructura-nueva-y-retirada),
+conservar los datos necesarios y no extender la operación sin revisar el costo.
 
-AWS Budgets devolvió CalculatedSpend.ActualSpend de **0,00 USD** para el Budget mensual de cuenta. Su configuración excluye créditos y reembolsos. La fecha y alcance están en [la evidencia del reintento](../deploy/validation-phase3a2-retry.json) y [el cálculo actualizado](../deploy/cost-estimate-phase3a2.json). No interpretar ese importe como disponibilidad garantizada de créditos ni como costo final de los recursos ya desplegados.
+La captura está ignorada en Git por precaución. Tras revisarla, añadirla
+explícitamente con `git add -f docs/budget.png` y activar esta línea en el README:
 
-No se consultó Cost Explorer: puede tener costo por consulta. No hay captura de consola auténtica disponible. La consulta posterior al despliegue sigue informando 0,00 USD con LastUpdatedTime anterior a la creación efectiva; consultar de nuevo cuando AWS actualice facturación. La captura no se fabricó. [Evidencia de despliegue](../deploy/validation-phase3a2-deployment.json).
+```markdown
+![AWS Budget con alerta configurada](docs/budget.png)
+```
 
-En FASE 3B.1 se reutilizaron estos recursos y no se añadió infraestructura, agente, métrica personalizada o permiso IAM. Se publicaron nuevos objetos web/diagnóstico en los buckets existentes y se ejecutaron consultas acotadas de CloudWatch; el Budget sigue informando 0,00 USD con la misma actualización anterior al despliegue. La estimación aprobada no cambió. [Informe de esta iteración](informe-fase3b1.md).
+No se creó una imagen ficticia ni se afirma que la captura esté publicada.

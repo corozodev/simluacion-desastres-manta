@@ -12,7 +12,7 @@ duración. Conserva el envelope y request ID al traducir errores HTTP.
 
 Ejecuta `flutter pub get`, `flutter analyze`, `flutter test` y `flutter build apk --debug`. Formatea sólo Dart manual, no archivos generados. Mantén `pubspec.lock`; no ejecutar `flutter upgrade` ni inicializar Git.
 
-`/escape` es la entrada y única pantalla. `WorldRepository` observa exclusivamente Go con `/healthz`, `/grafo` y `/estado`; las decisiones y credenciales de `/paso` permanecen fuera del cliente. `WORLD_API_BASE_URL` selecciona explícitamente una instancia Go y usa HTTPS de producción por defecto. Android sólo permite HTTP en debug. La integración usa `RUN_WORLD_HTTP_TESTS=true` y `test/world_http_integration_test.dart`.
+`/escape` es la entrada ciudadana entre zombis e inundaciones. `SpectatorRepository` observa publicados; `WorldRepository` y `/estado` quedan sólo para compatibilidad/pruebas. Las decisiones y credenciales de `/paso` permanecen fuera del cliente. `WORLD_API_BASE_URL` selecciona explícitamente una instancia Go y usa HTTPS de producción por defecto. Android sólo permite HTTP en debug. La integración usa `RUN_WORLD_HTTP_TESTS=true` y `test/world_http_integration_test.dart`.
 
 Conservar geometría real, ruta seleccionada, refugios ficticios y reservas. La envolvente de referencia no es límite oficial ni cobertura vial completa. Los datos sintéticos y dobles de transporte pertenecen únicamente a pruebas.
 

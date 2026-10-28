@@ -64,6 +64,15 @@ func TestDurationValidationAndHydraulicInputsHTTP(t *testing.T) {
 	if before.Scenario.SimulationStep != after.Scenario.SimulationStep || before.RuntimeElapsedMS != after.RuntimeElapsedMS {
 		t.Fatal("cancelled execution kept advancing")
 	}
+	code, _, _ = labPublicRequest(t, server, "POST", "/lab/actions", Action{Action: "cancel", ExpectedRunID: cancelled.RunID}, "")
+	if code != 200 {
+		t.Fatal("repeated cancellation did not preserve the final run")
+	}
+	code, raw, _ = labPublicRequest(t, server, "POST", "/lab/actions", Action{Action: "restart", ExpectedRunID: cancelled.RunID}, "")
+	var restarted State
+	if code != 200 || json.Unmarshal(raw, &restarted) != nil || restarted.State != "idle" || restarted.RunID == cancelled.RunID || restarted.Scenario.SimulationStep != 0 {
+		t.Fatal("cancelled run could not release its resources and restart")
+	}
 }
 
 func TestFloodDurationsCompleteReproduciblyAndBoundTimeline(t *testing.T) {
